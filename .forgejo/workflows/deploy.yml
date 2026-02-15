@@ -34,12 +34,13 @@ jobs:
           ssh-keyscan -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts 2>/dev/null
           SSH="ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=accept-new"
 
-          # Copy binary
+          # Copy binary (use absolute path — tilde doesn't expand over scp)
+          REMOTE_BIN=$($SSH "${DEPLOY_USER}@${DEPLOY_HOST}" 'echo $HOME/.local/bin')
           scp -i ~/.ssh/deploy_key -o StrictHostKeyChecking=accept-new \
-            tapestry "${DEPLOY_USER}@${DEPLOY_HOST}:~/.local/bin/tapestry"
+            tapestry "${DEPLOY_USER}@${DEPLOY_HOST}:${REMOTE_BIN}/tapestry"
 
-          # Restart service
-          $SSH "${DEPLOY_USER}@${DEPLOY_HOST}" "systemctl --user restart tapestry"
+          # Restart service (XDG_RUNTIME_DIR needed for user systemd)
+          $SSH "${DEPLOY_USER}@${DEPLOY_HOST}" "XDG_RUNTIME_DIR=/run/user/\$(id -u) systemctl --user restart tapestry"
 
           # Wait for startup
           sleep 3
