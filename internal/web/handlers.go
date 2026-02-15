@@ -10,36 +10,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/scbrown/tapestry/internal/aggregator"
 	"github.com/scbrown/tapestry/internal/dolt"
 	"github.com/scbrown/tapestry/internal/events"
 	gitpkg "github.com/scbrown/tapestry/internal/git"
 )
-
-type monthlyData struct {
-	Year       int
-	Month      time.Month
-	MonthName  string
-	PrevYear   int
-	PrevMonth  int
-	NextYear   int
-	NextMonth  int
-	HasNext    bool
-	Rigs       []rigViewData
-	TotalStats statusCounts
-}
-
-type statusCounts struct {
-	Created  int
-	Closed   int
-	Open     int
-	InFlight int
-}
-
-type rigViewData struct {
-	Name  string
-	Stats statusCounts
-	Top   []dolt.Issue
-}
 
 func (s *Server) handleMonthly(w http.ResponseWriter, r *http.Request) {
 	now := time.Now()
@@ -62,56 +37,13 @@ func (s *Server) handleMonthly(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	data := monthlyData{
-		Year:      year,
-		Month:     time.Month(month),
-		MonthName: time.Month(month).String(),
+	rigFilter := r.URL.Query().Get("rig")
+	data, err := aggregator.Monthly(r.Context(), s.client, s.databases(), year, month, rigFilter)
+	if err != nil {
+		log.Printf("monthly aggregation: %v", err)
+		http.Error(w, "aggregation failed", http.StatusInternalServerError)
+		return
 	}
-
-	prev := time.Date(year, time.Month(month)-1, 1, 0, 0, 0, 0, time.UTC)
-	data.PrevYear = prev.Year()
-	data.PrevMonth = int(prev.Month())
-
-	next := time.Date(year, time.Month(month)+1, 1, 0, 0, 0, 0, time.UTC)
-	data.NextYear = next.Year()
-	data.NextMonth = int(next.Month())
-	data.HasNext = next.Before(now) || (next.Year() == now.Year() && next.Month() <= now.Month())
-
-	ctx := r.Context()
-	var total statusCounts
-
-	for _, dbName := range s.databases() {
-		counts, err := s.client.CountByStatus(ctx, dbName)
-		if err != nil {
-			log.Printf("counts %s: %v", dbName, err)
-			continue
-		}
-
-		stats := statusCounts{
-			Open:     counts["open"],
-			InFlight: counts["in_progress"] + counts["hooked"],
-			Closed:   counts["closed"],
-		}
-
-		top, err := s.client.Issues(ctx, dbName, dolt.IssueFilter{
-			Status: "closed",
-			Limit:  10,
-		})
-		if err != nil {
-			log.Printf("top %s: %v", dbName, err)
-		}
-
-		data.Rigs = append(data.Rigs, rigViewData{
-			Name:  dbName,
-			Stats: stats,
-			Top:   top,
-		})
-
-		total.Open += stats.Open
-		total.Closed += stats.Closed
-		total.InFlight += stats.InFlight
-	}
-	data.TotalStats = total
 
 	s.render(w, "monthly.html", data)
 }

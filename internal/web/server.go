@@ -41,6 +41,7 @@ func New(cfg config.Config) (*Server, error) {
 		"timeAgo":       timeAgo,
 		"shortActor":    shortActor,
 		"fmtDuration":   fmtDuration,
+		"rigName":       func(s string) string { return strings.TrimPrefix(s, "beads_") },
 		"nl":            func(s string) string { return strings.ReplaceAll(s, `\n`, "\n") },
 	}
 
@@ -138,6 +139,7 @@ func (s *Server) routes() {
 	staticSub, _ := fs.Sub(staticFS, "static")
 	s.mux.Handle("GET /static/", http.StripPrefix("/static/", http.FileServer(http.FS(staticSub))))
 	s.mux.HandleFunc("GET /{$}", s.handleMonthly)
+	s.mux.HandleFunc("GET /{year}/{month}", s.handleMonthly)
 	s.mux.HandleFunc("GET /month/{year}/{month}", s.handleMonthly)
 	s.mux.HandleFunc("GET /bead/{id}", s.handleBead)
 	s.mux.HandleFunc("GET /beads", s.handleBeadList)

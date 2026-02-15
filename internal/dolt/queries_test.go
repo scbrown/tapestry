@@ -3,6 +3,7 @@ package dolt
 import (
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestBuildIssueQuery(t *testing.T) {
@@ -43,6 +44,16 @@ func TestBuildIssueQuery(t *testing.T) {
 			asOf:     "2026-02-01T00:00:00",
 			wantArgs: 1,
 			contains: []string{"AS OF '2026-02-01T00:00:00'", "status = ?"},
+		},
+		{
+			name: "with date range",
+			filter: IssueFilter{
+				Status:        "closed",
+				UpdatedAfter:  time.Date(2026, 2, 1, 0, 0, 0, 0, time.UTC),
+				UpdatedBefore: time.Date(2026, 3, 1, 0, 0, 0, 0, time.UTC),
+			},
+			wantArgs: 3,
+			contains: []string{"status = ?", "updated_at >= ?", "updated_at < ?"},
 		},
 	}
 

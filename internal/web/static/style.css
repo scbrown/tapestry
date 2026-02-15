@@ -49,6 +49,9 @@ main {
   gap: 1rem;
   margin-bottom: 2rem;
 }
+.stats-grid-4 {
+  grid-template-columns: repeat(4, 1fr);
+}
 .stat-card {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -410,7 +413,8 @@ a:focus-visible, button:focus-visible, input:focus-visible {
 
   main { padding: 1rem; }
 
-  .stats-grid {
+  .stats-grid,
+  .stats-grid-4 {
     grid-template-columns: 1fr;
   }
 

@@ -142,6 +142,46 @@ func (c *Client) CountByStatus(ctx context.Context, database string) (map[string
 	return counts, rows.Err()
 }
 
+// CountCreatedInRange counts issues created within the given time range.
+func (c *Client) CountCreatedInRange(ctx context.Context, database string, start, end time.Time) (int, error) {
+	query := "SELECT COUNT(*) FROM issues WHERE deleted_at IS NULL " +
+		"AND issue_type IN ('task','bug','epic') " +
+		"AND created_at >= ? AND created_at < ?"
+	rows, err := c.queryDB(ctx, database, query, start, end)
+	if err != nil {
+		return 0, fmt.Errorf("dolt: count created in range: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+	if !rows.Next() {
+		return 0, rows.Err()
+	}
+	var count int
+	if err := rows.Scan(&count); err != nil {
+		return 0, fmt.Errorf("dolt: scan count: %w", err)
+	}
+	return count, rows.Err()
+}
+
+// CountClosedInRange counts issues closed (status='closed', updated) within the given time range.
+func (c *Client) CountClosedInRange(ctx context.Context, database string, start, end time.Time) (int, error) {
+	query := "SELECT COUNT(*) FROM issues WHERE deleted_at IS NULL " +
+		"AND issue_type IN ('task','bug','epic') " +
+		"AND status = 'closed' AND updated_at >= ? AND updated_at < ?"
+	rows, err := c.queryDB(ctx, database, query, start, end)
+	if err != nil {
+		return 0, fmt.Errorf("dolt: count closed in range: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+	if !rows.Next() {
+		return 0, rows.Err()
+	}
+	var count int
+	if err := rows.Scan(&count); err != nil {
+		return 0, fmt.Errorf("dolt: scan count: %w", err)
+	}
+	return count, rows.Err()
+}
+
 // Epics returns all issues of type "epic" from the database.
 func (c *Client) Epics(ctx context.Context, database string) ([]Issue, error) {
 	return c.Issues(ctx, database, IssueFilter{Type: "epic"})
@@ -285,6 +325,14 @@ func buildIssueQuery(f IssueFilter, asOf string) (string, []any) {
 	if f.Owner != "" {
 		conditions = append(conditions, "owner = ?")
 		args = append(args, f.Owner)
+	}
+	if !f.UpdatedAfter.IsZero() {
+		conditions = append(conditions, "updated_at >= ?")
+		args = append(args, f.UpdatedAfter)
+	}
+	if !f.UpdatedBefore.IsZero() {
+		conditions = append(conditions, "updated_at < ?")
+		args = append(args, f.UpdatedBefore)
 	}
 
 	b.WriteString(" WHERE ")

@@ -52,6 +52,7 @@ func TestTemplatesParse(t *testing.T) {
 		"timeAgo":       timeAgo,
 		"shortActor":    shortActor,
 		"fmtDuration":   fmtDuration,
+		"rigName":       func(s string) string { return strings.TrimPrefix(s, "beads_") },
 		"nl":            func(s string) string { return strings.ReplaceAll(s, `\n`, "\n") },
 	}
 
