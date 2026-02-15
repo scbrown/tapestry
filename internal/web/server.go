@@ -2,6 +2,7 @@
 package web
 
 import (
+	"bytes"
 	"context"
 	"embed"
 	"fmt"
@@ -15,6 +16,9 @@ import (
 	"github.com/scbrown/tapestry/internal/config"
 	"github.com/scbrown/tapestry/internal/dolt"
 	"github.com/scbrown/tapestry/internal/events"
+	"github.com/yuin/goldmark"
+	"github.com/yuin/goldmark/extension"
+	"github.com/yuin/goldmark/renderer/html"
 )
 
 //go:embed templates/*.html
@@ -43,6 +47,7 @@ func New(cfg config.Config) (*Server, error) {
 		"fmtDuration":   fmtDuration,
 		"rigName":       func(s string) string { return strings.TrimPrefix(s, "beads_") },
 		"nl":            func(s string) string { return strings.ReplaceAll(s, `\n`, "\n") },
+		"markdown":      renderMarkdown,
 	}
 
 	pages := make(map[string]*template.Template)
@@ -232,4 +237,22 @@ func fmtDuration(d time.Duration) string {
 		return fmt.Sprintf("%dh %dm", h, m)
 	}
 	return fmt.Sprintf("%dm", m)
+}
+
+// mdRenderer is a goldmark instance configured for safe HTML output.
+var mdRenderer = goldmark.New(
+	goldmark.WithExtensions(extension.GFM),
+	goldmark.WithRendererOptions(html.WithHardWraps()),
+)
+
+// renderMarkdown converts a markdown string to safe HTML.
+// It first normalises escaped newlines (\n literals) from the database.
+func renderMarkdown(s string) template.HTML {
+	// Dolt stores literal \n — expand to real newlines before parsing.
+	s = strings.ReplaceAll(s, `\n`, "\n")
+	var buf bytes.Buffer
+	if err := mdRenderer.Convert([]byte(s), &buf); err != nil {
+		return template.HTML(template.HTMLEscapeString(s))
+	}
+	return template.HTML(buf.String()) //nolint:gosec // goldmark output is safe
 }

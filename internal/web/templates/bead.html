@@ -13,8 +13,8 @@
   </div>
 
   {{if .Issue.Description}}
-  <div class="description">
-    <p>{{.Issue.Description | nl}}</p>
+  <div class="description markdown-body">
+    {{.Issue.Description | markdown}}
   </div>
   {{end}}
 
@@ -155,7 +155,7 @@
         <strong>{{.Author}}</strong>
         <time>{{.CreatedAt.Format "2006-01-02 15:04"}}</time>
       </div>
-      <div class="comment-body">{{.Body | nl}}</div>
+      <div class="comment-body markdown-body">{{.Body | markdown}}</div>
     </div>
     {{end}}
   </section>

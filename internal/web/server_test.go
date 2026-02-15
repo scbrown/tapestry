@@ -43,6 +43,28 @@ func TestStatusBadge(t *testing.T) {
 	}
 }
 
+func TestRenderMarkdown(t *testing.T) {
+	tests := []struct {
+		name string
+		in   string
+		want string
+	}{
+		{"plain text", "hello world", "<p>hello world</p>\n"},
+		{"bold", "**bold**", "<p><strong>bold</strong></p>\n"},
+		{"escaped newlines", `line1\nline2`, "<p>line1<br>\nline2</p>\n"},
+		{"code block", "```\ncode\n```", "<pre><code>code\n</code></pre>\n"},
+		{"link", "[link](https://example.com)", "<p><a href=\"https://example.com\">link</a></p>\n"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := string(renderMarkdown(tt.in))
+			if got != tt.want {
+				t.Errorf("renderMarkdown(%q) =\n  %q\nwant\n  %q", tt.in, got, tt.want)
+			}
+		})
+	}
+}
+
 func TestTemplatesParse(t *testing.T) {
 	funcMap := template.FuncMap{
 		"priorityLabel": priorityLabel,
@@ -54,6 +76,7 @@ func TestTemplatesParse(t *testing.T) {
 		"fmtDuration":   fmtDuration,
 		"rigName":       func(s string) string { return strings.TrimPrefix(s, "beads_") },
 		"nl":            func(s string) string { return strings.ReplaceAll(s, `\n`, "\n") },
+		"markdown":      renderMarkdown,
 	}
 
 	for _, name := range []string{"monthly.html", "bead.html", "beads.html", "epic.html"} {
