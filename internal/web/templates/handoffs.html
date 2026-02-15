@@ -1,0 +1,57 @@
+{{template "head"}}Handoffs — tapestry{{template "headclose"}}
+
+<div class="handoffs-page">
+  <h1>Handoff Chains <span class="text-dim">({{.TotalChains}} actors)</span></h1>
+
+  {{if .ActorFilter}}
+  <p class="filter-note">Filtered by actor: <strong>{{.ActorFilter}}</strong> <a href="/handoffs">[clear]</a></p>
+  {{end}}
+
+  {{if .Stats}}
+  <div class="stats-table">
+    <table>
+      <thead>
+        <tr>
+          <th>Agent</th>
+          <th>Handoffs</th>
+          <th>Avg Session</th>
+          <th>Last Handoff</th>
+          <th>Last Subject</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{range .Stats}}
+        <tr>
+          <td><a href="/handoffs?actor={{.Actor}}">{{shortActor .Actor}}</a></td>
+          <td>{{.TotalHandoffs}}</td>
+          <td>{{fmtDuration .AvgSessionTime}}</td>
+          <td>{{.LastHandoff.Format "Jan 02 15:04"}}</td>
+          <td class="text-dim">{{if .LastSubject}}{{.LastSubject}}{{else}}-{{end}}</td>
+        </tr>
+        {{end}}
+      </tbody>
+    </table>
+  </div>
+  {{end}}
+
+  {{if .Chains}}
+  {{range .Chains}}
+  <div class="chain-section">
+    <h2><a href="/agent/{{.Actor}}">{{shortActor .Actor}}</a> <span class="text-dim">{{.Actor}}</span></h2>
+    <div class="chain-timeline">
+      {{range .Handoffs}}
+      <div class="chain-event">
+        <time>{{.Timestamp.Format "Jan 02 15:04"}}</time>
+        <span class="chain-duration">{{fmtDuration .SessionDuration}}</span>
+        <span class="chain-subject">{{if .Subject}}{{.Subject}}{{else}}<em class="text-dim">no subject</em>{{end}}</span>
+      </div>
+      {{end}}
+    </div>
+  </div>
+  {{end}}
+  {{else}}
+  <p class="empty">No handoff events found.</p>
+  {{end}}
+</div>
+
+{{template "foot"}}

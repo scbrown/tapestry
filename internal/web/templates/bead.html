@@ -53,6 +53,23 @@
   </section>
   {{end}}
 
+  {{if .Commits}}
+  <section class="commits">
+    <h2>Commits ({{len .Commits}})</h2>
+    <div class="commit-list">
+      {{range .Commits}}
+      <div class="commit-row">
+        <code class="commit-sha">{{.ShortSHA}}</code>
+        <span class="commit-subject">{{.Subject}}</span>
+        <span class="text-dim">{{.Author}}</span>
+        <time class="text-dim">{{.Timestamp.Format "Jan 02 15:04"}}</time>
+        <span class="text-dim">{{.RepoName}}</span>
+      </div>
+      {{end}}
+    </div>
+  </section>
+  {{end}}
+
   {{if .Comments}}
   <section class="comments">
     <h2>Comments ({{len .Comments}})</h2>

@@ -40,12 +40,14 @@ func New(cfg config.Config) (*Server, error) {
 		"payloadString": events.PayloadString,
 		"timeAgo":       timeAgo,
 		"shortActor":    shortActor,
+		"fmtDuration":   fmtDuration,
 	}
 
 	pages := make(map[string]*template.Template)
 	for _, name := range []string{
 		"monthly.html", "bead.html", "beads.html",
 		"epic.html", "epics.html", "agents.html", "agent.html", "events.html",
+		"handoffs.html", "commits.html",
 	} {
 		t, err := template.New(name).Funcs(funcMap).ParseFS(templateFS,
 			"templates/layout.html", "templates/"+name)
@@ -143,6 +145,9 @@ func (s *Server) routes() {
 	s.mux.HandleFunc("GET /agents", s.handleAgents)
 	s.mux.HandleFunc("GET /agent/{name...}", s.handleAgent)
 	s.mux.HandleFunc("GET /events", s.handleEvents)
+	s.mux.HandleFunc("GET /handoffs", s.handleHandoffs)
+	s.mux.HandleFunc("GET /commits", s.handleCommits)
+	s.mux.HandleFunc("GET /digest/{year}/{month}", s.handleDigest)
 }
 
 func (s *Server) render(w http.ResponseWriter, page string, data any) {
@@ -210,4 +215,17 @@ func timeAgo(t time.Time) string {
 func shortActor(name string) string {
 	parts := strings.Split(name, "/")
 	return parts[len(parts)-1]
+}
+
+func fmtDuration(d time.Duration) string {
+	if d == 0 {
+		return "-"
+	}
+	d = d.Round(time.Minute)
+	h := int(d.Hours())
+	m := int(d.Minutes()) % 60
+	if h > 0 {
+		return fmt.Sprintf("%dh %dm", h, m)
+	}
+	return fmt.Sprintf("%dm", m)
 }

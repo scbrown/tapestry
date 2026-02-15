@@ -115,3 +115,100 @@ func PayloadString(e Event, key string) string {
 	}
 	return ""
 }
+
+// HandoffChain represents a sequence of handoff events for a single actor,
+// showing the continuity of work across session boundaries.
+type HandoffChain struct {
+	Actor    string         // e.g., "aegis/crew/goldblum"
+	Handoffs []HandoffEvent // chronological (oldest first)
+}
+
+// HandoffEvent is a single handoff within a chain.
+type HandoffEvent struct {
+	Timestamp time.Time
+	Subject   string // from payload.subject
+	// Duration since previous handoff (zero for first in chain)
+	SessionDuration time.Duration
+}
+
+// BuildHandoffChains groups handoff events by actor and reconstructs
+// the chain of session handoffs. Each chain represents one actor's
+// sequence of context cycles.
+//
+// Events must be sorted (any order); chains are returned sorted by
+// most recent handoff first. Each chain's handoffs are chronological.
+func BuildHandoffChains(allEvents []Event) []HandoffChain {
+	// Group handoff events by actor (chronological order)
+	byActor := make(map[string][]Event)
+	for _, e := range allEvents {
+		if e.Type != "handoff" {
+			continue
+		}
+		byActor[e.Actor] = append(byActor[e.Actor], e)
+	}
+
+	var chains []HandoffChain
+	for actor, evts := range byActor {
+		// Sort chronologically (oldest first)
+		sort.Slice(evts, func(i, j int) bool {
+			return evts[i].Timestamp.Before(evts[j].Timestamp)
+		})
+
+		chain := HandoffChain{Actor: actor}
+		for i, e := range evts {
+			he := HandoffEvent{
+				Timestamp: e.Timestamp,
+				Subject:   PayloadString(e, "subject"),
+			}
+			if i > 0 {
+				he.SessionDuration = e.Timestamp.Sub(evts[i-1].Timestamp)
+			}
+			chain.Handoffs = append(chain.Handoffs, he)
+		}
+		chains = append(chains, chain)
+	}
+
+	// Sort chains by most recent handoff (most active actors first)
+	sort.Slice(chains, func(i, j int) bool {
+		iLast := chains[i].Handoffs[len(chains[i].Handoffs)-1].Timestamp
+		jLast := chains[j].Handoffs[len(chains[j].Handoffs)-1].Timestamp
+		return iLast.After(jLast)
+	})
+
+	return chains
+}
+
+// ChainStats summarizes handoff activity for an actor.
+type ChainStats struct {
+	Actor          string
+	TotalHandoffs  int
+	AvgSessionTime time.Duration
+	LastHandoff    time.Time
+	LastSubject    string
+}
+
+// ChainSummary returns summary statistics for each handoff chain.
+func ChainSummary(chains []HandoffChain) []ChainStats {
+	var stats []ChainStats
+	for _, c := range chains {
+		s := ChainStats{
+			Actor:         c.Actor,
+			TotalHandoffs: len(c.Handoffs),
+			LastHandoff:   c.Handoffs[len(c.Handoffs)-1].Timestamp,
+			LastSubject:   c.Handoffs[len(c.Handoffs)-1].Subject,
+		}
+		var totalDur time.Duration
+		durCount := 0
+		for _, h := range c.Handoffs {
+			if h.SessionDuration > 0 {
+				totalDur += h.SessionDuration
+				durCount++
+			}
+		}
+		if durCount > 0 {
+			s.AvgSessionTime = totalDur / time.Duration(durCount)
+		}
+		stats = append(stats, s)
+	}
+	return stats
+}

@@ -1,0 +1,49 @@
+{{template "head"}}Commits — tapestry{{template "headclose"}}
+
+<div class="commits-page">
+  <h1>Commits <span class="text-dim">({{.TotalCommits}} total, {{.LinkedCount}} linked to beads)</span></h1>
+
+  {{if .RecentLinked}}
+  <section>
+    <h2>Recent Bead-Linked Commits</h2>
+    <div class="commit-list">
+      {{range .RecentLinked}}
+      <div class="commit-row">
+        <code class="commit-sha">{{.ShortSHA}}</code>
+        <span class="commit-subject">
+          {{.Subject}}
+          {{range .BeadIDs}}<a href="/bead/{{.}}" class="bead-link">{{.}}</a>{{end}}
+        </span>
+        <span class="text-dim">{{.Author}}</span>
+        <time class="text-dim">{{.Timestamp.Format "Jan 02 15:04"}}</time>
+        <span class="text-dim">{{.RepoName}}</span>
+      </div>
+      {{end}}
+    </div>
+  </section>
+  {{end}}
+
+  {{if .Commits}}
+  <section>
+    <h2>All Recent Commits</h2>
+    <div class="commit-list">
+      {{range .Commits}}
+      <div class="commit-row">
+        <code class="commit-sha">{{.ShortSHA}}</code>
+        <span class="commit-subject">
+          {{.Subject}}
+          {{range .BeadIDs}}<a href="/bead/{{.}}" class="bead-link">{{.}}</a>{{end}}
+        </span>
+        <span class="text-dim">{{.Author}}</span>
+        <time class="text-dim">{{.Timestamp.Format "Jan 02 15:04"}}</time>
+        <span class="text-dim">{{.RepoName}}</span>
+      </div>
+      {{end}}
+    </div>
+  </section>
+  {{else}}
+  <p class="empty">No commits found. Configure workspace paths in config.toml.</p>
+  {{end}}
+</div>
+
+{{template "foot"}}
