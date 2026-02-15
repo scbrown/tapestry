@@ -41,6 +41,7 @@ func New(cfg config.Config) (*Server, error) {
 		"timeAgo":       timeAgo,
 		"shortActor":    shortActor,
 		"fmtDuration":   fmtDuration,
+		"nl":            func(s string) string { return strings.ReplaceAll(s, `\n`, "\n") },
 	}
 
 	pages := make(map[string]*template.Template)

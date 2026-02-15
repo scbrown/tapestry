@@ -13,7 +13,7 @@
   </div>
 
   {{if .Issue.Description}}
-  <div class="description"><p>{{.Issue.Description}}</p></div>
+  <div class="description"><p>{{.Issue.Description | nl}}</p></div>
   {{end}}
 
   <div class="bead-info">
@@ -62,7 +62,7 @@
     {{range .Comments}}
     <div class="comment">
       <div class="comment-meta"><strong>{{.Author}}</strong> <time>{{.CreatedAt.Format "2006-01-02 15:04"}}</time></div>
-      <div class="comment-body">{{.Body}}</div>
+      <div class="comment-body">{{.Body | nl}}</div>
     </div>
     {{end}}
   </section>

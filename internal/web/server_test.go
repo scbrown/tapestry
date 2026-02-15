@@ -47,9 +47,15 @@ func TestTemplatesParse(t *testing.T) {
 	funcMap := template.FuncMap{
 		"priorityLabel": priorityLabel,
 		"statusBadge":   statusBadge,
+		"progressPct":   progressPct,
+		"payloadString": func(s string) string { return s },
+		"timeAgo":       timeAgo,
+		"shortActor":    shortActor,
+		"fmtDuration":   fmtDuration,
+		"nl":            func(s string) string { return strings.ReplaceAll(s, `\n`, "\n") },
 	}
 
-	for _, name := range []string{"monthly.html", "bead.html", "beads.html"} {
+	for _, name := range []string{"monthly.html", "bead.html", "beads.html", "epic.html"} {
 		_, err := template.New(name).Funcs(funcMap).ParseFS(templateFS,
 			"templates/layout.html", "templates/"+name)
 		if err != nil {
