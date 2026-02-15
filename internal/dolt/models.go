@@ -12,14 +12,13 @@ type Issue struct {
 	Type        string
 	Owner       string
 	Assignee    string
-	Labels      string
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
 }
 
 // Comment represents an issue comment row.
 type Comment struct {
-	ID        string
+	ID        int64
 	IssueID   string
 	Author    string
 	Body      string

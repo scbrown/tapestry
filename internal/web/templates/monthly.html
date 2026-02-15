@@ -1,0 +1,65 @@
+{{template "head"}}{{.MonthName}} {{.Year}} — tapestry{{template "headclose"}}
+
+<div class="monthly">
+  <div class="month-nav">
+    <a href="/month/{{.PrevYear}}/{{printf "%02d" .PrevMonth}}">&larr; prev</a>
+    <h1>{{.MonthName}} {{.Year}}</h1>
+    {{if .HasNext}}<a href="/month/{{.NextYear}}/{{printf "%02d" .NextMonth}}">next &rarr;</a>{{end}}
+  </div>
+
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-value">{{.TotalStats.Closed}}</div>
+      <div class="stat-label">Closed</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">{{.TotalStats.Open}}</div>
+      <div class="stat-label">Open</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">{{.TotalStats.InFlight}}</div>
+      <div class="stat-label">In Flight</div>
+    </div>
+  </div>
+
+  {{range .Rigs}}
+  <section class="rig-section">
+    <h2>{{.Name}}</h2>
+    <div class="rig-stats">
+      <span>{{.Stats.Closed}} closed</span>
+      <span>{{.Stats.Open}} open</span>
+      <span>{{.Stats.InFlight}} in-flight</span>
+    </div>
+
+    {{if .Top}}
+    <h3>Recent Completions</h3>
+    <table class="bead-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Title</th>
+          <th>Priority</th>
+          <th>Type</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{range .Top}}
+        <tr>
+          <td><a href="/bead/{{.ID}}">{{.ID}}</a></td>
+          <td>{{.Title}}</td>
+          <td>{{priorityLabel .Priority}}</td>
+          <td>{{.Type}}</td>
+          <td>{{statusBadge .Status}}</td>
+        </tr>
+        {{end}}
+      </tbody>
+    </table>
+    {{else}}
+    <p class="empty">No completions this month.</p>
+    {{end}}
+  </section>
+  {{end}}
+</div>
+
+{{template "foot"}}

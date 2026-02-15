@@ -1,45 +1,22 @@
 package cli
 
 import (
-	"bytes"
-	"strings"
 	"testing"
 )
 
-func TestServeCmd_Defaults(t *testing.T) {
-	root := newRootCmd("test")
-	root.AddCommand(newServeCmd())
-
-	buf := new(bytes.Buffer)
-	root.SetOut(buf)
-	root.SetErr(buf)
-	root.SetArgs([]string{"serve"})
-
-	if err := root.Execute(); err != nil {
-		t.Fatalf("serve command failed: %v", err)
+func TestServeCmd_Flags(t *testing.T) {
+	cmd := newServeCmd()
+	if cmd.Use != "serve" {
+		t.Errorf("Use = %q, want serve", cmd.Use)
 	}
 
-	got := buf.String()
-	if !strings.Contains(got, "localhost:8070") {
-		t.Errorf("serve output = %q, want to contain default address", got)
-	}
-}
-
-func TestServeCmd_CustomHostPort(t *testing.T) {
-	root := newRootCmd("test")
-	root.AddCommand(newServeCmd())
-
-	buf := new(bytes.Buffer)
-	root.SetOut(buf)
-	root.SetErr(buf)
-	root.SetArgs([]string{"serve", "--host", "0.0.0.0", "--port", "9090"})
-
-	if err := root.Execute(); err != nil {
-		t.Fatalf("serve command failed: %v", err)
+	hostFlag := cmd.Flags().Lookup("host")
+	if hostFlag == nil {
+		t.Fatal("missing --host flag")
 	}
 
-	got := buf.String()
-	if !strings.Contains(got, "0.0.0.0:9090") {
-		t.Errorf("serve output = %q, want to contain custom address", got)
+	portFlag := cmd.Flags().Lookup("port")
+	if portFlag == nil {
+		t.Fatal("missing --port flag")
 	}
 }

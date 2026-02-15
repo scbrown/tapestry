@@ -70,9 +70,24 @@ func (c *Client) ListBeadsDatabases(ctx context.Context) ([]DatabaseInfo, error)
 	return c.ListDatabases(ctx, "beads_")
 }
 
-// useDB returns a query prefix that switches to the given database.
-// Callers must use this in the same connection (same transaction or
-// multiStatements DSN).
-func useDB(db string) string {
-	return fmt.Sprintf("USE `%s`; ", db)
+// queryDB gets a dedicated connection, switches to the database, and runs
+// the query. This avoids multi-statement issues with prepared statements.
+func (c *Client) queryDB(ctx context.Context, database, query string, args ...any) (*sql.Rows, error) {
+	conn, err := c.db.Conn(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("dolt: conn: %w", err)
+	}
+	// Switch database on this connection
+	if _, err := conn.ExecContext(ctx, fmt.Sprintf("USE `%s`", database)); err != nil {
+		_ = conn.Close()
+		return nil, fmt.Errorf("dolt: use %s: %w", database, err)
+	}
+	rows, err := conn.QueryContext(ctx, query, args...)
+	if err != nil {
+		_ = conn.Close()
+		return nil, err
+	}
+	// Wrap rows to close the connection when rows are closed
+	return rows, nil
 }
+

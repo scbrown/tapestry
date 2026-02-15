@@ -1,0 +1,28 @@
+{{define "head"}}<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{end}}
+
+{{define "headclose"}}</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+</head>
+<body>
+  <nav class="topnav">
+    <a href="/" class="logo">tapestry</a>
+    <a href="/beads">beads</a>
+    <a href="/beads?status=open">open</a>
+    <a href="/beads?status=closed">closed</a>
+  </nav>
+  <main>
+{{end}}
+
+{{define "foot"}}
+  </main>
+  <footer>
+    <p>tapestry — the archivist for your agent fleet</p>
+  </footer>
+</body>
+</html>{{end}}

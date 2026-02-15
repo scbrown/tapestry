@@ -9,25 +9,35 @@ import (
 
 // Issues queries issues from the specified database with optional filters.
 func (c *Client) Issues(ctx context.Context, database string, f IssueFilter) ([]Issue, error) {
-	query, args := buildIssueQuery(database, f, "")
-	return c.queryIssues(ctx, query, args)
+	query, args := buildIssueQuery(f, "")
+	rows, err := c.queryDB(ctx, database, query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("dolt: query issues: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+	return scanIssues(rows)
 }
 
 // IssuesAsOf queries issues at a specific point in time using Dolt's
 // AS OF clause.
 func (c *Client) IssuesAsOf(ctx context.Context, database string, ts time.Time, f IssueFilter) ([]Issue, error) {
 	asOf := ts.UTC().Format("2006-01-02T15:04:05")
-	query, args := buildIssueQuery(database, f, asOf)
-	return c.queryIssues(ctx, query, args)
+	query, args := buildIssueQuery(f, asOf)
+	rows, err := c.queryDB(ctx, database, query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("dolt: query issues as of: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+	return scanIssues(rows)
 }
 
 // IssueByID returns a single issue by ID from the specified database.
 // Returns nil, nil if the issue is not found.
 func (c *Client) IssueByID(ctx context.Context, database, id string) (*Issue, error) {
-	query := useDB(database) +
-		"SELECT id, title, description, status, priority, type, owner, assignee, labels, created_at, updated_at " +
-		"FROM issues WHERE id = ?"
-	rows, err := c.db.QueryContext(ctx, query, id)
+	query := "SELECT id, title, description, status, priority, issue_type, " +
+		"COALESCE(owner,''), COALESCE(assignee,''), created_at, updated_at " +
+		"FROM issues WHERE id = ? AND deleted_at IS NULL"
+	rows, err := c.queryDB(ctx, database, query, id)
 	if err != nil {
 		return nil, fmt.Errorf("dolt: issue by id: %w", err)
 	}
@@ -49,10 +59,9 @@ func (c *Client) IssueByID(ctx context.Context, database, id string) (*Issue, er
 
 // Comments returns comments for the given issue.
 func (c *Client) Comments(ctx context.Context, database, issueID string) ([]Comment, error) {
-	query := useDB(database) +
-		"SELECT id, issue_id, author, body, created_at " +
+	query := "SELECT id, issue_id, author, text, created_at " +
 		"FROM comments WHERE issue_id = ? ORDER BY created_at"
-	rows, err := c.db.QueryContext(ctx, query, issueID)
+	rows, err := c.queryDB(ctx, database, query, issueID)
 	if err != nil {
 		return nil, fmt.Errorf("dolt: comments: %w", err)
 	}
@@ -71,9 +80,8 @@ func (c *Client) Comments(ctx context.Context, database, issueID string) ([]Comm
 
 // Dependencies returns dependency edges for the given issue.
 func (c *Client) Dependencies(ctx context.Context, database, issueID string) ([]Dependency, error) {
-	query := useDB(database) +
-		"SELECT from_id, to_id, type FROM deps WHERE from_id = ? OR to_id = ?"
-	rows, err := c.db.QueryContext(ctx, query, issueID, issueID)
+	query := "SELECT issue_id, depends_on, dep_type FROM dependencies WHERE issue_id = ? OR depends_on = ?"
+	rows, err := c.queryDB(ctx, database, query, issueID, issueID)
 	if err != nil {
 		return nil, fmt.Errorf("dolt: dependencies: %w", err)
 	}
@@ -93,10 +101,9 @@ func (c *Client) Dependencies(ctx context.Context, database, issueID string) ([]
 // Diff returns changes between two revisions for a table.
 // The from and to parameters can be commit hashes, branch names, or timestamps.
 func (c *Client) Diff(ctx context.Context, database, table, from, to string) ([]DiffRow, error) {
-	query := useDB(database) +
-		"SELECT diff_type, from_id, to_id, from_status, to_status, from_commit, to_commit " +
+	query := "SELECT diff_type, from_id, to_id, from_status, to_status, from_commit, to_commit " +
 		"FROM dolt_diff(?, ?, ?)"
-	rows, err := c.db.QueryContext(ctx, query, table, from, to)
+	rows, err := c.queryDB(ctx, database, query, table, from, to)
 	if err != nil {
 		return nil, fmt.Errorf("dolt: diff: %w", err)
 	}
@@ -113,11 +120,11 @@ func (c *Client) Diff(ctx context.Context, database, table, from, to string) ([]
 	return diffs, rows.Err()
 }
 
-// CountByStatus returns a map of status → count for issues in the database.
+// CountByStatus returns a map of status -> count for issues in the database.
 func (c *Client) CountByStatus(ctx context.Context, database string) (map[string]int, error) {
-	query := useDB(database) +
-		"SELECT status, COUNT(*) FROM issues GROUP BY status"
-	rows, err := c.db.QueryContext(ctx, query)
+	query := "SELECT status, COUNT(*) FROM issues WHERE deleted_at IS NULL " +
+		"AND issue_type IN ('task','bug','epic') GROUP BY status"
+	rows, err := c.queryDB(ctx, database, query)
 	if err != nil {
 		return nil, fmt.Errorf("dolt: count by status: %w", err)
 	}
@@ -136,13 +143,13 @@ func (c *Client) CountByStatus(ctx context.Context, database string) (map[string
 }
 
 // buildIssueQuery constructs a SELECT for issues with optional filters
-// and optional AS OF clause.
-func buildIssueQuery(database string, f IssueFilter, asOf string) (string, []any) {
+// and optional AS OF clause. Does NOT include USE prefix.
+func buildIssueQuery(f IssueFilter, asOf string) (string, []any) {
 	var b strings.Builder
 	var args []any
 
-	b.WriteString(useDB(database))
-	b.WriteString("SELECT id, title, description, status, priority, type, owner, assignee, labels, created_at, updated_at FROM ")
+	b.WriteString("SELECT id, title, description, status, priority, issue_type, " +
+		"COALESCE(owner,''), COALESCE(assignee,''), created_at, updated_at FROM ")
 
 	if asOf != "" {
 		b.WriteString(fmt.Sprintf("issues AS OF '%s'", asOf))
@@ -150,7 +157,7 @@ func buildIssueQuery(database string, f IssueFilter, asOf string) (string, []any
 		b.WriteString("issues")
 	}
 
-	var conditions []string
+	conditions := []string{"deleted_at IS NULL", "issue_type IN ('task','bug','epic')"}
 	if f.Status != "" {
 		conditions = append(conditions, "status = ?")
 		args = append(args, f.Status)
@@ -160,7 +167,7 @@ func buildIssueQuery(database string, f IssueFilter, asOf string) (string, []any
 		args = append(args, f.Priority)
 	}
 	if f.Type != "" {
-		conditions = append(conditions, "type = ?")
+		conditions = append(conditions, "issue_type = ?")
 		args = append(args, f.Type)
 	}
 	if f.Assignee != "" {
@@ -168,11 +175,8 @@ func buildIssueQuery(database string, f IssueFilter, asOf string) (string, []any
 		args = append(args, f.Assignee)
 	}
 
-	if len(conditions) > 0 {
-		b.WriteString(" WHERE ")
-		b.WriteString(strings.Join(conditions, " AND "))
-	}
-
+	b.WriteString(" WHERE ")
+	b.WriteString(strings.Join(conditions, " AND "))
 	b.WriteString(" ORDER BY updated_at DESC")
 
 	if f.Limit > 0 {
@@ -187,18 +191,17 @@ func scanIssue(s interface{ Scan(...any) error }, iss *Issue) error {
 	return s.Scan(
 		&iss.ID, &iss.Title, &iss.Description, &iss.Status,
 		&iss.Priority, &iss.Type, &iss.Owner, &iss.Assignee,
-		&iss.Labels, &iss.CreatedAt, &iss.UpdatedAt,
+		&iss.CreatedAt, &iss.UpdatedAt,
 	)
 }
 
-// queryIssues executes a query and returns scanned issues.
-func (c *Client) queryIssues(ctx context.Context, query string, args []any) ([]Issue, error) {
-	rows, err := c.db.QueryContext(ctx, query, args...)
-	if err != nil {
-		return nil, fmt.Errorf("dolt: query issues: %w", err)
-	}
-	defer func() { _ = rows.Close() }()
-
+// scanIssues scans all rows into issues.
+func scanIssues(rows interface {
+	Next() bool
+	Err() error
+	Scan(...any) error
+},
+) ([]Issue, error) {
 	var issues []Issue
 	for rows.Next() {
 		var iss Issue

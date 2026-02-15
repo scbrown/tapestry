@@ -1,0 +1,222 @@
+:root {
+  --bg: #0d1117;
+  --surface: #161b22;
+  --border: #30363d;
+  --text: #e6edf3;
+  --text-dim: #8b949e;
+  --accent: #58a6ff;
+  --green: #3fb950;
+  --amber: #d29922;
+  --red: #f85149;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.5;
+}
+
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+.topnav {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 0.75rem 2rem;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+.topnav .logo {
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: var(--text);
+  margin-right: 1rem;
+}
+
+main {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+.stat-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1.5rem;
+  text-align: center;
+}
+.stat-value {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--accent);
+}
+.stat-label {
+  color: var(--text-dim);
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.month-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 2rem;
+}
+.month-nav h1 { font-size: 1.5rem; }
+
+.rig-section {
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.rig-section h2 { font-size: 1.1rem; margin-bottom: 0.5rem; }
+.rig-section h3 {
+  font-size: 0.95rem;
+  color: var(--text-dim);
+  margin: 1rem 0 0.5rem;
+}
+.rig-stats {
+  display: flex;
+  gap: 1.5rem;
+  color: var(--text-dim);
+  font-size: 0.9rem;
+  margin-bottom: 0.5rem;
+}
+
+.bead-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+.bead-table th {
+  text-align: left;
+  padding: 0.5rem;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-dim);
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.bead-table td {
+  padding: 0.5rem;
+  border-bottom: 1px solid var(--border);
+}
+.bead-table tr:hover { background: rgba(88, 166, 255, 0.04); }
+
+.badge {
+  display: inline-block;
+  padding: 0.15em 0.5em;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  color: #fff;
+  font-weight: 500;
+}
+
+.bead-detail { max-width: 900px; }
+.bead-header { margin-bottom: 1.5rem; }
+.bead-header h1 { font-size: 1.4rem; margin-bottom: 0.5rem; }
+.bead-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+.bead-id {
+  font-family: monospace;
+  font-size: 0.9rem;
+  color: var(--text-dim);
+}
+.rig-label {
+  font-size: 0.85rem;
+  color: var(--text-dim);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 0.1em 0.5em;
+  border-radius: 4px;
+}
+
+.description {
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  white-space: pre-wrap;
+}
+
+.bead-info dl {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.3rem 1rem;
+  margin-bottom: 1.5rem;
+}
+.bead-info dt { color: var(--text-dim); font-size: 0.85rem; }
+.bead-info dd { font-size: 0.9rem; }
+
+.comments { margin-top: 2rem; }
+.comments h2 { margin-bottom: 1rem; font-size: 1.1rem; }
+.comment {
+  padding: 1rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  margin-bottom: 0.75rem;
+}
+.comment-meta {
+  font-size: 0.85rem;
+  color: var(--text-dim);
+  margin-bottom: 0.5rem;
+}
+.comment-meta strong { color: var(--text); }
+.comment-meta time { margin-left: 0.75rem; }
+.comment-body {
+  font-size: 0.9rem;
+  white-space: pre-wrap;
+  line-height: 1.6;
+}
+
+.children { margin-top: 1.5rem; }
+.children h2 { margin-bottom: 0.75rem; font-size: 1.1rem; }
+
+.filters {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+.filters a {
+  padding: 0.4em 0.8em;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 0.85rem;
+  color: var(--text-dim);
+}
+.filters a:hover, .filters a.active {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+  text-decoration: none;
+}
+
+.bead-list h1 { font-size: 1.3rem; margin-bottom: 1rem; }
+.empty { color: var(--text-dim); font-style: italic; }
+
+footer {
+  text-align: center;
+  padding: 2rem;
+  color: var(--text-dim);
+  font-size: 0.8rem;
+}

@@ -1,0 +1,45 @@
+{{template "head"}}Beads{{if .Status}} ({{.Status}}){{end}} — tapestry{{template "headclose"}}
+
+<div class="bead-list">
+  <h1>Beads{{if .Status}} — {{.Status}}{{end}}</h1>
+
+  <div class="filters">
+    <a href="/beads" {{if eq .Status ""}}class="active"{{end}}>All</a>
+    <a href="/beads?status=open" {{if eq .Status "open"}}class="active"{{end}}>Open</a>
+    <a href="/beads?status=in_progress" {{if eq .Status "in_progress"}}class="active"{{end}}>In Progress</a>
+    <a href="/beads?status=closed" {{if eq .Status "closed"}}class="active"{{end}}>Closed</a>
+  </div>
+
+  {{if .Issues}}
+  <table class="bead-table">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Title</th>
+        <th>Priority</th>
+        <th>Type</th>
+        <th>Status</th>
+        <th>Assignee</th>
+        <th>Updated</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{range .Issues}}
+      <tr>
+        <td><a href="/bead/{{.ID}}">{{.ID}}</a></td>
+        <td>{{.Title}}</td>
+        <td>{{priorityLabel .Priority}}</td>
+        <td>{{.Type}}</td>
+        <td>{{statusBadge .Status}}</td>
+        <td>{{.Assignee}}</td>
+        <td>{{.UpdatedAt.Format "Jan 02"}}</td>
+      </tr>
+      {{end}}
+    </tbody>
+  </table>
+  {{else}}
+  <p class="empty">No beads found.</p>
+  {{end}}
+</div>
+
+{{template "foot"}}
