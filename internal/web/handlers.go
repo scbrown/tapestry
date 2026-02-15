@@ -117,11 +117,14 @@ func (s *Server) handleMonthly(w http.ResponseWriter, r *http.Request) {
 }
 
 type beadData struct {
-	Issue    *dolt.Issue
-	Comments []dolt.Comment
-	Children []dolt.Issue
-	Commits  []gitpkg.Commit
-	RigName  string
+	Issue         *dolt.Issue
+	Comments      []dolt.Comment
+	Children      []dolt.Issue
+	Blocks        []dolt.Issue // issues this bead blocks
+	BlockedBy     []dolt.Issue // issues that block this bead
+	StatusHistory []dolt.StatusTransition
+	Commits       []gitpkg.Commit
+	RigName       string
 }
 
 func (s *Server) handleBead(w http.ResponseWriter, r *http.Request) {
@@ -146,23 +149,41 @@ func (s *Server) handleBead(w http.ResponseWriter, r *http.Request) {
 		comments, _ := s.client.Comments(ctx, dbName, id)
 		deps, _ := s.client.Dependencies(ctx, dbName, id)
 		var children []dolt.Issue
+		var blocks []dolt.Issue
+		var blockedBy []dolt.Issue
 		for _, d := range deps {
 			if d.Type == "child_of" && d.ToID == id {
 				child, err := s.client.IssueByID(ctx, dbName, d.FromID)
 				if err == nil && child != nil {
 					children = append(children, *child)
 				}
+			} else if d.ToID == id {
+				// something depends on this issue → this issue blocks it
+				blocked, err := s.client.IssueByID(ctx, dbName, d.FromID)
+				if err == nil && blocked != nil {
+					blocks = append(blocks, *blocked)
+				}
+			} else if d.FromID == id {
+				// this issue depends on something → blocked by it
+				blocker, err := s.client.IssueByID(ctx, dbName, d.ToID)
+				if err == nil && blocker != nil {
+					blockedBy = append(blockedBy, *blocker)
+				}
 			}
 		}
 
+		statusHistory, _ := s.client.StatusHistory(ctx, dbName, id)
 		commits := s.commitsForBead(id)
 
 		data := beadData{
-			Issue:    issue,
-			Comments: comments,
-			Children: children,
-			Commits:  commits,
-			RigName:  dbName,
+			Issue:         issue,
+			Comments:      comments,
+			Children:      children,
+			Blocks:        blocks,
+			BlockedBy:     blockedBy,
+			StatusHistory: statusHistory,
+			Commits:       commits,
+			RigName:       dbName,
 		}
 
 		s.render(w, "bead.html", data)

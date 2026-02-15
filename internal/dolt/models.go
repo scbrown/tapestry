@@ -93,6 +93,13 @@ type AgentStats struct {
 	InProgress int
 }
 
+// StatusTransition represents a status change for an issue over time.
+type StatusTransition struct {
+	FromStatus string
+	ToStatus   string
+	CommitDate time.Time
+}
+
 // EpicProgress tracks completion of an epic and its children.
 type EpicProgress struct {
 	Total  int

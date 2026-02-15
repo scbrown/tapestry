@@ -210,6 +210,46 @@ func (c *Client) SearchIssues(ctx context.Context, database, q string, limit int
 	return scanIssues(rows)
 }
 
+// StatusHistory returns the status transitions for an issue by walking
+// dolt_history_issues and detecting changes between consecutive commits.
+func (c *Client) StatusHistory(ctx context.Context, database, issueID string) ([]StatusTransition, error) {
+	query := "SELECT status, commit_date FROM dolt_history_issues WHERE id = ? ORDER BY commit_date"
+	rows, err := c.queryDB(ctx, database, query, issueID)
+	if err != nil {
+		return nil, fmt.Errorf("dolt: status history: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+
+	var transitions []StatusTransition
+	var prevStatus string
+	first := true
+	for rows.Next() {
+		var status string
+		var commitDate time.Time
+		if err := rows.Scan(&status, &commitDate); err != nil {
+			return nil, fmt.Errorf("dolt: scan status history: %w", err)
+		}
+		if first {
+			transitions = append(transitions, StatusTransition{
+				ToStatus:   status,
+				CommitDate: commitDate,
+			})
+			prevStatus = status
+			first = false
+			continue
+		}
+		if status != prevStatus {
+			transitions = append(transitions, StatusTransition{
+				FromStatus: prevStatus,
+				ToStatus:   status,
+				CommitDate: commitDate,
+			})
+			prevStatus = status
+		}
+	}
+	return transitions, rows.Err()
+}
+
 // buildIssueQuery constructs a SELECT for issues with optional filters
 // and optional AS OF clause. Does NOT include USE prefix.
 func buildIssueQuery(f IssueFilter, asOf string) (string, []any) {
