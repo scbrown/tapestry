@@ -10,7 +10,9 @@ jobs:
     container: golang:1.24-bookworm
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        run: |
+          git clone --depth 1 http://git.lan:3000/stiwi/tapestry.git .
+          git fetch --tags --depth 1 2>/dev/null || true
 
       - name: Build
         run: |
