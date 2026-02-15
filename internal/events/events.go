@@ -37,7 +37,7 @@ func ReadFile(path string) ([]Event, error) {
 	if err != nil {
 		return nil, fmt.Errorf("events: open: %w", err)
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	var events []Event
 	scanner := bufio.NewScanner(f)

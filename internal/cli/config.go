@@ -3,6 +3,7 @@ package cli
 import (
 	"fmt"
 	"os"
+	"strconv"
 
 	"github.com/spf13/cobra"
 
@@ -18,6 +19,8 @@ func newConfigCmd() *cobra.Command {
 
 	cmd.AddCommand(
 		newConfigShowCmd(),
+		newConfigGetCmd(),
+		newConfigSetCmd(),
 		newConfigPathCmd(),
 		newConfigInitCmd(),
 	)
@@ -68,6 +71,100 @@ func newConfigPathCmd() *cobra.Command {
 			return err
 		},
 	}
+}
+
+func newConfigGetCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:   "get <key>",
+		Short: "Get a configuration value",
+		Long:  "Get a specific configuration value by dotted key.\nSupported keys: server.host, server.port, dolt.host, dolt.port, dolt.user, dolt.password.",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cfg, err := config.Load()
+			if err != nil {
+				return err
+			}
+
+			val, err := configGet(cfg, args[0])
+			if err != nil {
+				return err
+			}
+			_, err = fmt.Fprintln(cmd.OutOrStdout(), val)
+			return err
+		},
+	}
+}
+
+func newConfigSetCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:   "set <key> <value>",
+		Short: "Set a configuration value",
+		Long:  "Set a specific configuration value by dotted key.\nSupported keys: server.host, server.port, dolt.host, dolt.port, dolt.user, dolt.password.",
+		Args:  cobra.ExactArgs(2),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cfg, err := config.Load()
+			if err != nil {
+				return err
+			}
+
+			if err := configSet(&cfg, args[0], args[1]); err != nil {
+				return err
+			}
+
+			if err := config.Save(cfg); err != nil {
+				return err
+			}
+			_, err = fmt.Fprintf(cmd.OutOrStdout(), "Set %s = %s\n", args[0], args[1])
+			return err
+		},
+	}
+}
+
+func configGet(cfg config.Config, key string) (string, error) {
+	switch key {
+	case "server.host":
+		return cfg.Server.Host, nil
+	case "server.port":
+		return fmt.Sprintf("%d", cfg.Server.Port), nil
+	case "dolt.host":
+		return cfg.Dolt.Host, nil
+	case "dolt.port":
+		return fmt.Sprintf("%d", cfg.Dolt.Port), nil
+	case "dolt.user":
+		return cfg.Dolt.User, nil
+	case "dolt.password":
+		return cfg.Dolt.Password, nil
+	default:
+		return "", fmt.Errorf("unknown config key: %s", key)
+	}
+}
+
+func configSet(cfg *config.Config, key, value string) error {
+	switch key {
+	case "server.host":
+		cfg.Server.Host = value
+	case "server.port":
+		port, err := strconv.Atoi(value)
+		if err != nil {
+			return fmt.Errorf("invalid port: %w", err)
+		}
+		cfg.Server.Port = port
+	case "dolt.host":
+		cfg.Dolt.Host = value
+	case "dolt.port":
+		port, err := strconv.Atoi(value)
+		if err != nil {
+			return fmt.Errorf("invalid port: %w", err)
+		}
+		cfg.Dolt.Port = port
+	case "dolt.user":
+		cfg.Dolt.User = value
+	case "dolt.password":
+		cfg.Dolt.Password = value
+	default:
+		return fmt.Errorf("unknown config key: %s", key)
+	}
+	return nil
 }
 
 func newConfigInitCmd() *cobra.Command {
