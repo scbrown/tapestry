@@ -1,0 +1,24 @@
+[book]
+title = "tapestry Documentation"
+authors = ["Steve"]
+description = "Documentation for tapestry"
+src = "src"
+language = "en"
+
+[build]
+build-dir = "book"
+
+[output.html]
+default-theme = "coal"
+preferred-dark-theme = "coal"
+git-repository-url = "https://github.com/scbrown/tapestry"
+edit-url-template = "https://github.com/scbrown/tapestry/edit/main/docs/book/{path}"
+additional-css = ["custom/css/custom.css"]
+site-url = "/tapestry/"
+
+[output.html.search]
+enable = true
+
+[output.linkcheck]
+warning-policy = "warn"
+optional = true
