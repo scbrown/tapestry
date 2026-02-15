@@ -26,3 +26,6 @@ docs/book/book/
 .claude/
 .logs/
 mail/
+
+# Gas Town (added by gt)
+.runtime/
