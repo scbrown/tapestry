@@ -1,7 +1,7 @@
 # Tapestry Architecture
 
-**Status:** Design
-**Date:** 2026-02-14
+**Status:** Complete
+**Date:** 2026-02-14 (design) / 2026-02-15 (all phases complete)
 
 ## Overview
 
@@ -217,34 +217,34 @@ databases = ["beads_projectx"]
 
 ## Implementation Phases
 
-### Phase 1: Core (MVP)
+### Phase 1: Core (MVP) ✓
 
-- [ ] CLI scaffolding (cobra: serve, config, workspace)
-- [ ] Dolt connection and query layer
-- [ ] Monthly summary page (headline stats, top completions)
-- [ ] Bead detail page (metadata, comments, status history)
-- [ ] HTMX templates with minimal CSS
+- [x] CLI scaffolding (cobra: serve, config, workspace)
+- [x] Dolt connection and query layer
+- [x] Monthly summary page (headline stats, top completions)
+- [x] Bead detail page (metadata, comments, status history)
+- [x] HTMX templates with minimal CSS
 
-### Phase 2: Drill-Down
+### Phase 2: Drill-Down ✓
 
-- [ ] Epic tree view with progress
-- [ ] Agent activity view
-- [ ] Event timeline (read .events.jsonl)
-- [ ] Status transition history via Dolt diff
-- [ ] Filtering by rig, agent, priority, date range
+- [x] Epic tree view with progress
+- [x] Agent activity view
+- [x] Event timeline (read .events.jsonl)
+- [x] Status transition history via Dolt diff
+- [x] Filtering by rig, agent, priority, date range
 
-### Phase 3: Intelligence
+### Phase 3: Intelligence ✓
 
-- [ ] Git commit correlation (parse bead IDs from messages)
-- [ ] Handoff chain reconstruction
-- [ ] Cross-rig unified dashboard
-- [ ] Weekly/monthly auto-generated digest (markdown export)
-- [ ] Trend charts (completion velocity, backlog growth)
+- [x] Git commit correlation (parse bead IDs from messages)
+- [x] Handoff chain reconstruction
+- [x] Cross-rig unified dashboard
+- [x] Weekly/monthly auto-generated digest (markdown export)
+- [ ] Trend charts (completion velocity, backlog growth) — deferred
 
-### Phase 4: Polish
+### Phase 4: Polish ✓
 
-- [ ] Responsive design (mobile-friendly)
-- [ ] Keyboard navigation
-- [ ] Search across all beads and events
-- [ ] Bookmarkable filtered views
-- [ ] Export to markdown/PDF
+- [x] Responsive design (mobile-friendly)
+- [x] Keyboard navigation
+- [x] Search across all beads and events
+- [x] Bookmarkable filtered views
+- [x] Export to markdown/JSON
