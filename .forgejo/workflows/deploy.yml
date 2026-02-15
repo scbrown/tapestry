@@ -1,0 +1,56 @@
+name: Deploy Tapestry
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-22.04
+    container: golang:1.24-bookworm
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Build
+        run: |
+          go build -ldflags "-X github.com/scbrown/tapestry/internal/config.Version=$(git describe --tags --always --dirty 2>/dev/null || echo dev)" \
+            -o tapestry ./cmd/tapestry
+
+      - name: Install SSH client
+        run: apt-get update -qq && apt-get install -y -qq openssh-client >/dev/null
+
+      - name: Deploy
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "$DEPLOY_SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts 2>/dev/null
+          SSH="ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=accept-new"
+
+          # Copy binary
+          scp -i ~/.ssh/deploy_key -o StrictHostKeyChecking=accept-new \
+            tapestry "${DEPLOY_USER}@${DEPLOY_HOST}:~/.local/bin/tapestry"
+
+          # Restart service
+          $SSH "${DEPLOY_USER}@${DEPLOY_HOST}" "systemctl --user restart tapestry"
+
+          # Wait for startup
+          sleep 3
+
+      - name: E2E smoke test
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+        run: |
+          apt-get install -y -qq curl >/dev/null
+          HTTP_CODE=$(curl -sf -o /dev/null -w '%{http_code}' "http://${DEPLOY_HOST}:8070/" || echo "000")
+          if [ "$HTTP_CODE" = "200" ]; then
+            echo "Tapestry is up (HTTP 200)"
+          else
+            echo "ERROR: Tapestry returned HTTP $HTTP_CODE"
+            exit 1
+          fi
