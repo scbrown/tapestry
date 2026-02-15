@@ -3,6 +3,7 @@
 <div class="bead-list">
   <h1>Epics</h1>
   {{if .Epics}}
+  <div class="table-wrap">
   <table class="bead-table">
     <thead><tr><th>ID</th><th>Title</th><th>Priority</th><th>Status</th><th>Progress</th><th>Rig</th></tr></thead>
     <tbody>
@@ -23,6 +24,7 @@
       {{end}}
     </tbody>
   </table>
+  </div>
   {{else}}
   <p class="empty">No epics found.</p>
   {{end}}

@@ -10,7 +10,8 @@
   <script src="https://unpkg.com/htmx.org@2.0.4"></script>
 </head>
 <body>
-  <nav class="topnav">
+  <a href="#main" class="skip-link">Skip to content</a>
+  <nav class="topnav" role="navigation" aria-label="Main">
     <a href="/" class="logo">tapestry</a>
     <a href="/beads">beads</a>
     <a href="/epics">epics</a>
@@ -18,8 +19,14 @@
     <a href="/events">events</a>
     <a href="/handoffs">handoffs</a>
     <a href="/commits">commits</a>
+    <div class="nav-search">
+      <form action="/search" method="get">
+        <input type="search" name="q" id="search-input" placeholder="Search beads..." aria-label="Search beads">
+        <span class="search-hint">/</span>
+      </form>
+    </div>
   </nav>
-  <main>
+  <main id="main">
 {{end}}
 
 {{define "foot"}}
@@ -27,5 +34,18 @@
   <footer>
     <p>tapestry — the archivist for your agent fleet</p>
   </footer>
+  <script>
+    document.addEventListener('keydown', function(e) {
+      if (e.key === '/' && !e.ctrlKey && !e.metaKey) {
+        var el = document.activeElement;
+        if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA')) return;
+        e.preventDefault();
+        document.getElementById('search-input').focus();
+      }
+      if (e.key === 'Escape') {
+        document.activeElement.blur();
+      }
+    });
+  </script>
 </body>
 </html>{{end}}

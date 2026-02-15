@@ -188,6 +188,28 @@ func (c *Client) AgentActivity(ctx context.Context, database string) ([]AgentSta
 	return agents, rows.Err()
 }
 
+// SearchIssues returns issues where the title or description matches the query string.
+func (c *Client) SearchIssues(ctx context.Context, database, q string, limit int) ([]Issue, error) {
+	if q == "" {
+		return nil, nil
+	}
+	pattern := "%" + q + "%"
+	query := "SELECT id, title, description, status, priority, issue_type, " +
+		"COALESCE(owner,''), COALESCE(assignee,''), created_at, updated_at " +
+		"FROM issues WHERE deleted_at IS NULL AND issue_type IN ('task','bug','epic') " +
+		"AND (title LIKE ? OR description LIKE ?) " +
+		"ORDER BY updated_at DESC"
+	if limit > 0 {
+		query += fmt.Sprintf(" LIMIT %d", limit)
+	}
+	rows, err := c.queryDB(ctx, database, query, pattern, pattern)
+	if err != nil {
+		return nil, fmt.Errorf("dolt: search issues: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+	return scanIssues(rows)
+}
+
 // buildIssueQuery constructs a SELECT for issues with optional filters
 // and optional AS OF clause. Does NOT include USE prefix.
 func buildIssueQuery(f IssueFilter, asOf string) (string, []any) {

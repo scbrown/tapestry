@@ -463,6 +463,43 @@ func (s *Server) handleEvents(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// ── Search ──────────────────────────────────────────────────────
+
+type searchData struct {
+	Query   string
+	Results []dolt.Issue
+	Total   int
+}
+
+func (s *Server) handleSearch(w http.ResponseWriter, r *http.Request) {
+	q := r.URL.Query().Get("q")
+
+	var allResults []dolt.Issue
+	if q != "" {
+		ctx := r.Context()
+		for _, dbName := range s.databases() {
+			issues, err := s.client.SearchIssues(ctx, dbName, q, 50)
+			if err != nil {
+				log.Printf("search %s: %v", dbName, err)
+				continue
+			}
+			allResults = append(allResults, issues...)
+		}
+		sort.Slice(allResults, func(i, j int) bool {
+			return allResults[i].UpdatedAt.After(allResults[j].UpdatedAt)
+		})
+		if len(allResults) > 100 {
+			allResults = allResults[:100]
+		}
+	}
+
+	s.render(w, "search.html", searchData{
+		Query:   q,
+		Results: allResults,
+		Total:   len(allResults),
+	})
+}
+
 // ── Handoff Chains ──────────────────────────────────────────────
 
 type handoffsData struct {

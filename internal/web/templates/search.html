@@ -1,16 +1,16 @@
-{{template "head"}}Beads{{if .Status}} ({{.Status}}){{end}} — tapestry{{template "headclose"}}
+{{template "head"}}Search{{if .Query}} — {{.Query}}{{end}} — tapestry{{template "headclose"}}
 
 <div class="bead-list">
-  <h1>Beads{{if .Status}} — {{.Status}}{{end}}</h1>
+  <h1>Search{{if .Query}} — "{{.Query}}"{{end}}</h1>
 
-  <div class="filters">
-    <a href="/beads" {{if eq .Status ""}}class="active"{{end}}>All</a>
-    <a href="/beads?status=open" {{if eq .Status "open"}}class="active"{{end}}>Open</a>
-    <a href="/beads?status=in_progress" {{if eq .Status "in_progress"}}class="active"{{end}}>In Progress</a>
-    <a href="/beads?status=closed" {{if eq .Status "closed"}}class="active"{{end}}>Closed</a>
-  </div>
+  <form action="/search" method="get" class="search-form">
+    <input type="search" name="q" value="{{.Query}}" placeholder="Search by title or description..." autofocus>
+  </form>
 
-  {{if .Issues}}
+  {{if .Query}}
+  <p class="filter-note">{{.Total}} result{{if ne .Total 1}}s{{end}} found</p>
+
+  {{if .Results}}
   <div class="table-wrap">
   <table class="bead-table">
     <thead>
@@ -25,7 +25,7 @@
       </tr>
     </thead>
     <tbody>
-      {{range .Issues}}
+      {{range .Results}}
       <tr>
         <td><a href="/bead/{{.ID}}">{{.ID}}</a></td>
         <td>{{.Title}}</td>
@@ -40,7 +40,8 @@
   </table>
   </div>
   {{else}}
-  <p class="empty">No beads found.</p>
+  <p class="empty">No beads match "{{.Query}}".</p>
+  {{end}}
   {{end}}
 </div>
 

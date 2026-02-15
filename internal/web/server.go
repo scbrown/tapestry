@@ -47,7 +47,7 @@ func New(cfg config.Config) (*Server, error) {
 	for _, name := range []string{
 		"monthly.html", "bead.html", "beads.html",
 		"epic.html", "epics.html", "agents.html", "agent.html", "events.html",
-		"handoffs.html", "commits.html",
+		"handoffs.html", "commits.html", "search.html",
 	} {
 		t, err := template.New(name).Funcs(funcMap).ParseFS(templateFS,
 			"templates/layout.html", "templates/"+name)
@@ -147,6 +147,7 @@ func (s *Server) routes() {
 	s.mux.HandleFunc("GET /events", s.handleEvents)
 	s.mux.HandleFunc("GET /handoffs", s.handleHandoffs)
 	s.mux.HandleFunc("GET /commits", s.handleCommits)
+	s.mux.HandleFunc("GET /search", s.handleSearch)
 	s.mux.HandleFunc("GET /digest/{year}/{month}", s.handleDigest)
 }
 

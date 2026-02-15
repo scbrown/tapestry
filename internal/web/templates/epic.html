@@ -34,6 +34,7 @@
 
   <section class="children">
     <h2>Children ({{len .Children}})</h2>
+    <div class="table-wrap">
     <table class="bead-table">
       <thead><tr><th>ID</th><th>Title</th><th>Priority</th><th>Type</th><th>Status</th><th>Assignee</th></tr></thead>
       <tbody>
@@ -49,6 +50,7 @@
         {{end}}
       </tbody>
     </table>
+    </div>
   </section>
   {{else}}
   <p class="empty">No children linked to this epic.</p>

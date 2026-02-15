@@ -13,6 +13,7 @@
   {{if .Issues}}
   <section>
     <h2>Issues ({{len .Issues}})</h2>
+    <div class="table-wrap">
     <table class="bead-table">
       <thead><tr><th>ID</th><th>Title</th><th>Priority</th><th>Type</th><th>Status</th><th>Updated</th></tr></thead>
       <tbody>
@@ -28,6 +29,7 @@
         {{end}}
       </tbody>
     </table>
+    </div>
   </section>
   {{else}}
   <p class="empty">No issues found for this agent.</p>
