@@ -142,56 +142,50 @@ func (c *Client) CountByStatus(ctx context.Context, database string) (map[string
 	return counts, rows.Err()
 }
 
-// IssueDiffs returns issue-level changes between two revisions, including
-// status, owner, and assignee fields needed for event extraction.
-func (c *Client) IssueDiffs(ctx context.Context, database, from, to string) ([]IssueDiffRow, error) {
-	query := useDB(database) +
-		"SELECT diff_type, to_id, to_title, to_status, to_owner, to_assignee, " +
-		"from_status, from_owner, from_assignee, to_commit_date " +
-		"FROM dolt_diff(?, ?, ?) ORDER BY to_commit_date"
-	rows, err := c.db.QueryContext(ctx, query, "issues", from, to)
-	if err != nil {
-		return nil, fmt.Errorf("dolt: issue diffs: %w", err)
-	}
-	defer func() { _ = rows.Close() }()
-
-	var diffs []IssueDiffRow
-	for rows.Next() {
-		var d IssueDiffRow
-		if err := rows.Scan(
-			&d.DiffType, &d.ToID, &d.ToTitle, &d.ToStatus, &d.ToOwner, &d.ToAssignee,
-			&d.FromStatus, &d.FromOwner, &d.FromAssignee, &d.ToCommitDate,
-		); err != nil {
-			return nil, fmt.Errorf("dolt: scan issue diff: %w", err)
-		}
-		diffs = append(diffs, d)
-	}
-	return diffs, rows.Err()
+// Epics returns all issues of type "epic" from the database.
+func (c *Client) Epics(ctx context.Context, database string) ([]Issue, error) {
+	return c.Issues(ctx, database, IssueFilter{Type: "epic"})
 }
 
-// CommentDiffs returns comment-level changes between two revisions, including
-// author and body fields needed for comment timeline extraction.
-func (c *Client) CommentDiffs(ctx context.Context, database, from, to string) ([]CommentDiffRow, error) {
-	query := useDB(database) +
-		"SELECT diff_type, to_id, to_issue_id, to_author, to_body, to_commit_date " +
-		"FROM dolt_diff(?, ?, ?) ORDER BY to_commit_date"
-	rows, err := c.db.QueryContext(ctx, query, "comments", from, to)
+// EpicChildIDs returns the IDs of all direct children of the given epic.
+func (c *Client) EpicChildIDs(ctx context.Context, database, epicID string) ([]string, error) {
+	deps, err := c.Dependencies(ctx, database, epicID)
 	if err != nil {
-		return nil, fmt.Errorf("dolt: comment diffs: %w", err)
+		return nil, err
+	}
+	var ids []string
+	for _, d := range deps {
+		if d.Type == "child_of" && d.ToID == epicID {
+			ids = append(ids, d.FromID)
+		}
+	}
+	return ids, nil
+}
+
+// AgentActivity returns aggregated stats per agent (by owner field).
+func (c *Client) AgentActivity(ctx context.Context, database string) ([]AgentStats, error) {
+	query := `SELECT COALESCE(owner,'(unowned)') AS agent,
+		COUNT(*) AS total,
+		SUM(CASE WHEN status = 'closed' THEN 1 ELSE 0 END) AS closed,
+		SUM(CASE WHEN status = 'open' THEN 1 ELSE 0 END) AS open_count,
+		SUM(CASE WHEN status IN ('in_progress','hooked') THEN 1 ELSE 0 END) AS in_progress
+		FROM issues WHERE deleted_at IS NULL AND issue_type IN ('task','bug','epic')
+		GROUP BY owner ORDER BY total DESC`
+	rows, err := c.queryDB(ctx, database, query)
+	if err != nil {
+		return nil, fmt.Errorf("dolt: agent activity: %w", err)
 	}
 	defer func() { _ = rows.Close() }()
 
-	var diffs []CommentDiffRow
+	var agents []AgentStats
 	for rows.Next() {
-		var d CommentDiffRow
-		if err := rows.Scan(
-			&d.DiffType, &d.ToID, &d.ToIssueID, &d.ToAuthor, &d.ToBody, &d.ToCommitDate,
-		); err != nil {
-			return nil, fmt.Errorf("dolt: scan comment diff: %w", err)
+		var a AgentStats
+		if err := rows.Scan(&a.Name, &a.Owned, &a.Closed, &a.Open, &a.InProgress); err != nil {
+			return nil, fmt.Errorf("dolt: scan agent: %w", err)
 		}
-		diffs = append(diffs, d)
+		agents = append(agents, a)
 	}
-	return diffs, rows.Err()
+	return agents, rows.Err()
 }
 
 // buildIssueQuery constructs a SELECT for issues with optional filters
@@ -225,6 +219,10 @@ func buildIssueQuery(f IssueFilter, asOf string) (string, []any) {
 	if f.Assignee != "" {
 		conditions = append(conditions, "assignee = ?")
 		args = append(args, f.Assignee)
+	}
+	if f.Owner != "" {
+		conditions = append(conditions, "owner = ?")
+		args = append(args, f.Owner)
 	}
 
 	b.WriteString(" WHERE ")

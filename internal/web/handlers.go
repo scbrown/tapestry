@@ -3,10 +3,12 @@ package web
 import (
 	"log"
 	"net/http"
+	"sort"
 	"strconv"
 	"time"
 
 	"github.com/scbrown/tapestry/internal/dolt"
+	"github.com/scbrown/tapestry/internal/events"
 )
 
 type monthlyData struct {
@@ -62,12 +64,10 @@ func (s *Server) handleMonthly(w http.ResponseWriter, r *http.Request) {
 		MonthName: time.Month(month).String(),
 	}
 
-	// Previous month
 	prev := time.Date(year, time.Month(month)-1, 1, 0, 0, 0, 0, time.UTC)
 	data.PrevYear = prev.Year()
 	data.PrevMonth = int(prev.Month())
 
-	// Next month (only if not in the future)
 	next := time.Date(year, time.Month(month)+1, 1, 0, 0, 0, 0, time.UTC)
 	data.NextYear = next.Year()
 	data.NextMonth = int(next.Month())
@@ -89,7 +89,6 @@ func (s *Server) handleMonthly(w http.ResponseWriter, r *http.Request) {
 			Closed:   counts["closed"],
 		}
 
-		// Get top recently-updated closed issues
 		top, err := s.client.Issues(ctx, dbName, dolt.IssueFilter{
 			Status: "closed",
 			Limit:  10,
@@ -129,7 +128,6 @@ func (s *Server) handleBead(w http.ResponseWriter, r *http.Request) {
 
 	ctx := r.Context()
 
-	// Search all configured databases
 	for _, dbName := range s.databases() {
 		issue, err := s.client.IssueByID(ctx, dbName, id)
 		if err != nil {
@@ -141,7 +139,6 @@ func (s *Server) handleBead(w http.ResponseWriter, r *http.Request) {
 		}
 
 		comments, _ := s.client.Comments(ctx, dbName, id)
-		// Get children via dependencies
 		deps, _ := s.client.Dependencies(ctx, dbName, id)
 		var children []dolt.Issue
 		for _, d := range deps {
@@ -168,20 +165,33 @@ func (s *Server) handleBead(w http.ResponseWriter, r *http.Request) {
 }
 
 type beadListData struct {
-	Status string
-	Issues []dolt.Issue
+	Status   string
+	Type     string
+	Assignee string
+	Rig      string
+	Rigs     []string
+	Issues   []dolt.Issue
 }
 
 func (s *Server) handleBeadList(w http.ResponseWriter, r *http.Request) {
-	status := r.URL.Query().Get("status")
+	q := r.URL.Query()
+	status := q.Get("status")
+	typeFilter := q.Get("type")
+	assignee := q.Get("assignee")
+	rig := q.Get("rig")
 
 	ctx := r.Context()
 	var allIssues []dolt.Issue
 
 	for _, dbName := range s.databases() {
+		if rig != "" && dbName != rig {
+			continue
+		}
 		issues, err := s.client.Issues(ctx, dbName, dolt.IssueFilter{
-			Status: status,
-			Limit:  100,
+			Status:   status,
+			Type:     typeFilter,
+			Assignee: assignee,
+			Limit:    200,
 		})
 		if err != nil {
 			log.Printf("list %s: %v", dbName, err)
@@ -191,9 +201,256 @@ func (s *Server) handleBeadList(w http.ResponseWriter, r *http.Request) {
 	}
 
 	data := beadListData{
-		Status: status,
-		Issues: allIssues,
+		Status:   status,
+		Type:     typeFilter,
+		Assignee: assignee,
+		Rig:      rig,
+		Rigs:     s.databases(),
+		Issues:   allIssues,
 	}
 
 	s.render(w, "beads.html", data)
+}
+
+type epicData struct {
+	Issue    *dolt.Issue
+	Children []dolt.Issue
+	Progress dolt.EpicProgress
+	RigName  string
+	Comments []dolt.Comment
+}
+
+func (s *Server) handleEpic(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	if id == "" {
+		http.Error(w, "missing epic id", http.StatusBadRequest)
+		return
+	}
+
+	ctx := r.Context()
+
+	for _, dbName := range s.databases() {
+		issue, err := s.client.IssueByID(ctx, dbName, id)
+		if err != nil {
+			log.Printf("epic %s from %s: %v", id, dbName, err)
+			continue
+		}
+		if issue == nil {
+			continue
+		}
+
+		childIDs, _ := s.client.EpicChildIDs(ctx, dbName, id)
+		var children []dolt.Issue
+		var progress dolt.EpicProgress
+		for _, cid := range childIDs {
+			child, err := s.client.IssueByID(ctx, dbName, cid)
+			if err == nil && child != nil {
+				children = append(children, *child)
+				progress.Total++
+				if child.Status == "closed" {
+					progress.Closed++
+				}
+			}
+		}
+
+		comments, _ := s.client.Comments(ctx, dbName, id)
+
+		s.render(w, "epic.html", epicData{
+			Issue:    issue,
+			Children: children,
+			Progress: progress,
+			RigName:  dbName,
+			Comments: comments,
+		})
+		return
+	}
+
+	http.NotFound(w, r)
+}
+
+type epicsListData struct {
+	Epics []epicSummary
+}
+
+type epicSummary struct {
+	Issue    dolt.Issue
+	RigName  string
+	Progress dolt.EpicProgress
+}
+
+func (s *Server) handleEpicsList(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	var allEpics []epicSummary
+
+	for _, dbName := range s.databases() {
+		issues, err := s.client.Epics(ctx, dbName)
+		if err != nil {
+			log.Printf("epics %s: %v", dbName, err)
+			continue
+		}
+		for _, iss := range issues {
+			childIDs, _ := s.client.EpicChildIDs(ctx, dbName, iss.ID)
+			var prog dolt.EpicProgress
+			for _, cid := range childIDs {
+				child, err := s.client.IssueByID(ctx, dbName, cid)
+				if err == nil && child != nil {
+					prog.Total++
+					if child.Status == "closed" {
+						prog.Closed++
+					}
+				}
+			}
+			allEpics = append(allEpics, epicSummary{
+				Issue:    iss,
+				RigName:  dbName,
+				Progress: prog,
+			})
+		}
+	}
+
+	s.render(w, "epics.html", epicsListData{Epics: allEpics})
+}
+
+type agentsData struct {
+	Agents []agentRow
+}
+
+type agentRow struct {
+	Name       string
+	Owned      int
+	Closed     int
+	Open       int
+	InProgress int
+}
+
+func (s *Server) handleAgents(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	merged := make(map[string]*agentRow)
+
+	for _, dbName := range s.databases() {
+		stats, err := s.client.AgentActivity(ctx, dbName)
+		if err != nil {
+			log.Printf("agents %s: %v", dbName, err)
+			continue
+		}
+		for _, a := range stats {
+			if a.Name == "(unowned)" {
+				continue
+			}
+			row, ok := merged[a.Name]
+			if !ok {
+				row = &agentRow{Name: a.Name}
+				merged[a.Name] = row
+			}
+			row.Owned += a.Owned
+			row.Closed += a.Closed
+			row.Open += a.Open
+			row.InProgress += a.InProgress
+		}
+	}
+
+	var agents []agentRow
+	for _, row := range merged {
+		agents = append(agents, *row)
+	}
+	sort.Slice(agents, func(i, j int) bool {
+		return agents[i].Owned > agents[j].Owned
+	})
+
+	s.render(w, "agents.html", agentsData{Agents: agents})
+}
+
+type agentDetailData struct {
+	Name   string
+	Stats  agentRow
+	Issues []dolt.Issue
+}
+
+func (s *Server) handleAgent(w http.ResponseWriter, r *http.Request) {
+	name := r.PathValue("name")
+	if name == "" {
+		http.Error(w, "missing agent name", http.StatusBadRequest)
+		return
+	}
+
+	ctx := r.Context()
+	var stats agentRow
+	stats.Name = name
+	var allIssues []dolt.Issue
+
+	for _, dbName := range s.databases() {
+		issues, err := s.client.Issues(ctx, dbName, dolt.IssueFilter{
+			Owner: name,
+			Limit: 100,
+		})
+		if err != nil {
+			log.Printf("agent %s %s: %v", name, dbName, err)
+			continue
+		}
+		for _, iss := range issues {
+			stats.Owned++
+			switch iss.Status {
+			case "closed":
+				stats.Closed++
+			case "open":
+				stats.Open++
+			case "in_progress", "hooked":
+				stats.InProgress++
+			}
+		}
+		allIssues = append(allIssues, issues...)
+	}
+
+	s.render(w, "agent.html", agentDetailData{
+		Name:   name,
+		Stats:  stats,
+		Issues: allIssues,
+	})
+}
+
+type eventsData struct {
+	Events      []events.Event
+	Types       []string
+	TypeFilter  string
+	ActorFilter string
+	Total       int
+}
+
+func (s *Server) handleEvents(w http.ResponseWriter, r *http.Request) {
+	q := r.URL.Query()
+	typeFilter := q.Get("type")
+	actorFilter := q.Get("actor")
+
+	var allEvents []events.Event
+	for _, ws := range s.cfg.Workspace {
+		if ws.Path == "" {
+			continue
+		}
+		evts, err := events.ReadWorkspace(ws.Path)
+		if err != nil {
+			log.Printf("events %s: %v", ws.Path, err)
+			continue
+		}
+		allEvents = append(allEvents, evts...)
+	}
+
+	sort.Slice(allEvents, func(i, j int) bool {
+		return allEvents[i].Timestamp.After(allEvents[j].Timestamp)
+	})
+
+	types := events.Types(allEvents)
+
+	filtered := events.Apply(allEvents, events.Filter{
+		Type:  typeFilter,
+		Actor: actorFilter,
+		Limit: 200,
+	})
+
+	s.render(w, "events.html", eventsData{
+		Events:      filtered,
+		Types:       types,
+		TypeFilter:  typeFilter,
+		ActorFilter: actorFilter,
+		Total:       len(allEvents),
+	})
 }

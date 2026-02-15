@@ -80,5 +80,21 @@ type IssueFilter struct {
 	Priority int    // filter by priority (0 = all)
 	Type     string // filter by type (empty = all)
 	Assignee string // filter by assignee (empty = all)
+	Owner    string // filter by owner (empty = all)
 	Limit    int    // max rows (0 = no limit)
+}
+
+// AgentStats holds per-agent issue statistics from a database.
+type AgentStats struct {
+	Name       string
+	Owned      int
+	Closed     int
+	Open       int
+	InProgress int
+}
+
+// EpicProgress tracks completion of an epic and its children.
+type EpicProgress struct {
+	Total  int
+	Closed int
 }

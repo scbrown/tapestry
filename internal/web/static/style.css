@@ -213,6 +213,87 @@ main {
 
 .bead-list h1 { font-size: 1.3rem; margin-bottom: 1rem; }
 .empty { color: var(--text-dim); font-style: italic; }
+.text-dim { color: var(--text-dim); }
+
+/* Progress bars */
+.epic-progress { margin-bottom: 1.5rem; }
+.epic-progress h2 { margin-bottom: 0.5rem; font-size: 1.1rem; }
+.progress-bar {
+  background: var(--border);
+  border-radius: 4px;
+  height: 8px;
+  overflow: hidden;
+  margin-bottom: 0.3rem;
+}
+.progress-bar-sm { display: inline-block; width: 80px; height: 6px; vertical-align: middle; }
+.progress-fill {
+  background: var(--green);
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.3s;
+}
+.progress-label { font-size: 0.85rem; color: var(--text-dim); }
+.progress-label-sm { font-size: 0.8rem; color: var(--text-dim); margin-left: 0.5rem; }
+
+/* Agent grid */
+.agents-page h1 { font-size: 1.3rem; margin-bottom: 1.5rem; }
+.agent-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1rem;
+}
+.agent-card {
+  display: block;
+  padding: 1.2rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+}
+.agent-card:hover { border-color: var(--accent); text-decoration: none; }
+.agent-name { font-size: 1.1rem; font-weight: 600; }
+.agent-full-name { font-size: 0.8rem; color: var(--text-dim); margin-bottom: 0.75rem; font-family: monospace; }
+.agent-stats-row { display: flex; gap: 1rem; font-size: 0.85rem; color: var(--text-dim); }
+.agent-stats-row strong { color: var(--accent); }
+
+/* Agent detail */
+.agent-detail h1 { font-size: 1.4rem; margin-bottom: 0.25rem; }
+.agent-full-path { font-family: monospace; font-size: 0.85rem; color: var(--text-dim); margin-bottom: 1.5rem; }
+
+/* Event timeline */
+.events-page h1 { font-size: 1.3rem; margin-bottom: 1rem; }
+.filter-note { font-size: 0.85rem; color: var(--text-dim); margin-bottom: 1rem; }
+.event-list { display: flex; flex-direction: column; gap: 0.25rem; }
+.event-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.4rem 0.75rem;
+  border-radius: 4px;
+  font-size: 0.85rem;
+}
+.event-row:hover { background: var(--surface); }
+.event-time { color: var(--text-dim); min-width: 7rem; font-family: monospace; font-size: 0.8rem; }
+.event-type {
+  display: inline-block;
+  padding: 0.1em 0.5em;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  min-width: 5rem;
+  text-align: center;
+  background: var(--border);
+  color: var(--text);
+}
+.badge-sling { background: #8b5cf6; color: #fff; }
+.badge-done { background: var(--green); color: #fff; }
+.badge-session_start { background: var(--accent); color: #fff; }
+.badge-nudge { background: var(--amber); color: #000; }
+.badge-hook { background: #ec4899; color: #fff; }
+.badge-spawn { background: #06b6d4; color: #fff; }
+.badge-kill { background: var(--red); color: #fff; }
+.event-actor { min-width: 6rem; }
+.event-detail { color: var(--text-dim); }
 
 footer {
   text-align: center;

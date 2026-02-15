@@ -9,9 +9,12 @@ import (
 	"io/fs"
 	"log"
 	"net/http"
+	"strings"
+	"time"
 
 	"github.com/scbrown/tapestry/internal/config"
 	"github.com/scbrown/tapestry/internal/dolt"
+	"github.com/scbrown/tapestry/internal/events"
 )
 
 //go:embed templates/*.html
@@ -33,10 +36,17 @@ func New(cfg config.Config) (*Server, error) {
 	funcMap := template.FuncMap{
 		"priorityLabel": priorityLabel,
 		"statusBadge":   statusBadge,
+		"progressPct":   progressPct,
+		"payloadString": events.PayloadString,
+		"timeAgo":       timeAgo,
+		"shortActor":    shortActor,
 	}
 
 	pages := make(map[string]*template.Template)
-	for _, name := range []string{"monthly.html", "bead.html", "beads.html"} {
+	for _, name := range []string{
+		"monthly.html", "bead.html", "beads.html",
+		"epic.html", "epics.html", "agents.html", "agent.html", "events.html",
+	} {
 		t, err := template.New(name).Funcs(funcMap).ParseFS(templateFS,
 			"templates/layout.html", "templates/"+name)
 		if err != nil {
@@ -128,6 +138,11 @@ func (s *Server) routes() {
 	s.mux.HandleFunc("GET /month/{year}/{month}", s.handleMonthly)
 	s.mux.HandleFunc("GET /bead/{id}", s.handleBead)
 	s.mux.HandleFunc("GET /beads", s.handleBeadList)
+	s.mux.HandleFunc("GET /epic/{id}", s.handleEpic)
+	s.mux.HandleFunc("GET /epics", s.handleEpicsList)
+	s.mux.HandleFunc("GET /agents", s.handleAgents)
+	s.mux.HandleFunc("GET /agent/{name...}", s.handleAgent)
+	s.mux.HandleFunc("GET /events", s.handleEvents)
 }
 
 func (s *Server) render(w http.ResponseWriter, page string, data any) {
@@ -169,4 +184,30 @@ func statusBadge(s string) template.HTML {
 	}
 	return template.HTML(fmt.Sprintf(
 		`<span class="badge" style="background:%s">%s</span>`, color, s))
+}
+
+func progressPct(p dolt.EpicProgress) int {
+	if p.Total == 0 {
+		return 0
+	}
+	return p.Closed * 100 / p.Total
+}
+
+func timeAgo(t time.Time) string {
+	d := time.Since(t)
+	switch {
+	case d < time.Minute:
+		return "just now"
+	case d < time.Hour:
+		return fmt.Sprintf("%dm ago", int(d.Minutes()))
+	case d < 24*time.Hour:
+		return fmt.Sprintf("%dh ago", int(d.Hours()))
+	default:
+		return fmt.Sprintf("%dd ago", int(d.Hours()/24))
+	}
+}
+
+func shortActor(name string) string {
+	parts := strings.Split(name, "/")
+	return parts[len(parts)-1]
 }

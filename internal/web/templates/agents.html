@@ -1,0 +1,25 @@
+{{template "head"}}Agents — tapestry{{template "headclose"}}
+
+<div class="agents-page">
+  <h1>Agents</h1>
+  {{if .Agents}}
+  <div class="agent-grid">
+    {{range .Agents}}
+    <a href="/agent/{{.Name}}" class="agent-card">
+      <div class="agent-name">{{shortActor .Name}}</div>
+      <div class="agent-full-name">{{.Name}}</div>
+      <div class="agent-stats-row">
+        <span class="agent-stat"><strong>{{.Owned}}</strong> owned</span>
+        <span class="agent-stat"><strong>{{.Closed}}</strong> closed</span>
+        <span class="agent-stat"><strong>{{.Open}}</strong> open</span>
+        <span class="agent-stat"><strong>{{.InProgress}}</strong> active</span>
+      </div>
+    </a>
+    {{end}}
+  </div>
+  {{else}}
+  <p class="empty">No agents found.</p>
+  {{end}}
+</div>
+
+{{template "foot"}}

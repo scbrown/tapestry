@@ -1,0 +1,37 @@
+{{template "head"}}{{.Name}} — tapestry{{template "headclose"}}
+
+<div class="agent-detail">
+  <h1>{{shortActor .Name}}</h1>
+  <p class="agent-full-path">{{.Name}}</p>
+
+  <div class="stats-grid">
+    <div class="stat-card"><div class="stat-value">{{.Stats.Owned}}</div><div class="stat-label">Owned</div></div>
+    <div class="stat-card"><div class="stat-value">{{.Stats.Closed}}</div><div class="stat-label">Closed</div></div>
+    <div class="stat-card"><div class="stat-value">{{.Stats.InProgress}}</div><div class="stat-label">Active</div></div>
+  </div>
+
+  {{if .Issues}}
+  <section>
+    <h2>Issues ({{len .Issues}})</h2>
+    <table class="bead-table">
+      <thead><tr><th>ID</th><th>Title</th><th>Priority</th><th>Type</th><th>Status</th><th>Updated</th></tr></thead>
+      <tbody>
+        {{range .Issues}}
+        <tr>
+          <td><a href="/bead/{{.ID}}">{{.ID}}</a></td>
+          <td>{{.Title}}</td>
+          <td>{{priorityLabel .Priority}}</td>
+          <td>{{.Type}}</td>
+          <td>{{statusBadge .Status}}</td>
+          <td>{{.UpdatedAt.Format "Jan 02"}}</td>
+        </tr>
+        {{end}}
+      </tbody>
+    </table>
+  </section>
+  {{else}}
+  <p class="empty">No issues found for this agent.</p>
+  {{end}}
+</div>
+
+{{template "foot"}}

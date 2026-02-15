@@ -1,0 +1,37 @@
+{{template "head"}}Events — tapestry{{template "headclose"}}
+
+<div class="events-page">
+  <h1>Events <span class="text-dim">({{.Total}} total)</span></h1>
+
+  <div class="filters">
+    <a href="/events" {{if and (eq .TypeFilter "") (eq .ActorFilter "")}}class="active"{{end}}>All</a>
+    {{range .Types}}
+    <a href="/events?type={{.}}" {{if eq . $.TypeFilter}}class="active"{{end}}>{{.}}</a>
+    {{end}}
+  </div>
+
+  {{if .ActorFilter}}
+  <p class="filter-note">Filtered by actor: <strong>{{.ActorFilter}}</strong> <a href="/events{{if .TypeFilter}}?type={{.TypeFilter}}{{end}}">[clear]</a></p>
+  {{end}}
+
+  {{if .Events}}
+  <div class="event-list">
+    {{range .Events}}
+    <div class="event-row">
+      <time class="event-time">{{.Timestamp.Format "Jan 02 15:04"}}</time>
+      <span class="event-type badge-{{.Type}}">{{.Type}}</span>
+      <a href="/events?actor={{.Actor}}" class="event-actor">{{shortActor .Actor}}</a>
+      <span class="event-detail">
+        {{if payloadString . "bead"}}<a href="/bead/{{payloadString . "bead"}}">{{payloadString . "bead"}}</a>{{end}}
+        {{if payloadString . "target"}}&#8594; {{payloadString . "target"}}{{end}}
+        {{if payloadString . "reason"}}{{payloadString . "reason"}}{{end}}
+      </span>
+    </div>
+    {{end}}
+  </div>
+  {{else}}
+  <p class="empty">No events found.</p>
+  {{end}}
+</div>
+
+{{template "foot"}}
