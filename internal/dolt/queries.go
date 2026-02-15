@@ -142,6 +142,58 @@ func (c *Client) CountByStatus(ctx context.Context, database string) (map[string
 	return counts, rows.Err()
 }
 
+// IssueDiffs returns issue-level changes between two revisions, including
+// status, owner, and assignee fields needed for event extraction.
+func (c *Client) IssueDiffs(ctx context.Context, database, from, to string) ([]IssueDiffRow, error) {
+	query := useDB(database) +
+		"SELECT diff_type, to_id, to_title, to_status, to_owner, to_assignee, " +
+		"from_status, from_owner, from_assignee, to_commit_date " +
+		"FROM dolt_diff(?, ?, ?) ORDER BY to_commit_date"
+	rows, err := c.db.QueryContext(ctx, query, "issues", from, to)
+	if err != nil {
+		return nil, fmt.Errorf("dolt: issue diffs: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+
+	var diffs []IssueDiffRow
+	for rows.Next() {
+		var d IssueDiffRow
+		if err := rows.Scan(
+			&d.DiffType, &d.ToID, &d.ToTitle, &d.ToStatus, &d.ToOwner, &d.ToAssignee,
+			&d.FromStatus, &d.FromOwner, &d.FromAssignee, &d.ToCommitDate,
+		); err != nil {
+			return nil, fmt.Errorf("dolt: scan issue diff: %w", err)
+		}
+		diffs = append(diffs, d)
+	}
+	return diffs, rows.Err()
+}
+
+// CommentDiffs returns comment-level changes between two revisions, including
+// author and body fields needed for comment timeline extraction.
+func (c *Client) CommentDiffs(ctx context.Context, database, from, to string) ([]CommentDiffRow, error) {
+	query := useDB(database) +
+		"SELECT diff_type, to_id, to_issue_id, to_author, to_body, to_commit_date " +
+		"FROM dolt_diff(?, ?, ?) ORDER BY to_commit_date"
+	rows, err := c.db.QueryContext(ctx, query, "comments", from, to)
+	if err != nil {
+		return nil, fmt.Errorf("dolt: comment diffs: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+
+	var diffs []CommentDiffRow
+	for rows.Next() {
+		var d CommentDiffRow
+		if err := rows.Scan(
+			&d.DiffType, &d.ToID, &d.ToIssueID, &d.ToAuthor, &d.ToBody, &d.ToCommitDate,
+		); err != nil {
+			return nil, fmt.Errorf("dolt: scan comment diff: %w", err)
+		}
+		diffs = append(diffs, d)
+	}
+	return diffs, rows.Err()
+}
+
 // buildIssueQuery constructs a SELECT for issues with optional filters
 // and optional AS OF clause. Does NOT include USE prefix.
 func buildIssueQuery(f IssueFilter, asOf string) (string, []any) {

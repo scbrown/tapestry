@@ -43,6 +43,32 @@ type DiffRow struct {
 	ToCommit   string
 }
 
+// IssueDiffRow represents a row from dolt_diff('issues', ...) with fields
+// needed for bead lifecycle event extraction.
+type IssueDiffRow struct {
+	DiffType     string // "added", "modified", "removed"
+	ToID         string
+	ToTitle      string
+	ToStatus     string
+	ToOwner      string
+	ToAssignee   string
+	FromStatus   string
+	FromOwner    string
+	FromAssignee string
+	ToCommitDate time.Time
+}
+
+// CommentDiffRow represents a row from dolt_diff('comments', ...) with fields
+// needed for comment timeline event extraction.
+type CommentDiffRow struct {
+	DiffType     string // "added", "modified", "removed"
+	ToID         string
+	ToIssueID    string
+	ToAuthor     string
+	ToBody       string
+	ToCommitDate time.Time
+}
+
 // DatabaseInfo describes a beads database on the Dolt server.
 type DatabaseInfo struct {
 	Name string
