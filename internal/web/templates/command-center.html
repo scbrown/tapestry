@@ -1,0 +1,146 @@
+{{template "head"}}Command Center — tapestry{{template "headclose"}}
+
+<div class="cc">
+  {{/* ── Fleet Status Bar ── */}}
+  <div class="cc-header">
+    <div class="cc-title">
+      <h1>Command Center</h1>
+      <time class="cc-time">{{.GeneratedAt.Format "Jan 02, 15:04"}}</time>
+    </div>
+    <div class="cc-fleet-stats">
+      <div class="fleet-stat">
+        <span class="fleet-num pulse">{{.InProgressCount}}</span>
+        <span class="fleet-label">active</span>
+      </div>
+      <div class="fleet-stat">
+        <span class="fleet-num">{{.OpenCount}}</span>
+        <span class="fleet-label">open</span>
+      </div>
+      <div class="fleet-stat">
+        <span class="fleet-num accent">{{.ClosedToday}}</span>
+        <span class="fleet-label">closed today</span>
+      </div>
+      <div class="fleet-stat">
+        <span class="fleet-num dim">{{.TotalBeads}}</span>
+        <span class="fleet-label">total</span>
+      </div>
+      {{if gt .PendingDecisions 0}}
+      <a href="/decisions" class="fleet-stat decision-alert">
+        <span class="fleet-num">{{.PendingDecisions}}</span>
+        <span class="fleet-label">decisions</span>
+      </a>
+      {{end}}
+    </div>
+  </div>
+
+  <div class="cc-grid">
+    {{/* ── Critical Work ── */}}
+    <section class="cc-card cc-critical">
+      <h2 class="cc-card-title">Critical Work <span class="cc-count">{{len .CriticalWork}}</span></h2>
+      {{if .CriticalWork}}
+      <div class="cc-work-list">
+        {{range .CriticalWork}}
+        <a href="/bead/{{.ID}}" class="work-item">
+          <span class="work-priority p{{.Priority}}">P{{.Priority}}</span>
+          {{statusBadge .Status}}
+          <span class="work-title">{{.Title}}</span>
+          <span class="work-meta">
+            <span class="work-id">{{.ID}}</span>
+            {{if .Assignee}}<span class="work-agent">{{shortActor .Assignee}}</span>{{end}}
+          </span>
+        </a>
+        {{end}}
+      </div>
+      {{else}}
+      <p class="cc-empty">No critical work in progress.</p>
+      {{end}}
+    </section>
+
+    {{/* ── Active Agents ── */}}
+    <section class="cc-card cc-agents">
+      <h2 class="cc-card-title">Active Agents <span class="cc-count">{{len .AgentWork}}</span></h2>
+      {{if .AgentWork}}
+      <div class="agent-work-list">
+        {{range .AgentWork}}
+        <div class="agent-work-group">
+          <div class="agent-work-name">
+            <span class="agent-indicator pulse"></span>
+            {{shortActor .Agent}}
+            <span class="agent-work-count">{{len .Issues}} tasks</span>
+          </div>
+          {{range .Issues}}
+          <a href="/bead/{{.ID}}" class="agent-work-item">
+            <span class="work-priority p{{.Priority}}">P{{.Priority}}</span>
+            <span class="work-title">{{.Title}}</span>
+            <span class="work-id">{{.ID}}</span>
+          </a>
+          {{end}}
+        </div>
+        {{end}}
+      </div>
+      {{else}}
+      <p class="cc-empty">No agents actively working.</p>
+      {{end}}
+    </section>
+
+    {{/* ── Epic Progress ── */}}
+    <section class="cc-card cc-epics">
+      <h2 class="cc-card-title">Epic Progress <span class="cc-count">{{len .EpicProgress}}</span></h2>
+      {{if .EpicProgress}}
+      <div class="epic-progress-list">
+        {{range .EpicProgress}}
+        <a href="/epic/{{.Issue.ID}}" class="epic-row">
+          <div class="epic-row-header">
+            <span class="work-priority p{{.Issue.Priority}}">P{{.Issue.Priority}}</span>
+            <span class="epic-row-title">{{.Issue.Title}}</span>
+            <span class="epic-row-rig">{{rigName .RigName}}</span>
+          </div>
+          <div class="epic-row-bar">
+            <div class="progress-bar">
+              <div class="progress-fill" style="width:{{progressPct .Progress}}%"></div>
+            </div>
+            <span class="epic-row-pct">{{progressPct .Progress}}%</span>
+            <span class="epic-row-count">{{.Progress.Closed}}/{{.Progress.Total}}</span>
+          </div>
+        </a>
+        {{end}}
+      </div>
+      {{else}}
+      <p class="cc-empty">No active epics.</p>
+      {{end}}
+    </section>
+
+    {{/* ── Recent Activity ── */}}
+    <section class="cc-card cc-recent">
+      <h2 class="cc-card-title">Recent Activity</h2>
+      <div class="cc-activity-split">
+        {{if .RecentClosed}}
+        <div class="activity-col">
+          <h3 class="activity-subhead">Completed</h3>
+          {{range .RecentClosed}}
+          <a href="/bead/{{.ID}}" class="activity-item closed">
+            <span class="activity-check">&#10003;</span>
+            <span class="activity-title">{{.Title}}</span>
+            <span class="activity-time">{{timeAgo .UpdatedAt}}</span>
+          </a>
+          {{end}}
+        </div>
+        {{end}}
+        {{if .RecentCommits}}
+        <div class="activity-col">
+          <h3 class="activity-subhead">Commits</h3>
+          {{range .RecentCommits}}
+          <div class="activity-item commit">
+            {{if .CommitURL}}<a href="{{.CommitURL}}" target="_blank"><code class="commit-sha">{{.ShortSHA}}</code></a>{{else}}<code class="commit-sha">{{.ShortSHA}}</code>{{end}}
+            <span class="activity-title">{{.Subject}}</span>
+            <span class="activity-time">{{.RepoName}}</span>
+          </div>
+          {{end}}
+        </div>
+        {{end}}
+      </div>
+    </section>
+  </div>
+</div>
+
+{{template "foot"}}

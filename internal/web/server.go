@@ -48,6 +48,8 @@ func New(cfg config.Config) (*Server, error) {
 		"rigName":       func(s string) string { return strings.TrimPrefix(s, "beads_") },
 		"nl":            func(s string) string { return strings.ReplaceAll(s, `\n`, "\n") },
 		"markdown":      renderMarkdown,
+		"priorityClass": func(p int) string { return fmt.Sprintf("p%d", p) },
+		"sub": func(a, b int) int { return a - b },
 	}
 
 	pages := make(map[string]*template.Template)
@@ -55,6 +57,7 @@ func New(cfg config.Config) (*Server, error) {
 		"monthly.html", "bead.html", "beads.html",
 		"epic.html", "epics.html", "agents.html", "agent.html", "events.html",
 		"handoffs.html", "commits.html", "search.html", "briefing.html", "decisions.html",
+		"command-center.html", "work.html",
 	} {
 		t, err := template.New(name).Funcs(funcMap).ParseFS(templateFS,
 			"templates/layout.html", "templates/"+name)
@@ -131,11 +134,17 @@ func (s *Server) ListenAndServe() error {
 	return http.ListenAndServe(addr, s.mux)
 }
 
-// databases returns all configured database names.
+// databases returns unique configured database names.
 func (s *Server) databases() []string {
+	seen := make(map[string]bool)
 	var dbs []string
 	for _, ws := range s.cfg.Workspace {
-		dbs = append(dbs, ws.Databases...)
+		for _, db := range ws.Databases {
+			if !seen[db] {
+				seen[db] = true
+				dbs = append(dbs, db)
+			}
+		}
 	}
 	return dbs
 }
@@ -143,7 +152,9 @@ func (s *Server) databases() []string {
 func (s *Server) routes() {
 	staticSub, _ := fs.Sub(staticFS, "static")
 	s.mux.Handle("GET /static/", http.StripPrefix("/static/", http.FileServer(http.FS(staticSub))))
-	s.mux.HandleFunc("GET /{$}", s.handleMonthly)
+	s.mux.HandleFunc("GET /{$}", s.handleCommandCenter)
+	s.mux.HandleFunc("GET /work", s.handleWork)
+	s.mux.HandleFunc("GET /monthly", s.handleMonthly)
 	s.mux.HandleFunc("GET /month/{year}/{month}", s.handleMonthly)
 	s.mux.HandleFunc("GET /bead/{id}", s.handleBead)
 	s.mux.HandleFunc("GET /beads", s.handleBeadList)

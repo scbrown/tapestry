@@ -950,3 +950,506 @@ func (s *Server) handleBriefing(w http.ResponseWriter, r *http.Request) {
 
 	s.render(w, "briefing.html", data)
 }
+
+// ── Command Center ──────────────────────────────────────────────
+
+type commandCenterData struct {
+	GeneratedAt      time.Time
+	TotalBeads       int
+	OpenCount        int
+	InProgressCount  int
+	ClosedCount      int
+	ClosedToday      int
+	CreatedToday     int
+	CriticalWork     []issueRow
+	AgentWork        []agentWorkGroup
+	RecentClosed     []issueRow
+	RecentCommits    []gitpkg.Commit
+	PendingDecisions int
+	EpicProgress     []epicSummary
+}
+
+type agentWorkGroup struct {
+	Agent  string
+	Issues []issueRow
+}
+
+func (s *Server) handleCommandCenter(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	now := time.Now()
+	todayStart := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+
+	data := commandCenterData{GeneratedAt: now}
+
+	// Collect agent work map for grouping
+	agentMap := make(map[string][]issueRow)
+
+	for _, db := range s.databases() {
+		counts, err := s.client.CountByStatus(ctx, db)
+		if err != nil {
+			log.Printf("cmd-center: counts %s: %v", db, err)
+			continue
+		}
+		for status, n := range counts {
+			switch status {
+			case "open":
+				data.OpenCount += n
+			case "in_progress", "hooked":
+				data.InProgressCount += n
+			case "closed":
+				data.ClosedCount += n
+			}
+			data.TotalBeads += n
+		}
+
+		closedToday, _ := s.client.CountClosedInRange(ctx, db, todayStart, now)
+		data.ClosedToday += closedToday
+
+		createdToday, _ := s.client.CountCreatedInRange(ctx, db, todayStart, now)
+		data.CreatedToday += createdToday
+
+		// Critical work: P1 open or in-progress (P0 is rarely used)
+		for _, status := range []string{"in_progress", "open"} {
+			issues, err := s.client.Issues(ctx, db, dolt.IssueFilter{
+				Status:   status,
+				Priority: 1,
+				Limit:    20,
+			})
+			if err != nil {
+				continue
+			}
+			for _, iss := range issues {
+				data.CriticalWork = append(data.CriticalWork, issueRow{Issue: iss, Rig: db})
+			}
+		}
+
+		// Active work by agent (in_progress items, exclude molecules)
+		inFlight, _ := s.client.Issues(ctx, db, dolt.IssueFilter{
+			Status: "in_progress",
+			Limit:  50,
+		})
+		for _, iss := range inFlight {
+			if isMolecule(iss.Title) {
+				continue
+			}
+			agent := iss.Assignee
+			if agent == "" {
+				agent = iss.Owner
+			}
+			if agent == "" {
+				agent = "(unassigned)"
+			}
+			agentMap[agent] = append(agentMap[agent], issueRow{Issue: iss, Rig: db})
+		}
+
+		// Recently closed (24h, exclude molecules)
+		yesterday := now.Add(-24 * time.Hour)
+		recent, _ := s.client.Issues(ctx, db, dolt.IssueFilter{
+			Status:       "closed",
+			UpdatedAfter: yesterday,
+			Limit:        30,
+		})
+		for _, iss := range recent {
+			if isMolecule(iss.Title) {
+				continue
+			}
+			data.RecentClosed = append(data.RecentClosed, issueRow{Issue: iss, Rig: db})
+		}
+
+		// Pending decisions
+		decisions, _ := s.client.Decisions(ctx, db)
+		for _, d := range decisions {
+			if d.Status == "open" {
+				data.PendingDecisions++
+			}
+		}
+
+		// Epic progress
+		epics, _ := s.client.Epics(ctx, db)
+		for _, iss := range epics {
+			if iss.Status == "closed" {
+				continue
+			}
+			childIDs, _ := s.client.EpicChildIDs(ctx, db, iss.ID)
+			var prog dolt.EpicProgress
+			for _, cid := range childIDs {
+				child, err := s.client.IssueByID(ctx, db, cid)
+				if err == nil && child != nil {
+					prog.Total++
+					if child.Status == "closed" {
+						prog.Closed++
+					}
+				}
+			}
+			if prog.Total > 0 {
+				data.EpicProgress = append(data.EpicProgress, epicSummary{
+					Issue:    iss,
+					RigName:  db,
+					Progress: prog,
+				})
+			}
+		}
+	}
+
+	// Sort critical work by priority then updated
+	sort.Slice(data.CriticalWork, func(i, j int) bool {
+		if data.CriticalWork[i].Priority != data.CriticalWork[j].Priority {
+			return data.CriticalWork[i].Priority < data.CriticalWork[j].Priority
+		}
+		return data.CriticalWork[i].UpdatedAt.After(data.CriticalWork[j].UpdatedAt)
+	})
+	if len(data.CriticalWork) > 15 {
+		data.CriticalWork = data.CriticalWork[:15]
+	}
+
+	// Build agent work groups sorted by count
+	var agentNames []string
+	for name := range agentMap {
+		agentNames = append(agentNames, name)
+	}
+	sort.Slice(agentNames, func(i, j int) bool {
+		return len(agentMap[agentNames[i]]) > len(agentMap[agentNames[j]])
+	})
+	for _, name := range agentNames {
+		data.AgentWork = append(data.AgentWork, agentWorkGroup{
+			Agent:  name,
+			Issues: agentMap[name],
+		})
+	}
+
+	// Sort recently closed
+	sort.Slice(data.RecentClosed, func(i, j int) bool {
+		return data.RecentClosed[i].UpdatedAt.After(data.RecentClosed[j].UpdatedAt)
+	})
+	if len(data.RecentClosed) > 10 {
+		data.RecentClosed = data.RecentClosed[:10]
+	}
+
+	// Sort epic progress by completion pct ascending (most work left first)
+	sort.Slice(data.EpicProgress, func(i, j int) bool {
+		pi := progressPct(data.EpicProgress[i].Progress)
+		pj := progressPct(data.EpicProgress[j].Progress)
+		return pi < pj
+	})
+
+	// Recent commits
+	allCommits := s.readAllCommits()
+	if len(allCommits) > 8 {
+		allCommits = allCommits[:8]
+	}
+	data.RecentCommits = allCommits
+
+	s.render(w, "command-center.html", data)
+}
+
+// ── Work View (Task Hierarchy) ──────────────────────────────────
+
+type workViewData struct {
+	Mode       string // "repo" or "priority"
+	ShowClosed bool
+	Repos      []repoSection
+	Priorities []prioritySection
+	TotalCount int
+}
+
+type repoSection struct {
+	Name     string
+	Epics    []epicWithChildren
+	Tasks    []issueRow
+	Stats    sectionStats
+	Expanded bool
+}
+
+type epicWithChildren struct {
+	Epic     dolt.Issue
+	Children []issueRow
+	Progress dolt.EpicProgress
+	Rig      string
+}
+
+type prioritySection struct {
+	Priority int
+	Label    string
+	Epics    []epicWithChildren
+	Tasks    []issueRow
+	Count    int
+}
+
+type sectionStats struct {
+	Open       int
+	InProgress int
+	Closed     int
+	Total      int
+}
+
+func (s *Server) handleWork(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	mode := r.URL.Query().Get("mode")
+	if mode == "" {
+		mode = "repo"
+	}
+	showClosed := r.URL.Query().Get("closed") == "1"
+
+	data := workViewData{
+		Mode:       mode,
+		ShowClosed: showClosed,
+	}
+
+	// Per-database: collect issues and dependencies
+	var bundles []dbBundle
+
+	for _, dbName := range s.databases() {
+		filter := dolt.IssueFilter{Limit: 500}
+		issues, err := s.client.Issues(ctx, dbName, filter)
+		if err != nil {
+			log.Printf("work: issues %s: %v", dbName, err)
+			continue
+		}
+
+		childDeps, _ := s.client.AllChildDependencies(ctx, dbName)
+		parentOf := make(map[string]string)
+		childOfMap := make(map[string][]string)
+		for _, d := range childDeps {
+			parentOf[d.FromID] = d.ToID
+			childOfMap[d.ToID] = append(childOfMap[d.ToID], d.FromID)
+		}
+
+		bundles = append(bundles, dbBundle{
+			dbName:   dbName,
+			issues:   issues,
+			parentOf: parentOf,
+			childOf:  childOfMap,
+		})
+	}
+
+	if mode == "repo" {
+		data.Repos = buildRepoSections(bundles, showClosed)
+	} else {
+		data.Priorities = buildPrioritySections(bundles, showClosed)
+	}
+
+	for _, repo := range data.Repos {
+		data.TotalCount += repo.Stats.Total
+	}
+	for _, pri := range data.Priorities {
+		data.TotalCount += pri.Count
+	}
+
+	if r.Header.Get("HX-Request") != "" {
+		s.renderPartial(w, "work.html", "work-content", data)
+		return
+	}
+	s.render(w, "work.html", data)
+}
+
+type dbBundle struct {
+	dbName   string
+	issues   []dolt.Issue
+	parentOf map[string]string
+	childOf  map[string][]string
+}
+
+func buildRepoSections(bundles []dbBundle, showClosed bool) []repoSection {
+	var sections []repoSection
+
+	for _, b := range bundles {
+		issueByID := make(map[string]dolt.Issue)
+		var epics []dolt.Issue
+		var tasks []dolt.Issue
+
+		for _, iss := range b.issues {
+			if !showClosed && iss.Status == "closed" {
+				continue
+			}
+			if isMolecule(iss.Title) {
+				continue
+			}
+			issueByID[iss.ID] = iss
+			if iss.Type == "epic" {
+				epics = append(epics, iss)
+			} else {
+				tasks = append(tasks, iss)
+			}
+		}
+
+		var epicSections []epicWithChildren
+		for _, epic := range epics {
+			childIDs := b.childOf[epic.ID]
+			var children []issueRow
+			var prog dolt.EpicProgress
+			for _, cid := range childIDs {
+				child, ok := issueByID[cid]
+				if !ok {
+					continue
+				}
+				children = append(children, issueRow{Issue: child, Rig: b.dbName})
+				prog.Total++
+				if child.Status == "closed" {
+					prog.Closed++
+				}
+			}
+			// Sort children: in_progress first, then open, then closed
+			sort.Slice(children, func(i, j int) bool {
+				return statusOrder(children[i].Status) < statusOrder(children[j].Status)
+			})
+			epicSections = append(epicSections, epicWithChildren{
+				Epic:     epic,
+				Children: children,
+				Progress: prog,
+				Rig:      b.dbName,
+			})
+		}
+
+		// Sort epics by priority then status
+		sort.Slice(epicSections, func(i, j int) bool {
+			if epicSections[i].Epic.Priority != epicSections[j].Epic.Priority {
+				return epicSections[i].Epic.Priority < epicSections[j].Epic.Priority
+			}
+			return statusOrder(epicSections[i].Epic.Status) < statusOrder(epicSections[j].Epic.Status)
+		})
+
+		// Standalone tasks (no parent epic)
+		var standalone []issueRow
+		for _, t := range tasks {
+			if _, hasParent := b.parentOf[t.ID]; !hasParent {
+				standalone = append(standalone, issueRow{Issue: t, Rig: b.dbName})
+			}
+		}
+		sort.Slice(standalone, func(i, j int) bool {
+			if standalone[i].Priority != standalone[j].Priority {
+				return standalone[i].Priority < standalone[j].Priority
+			}
+			return statusOrder(standalone[i].Status) < statusOrder(standalone[j].Status)
+		})
+
+		var stats sectionStats
+		for _, iss := range b.issues {
+			if !showClosed && iss.Status == "closed" {
+				continue
+			}
+			stats.Total++
+			switch iss.Status {
+			case "open":
+				stats.Open++
+			case "in_progress", "hooked":
+				stats.InProgress++
+			case "closed":
+				stats.Closed++
+			}
+		}
+
+		rigName := strings.TrimPrefix(b.dbName, "beads_")
+		sections = append(sections, repoSection{
+			Name:     rigName,
+			Epics:    epicSections,
+			Tasks:    standalone,
+			Stats:    stats,
+			Expanded: stats.InProgress > 0 || stats.Open > 0,
+		})
+	}
+
+	// Sort repos: those with active work first
+	sort.Slice(sections, func(i, j int) bool {
+		if sections[i].Stats.InProgress != sections[j].Stats.InProgress {
+			return sections[i].Stats.InProgress > sections[j].Stats.InProgress
+		}
+		return sections[i].Stats.Open > sections[j].Stats.Open
+	})
+
+	return sections
+}
+
+func buildPrioritySections(bundles []dbBundle, showClosed bool) []prioritySection {
+	priMap := map[int]*prioritySection{
+		0: {Priority: 0, Label: "P0 Critical"},
+		1: {Priority: 1, Label: "P1 High"},
+		2: {Priority: 2, Label: "P2 Medium"},
+		3: {Priority: 3, Label: "P3 Low"},
+	}
+
+	for _, b := range bundles {
+		issueByID := make(map[string]dolt.Issue)
+		for _, iss := range b.issues {
+			if !showClosed && iss.Status == "closed" {
+				continue
+			}
+			if isMolecule(iss.Title) {
+				continue
+			}
+			issueByID[iss.ID] = iss
+		}
+
+		for _, iss := range b.issues {
+			if !showClosed && iss.Status == "closed" {
+				continue
+			}
+			if isMolecule(iss.Title) {
+				continue
+			}
+			sec, ok := priMap[iss.Priority]
+			if !ok {
+				sec = priMap[3] // default to P3
+			}
+
+			if iss.Type == "epic" {
+				childIDs := b.childOf[iss.ID]
+				var children []issueRow
+				var prog dolt.EpicProgress
+				for _, cid := range childIDs {
+					child, exists := issueByID[cid]
+					if !exists {
+						continue
+					}
+					children = append(children, issueRow{Issue: child, Rig: b.dbName})
+					prog.Total++
+					if child.Status == "closed" {
+						prog.Closed++
+					}
+				}
+				sec.Epics = append(sec.Epics, epicWithChildren{
+					Epic:     iss,
+					Children: children,
+					Progress: prog,
+					Rig:      b.dbName,
+				})
+			} else {
+				if _, hasParent := b.parentOf[iss.ID]; !hasParent {
+					sec.Tasks = append(sec.Tasks, issueRow{Issue: iss, Rig: b.dbName})
+				}
+			}
+			sec.Count++
+		}
+	}
+
+	var sections []prioritySection
+	for _, pri := range []int{0, 1, 2, 3} {
+		sec := priMap[pri]
+		if sec.Count > 0 {
+			// Sort tasks within each priority section
+			sort.Slice(sec.Tasks, func(i, j int) bool {
+				return statusOrder(sec.Tasks[i].Status) < statusOrder(sec.Tasks[j].Status)
+			})
+			sections = append(sections, *sec)
+		}
+	}
+
+	return sections
+}
+
+// isMolecule returns true for Gas Town molecule/wisp issues (workflow noise).
+func isMolecule(title string) bool {
+	return strings.HasPrefix(title, "mol-")
+}
+
+func statusOrder(s string) int {
+	switch s {
+	case "in_progress", "hooked":
+		return 0
+	case "open":
+		return 1
+	case "closed":
+		return 2
+	default:
+		return 3
+	}
+}

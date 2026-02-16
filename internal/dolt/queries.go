@@ -396,6 +396,27 @@ func (c *Client) AddComment(ctx context.Context, database, issueID, author, body
 	return nil
 }
 
+// AllChildDependencies returns all child_of dependency edges in the database.
+// Used for building task hierarchy trees efficiently without N+1 queries.
+func (c *Client) AllChildDependencies(ctx context.Context, database string) ([]Dependency, error) {
+	query := "SELECT issue_id, depends_on, dep_type FROM dependencies WHERE dep_type = 'child_of'"
+	rows, err := c.queryDB(ctx, database, query)
+	if err != nil {
+		return nil, fmt.Errorf("dolt: all child deps: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+
+	var deps []Dependency
+	for rows.Next() {
+		var d Dependency
+		if err := rows.Scan(&d.FromID, &d.ToID, &d.Type); err != nil {
+			return nil, fmt.Errorf("dolt: scan child dep: %w", err)
+		}
+		deps = append(deps, d)
+	}
+	return deps, rows.Err()
+}
+
 // buildIssueQuery constructs a SELECT for issues with optional filters
 // and optional AS OF clause. Does NOT include USE prefix.
 func buildIssueQuery(f IssueFilter, asOf string) (string, []any) {

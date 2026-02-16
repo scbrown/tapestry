@@ -1,0 +1,178 @@
+{{template "head"}}Work — tapestry{{template "headclose"}}
+
+<div class="work-page">
+  <div class="work-header">
+    <h1>Work</h1>
+    <div class="work-controls">
+      <div class="mode-toggle">
+        <a href="/work?mode=repo{{if .ShowClosed}}&closed=1{{end}}"
+           class="mode-btn{{if eq .Mode "repo"}} active{{end}}"
+           hx-get="/work?mode=repo{{if .ShowClosed}}&closed=1{{end}}"
+           hx-target="#work-content" hx-push-url="true">By Repo</a>
+        <a href="/work?mode=priority{{if .ShowClosed}}&closed=1{{end}}"
+           class="mode-btn{{if eq .Mode "priority"}} active{{end}}"
+           hx-get="/work?mode=priority{{if .ShowClosed}}&closed=1{{end}}"
+           hx-target="#work-content" hx-push-url="true">By Priority</a>
+      </div>
+      <label class="closed-toggle">
+        <input type="checkbox" {{if .ShowClosed}}checked{{end}}
+               hx-get="/work?mode={{.Mode}}{{if not .ShowClosed}}&closed=1{{end}}"
+               hx-target="#work-content" hx-push-url="true">
+        show closed
+      </label>
+    </div>
+  </div>
+
+  <div id="work-content">
+    {{template "work-content" .}}
+  </div>
+</div>
+
+{{template "foot"}}
+
+{{define "work-content"}}
+  <div class="work-count">{{.TotalCount}} items</div>
+
+  {{if eq .Mode "repo"}}
+    {{range .Repos}}
+    <section class="work-section">
+      <details{{if .Expanded}} open{{end}}>
+        <summary class="work-section-header">
+          <h2 class="work-section-title">{{.Name}}</h2>
+          <div class="work-section-stats">
+            {{if gt .Stats.InProgress 0}}<span class="ws-stat active">{{.Stats.InProgress}} active</span>{{end}}
+            {{if gt .Stats.Open 0}}<span class="ws-stat open">{{.Stats.Open}} open</span>{{end}}
+            {{if gt .Stats.Closed 0}}<span class="ws-stat closed">{{.Stats.Closed}} closed</span>{{end}}
+            <span class="ws-stat total">{{.Stats.Total}} total</span>
+          </div>
+        </summary>
+
+        <div class="work-section-body">
+          {{range .Epics}}
+          <div class="epic-tree">
+            <div class="epic-tree-header">
+              <a href="/epic/{{.Epic.ID}}" class="epic-tree-link">
+                <span class="tree-icon">&#9654;</span>
+                <span class="work-priority p{{.Epic.Priority}}">P{{.Epic.Priority}}</span>
+                {{statusBadge .Epic.Status}}
+                <span class="epic-tree-title">{{.Epic.Title}}</span>
+              </a>
+              {{if gt .Progress.Total 0}}
+              <div class="epic-tree-progress">
+                <div class="progress-bar progress-bar-sm">
+                  <div class="progress-fill" style="width:{{progressPct .Progress}}%"></div>
+                </div>
+                <span class="progress-label-sm">{{.Progress.Closed}}/{{.Progress.Total}}</span>
+              </div>
+              {{end}}
+            </div>
+            {{if .Children}}
+            <div class="epic-children">
+              {{range .Children}}
+              <a href="/bead/{{.ID}}" class="child-item">
+                <span class="child-indent"></span>
+                <span class="work-priority p{{.Priority}}">P{{.Priority}}</span>
+                {{statusBadge .Status}}
+                <span class="child-title">{{.Title}}</span>
+                <span class="child-meta">
+                  <span class="work-id">{{.ID}}</span>
+                  {{if .Assignee}}<span class="work-agent">{{shortActor .Assignee}}</span>{{end}}
+                  <span class="work-age">{{timeAgo .UpdatedAt}}</span>
+                </span>
+              </a>
+              {{end}}
+            </div>
+            {{end}}
+          </div>
+          {{end}}
+
+          {{if .Tasks}}
+          <div class="standalone-tasks">
+            {{if .Epics}}<h3 class="standalone-label">Standalone Tasks</h3>{{end}}
+            {{range .Tasks}}
+            <a href="/bead/{{.ID}}" class="child-item standalone">
+              <span class="work-priority p{{.Priority}}">P{{.Priority}}</span>
+              {{statusBadge .Status}}
+              <span class="child-title">{{.Title}}</span>
+              <span class="child-meta">
+                <span class="work-id">{{.ID}}</span>
+                {{if .Assignee}}<span class="work-agent">{{shortActor .Assignee}}</span>{{end}}
+                <span class="work-age">{{timeAgo .UpdatedAt}}</span>
+              </span>
+            </a>
+            {{end}}
+          </div>
+          {{end}}
+        </div>
+      </details>
+    </section>
+    {{end}}
+
+  {{else}}
+    {{/* Priority mode */}}
+    {{range .Priorities}}
+    <section class="work-section priority-section p{{.Priority}}-section">
+      <details open>
+        <summary class="work-section-header">
+          <h2 class="work-section-title priority-title">
+            <span class="work-priority p{{.Priority}}">{{.Label}}</span>
+          </h2>
+          <span class="ws-stat total">{{.Count}} items</span>
+        </summary>
+
+        <div class="work-section-body">
+          {{range .Epics}}
+          <div class="epic-tree">
+            <div class="epic-tree-header">
+              <a href="/epic/{{.Epic.ID}}" class="epic-tree-link">
+                <span class="tree-icon">&#9654;</span>
+                {{statusBadge .Epic.Status}}
+                <span class="epic-tree-title">{{.Epic.Title}}</span>
+                <span class="epic-tree-rig">{{rigName .Rig}}</span>
+              </a>
+              {{if gt .Progress.Total 0}}
+              <div class="epic-tree-progress">
+                <div class="progress-bar progress-bar-sm">
+                  <div class="progress-fill" style="width:{{progressPct .Progress}}%"></div>
+                </div>
+                <span class="progress-label-sm">{{.Progress.Closed}}/{{.Progress.Total}}</span>
+              </div>
+              {{end}}
+            </div>
+            {{if .Children}}
+            <div class="epic-children">
+              {{range .Children}}
+              <a href="/bead/{{.ID}}" class="child-item">
+                <span class="child-indent"></span>
+                {{statusBadge .Status}}
+                <span class="child-title">{{.Title}}</span>
+                <span class="child-meta">
+                  <span class="work-id">{{.ID}}</span>
+                  {{if .Assignee}}<span class="work-agent">{{shortActor .Assignee}}</span>{{end}}
+                  <span class="work-age">{{timeAgo .UpdatedAt}}</span>
+                </span>
+              </a>
+              {{end}}
+            </div>
+            {{end}}
+          </div>
+          {{end}}
+
+          {{range .Tasks}}
+          <a href="/bead/{{.ID}}" class="child-item standalone">
+            {{statusBadge .Status}}
+            <span class="child-title">{{.Title}}</span>
+            <span class="child-meta">
+              <span class="work-id">{{.ID}}</span>
+              <span class="work-rig-label">{{rigName .Rig}}</span>
+              {{if .Assignee}}<span class="work-agent">{{shortActor .Assignee}}</span>{{end}}
+              <span class="work-age">{{timeAgo .UpdatedAt}}</span>
+            </span>
+          </a>
+          {{end}}
+        </div>
+      </details>
+    </section>
+    {{end}}
+  {{end}}
+{{end}}
