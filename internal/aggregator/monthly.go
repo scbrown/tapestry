@@ -3,6 +3,7 @@ package aggregator
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"sort"
 	"strings"
@@ -27,21 +28,32 @@ type MonthlySummary struct {
 	TotalStats Stats
 	Epics      []EpicRow
 	Agents     []AgentRow
+	Weeks      []WeeklyTrend
 }
 
 // Stats holds issue counts for a period.
 type Stats struct {
-	Created  int
-	Closed   int
-	Open     int
-	InFlight int
+	Created        int
+	Closed         int
+	Open           int
+	InFlight       int
+	CompletionRate int // percentage of all issues that are closed (0-100)
+}
+
+// WeeklyTrend holds burndown data for a week within a month.
+type WeeklyTrend struct {
+	Label   string
+	Created int
+	Closed  int
+	Net     int // Created - Closed (negative means more closed than created)
 }
 
 // RigSummary holds per-rig statistics and top completions.
 type RigSummary struct {
-	Name  string
-	Stats Stats
-	Top   []dolt.Issue
+	Name      string
+	Stats     Stats
+	Top       []dolt.Issue
+	AllClosed int // all-time closed count (used for completion rate)
 }
 
 // EpicRow shows an epic with its completion progress.
@@ -85,6 +97,7 @@ func Monthly(ctx context.Context, client *dolt.Client, databases []string, year,
 
 	agentMerged := make(map[string]*AgentRow)
 	var total Stats
+	var totalAllClosed int
 
 	for _, dbName := range databases {
 		rigName := RigDisplayName(dbName)
@@ -99,12 +112,20 @@ func Monthly(ctx context.Context, client *dolt.Client, databases []string, year,
 		total.Created += rs.Stats.Created
 		total.Closed += rs.Stats.Closed
 		total.InFlight += rs.Stats.InFlight
+		totalAllClosed += rs.AllClosed
 
 		collectEpics(ctx, client, dbName, &s.Epics)
 		mergeAgentStats(ctx, client, dbName, agentMerged)
 	}
 
+	allTotal := total.Open + total.InFlight + totalAllClosed
+	if allTotal > 0 {
+		total.CompletionRate = totalAllClosed * 100 / allTotal
+	}
 	s.TotalStats = total
+
+	// Compute weekly burndown trends
+	s.Weeks = computeWeeklyTrends(ctx, client, databases, monthStart, next, rigFilter)
 
 	// Sort epics by progress (most complete children first)
 	sort.Slice(s.Epics, func(i, j int) bool {
@@ -137,9 +158,15 @@ func computeRigStats(ctx context.Context, client *dolt.Client, dbName string, mo
 		return RigSummary{Name: dbName}
 	}
 
+	allClosed := counts["closed"]
 	stats := Stats{
 		Open:     counts["open"],
 		InFlight: counts["in_progress"] + counts["hooked"],
+	}
+
+	allTotal := stats.Open + stats.InFlight + allClosed
+	if allTotal > 0 {
+		stats.CompletionRate = allClosed * 100 / allTotal
 	}
 
 	if n, err := client.CountCreatedInRange(ctx, dbName, monthStart, monthEnd); err == nil {
@@ -160,9 +187,10 @@ func computeRigStats(ctx context.Context, client *dolt.Client, dbName string, mo
 	}
 
 	return RigSummary{
-		Name:  dbName,
-		Stats: stats,
-		Top:   top,
+		Name:      dbName,
+		Stats:     stats,
+		Top:       top,
+		AllClosed: allClosed,
 	}
 }
 
@@ -182,6 +210,50 @@ func collectEpics(ctx context.Context, client *dolt.Client, dbName string, epics
 			Progress: prog,
 		})
 	}
+}
+
+func computeWeeklyTrends(ctx context.Context, client *dolt.Client, databases []string, monthStart, monthEnd time.Time, rigFilter string) []WeeklyTrend {
+	// Split month into weeks (1-7, 8-14, 15-21, 22-end)
+	var weeks []WeeklyTrend
+	weekStart := monthStart
+	for weekStart.Before(monthEnd) {
+		weekEnd := weekStart.AddDate(0, 0, 7)
+		if weekEnd.After(monthEnd) {
+			weekEnd = monthEnd
+		}
+		label := fmt.Sprintf("%s %d–%d",
+			monthStart.Month().String()[:3],
+			weekStart.Day(),
+			weekEnd.AddDate(0, 0, -1).Day())
+		if weekEnd.Equal(monthEnd) && weekEnd.Day() == 1 {
+			// Last day rolled into next month; use month's last day
+			label = fmt.Sprintf("%s %d–%d",
+				monthStart.Month().String()[:3],
+				weekStart.Day(),
+				monthEnd.AddDate(0, 0, -1).Day())
+		}
+
+		w := WeeklyTrend{Label: label}
+		for _, dbName := range databases {
+			if rigFilter != "" {
+				rigName := RigDisplayName(dbName)
+				if rigName != rigFilter && dbName != rigFilter {
+					continue
+				}
+			}
+			if n, err := client.CountCreatedInRange(ctx, dbName, weekStart, weekEnd); err == nil {
+				w.Created += n
+			}
+			if n, err := client.CountClosedInRange(ctx, dbName, weekStart, weekEnd); err == nil {
+				w.Closed += n
+			}
+		}
+		w.Net = w.Created - w.Closed
+		weeks = append(weeks, w)
+
+		weekStart = weekEnd
+	}
+	return weeks
 }
 
 func mergeAgentStats(ctx context.Context, client *dolt.Client, dbName string, merged map[string]*AgentRow) {

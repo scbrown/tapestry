@@ -52,6 +52,9 @@ main {
 .stats-grid-4 {
   grid-template-columns: repeat(4, 1fr);
 }
+.stats-grid-5 {
+  grid-template-columns: repeat(5, 1fr);
+}
 .stat-card {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -400,6 +403,28 @@ main {
 .progress-label { font-size: 0.85rem; color: var(--text-dim); }
 .progress-label-sm { font-size: 0.8rem; color: var(--text-dim); margin-left: 0.5rem; }
 
+/* Burndown trends */
+.burndown-good { color: var(--green); }
+.burndown-warn { color: var(--amber); }
+.burndown-bar {
+  display: flex;
+  gap: 2px;
+  align-items: center;
+  height: 12px;
+}
+.burndown-closed {
+  height: 100%;
+  background: var(--green);
+  border-radius: 2px;
+  min-width: 2px;
+}
+.burndown-created {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 2px;
+  min-width: 2px;
+}
+
 /* Agent grid */
 .agents-page h1 { font-size: 1.3rem; margin-bottom: 1.5rem; }
 .agent-grid {
@@ -611,7 +636,8 @@ a:focus-visible, button:focus-visible, input:focus-visible {
   main { padding: 1rem; }
 
   .stats-grid,
-  .stats-grid-4 {
+  .stats-grid-4,
+  .stats-grid-5 {
     grid-template-columns: 1fr;
   }
 

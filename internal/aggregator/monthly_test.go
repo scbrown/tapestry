@@ -58,7 +58,50 @@ func TestMonthlySummaryNavigation(t *testing.T) {
 
 func TestStatsZeroValue(t *testing.T) {
 	var s Stats
-	if s.Created != 0 || s.Closed != 0 || s.Open != 0 || s.InFlight != 0 {
+	if s.Created != 0 || s.Closed != 0 || s.Open != 0 || s.InFlight != 0 || s.CompletionRate != 0 {
 		t.Error("zero Stats should have all fields at 0")
+	}
+}
+
+func TestCompletionRate(t *testing.T) {
+	tests := []struct {
+		name     string
+		open     int
+		inFlight int
+		closed   int
+		wantRate int
+	}{
+		{"all closed", 0, 0, 10, 100},
+		{"half closed", 5, 0, 5, 50},
+		{"none closed", 10, 0, 0, 0},
+		{"mixed", 3, 2, 5, 50},
+		{"no issues", 0, 0, 0, 0},
+		{"one third", 6, 0, 3, 33},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			total := tt.open + tt.inFlight + tt.closed
+			var rate int
+			if total > 0 {
+				rate = tt.closed * 100 / total
+			}
+			if rate != tt.wantRate {
+				t.Errorf("rate = %d, want %d", rate, tt.wantRate)
+			}
+		})
+	}
+}
+
+func TestWeeklyTrendNet(t *testing.T) {
+	w := WeeklyTrend{Created: 5, Closed: 8}
+	w.Net = w.Created - w.Closed
+	if w.Net != -3 {
+		t.Errorf("Net = %d, want -3", w.Net)
+	}
+
+	w2 := WeeklyTrend{Created: 10, Closed: 3}
+	w2.Net = w2.Created - w2.Closed
+	if w2.Net != 7 {
+		t.Errorf("Net = %d, want 7", w2.Net)
 	}
 }

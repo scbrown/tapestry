@@ -16,7 +16,7 @@
   </div>
   {{end}}
 
-  <div class="stats-grid stats-grid-4">
+  <div class="stats-grid stats-grid-5">
     <div class="stat-card">
       <div class="stat-value">{{.TotalStats.Created}}</div>
       <div class="stat-label">Created</div>
@@ -33,6 +33,10 @@
       <div class="stat-value">{{.TotalStats.InFlight}}</div>
       <div class="stat-label">In Flight</div>
     </div>
+    <div class="stat-card">
+      <div class="stat-value">{{.TotalStats.CompletionRate}}%</div>
+      <div class="stat-label">Completion Rate</div>
+    </div>
   </div>
 
   {{range .Rigs}}
@@ -43,6 +47,7 @@
       <span>{{.Stats.Closed}} closed</span>
       <span>{{.Stats.Open}} open</span>
       <span>{{.Stats.InFlight}} in-flight</span>
+      <span>{{.Stats.CompletionRate}}% complete</span>
     </div>
 
     {{if .Top}}
@@ -72,6 +77,39 @@
     {{else}}
     <p class="empty">No completions this month.</p>
     {{end}}
+  </section>
+  {{end}}
+
+  {{if .Weeks}}
+  <section class="rig-section">
+    <h2>Burndown Trends</h2>
+    <table class="bead-table">
+      <thead>
+        <tr>
+          <th>Week</th>
+          <th>Created</th>
+          <th>Closed</th>
+          <th>Net</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {{range .Weeks}}
+        <tr>
+          <td>{{.Label}}</td>
+          <td>{{.Created}}</td>
+          <td>{{.Closed}}</td>
+          <td class="{{if lt .Net 0}}burndown-good{{else if gt .Net 0}}burndown-warn{{end}}">{{if gt .Net 0}}+{{end}}{{.Net}}</td>
+          <td>
+            <div class="burndown-bar">
+              {{if gt .Closed 0}}<div class="burndown-closed" style="width:{{.Closed}}ch" title="{{.Closed}} closed"></div>{{end}}
+              {{if gt .Created 0}}<div class="burndown-created" style="width:{{.Created}}ch" title="{{.Created}} created"></div>{{end}}
+            </div>
+          </td>
+        </tr>
+        {{end}}
+      </tbody>
+    </table>
   </section>
   {{end}}
 
