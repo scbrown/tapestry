@@ -135,7 +135,7 @@
     <div class="commit-list">
       {{range .Commits}}
       <div class="commit-row">
-        <code class="commit-sha">{{.ShortSHA}}</code>
+        {{if .CommitURL}}<a href="{{.CommitURL}}" class="commit-sha-link" target="_blank"><code class="commit-sha">{{.ShortSHA}}</code></a>{{else}}<code class="commit-sha">{{.ShortSHA}}</code>{{end}}
         <span class="commit-subject">{{.Subject}}</span>
         <span class="text-dim">{{.Author}}</span>
         <time class="text-dim">{{.Timestamp.Format "Jan 02 15:04"}}</time>

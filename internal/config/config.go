@@ -14,6 +14,7 @@ type Config struct {
 	Server    ServerConfig      `toml:"server"`
 	Dolt      DoltConfig        `toml:"dolt"`
 	Workspace []WorkspaceConfig `toml:"workspace"`
+	Repos     map[string]string `toml:"repos,omitempty"`
 }
 
 // ServerConfig holds HTTP server settings.

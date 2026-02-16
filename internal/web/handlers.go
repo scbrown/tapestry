@@ -677,6 +677,10 @@ func (s *Server) readAllCommits() []gitpkg.Commit {
 		}
 		all = append(all, commits...)
 	}
+	// Apply config-based repo URL overrides (takes precedence over auto-detected)
+	if len(s.cfg.Repos) > 0 {
+		gitpkg.SetCommitURLs(all, s.cfg.Repos)
+	}
 	sort.Slice(all, func(i, j int) bool {
 		return all[i].Timestamp.After(all[j].Timestamp)
 	})

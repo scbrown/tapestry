@@ -22,6 +22,7 @@ type Commit struct {
 	Subject   string
 	BeadIDs   []string // extracted bead IDs from message
 	RepoName  string   // basename of the repo
+	CommitURL string   // full URL to view commit on git host
 }
 
 // beadIDPattern matches bead IDs in commit messages.
@@ -62,7 +63,9 @@ func ParseLog(repoDir string, limit int) ([]Commit, error) {
 		limit = 200
 	}
 
-	repoName := filepath.Base(repoDir)
+	// Use canonical repo name from remote when available (handles worktrees)
+	repoName := repoNameFromRemote(repoDir)
+	baseURL := remoteBaseURL(repoDir)
 
 	// Use NUL-delimited format for reliable parsing
 	// Fields: SHA, short SHA, author, timestamp (unix), subject
@@ -95,6 +98,11 @@ func ParseLog(repoDir string, limit int) ([]Commit, error) {
 			ts = unix
 		}
 
+		var commitURL string
+		if baseURL != "" {
+			commitURL = baseURL + "/commit/" + parts[0]
+		}
+
 		c := Commit{
 			SHA:       parts[0],
 			ShortSHA:  parts[1],
@@ -102,6 +110,7 @@ func ParseLog(repoDir string, limit int) ([]Commit, error) {
 			Timestamp: ts,
 			Subject:   parts[4],
 			RepoName:  repoName,
+			CommitURL: commitURL,
 		}
 		c.BeadIDs = ExtractBeadIDs(c.Subject)
 		commits = append(commits, c)
@@ -165,6 +174,73 @@ func isGitRepo(dir string) bool {
 	cmd.Dir = dir
 	out, err := cmd.Output()
 	return err == nil && strings.TrimSpace(string(out)) == "true"
+}
+
+// remoteBaseURL extracts a browsable base URL from git remote origin.
+// Handles SSH (git@host:owner/repo.git) and HTTPS (https://host/owner/repo.git).
+func remoteBaseURL(repoDir string) string {
+	cmd := exec.Command("git", "remote", "get-url", "origin")
+	cmd.Dir = repoDir
+	out, err := cmd.Output()
+	if err != nil {
+		return ""
+	}
+	raw := strings.TrimSpace(string(out))
+	return parseRemoteURL(raw)
+}
+
+// parseRemoteURL converts a git remote URL to a browsable HTTPS base URL.
+func parseRemoteURL(raw string) string {
+	raw = strings.TrimSuffix(raw, ".git")
+
+	// SSH: git@host:owner/repo
+	if strings.HasPrefix(raw, "git@") {
+		raw = strings.TrimPrefix(raw, "git@")
+		// git@host:owner/repo -> host/owner/repo
+		raw = strings.Replace(raw, ":", "/", 1)
+		return "https://" + raw
+	}
+
+	// SSH: ssh://git@host/owner/repo
+	if strings.HasPrefix(raw, "ssh://") {
+		raw = strings.TrimPrefix(raw, "ssh://")
+		raw = strings.TrimPrefix(raw, "git@")
+		return "https://" + raw
+	}
+
+	// HTTPS: already a URL
+	if strings.HasPrefix(raw, "https://") || strings.HasPrefix(raw, "http://") {
+		return raw
+	}
+
+	return ""
+}
+
+// repoNameFromRemote extracts the repository name from a git remote URL.
+func repoNameFromRemote(repoDir string) string {
+	cmd := exec.Command("git", "remote", "get-url", "origin")
+	cmd.Dir = repoDir
+	out, err := cmd.Output()
+	if err != nil {
+		return filepath.Base(repoDir)
+	}
+	raw := strings.TrimSpace(string(out))
+	raw = strings.TrimSuffix(raw, ".git")
+	parts := strings.Split(raw, "/")
+	if len(parts) > 0 {
+		return parts[len(parts)-1]
+	}
+	return filepath.Base(repoDir)
+}
+
+// SetCommitURLs populates CommitURL on commits using a repo name → base URL map.
+// The map can come from config overrides or auto-detected remotes.
+func SetCommitURLs(commits []Commit, repoURLs map[string]string) {
+	for i := range commits {
+		if base, ok := repoURLs[commits[i].RepoName]; ok {
+			commits[i].CommitURL = base + "/commit/" + commits[i].SHA
+		}
+	}
 }
 
 // CommitsForBead filters commits to only those referencing a specific bead ID.
