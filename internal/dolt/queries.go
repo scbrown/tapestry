@@ -311,6 +311,91 @@ func (c *Client) DistinctAssignees(ctx context.Context, database string) ([]stri
 	return result, rows.Err()
 }
 
+// Decisions returns all issues of type "decision" from the database.
+func (c *Client) Decisions(ctx context.Context, database string) ([]Issue, error) {
+	query := "SELECT id, title, description, status, priority, issue_type, " +
+		"COALESCE(owner,''), COALESCE(assignee,''), created_at, updated_at " +
+		"FROM issues WHERE deleted_at IS NULL AND issue_type = 'decision' " +
+		"ORDER BY updated_at DESC"
+	rows, err := c.queryDB(ctx, database, query)
+	if err != nil {
+		return nil, fmt.Errorf("dolt: decisions: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+	return scanIssues(rows)
+}
+
+// LabelsForIssue returns all labels attached to an issue.
+func (c *Client) LabelsForIssue(ctx context.Context, database, issueID string) ([]string, error) {
+	query := "SELECT label FROM labels WHERE issue_id = ? ORDER BY label"
+	rows, err := c.queryDB(ctx, database, query, issueID)
+	if err != nil {
+		return nil, fmt.Errorf("dolt: labels: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+
+	var labels []string
+	for rows.Next() {
+		var l string
+		if err := rows.Scan(&l); err != nil {
+			return nil, fmt.Errorf("dolt: scan label: %w", err)
+		}
+		labels = append(labels, l)
+	}
+	return labels, rows.Err()
+}
+
+// AddLabel inserts a label for an issue. Ignores duplicates.
+func (c *Client) AddLabel(ctx context.Context, database, issueID, label string) error {
+	query := "INSERT IGNORE INTO labels (issue_id, label) VALUES (?, ?)"
+	conn, err := c.db.Conn(ctx)
+	if err != nil {
+		return fmt.Errorf("dolt: conn: %w", err)
+	}
+	defer func() { _ = conn.Close() }()
+	if _, err := conn.ExecContext(ctx, fmt.Sprintf("USE `%s`", database)); err != nil {
+		return fmt.Errorf("dolt: use %s: %w", database, err)
+	}
+	if _, err := conn.ExecContext(ctx, query, issueID, label); err != nil {
+		return fmt.Errorf("dolt: add label: %w", err)
+	}
+	return nil
+}
+
+// RemoveLabel deletes a label from an issue.
+func (c *Client) RemoveLabel(ctx context.Context, database, issueID, label string) error {
+	query := "DELETE FROM labels WHERE issue_id = ? AND label = ?"
+	conn, err := c.db.Conn(ctx)
+	if err != nil {
+		return fmt.Errorf("dolt: conn: %w", err)
+	}
+	defer func() { _ = conn.Close() }()
+	if _, err := conn.ExecContext(ctx, fmt.Sprintf("USE `%s`", database)); err != nil {
+		return fmt.Errorf("dolt: use %s: %w", database, err)
+	}
+	if _, err := conn.ExecContext(ctx, query, issueID, label); err != nil {
+		return fmt.Errorf("dolt: remove label: %w", err)
+	}
+	return nil
+}
+
+// AddComment inserts a new comment on an issue.
+func (c *Client) AddComment(ctx context.Context, database, issueID, author, body string) error {
+	query := "INSERT INTO comments (issue_id, author, text, created_at) VALUES (?, ?, ?, NOW())"
+	conn, err := c.db.Conn(ctx)
+	if err != nil {
+		return fmt.Errorf("dolt: conn: %w", err)
+	}
+	defer func() { _ = conn.Close() }()
+	if _, err := conn.ExecContext(ctx, fmt.Sprintf("USE `%s`", database)); err != nil {
+		return fmt.Errorf("dolt: use %s: %w", database, err)
+	}
+	if _, err := conn.ExecContext(ctx, query, issueID, author, body); err != nil {
+		return fmt.Errorf("dolt: add comment: %w", err)
+	}
+	return nil
+}
+
 // buildIssueQuery constructs a SELECT for issues with optional filters
 // and optional AS OF clause. Does NOT include USE prefix.
 func buildIssueQuery(f IssueFilter, asOf string) (string, []any) {
