@@ -389,6 +389,75 @@ main {
 .event-actor { min-width: 6rem; }
 .event-detail { color: var(--text-dim); }
 
+/* ── Briefing ───────────────────────────────────────────── */
+
+.briefing-page h1 { font-size: 1.3rem; margin-bottom: 1.5rem; }
+.briefing-page h1 time { font-size: 0.85rem; margin-left: 0.5rem; }
+
+.briefing-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+}
+
+.briefing-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1.25rem;
+}
+.briefing-card h2 {
+  font-size: 0.95rem;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.75rem;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0.4rem;
+}
+
+.stat-grid {
+  display: flex;
+  gap: 1.5rem;
+  justify-content: space-around;
+}
+.stat { text-align: center; }
+.stat .stat-value { display: block; font-size: 1.8rem; font-weight: 700; color: var(--text); }
+.stat .stat-value.accent { color: var(--accent); }
+.stat .stat-label { display: block; font-size: 0.75rem; color: var(--text-dim); text-transform: uppercase; }
+
+.briefing-list { list-style: none; }
+.briefing-list li {
+  padding: 0.35rem 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.9rem;
+}
+.briefing-list li:last-child { border-bottom: none; }
+
+.priority-badge {
+  display: inline-block;
+  padding: 0.1em 0.4em;
+  border-radius: 3px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+.priority-badge.p1 { background: var(--red); color: #fff; }
+.priority-badge.p2 { background: var(--amber); color: #000; }
+.priority-badge.p3 { background: var(--border); color: var(--text); }
+
+.briefing-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+.briefing-table th {
+  text-align: left; padding: 0.4rem 0.5rem;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-dim); font-size: 0.75rem;
+  text-transform: uppercase;
+}
+.briefing-table td { padding: 0.4rem 0.5rem; border-bottom: 1px solid var(--border); }
+
+@media (max-width: 768px) {
+  .briefing-grid { grid-template-columns: 1fr; }
+}
+
 footer {
   text-align: center;
   padding: 2rem;

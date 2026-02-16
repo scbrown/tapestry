@@ -1,0 +1,145 @@
+{{template "head"}}Briefing — tapestry{{template "headclose"}}
+
+<div class="briefing-page">
+  <h1>Briefing <time class="text-dim">{{.GeneratedAt.Format "Jan 02, 2006 15:04"}}</time></h1>
+
+  <div class="briefing-grid">
+
+    {{/* ── Status Overview ── */}}
+    <section class="briefing-card">
+      <h2>Status Overview</h2>
+      <div class="stat-grid">
+        <div class="stat">
+          <span class="stat-value">{{.OpenCount}}</span>
+          <span class="stat-label">Open</span>
+        </div>
+        <div class="stat">
+          <span class="stat-value">{{.InProgressCount}}</span>
+          <span class="stat-label">In Progress</span>
+        </div>
+        <div class="stat">
+          <span class="stat-value">{{.ClosedCount}}</span>
+          <span class="stat-label">Closed</span>
+        </div>
+        <div class="stat">
+          <span class="stat-value">{{.TotalBeads}}</span>
+          <span class="stat-label">Total</span>
+        </div>
+      </div>
+      <div class="stat-grid" style="margin-top:0.5rem">
+        <div class="stat">
+          <span class="stat-value accent">{{.ClosedToday}}</span>
+          <span class="stat-label">Closed today</span>
+        </div>
+        <div class="stat">
+          <span class="stat-value accent">{{.CreatedToday}}</span>
+          <span class="stat-label">Created today</span>
+        </div>
+      </div>
+    </section>
+
+    {{/* ── Needs Your Attention ── */}}
+    <section class="briefing-card">
+      <h2>Needs Your Attention</h2>
+      {{if .NeedsAttention}}
+      <ul class="briefing-list">
+        {{range .NeedsAttention}}
+        <li>
+          <a href="/bead/{{.ID}}">{{.ID}}</a>
+          <span class="priority-badge p{{.Priority}}">P{{.Priority}}</span>
+          {{.Title}}
+          {{if .Assignee}}<span class="text-dim">{{.Assignee}}</span>{{end}}
+        </li>
+        {{end}}
+      </ul>
+      {{else}}
+      <p class="empty">Nothing requires human input right now.</p>
+      {{end}}
+    </section>
+
+    {{/* ── In Flight ── */}}
+    <section class="briefing-card">
+      <h2>In Flight</h2>
+      {{if .InFlight}}
+      <ul class="briefing-list">
+        {{range .InFlight}}
+        <li>
+          <a href="/bead/{{.ID}}">{{.ID}}</a>
+          <span class="priority-badge p{{.Priority}}">P{{.Priority}}</span>
+          {{.Title}}
+          {{if .Assignee}}<span class="text-dim">{{.Assignee}}</span>{{end}}
+        </li>
+        {{end}}
+      </ul>
+      {{else}}
+      <p class="empty">No work in progress.</p>
+      {{end}}
+    </section>
+
+    {{/* ── Recently Closed ── */}}
+    <section class="briefing-card">
+      <h2>Recently Closed</h2>
+      {{if .RecentlyClosed}}
+      <ul class="briefing-list">
+        {{range .RecentlyClosed}}
+        <li>
+          <a href="/bead/{{.ID}}">{{.ID}}</a>
+          {{.Title}}
+          <time class="text-dim">{{.UpdatedAt.Format "Jan 02 15:04"}}</time>
+        </li>
+        {{end}}
+      </ul>
+      {{else}}
+      <p class="empty">No beads closed recently.</p>
+      {{end}}
+    </section>
+
+    {{/* ── Recent Commits ── */}}
+    <section class="briefing-card">
+      <h2>Recent Commits</h2>
+      {{if .RecentCommits}}
+      <div class="commit-list">
+        {{range .RecentCommits}}
+        <div class="commit-row">
+          {{if .CommitURL}}<a href="{{.CommitURL}}" class="commit-sha-link" target="_blank"><code class="commit-sha">{{.ShortSHA}}</code></a>{{else}}<code class="commit-sha">{{.ShortSHA}}</code>{{end}}
+          <span class="commit-subject">
+            {{.Subject}}
+            {{range .BeadIDs}}<a href="/bead/{{.}}" class="bead-link">{{.}}</a>{{end}}
+          </span>
+          <span class="text-dim">{{.RepoName}}</span>
+        </div>
+        {{end}}
+      </div>
+      {{else}}
+      <p class="empty">No recent commits.</p>
+      {{end}}
+    </section>
+
+    {{/* ── Crew Health ── */}}
+    <section class="briefing-card">
+      <h2>Crew Health</h2>
+      {{if .AgentStats}}
+      <table class="briefing-table">
+        <thead>
+          <tr><th>Agent</th><th>Open</th><th>Active</th><th>Closed</th></tr>
+        </thead>
+        <tbody>
+          {{range .AgentStats}}
+          <tr>
+            <td>{{if .Name}}<a href="/agent/{{.Name}}">{{.Name}}</a>{{else}}(unowned){{end}}</td>
+            <td>{{.Open}}</td>
+            <td>{{.InProgress}}</td>
+            <td>{{.Closed}}</td>
+          </tr>
+          {{end}}
+        </tbody>
+      </table>
+      {{else}}
+      <p class="empty">No agent data available.</p>
+      {{end}}
+    </section>
+
+  </div>
+</div>
+
+{{template "foot"}}

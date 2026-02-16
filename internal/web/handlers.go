@@ -717,3 +717,113 @@ func (s *Server) handleCommits(w http.ResponseWriter, r *http.Request) {
 		LinkedCount:  len(linked),
 	})
 }
+
+// ── Briefing ────────────────────────────────────────────────────
+
+type briefingData struct {
+	GeneratedAt     time.Time
+	OpenCount       int
+	InProgressCount int
+	ClosedCount     int
+	TotalBeads      int
+	ClosedToday     int
+	CreatedToday    int
+	NeedsAttention  []dolt.Issue
+	InFlight        []dolt.Issue
+	RecentlyClosed  []dolt.Issue
+	RecentCommits   []gitpkg.Commit
+	AgentStats      []dolt.AgentStats
+}
+
+func (s *Server) handleBriefing(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	now := time.Now()
+	todayStart := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+
+	data := briefingData{
+		GeneratedAt: now,
+	}
+
+	for _, db := range s.databases() {
+		// Status counts
+		counts, err := s.client.CountByStatus(ctx, db)
+		if err != nil {
+			log.Printf("briefing: count by status %s: %v", db, err)
+			continue
+		}
+		for status, n := range counts {
+			switch status {
+			case "open":
+				data.OpenCount += n
+			case "in_progress", "hooked":
+				data.InProgressCount += n
+			case "closed":
+				data.ClosedCount += n
+			}
+			data.TotalBeads += n
+		}
+
+		// Closed today
+		closedToday, err := s.client.CountClosedInRange(ctx, db, todayStart, now)
+		if err == nil {
+			data.ClosedToday += closedToday
+		}
+
+		// Created today
+		createdToday, err := s.client.CountCreatedInRange(ctx, db, todayStart, now)
+		if err == nil {
+			data.CreatedToday += createdToday
+		}
+
+		// Needs attention: P1 open beads with no assignee or tagged needs-human
+		unassigned, err := s.client.Issues(ctx, db, dolt.IssueFilter{
+			Status:   "open",
+			Priority: 1,
+			Limit:    10,
+		})
+		if err == nil {
+			for _, iss := range unassigned {
+				if iss.Assignee == "" || strings.Contains(strings.ToLower(iss.Title), "needs-human") {
+					data.NeedsAttention = append(data.NeedsAttention, iss)
+				}
+			}
+		}
+
+		// In flight: in_progress P1 beads
+		inFlight, err := s.client.Issues(ctx, db, dolt.IssueFilter{
+			Status:   "in_progress",
+			Priority: 1,
+			Limit:    10,
+		})
+		if err == nil {
+			data.InFlight = append(data.InFlight, inFlight...)
+		}
+
+		// Recently closed (last 24h)
+		yesterday := now.Add(-24 * time.Hour)
+		recent, err := s.client.Issues(ctx, db, dolt.IssueFilter{
+			Status:       "closed",
+			UpdatedAfter: yesterday,
+			Limit:        15,
+		})
+		if err == nil {
+			data.RecentlyClosed = append(data.RecentlyClosed, recent...)
+		}
+
+		// Agent activity
+		agents, err := s.client.AgentActivity(ctx, db)
+		if err == nil {
+			data.AgentStats = append(data.AgentStats, agents...)
+		}
+	}
+
+	// Recent commits (last 20)
+	allCommits := s.readAllCommits()
+	limit := 20
+	if len(allCommits) > limit {
+		allCommits = allCommits[:limit]
+	}
+	data.RecentCommits = allCommits
+
+	s.render(w, "briefing.html", data)
+}
