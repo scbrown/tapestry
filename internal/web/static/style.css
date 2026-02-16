@@ -309,6 +309,77 @@ main {
 .empty { color: var(--text-dim); font-style: italic; }
 .text-dim { color: var(--text-dim); }
 
+/* Filter bar */
+.filter-bar {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+  align-items: flex-end;
+}
+.filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+.filter-group label {
+  font-size: 0.75rem;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.filter-group select {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.4em 2em 0.4em 0.6em;
+  color: var(--text);
+  font-size: 0.85rem;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2 4l4 4 4-4' fill='none' stroke='%238b949e' stroke-width='1.5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.5em center;
+  background-size: 0.75em;
+  cursor: pointer;
+}
+.filter-group select:focus {
+  border-color: var(--accent);
+  outline: none;
+}
+
+/* Results metadata */
+.results-meta {
+  font-size: 0.85rem;
+  color: var(--text-dim);
+  margin-bottom: 0.75rem;
+}
+
+/* Pagination */
+.pagination {
+  display: flex;
+  gap: 0.25rem;
+  margin-top: 1.5rem;
+  justify-content: center;
+}
+.page-link {
+  display: inline-block;
+  padding: 0.4em 0.75em;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-size: 0.85rem;
+  color: var(--text-dim);
+}
+.page-link:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  text-decoration: none;
+}
+.page-link.active {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+
 /* Progress bars */
 .epic-progress { margin-bottom: 1.5rem; }
 .epic-progress h2 { margin-bottom: 0.5rem; font-size: 1.1rem; }

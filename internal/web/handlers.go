@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"net/url"
 	"sort"
 	"strconv"
 	"strings"
@@ -125,13 +126,33 @@ func (s *Server) handleBead(w http.ResponseWriter, r *http.Request) {
 	http.NotFound(w, r)
 }
 
+type issueRow struct {
+	dolt.Issue
+	Rig string
+}
+
+type pageLink struct {
+	Num    int
+	URL    string
+	Active bool
+}
+
 type beadListData struct {
 	Status   string
 	Type     string
+	Priority string
 	Assignee string
 	Rig      string
-	Rigs     []string
-	Issues   []dolt.Issue
+
+	Rigs      []string
+	Assignees []string
+
+	Issues    []issueRow
+	Total     int
+	Page      int
+	PageSize  int
+	Pages     int
+	PageLinks []pageLink
 }
 
 func (s *Server) handleBeadList(w http.ResponseWriter, r *http.Request) {
@@ -140,11 +161,35 @@ func (s *Server) handleBeadList(w http.ResponseWriter, r *http.Request) {
 	typeFilter := q.Get("type")
 	assignee := q.Get("assignee")
 	rig := q.Get("rig")
+	priorityStr := q.Get("priority")
+
+	var priorityFilter int
+	if priorityStr != "" {
+		if p, err := strconv.Atoi(priorityStr); err == nil && p > 0 {
+			priorityFilter = p
+		}
+	}
+
+	page := 1
+	if p := q.Get("page"); p != "" {
+		if n, err := strconv.Atoi(p); err == nil && n > 0 {
+			page = n
+		}
+	}
+	const pageSize = 50
 
 	ctx := r.Context()
-	var allIssues []dolt.Issue
+	var allIssues []issueRow
+	assigneeSet := make(map[string]bool)
 
 	for _, dbName := range s.databases() {
+		// Collect assignees for filter dropdown (from all rigs, unfiltered)
+		if assignees, err := s.client.DistinctAssignees(ctx, dbName); err == nil {
+			for _, a := range assignees {
+				assigneeSet[a] = true
+			}
+		}
+
 		if rig != "" && dbName != rig {
 			continue
 		}
@@ -152,25 +197,103 @@ func (s *Server) handleBeadList(w http.ResponseWriter, r *http.Request) {
 			Status:   status,
 			Type:     typeFilter,
 			Assignee: assignee,
-			Limit:    200,
+			Priority: priorityFilter,
+			Limit:    500,
 		})
 		if err != nil {
 			log.Printf("list %s: %v", dbName, err)
 			continue
 		}
-		allIssues = append(allIssues, issues...)
+		for _, iss := range issues {
+			allIssues = append(allIssues, issueRow{Issue: iss, Rig: dbName})
+		}
+	}
+
+	sort.Slice(allIssues, func(i, j int) bool {
+		return allIssues[i].UpdatedAt.After(allIssues[j].UpdatedAt)
+	})
+
+	total := len(allIssues)
+	pages := (total + pageSize - 1) / pageSize
+	if pages == 0 {
+		pages = 1
+	}
+	if page > pages {
+		page = pages
+	}
+
+	start := (page - 1) * pageSize
+	end := start + pageSize
+	if start > total {
+		start = total
+	}
+	if end > total {
+		end = total
+	}
+	paged := allIssues[start:end]
+
+	var assigneeList []string
+	for a := range assigneeSet {
+		assigneeList = append(assigneeList, a)
+	}
+	sort.Strings(assigneeList)
+
+	var pageLinks []pageLink
+	for i := 1; i <= pages; i++ {
+		pageLinks = append(pageLinks, pageLink{
+			Num:    i,
+			URL:    beadFilterURL(status, typeFilter, rig, priorityStr, assignee, i),
+			Active: i == page,
+		})
 	}
 
 	data := beadListData{
-		Status:   status,
-		Type:     typeFilter,
-		Assignee: assignee,
-		Rig:      rig,
-		Rigs:     s.databases(),
-		Issues:   allIssues,
+		Status:    status,
+		Type:      typeFilter,
+		Priority:  priorityStr,
+		Assignee:  assignee,
+		Rig:       rig,
+		Rigs:      s.databases(),
+		Assignees: assigneeList,
+		Issues:    paged,
+		Total:     total,
+		Page:      page,
+		PageSize:  pageSize,
+		Pages:     pages,
+		PageLinks: pageLinks,
 	}
 
+	if r.Header.Get("HX-Request") != "" {
+		s.renderPartial(w, "beads.html", "beads-results", data)
+		return
+	}
 	s.render(w, "beads.html", data)
+}
+
+func beadFilterURL(status, typ, rig, priority, assignee string, page int) string {
+	v := url.Values{}
+	if status != "" {
+		v.Set("status", status)
+	}
+	if typ != "" {
+		v.Set("type", typ)
+	}
+	if rig != "" {
+		v.Set("rig", rig)
+	}
+	if priority != "" {
+		v.Set("priority", priority)
+	}
+	if assignee != "" {
+		v.Set("assignee", assignee)
+	}
+	if page > 1 {
+		v.Set("page", strconv.Itoa(page))
+	}
+	if len(v) == 0 {
+		return "/beads"
+	}
+	return "/beads?" + v.Encode()
 }
 
 type epicData struct {

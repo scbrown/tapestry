@@ -1,13 +1,69 @@
-{{template "head"}}Beads{{if .Status}} ({{.Status}}){{end}} — tapestry{{template "headclose"}}
+{{template "head"}}Beads — tapestry{{template "headclose"}}
 
 <div class="bead-list">
-  <h1>Beads{{if .Status}} — {{.Status}}{{end}}</h1>
+  <h1>Beads</h1>
 
-  <div class="filters">
-    <a href="/beads" {{if eq .Status ""}}class="active"{{end}}>All</a>
-    <a href="/beads?status=open" {{if eq .Status "open"}}class="active"{{end}}>Open</a>
-    <a href="/beads?status=in_progress" {{if eq .Status "in_progress"}}class="active"{{end}}>In Progress</a>
-    <a href="/beads?status=closed" {{if eq .Status "closed"}}class="active"{{end}}>Closed</a>
+  <form id="bead-filters" hx-get="/beads" hx-target="#bead-results" hx-push-url="true" hx-trigger="change">
+    <div class="filter-bar">
+      <div class="filter-group">
+        <label for="f-status">Status</label>
+        <select name="status" id="f-status">
+          <option value="">All</option>
+          <option value="open" {{if eq .Status "open"}}selected{{end}}>Open</option>
+          <option value="in_progress" {{if eq .Status "in_progress"}}selected{{end}}>In Progress</option>
+          <option value="hooked" {{if eq .Status "hooked"}}selected{{end}}>Hooked</option>
+          <option value="closed" {{if eq .Status "closed"}}selected{{end}}>Closed</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label for="f-rig">Rig</label>
+        <select name="rig" id="f-rig">
+          <option value="">All</option>
+          {{range .Rigs}}
+          <option value="{{.}}" {{if eq $.Rig .}}selected{{end}}>{{rigName .}}</option>
+          {{end}}
+        </select>
+      </div>
+      <div class="filter-group">
+        <label for="f-type">Type</label>
+        <select name="type" id="f-type">
+          <option value="">All</option>
+          <option value="task" {{if eq .Type "task"}}selected{{end}}>Task</option>
+          <option value="bug" {{if eq .Type "bug"}}selected{{end}}>Bug</option>
+          <option value="epic" {{if eq .Type "epic"}}selected{{end}}>Epic</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label for="f-priority">Priority</label>
+        <select name="priority" id="f-priority">
+          <option value="">All</option>
+          <option value="1" {{if eq .Priority "1"}}selected{{end}}>P1</option>
+          <option value="2" {{if eq .Priority "2"}}selected{{end}}>P2</option>
+          <option value="3" {{if eq .Priority "3"}}selected{{end}}>P3</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label for="f-assignee">Assignee</label>
+        <select name="assignee" id="f-assignee">
+          <option value="">All</option>
+          {{range .Assignees}}
+          <option value="{{.}}" {{if eq $.Assignee .}}selected{{end}}>{{shortActor .}}</option>
+          {{end}}
+        </select>
+      </div>
+    </div>
+  </form>
+
+  <div id="bead-results">
+    {{template "beads-results" .}}
+  </div>
+</div>
+
+{{template "foot"}}
+
+{{define "beads-results"}}
+  <div class="results-meta">
+    {{.Total}} beads{{if gt .Pages 1}} &middot; page {{.Page}} of {{.Pages}}{{end}}
   </div>
 
   {{if .Issues}}
@@ -15,9 +71,10 @@
   <table class="bead-table">
     <thead>
       <tr>
+        <th>Rig</th>
         <th>ID</th>
         <th>Title</th>
-        <th>Priority</th>
+        <th>Pri</th>
         <th>Type</th>
         <th>Status</th>
         <th>Assignee</th>
@@ -27,21 +84,33 @@
     <tbody>
       {{range .Issues}}
       <tr>
+        <td><span class="rig-label">{{rigName .Rig}}</span></td>
         <td><a href="/bead/{{.ID}}">{{.ID}}</a></td>
         <td>{{.Title}}</td>
         <td>{{priorityLabel .Priority}}</td>
         <td>{{.Type}}</td>
         <td>{{statusBadge .Status}}</td>
-        <td>{{.Assignee}}</td>
-        <td>{{.UpdatedAt.Format "Jan 02"}}</td>
+        <td title="{{.Assignee}}">{{shortActor .Assignee}}</td>
+        <td>{{timeAgo .UpdatedAt}}</td>
       </tr>
       {{end}}
     </tbody>
   </table>
   </div>
+
+  {{if gt .Pages 1}}
+  <nav class="pagination" aria-label="Pagination">
+    {{range .PageLinks}}
+    {{if .Active}}
+    <span class="page-link active">{{.Num}}</span>
+    {{else}}
+    <a class="page-link" href="{{.URL}}" hx-get="{{.URL}}" hx-target="#bead-results" hx-push-url="true">{{.Num}}</a>
+    {{end}}
+    {{end}}
+  </nav>
+  {{end}}
+
   {{else}}
   <p class="empty">No beads found.</p>
   {{end}}
-</div>
-
-{{template "foot"}}
+{{end}}

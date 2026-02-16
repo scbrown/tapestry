@@ -171,6 +171,20 @@ func (s *Server) render(w http.ResponseWriter, page string, data any) {
 	}
 }
 
+// renderPartial renders a named template block from a page template.
+// Used for HTMX partial responses that return only a fragment.
+func (s *Server) renderPartial(w http.ResponseWriter, page, block string, data any) {
+	t, ok := s.pages[page]
+	if !ok {
+		http.Error(w, "unknown page", http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	if err := t.ExecuteTemplate(w, block, data); err != nil {
+		log.Printf("render partial %s/%s: %v", page, block, err)
+	}
+}
+
 func priorityLabel(p int) string {
 	switch p {
 	case 0:

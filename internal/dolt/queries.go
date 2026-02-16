@@ -290,6 +290,27 @@ func (c *Client) StatusHistory(ctx context.Context, database, issueID string) ([
 	return transitions, rows.Err()
 }
 
+// DistinctAssignees returns distinct non-empty assignee values from the database.
+func (c *Client) DistinctAssignees(ctx context.Context, database string) ([]string, error) {
+	query := "SELECT DISTINCT COALESCE(assignee,'') FROM issues WHERE deleted_at IS NULL " +
+		"AND issue_type IN ('task','bug','epic') AND assignee IS NOT NULL AND assignee != '' " +
+		"ORDER BY assignee"
+	rows, err := c.queryDB(ctx, database, query)
+	if err != nil {
+		return nil, fmt.Errorf("dolt: distinct assignees: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+	var result []string
+	for rows.Next() {
+		var a string
+		if err := rows.Scan(&a); err != nil {
+			return nil, fmt.Errorf("dolt: scan assignee: %w", err)
+		}
+		result = append(result, a)
+	}
+	return result, rows.Err()
+}
+
 // buildIssueQuery constructs a SELECT for issues with optional filters
 // and optional AS OF clause. Does NOT include USE prefix.
 func buildIssueQuery(f IssueFilter, asOf string) (string, []any) {
