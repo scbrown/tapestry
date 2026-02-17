@@ -5,9 +5,28 @@ import (
 	"database/sql"
 	"fmt"
 	"strings"
+	"time"
 
 	_ "github.com/go-sql-driver/mysql"
 )
+
+// Rows wraps sql.Rows with connection lifecycle management.
+// When Close() is called, both the rows and the underlying connection
+// are returned to the pool.
+type Rows struct {
+	*sql.Rows
+	conn *sql.Conn
+}
+
+// Close closes the rows and returns the connection to the pool.
+func (r *Rows) Close() error {
+	rowsErr := r.Rows.Close()
+	connErr := r.conn.Close()
+	if rowsErr != nil {
+		return rowsErr
+	}
+	return connErr
+}
 
 // Client manages a connection pool to a Dolt server and provides
 // typed query methods for beads databases.
@@ -25,6 +44,9 @@ func New(cfg Config) (*Client, error) {
 	if err != nil {
 		return nil, fmt.Errorf("dolt: open: %w", err)
 	}
+	db.SetMaxOpenConns(10)
+	db.SetMaxIdleConns(5)
+	db.SetConnMaxLifetime(5 * time.Minute)
 	return &Client{db: db, cfg: cfg}, nil
 }
 
@@ -71,8 +93,8 @@ func (c *Client) ListBeadsDatabases(ctx context.Context) ([]DatabaseInfo, error)
 }
 
 // queryDB gets a dedicated connection, switches to the database, and runs
-// the query. This avoids multi-statement issues with prepared statements.
-func (c *Client) queryDB(ctx context.Context, database, query string, args ...any) (*sql.Rows, error) {
+// the query. The returned *Rows closes the connection when Close() is called.
+func (c *Client) queryDB(ctx context.Context, database, query string, args ...any) (*Rows, error) {
 	conn, err := c.db.Conn(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("dolt: conn: %w", err)
@@ -87,7 +109,6 @@ func (c *Client) queryDB(ctx context.Context, database, query string, args ...an
 		_ = conn.Close()
 		return nil, err
 	}
-	// Wrap rows to close the connection when rows are closed
-	return rows, nil
+	return &Rows{Rows: rows, conn: conn}, nil
 }
 
