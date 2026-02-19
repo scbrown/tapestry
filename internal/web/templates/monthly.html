@@ -56,34 +56,7 @@
             <span class="stat">Closed: {{.Closed}}</span>
         </div>
 
-        {{if .Recent}}
-        <table class="issues-table">
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>Title</th>
-                    <th>Status</th>
-                    <th>Priority</th>
-                    <th>Assignee</th>
-                    <th>Updated</th>
-                </tr>
-            </thead>
-            <tbody>
-                {{$db := .Name}}
-                {{range .Recent}}
-                <tr>
-                    <td><a href="/bead/{{$db}}/{{.ID}}"
-                           hx-get="/bead/{{$db}}/{{.ID}}" hx-target="#content" hx-push-url="true">{{.ID}}</a></td>
-                    <td>{{.Title}}</td>
-                    <td><span class="badge {{statusClass .Status}}">{{.Status}}</span></td>
-                    <td>{{priorityLabel .Priority}}</td>
-                    <td>{{.Assignee}}</td>
-                    <td>{{formatDate .UpdatedAt}}</td>
-                </tr>
-                {{end}}
-            </tbody>
-        </table>
-        {{end}}
+        <a href="/beads?rig={{.Name}}" hx-get="/beads?rig={{.Name}}" hx-target="#content" hx-push-url="true">Browse beads &rarr;</a>
         {{end}}
     </section>
     {{end}}

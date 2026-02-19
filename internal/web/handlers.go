@@ -149,11 +149,6 @@ func (s *Server) handleMonthly(w http.ResponseWriter, r *http.Request, yearStr, 
 			summary.Closed = closed
 		}
 
-		recent, err := s.ds.Issues(ctx, db.Name, dolt.IssueFilter{Limit: 5})
-		if err == nil {
-			summary.Recent = recent
-		}
-
 		data.Databases = append(data.Databases, summary)
 		data.TotalOpen += counts["open"]
 		data.TotalClosed += counts["closed"] + counts["completed"]

@@ -129,8 +129,7 @@ func TestMonthlyPage_WithData(t *testing.T) {
 	checks := []string{
 		"February 2026",
 		"beads_aegis",
-		"aegis-001",
-		"Test issue",
+		"Browse beads",
 		"goldblum",
 	}
 	for _, check := range checks {
