@@ -1,7 +1,12 @@
-{{template "head"}}Beads — tapestry{{template "headclose"}}
+{{define "title"}}Beads{{end}}
 
+{{define "content"}}
 <div class="bead-list">
   <h1>Beads</h1>
+
+  {{if .Err}}
+  <div class="error">{{.Err}}</div>
+  {{else}}
 
   <form id="bead-filters" hx-get="/beads" hx-target="#bead-results" hx-push-url="true" hx-trigger="change">
     <div class="filter-bar">
@@ -55,62 +60,59 @@
   </form>
 
   <div id="bead-results">
-    {{template "beads-results" .}}
-  </div>
-</div>
+    <div class="results-meta">
+      {{.Total}} beads{{if gt .Pages 1}} &middot; page {{.Page}} of {{.Pages}}{{end}}
+    </div>
 
-{{template "foot"}}
+    {{if .Issues}}
+    <div class="table-wrap">
+    <table class="bead-table">
+      <thead>
+        <tr>
+          <th>Rig</th>
+          <th>ID</th>
+          <th>Title</th>
+          <th>Pri</th>
+          <th>Type</th>
+          <th>Status</th>
+          <th>Assignee</th>
+          <th>Updated</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{range .Issues}}
+        <tr>
+          <td><span class="rig-label">{{rigName .Rig}}</span></td>
+          <td><a href="/bead/{{.ID}}">{{.ID}}</a></td>
+          <td>{{.Title}}</td>
+          <td>{{priorityLabel .Priority}}</td>
+          <td>{{.Type}}</td>
+          <td>{{statusBadge .Status}}</td>
+          <td title="{{.Assignee}}">{{shortActor .Assignee}}</td>
+          <td>{{timeAgo .UpdatedAt}}</td>
+        </tr>
+        {{end}}
+      </tbody>
+    </table>
+    </div>
 
-{{define "beads-results"}}
-  <div class="results-meta">
-    {{.Total}} beads{{if gt .Pages 1}} &middot; page {{.Page}} of {{.Pages}}{{end}}
-  </div>
-
-  {{if .Issues}}
-  <div class="table-wrap">
-  <table class="bead-table">
-    <thead>
-      <tr>
-        <th>Rig</th>
-        <th>ID</th>
-        <th>Title</th>
-        <th>Pri</th>
-        <th>Type</th>
-        <th>Status</th>
-        <th>Assignee</th>
-        <th>Updated</th>
-      </tr>
-    </thead>
-    <tbody>
-      {{range .Issues}}
-      <tr>
-        <td><span class="rig-label">{{rigName .Rig}}</span></td>
-        <td><a href="/bead/{{.ID}}">{{.ID}}</a></td>
-        <td>{{.Title}}</td>
-        <td>{{priorityLabel .Priority}}</td>
-        <td>{{.Type}}</td>
-        <td>{{statusBadge .Status}}</td>
-        <td title="{{.Assignee}}">{{shortActor .Assignee}}</td>
-        <td>{{timeAgo .UpdatedAt}}</td>
-      </tr>
+    {{if gt .Pages 1}}
+    <nav class="pagination" aria-label="Pagination">
+      {{range .PageLinks}}
+      {{if .Active}}
+      <span class="page-link active">{{.Num}}</span>
+      {{else}}
+      <a class="page-link" href="{{.URL}}" hx-get="{{.URL}}" hx-target="#bead-results" hx-push-url="true">{{.Num}}</a>
       {{end}}
-    </tbody>
-  </table>
+      {{end}}
+    </nav>
+    {{end}}
+
+    {{else}}
+    <p class="empty">No beads found.</p>
+    {{end}}
   </div>
 
-  {{if gt .Pages 1}}
-  <nav class="pagination" aria-label="Pagination">
-    {{range .PageLinks}}
-    {{if .Active}}
-    <span class="page-link active">{{.Num}}</span>
-    {{else}}
-    <a class="page-link" href="{{.URL}}" hx-get="{{.URL}}" hx-target="#bead-results" hx-push-url="true">{{.Num}}</a>
-    {{end}}
-    {{end}}
-  </nav>
   {{end}}
-
-  {{else}}
-  <p class="empty">No beads found.</p>
-  {{end}}
+</div>
 {{end}}

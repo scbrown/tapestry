@@ -1,20 +1,26 @@
-{{template "head"}}Search{{if .Query}} — {{.Query}}{{end}} — tapestry{{template "headclose"}}
+{{define "title"}}Search{{if .Query}} — {{.Query}}{{end}}{{end}}
 
+{{define "content"}}
 <div class="bead-list">
   <h1>Search{{if .Query}} — "{{.Query}}"{{end}}</h1>
+
+  {{if .Err}}
+  <div class="error">{{.Err}}</div>
+  {{end}}
 
   <form action="/search" method="get" class="search-form">
     <input type="search" name="q" value="{{.Query}}" placeholder="Search by title or description..." autofocus>
   </form>
 
   {{if .Query}}
-  <p class="filter-note">{{.Total}} result{{if ne .Total 1}}s{{end}} found</p>
+  <p class="filter-note">{{len .Issues}} result{{if ne (len .Issues) 1}}s{{end}} found</p>
 
-  {{if .Results}}
+  {{if .Issues}}
   <div class="table-wrap">
   <table class="bead-table">
     <thead>
       <tr>
+        <th>Rig</th>
         <th>ID</th>
         <th>Title</th>
         <th>Priority</th>
@@ -25,15 +31,16 @@
       </tr>
     </thead>
     <tbody>
-      {{range .Results}}
+      {{range .Issues}}
       <tr>
+        <td><span class="rig-label">{{rigName .Rig}}</span></td>
         <td><a href="/bead/{{.ID}}">{{.ID}}</a></td>
         <td>{{.Title}}</td>
         <td>{{priorityLabel .Priority}}</td>
         <td>{{.Type}}</td>
         <td>{{statusBadge .Status}}</td>
-        <td>{{.Assignee}}</td>
-        <td>{{.UpdatedAt.Format "Jan 02"}}</td>
+        <td title="{{.Assignee}}">{{shortActor .Assignee}}</td>
+        <td>{{timeAgo .UpdatedAt}}</td>
       </tr>
       {{end}}
     </tbody>
@@ -44,5 +51,4 @@
   {{end}}
   {{end}}
 </div>
-
-{{template "foot"}}
+{{end}}

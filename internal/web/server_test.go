@@ -295,3 +295,93 @@ func TestMonthNavigation(t *testing.T) {
 		t.Error("expected link to February 2026")
 	}
 }
+
+func TestBeadsList_NilDataSource(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/beads", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /beads status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "No database connection configured") {
+		t.Error("expected error message for nil data source")
+	}
+	if !strings.Contains(body, "Beads") {
+		t.Error("expected 'Beads' heading")
+	}
+}
+
+func TestBeadsList_WithData(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issues: []dolt.Issue{
+			{ID: "aegis-010", Title: "Test bead", Status: "open", Priority: 1, Rig: "beads_aegis", UpdatedAt: time.Now()},
+		},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/beads", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /beads status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "aegis-010") {
+		t.Errorf("body missing bead ID")
+	}
+	if !strings.Contains(body, "Test bead") {
+		t.Errorf("body missing bead title")
+	}
+	if !strings.Contains(body, `href="/bead/aegis-010"`) {
+		t.Errorf("body missing bead link")
+	}
+}
+
+func TestSearch_EmptyQuery(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/search", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /search status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Search") {
+		t.Error("expected 'Search' heading")
+	}
+}
+
+func TestSearch_WithResults(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issues: []dolt.Issue{
+			{ID: "aegis-020", Title: "Found bead", Status: "open", Rig: "beads_aegis", UpdatedAt: time.Now()},
+		},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/search?q=found", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /search?q=found status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "aegis-020") {
+		t.Errorf("body missing search result ID")
+	}
+	if !strings.Contains(body, "Found bead") {
+		t.Errorf("body missing search result title")
+	}
+}
