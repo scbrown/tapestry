@@ -1,22 +1,30 @@
 package cli
 
-import (
-	"testing"
-)
+import "testing"
 
-func TestServeCmd_Flags(t *testing.T) {
+func TestServeCmd_DefaultFlags(t *testing.T) {
 	cmd := newServeCmd()
-	if cmd.Use != "serve" {
-		t.Errorf("Use = %q, want serve", cmd.Use)
+
+	tests := []struct {
+		flag string
+		want string
+	}{
+		{"host", "localhost"},
+		{"port", "8070"},
+		{"dolt-host", "127.0.0.1"},
+		{"dolt-port", "3306"},
+		{"dolt-user", "root"},
 	}
 
-	hostFlag := cmd.Flags().Lookup("host")
-	if hostFlag == nil {
-		t.Fatal("missing --host flag")
-	}
-
-	portFlag := cmd.Flags().Lookup("port")
-	if portFlag == nil {
-		t.Fatal("missing --port flag")
+	for _, tt := range tests {
+		t.Run(tt.flag, func(t *testing.T) {
+			f := cmd.Flags().Lookup(tt.flag)
+			if f == nil {
+				t.Fatalf("flag %q not found", tt.flag)
+			}
+			if f.DefValue != tt.want {
+				t.Errorf("flag %q default = %q, want %q", tt.flag, f.DefValue, tt.want)
+			}
+		})
 	}
 }

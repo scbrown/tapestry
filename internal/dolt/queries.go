@@ -228,6 +228,31 @@ func (c *Client) AgentActivity(ctx context.Context, database string) ([]AgentSta
 	return agents, rows.Err()
 }
 
+// AgentActivityInRange returns the number of issues updated per assignee within
+// the given time range. Only issues with a non-empty assignee are counted.
+func (c *Client) AgentActivityInRange(ctx context.Context, database string, from, to time.Time) (map[string]int, error) {
+	query := "SELECT assignee, COUNT(*) FROM issues " +
+		"WHERE deleted_at IS NULL AND issue_type IN ('task','bug','epic') " +
+		"AND updated_at >= ? AND updated_at < ? AND assignee != '' " +
+		"GROUP BY assignee ORDER BY COUNT(*) DESC"
+	rows, err := c.queryDB(ctx, database, query, from, to)
+	if err != nil {
+		return nil, fmt.Errorf("dolt: agent activity in range: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+
+	activity := make(map[string]int)
+	for rows.Next() {
+		var agent string
+		var count int
+		if err := rows.Scan(&agent, &count); err != nil {
+			return nil, fmt.Errorf("dolt: scan agent activity: %w", err)
+		}
+		activity[agent] = count
+	}
+	return activity, rows.Err()
+}
+
 // SearchIssues returns issues where the title or description matches the query string.
 func (c *Client) SearchIssues(ctx context.Context, database, q string, limit int) ([]Issue, error) {
 	if q == "" {

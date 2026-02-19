@@ -1,176 +1,115 @@
-{{template "head"}}{{.MonthName}} {{.Year}} — tapestry{{template "headclose"}}
+{{define "title"}}{{.Month}} {{.Year}}{{end}}
 
+{{define "content"}}
 <div class="monthly">
-  <div class="month-nav">
-    <a href="/month/{{.PrevYear}}/{{printf "%02d" .PrevMonth}}">&larr; prev</a>
-    <h1>{{.MonthName}} {{.Year}}</h1>
-    {{if .HasNext}}<a href="/month/{{.NextYear}}/{{printf "%02d" .NextMonth}}">next &rarr;</a>{{end}}
-  </div>
-
-  {{if .AllRigs}}
-  <div class="filters">
-    <a href="/month/{{.Year}}/{{printf "%d" .Month}}"{{if eq .RigFilter ""}} class="active"{{end}}>All</a>
-    {{range .AllRigs}}
-    <a href="/month/{{$.Year}}/{{printf "%d" $.Month}}?rig={{.}}"{{if eq $.RigFilter .}} class="active"{{end}}>{{rigName .}}</a>
-    {{end}}
-  </div>
-  {{end}}
-
-  <div class="stats-grid stats-grid-5">
-    <div class="stat-card">
-      <div class="stat-value">{{.TotalStats.Created}}</div>
-      <div class="stat-label">Created</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-value">{{.TotalStats.Closed}}</div>
-      <div class="stat-label">Closed</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-value">{{.TotalStats.Open}}</div>
-      <div class="stat-label">Open</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-value">{{.TotalStats.InFlight}}</div>
-      <div class="stat-label">In Flight</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-value">{{.TotalStats.CompletionRate}}%</div>
-      <div class="stat-label">Completion Rate</div>
-    </div>
-  </div>
-
-  {{range .Rigs}}
-  <section class="rig-section">
-    <h2>{{rigName .Name}}</h2>
-    <div class="rig-stats">
-      <span>{{.Stats.Created}} created</span>
-      <span>{{.Stats.Closed}} closed</span>
-      <span>{{.Stats.Open}} open</span>
-      <span>{{.Stats.InFlight}} in-flight</span>
-      <span>{{.Stats.CompletionRate}}% complete</span>
-    </div>
-
-    {{if .Top}}
-    <h3>Top Completions</h3>
-    <table class="bead-table">
-      <thead>
-        <tr>
-          <th>ID</th>
-          <th>Title</th>
-          <th>Priority</th>
-          <th>Type</th>
-          <th>Status</th>
-        </tr>
-      </thead>
-      <tbody>
-        {{range .Top}}
-        <tr>
-          <td><a href="/bead/{{.ID}}">{{.ID}}</a></td>
-          <td>{{.Title}}</td>
-          <td>{{priorityLabel .Priority}}</td>
-          <td>{{.Type}}</td>
-          <td>{{statusBadge .Status}}</td>
-        </tr>
+    <div class="month-nav">
+        <a href="/{{.PrevYear}}/{{fmtMonth .PrevMonth}}"
+           hx-get="/{{.PrevYear}}/{{fmtMonth .PrevMonth}}" hx-target="#content" hx-push-url="true">
+            &larr; {{.PrevMonth}} {{.PrevYear}}
+        </a>
+        <h1>{{.Month}} {{.Year}}</h1>
+        {{if .HasNext}}
+        <a href="/{{.NextYear}}/{{fmtMonth .NextMonth}}"
+           hx-get="/{{.NextYear}}/{{fmtMonth .NextMonth}}" hx-target="#content" hx-push-url="true">
+            {{.NextMonth}} {{.NextYear}} &rarr;
+        </a>
+        {{else}}
+        <span></span>
         {{end}}
-      </tbody>
-    </table>
+    </div>
+
+    {{if .Err}}
+    <div class="error">{{.Err}}</div>
     {{else}}
-    <p class="empty">No completions this month.</p>
+
+    <div class="stats-cards">
+        <div class="card">
+            <span class="card-value">{{.TotalOpen}}</span>
+            <span class="card-label">Open</span>
+        </div>
+        <div class="card">
+            <span class="card-value">{{.TotalClosed}}</span>
+            <span class="card-label">Total Closed</span>
+        </div>
+        <div class="card">
+            <span class="card-value">{{.TotalCreated}}</span>
+            <span class="card-label">Created This Month</span>
+        </div>
+        <div class="card">
+            <span class="card-value">{{.TotalClosedMonth}}</span>
+            <span class="card-label">Closed This Month</span>
+        </div>
+    </div>
+
+    {{range .Databases}}
+    <section class="db-section">
+        <h2>{{.Name}}</h2>
+        {{if .Err}}
+        <div class="error">{{.Err}}</div>
+        {{else}}
+        <div class="db-stats">
+            <span class="stat">Total: {{.Total}}</span>
+            {{range $status, $count := .Counts}}
+            <span class="badge {{statusClass $status}}">{{$status}}: {{$count}}</span>
+            {{end}}
+            <span class="stat">Created: {{.Created}}</span>
+            <span class="stat">Closed: {{.Closed}}</span>
+        </div>
+
+        {{if .Recent}}
+        <table class="issues-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Title</th>
+                    <th>Status</th>
+                    <th>Priority</th>
+                    <th>Assignee</th>
+                    <th>Updated</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{$db := .Name}}
+                {{range .Recent}}
+                <tr>
+                    <td><a href="/bead/{{$db}}/{{.ID}}"
+                           hx-get="/bead/{{$db}}/{{.ID}}" hx-target="#content" hx-push-url="true">{{.ID}}</a></td>
+                    <td>{{.Title}}</td>
+                    <td><span class="badge {{statusClass .Status}}">{{.Status}}</span></td>
+                    <td>{{priorityLabel .Priority}}</td>
+                    <td>{{.Assignee}}</td>
+                    <td>{{formatDate .UpdatedAt}}</td>
+                </tr>
+                {{end}}
+            </tbody>
+        </table>
+        {{end}}
+        {{end}}
+    </section>
     {{end}}
-  </section>
-  {{end}}
 
-  {{if .Weeks}}
-  <section class="rig-section">
-    <h2>Burndown Trends</h2>
-    <table class="bead-table">
-      <thead>
-        <tr>
-          <th>Week</th>
-          <th>Created</th>
-          <th>Closed</th>
-          <th>Net</th>
-          <th></th>
-        </tr>
-      </thead>
-      <tbody>
-        {{range .Weeks}}
-        <tr>
-          <td>{{.Label}}</td>
-          <td>{{.Created}}</td>
-          <td>{{.Closed}}</td>
-          <td class="{{if lt .Net 0}}burndown-good{{else if gt .Net 0}}burndown-warn{{end}}">{{if gt .Net 0}}+{{end}}{{.Net}}</td>
-          <td>
-            <div class="burndown-bar">
-              {{if gt .Closed 0}}<div class="burndown-closed" style="width:{{.Closed}}ch" title="{{.Closed}} closed"></div>{{end}}
-              {{if gt .Created 0}}<div class="burndown-created" style="width:{{.Created}}ch" title="{{.Created}} created"></div>{{end}}
-            </div>
-          </td>
-        </tr>
-        {{end}}
-      </tbody>
-    </table>
-  </section>
-  {{end}}
+    {{if .Agents}}
+    <section class="agent-section">
+        <h2>Agent Activity</h2>
+        <table class="agents-table">
+            <thead>
+                <tr>
+                    <th>Agent</th>
+                    <th>Issues Touched</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{range $agent, $count := .Agents}}
+                <tr>
+                    <td>{{$agent}}</td>
+                    <td>{{$count}}</td>
+                </tr>
+                {{end}}
+            </tbody>
+        </table>
+    </section>
+    {{end}}
 
-  {{if .Epics}}
-  <section class="rig-section">
-    <h2>Epic Progress</h2>
-    <table class="bead-table">
-      <thead>
-        <tr>
-          <th>Epic</th>
-          <th>Rig</th>
-          <th>Progress</th>
-          <th>Status</th>
-        </tr>
-      </thead>
-      <tbody>
-        {{range .Epics}}
-        <tr>
-          <td><a href="/epic/{{.Issue.ID}}">{{.Issue.Title}}</a></td>
-          <td>{{rigName .RigName}}</td>
-          <td>
-            <div class="progress-bar progress-bar-sm">
-              <div class="progress-fill" style="width:{{progressPct .Progress}}%"></div>
-            </div>
-            <span class="progress-label-sm">{{.Progress.Closed}}/{{.Progress.Total}}</span>
-          </td>
-          <td>{{statusBadge .Issue.Status}}</td>
-        </tr>
-        {{end}}
-      </tbody>
-    </table>
-  </section>
-  {{end}}
-
-  {{if .Agents}}
-  <section class="rig-section">
-    <h2>Agent Activity</h2>
-    <table class="bead-table">
-      <thead>
-        <tr>
-          <th>Agent</th>
-          <th>Owned</th>
-          <th>Closed</th>
-          <th>Open</th>
-          <th>In Progress</th>
-        </tr>
-      </thead>
-      <tbody>
-        {{range .Agents}}
-        <tr>
-          <td><a href="/agent/{{.Name}}">{{shortActor .Name}}</a></td>
-          <td>{{.Owned}}</td>
-          <td>{{.Closed}}</td>
-          <td>{{.Open}}</td>
-          <td>{{.InProgress}}</td>
-        </tr>
-        {{end}}
-      </tbody>
-    </table>
-  </section>
-  {{end}}
+    {{end}}
 </div>
-
-{{template "foot"}}
+{{end}}

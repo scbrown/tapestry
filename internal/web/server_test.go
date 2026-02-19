@@ -1,89 +1,291 @@
 package web
 
 import (
-	"html/template"
+	"context"
+	"net/http"
+	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
+
+	"github.com/scbrown/tapestry/internal/dolt"
 )
 
-func TestPriorityLabel(t *testing.T) {
-	tests := []struct {
-		in   int
-		want string
-	}{
-		{0, "P0"},
-		{1, "P1"},
-		{2, "P2"},
-		{3, "P3"},
-		{5, "P5"},
+type mockDataSource struct {
+	databases []dolt.DatabaseInfo
+	counts    map[string]int
+	created   int
+	closed    int
+	activity  map[string]int
+	issues    []dolt.Issue
+	issue     *dolt.Issue
+	comments  []dolt.Comment
+	deps      []dolt.Dependency
+	err       error
+}
+
+func (m *mockDataSource) ListBeadsDatabases(_ context.Context) ([]dolt.DatabaseInfo, error) {
+	return m.databases, m.err
+}
+
+func (m *mockDataSource) CountByStatus(_ context.Context, _ string) (map[string]int, error) {
+	return m.counts, m.err
+}
+
+func (m *mockDataSource) CountCreatedInRange(_ context.Context, _ string, _, _ time.Time) (int, error) {
+	return m.created, m.err
+}
+
+func (m *mockDataSource) CountClosedInRange(_ context.Context, _ string, _, _ time.Time) (int, error) {
+	return m.closed, m.err
+}
+
+func (m *mockDataSource) AgentActivityInRange(_ context.Context, _ string, _, _ time.Time) (map[string]int, error) {
+	return m.activity, m.err
+}
+
+func (m *mockDataSource) Issues(_ context.Context, _ string, _ dolt.IssueFilter) ([]dolt.Issue, error) {
+	return m.issues, m.err
+}
+
+func (m *mockDataSource) IssueByID(_ context.Context, _, _ string) (*dolt.Issue, error) {
+	return m.issue, m.err
+}
+
+func (m *mockDataSource) Comments(_ context.Context, _, _ string) ([]dolt.Comment, error) {
+	return m.comments, m.err
+}
+
+func (m *mockDataSource) Dependencies(_ context.Context, _, _ string) ([]dolt.Dependency, error) {
+	return m.deps, m.err
+}
+
+func TestIndexRedirect(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusFound {
+		t.Fatalf("GET / status = %d, want %d", w.Code, http.StatusFound)
 	}
-	for _, tt := range tests {
-		got := priorityLabel(tt.in)
-		if got != tt.want {
-			t.Errorf("priorityLabel(%d) = %q, want %q", tt.in, got, tt.want)
+	loc := w.Header().Get("Location")
+	now := time.Now()
+	want := "/" + time.Now().Format("2006") + "/" + now.Format("01")
+	if loc != want {
+		t.Errorf("redirect location = %q, want %q", loc, want)
+	}
+}
+
+func TestMonthlyPage_NilDataSource(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/2026/02", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "No database connection configured") {
+		t.Error("expected error message for nil data source")
+	}
+	if !strings.Contains(body, "February 2026") {
+		t.Error("expected month/year in output")
+	}
+}
+
+func TestMonthlyPage_WithData(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		counts:    map[string]int{"open": 5, "closed": 3},
+		created:   2,
+		closed:    1,
+		activity:  map[string]int{"goldblum": 4},
+		issues: []dolt.Issue{
+			{ID: "aegis-001", Title: "Test issue", Status: "open", UpdatedAt: time.Now()},
+		},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/2026/02", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
+	}
+
+	body := w.Body.String()
+	checks := []string{
+		"February 2026",
+		"beads_aegis",
+		"aegis-001",
+		"Test issue",
+		"goldblum",
+	}
+	for _, check := range checks {
+		if !strings.Contains(body, check) {
+			t.Errorf("body missing %q", check)
 		}
 	}
 }
 
-func TestStatusBadge(t *testing.T) {
-	tests := []struct {
-		in    string
-		color string
-	}{
-		{"open", "#3b82f6"},
-		{"in_progress", "#f59e0b"},
-		{"closed", "#22c55e"},
-		{"unknown", "gray"},
+func TestMonthlyPage_HTMXPartial(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/2026/02", nil)
+	req.Header.Set("HX-Request", "true")
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
 	}
+
+	body := w.Body.String()
+	// HTMX partial should NOT include the full HTML shell
+	if strings.Contains(body, "<!DOCTYPE html>") {
+		t.Error("HTMX partial should not include DOCTYPE")
+	}
+	if !strings.Contains(body, "February 2026") {
+		t.Error("partial should include page content")
+	}
+}
+
+func TestMonthlyPage_InvalidMonth(t *testing.T) {
+	srv := New(nil)
+
+	tests := []struct {
+		path string
+	}{
+		{"/2026/00"},
+		{"/2026/13"},
+		{"/2026/ab"},
+	}
+
 	for _, tt := range tests {
-		got := string(statusBadge(tt.in))
-		if !strings.Contains(got, tt.color) {
-			t.Errorf("statusBadge(%q) = %q, want color %q", tt.in, got, tt.color)
+		req := httptest.NewRequest("GET", tt.path, nil)
+		w := httptest.NewRecorder()
+		srv.ServeHTTP(w, req)
+
+		if w.Code != http.StatusBadRequest {
+			t.Errorf("GET %s status = %d, want %d", tt.path, w.Code, http.StatusBadRequest)
 		}
 	}
 }
 
-func TestRenderMarkdown(t *testing.T) {
-	tests := []struct {
-		name string
-		in   string
-		want string
-	}{
-		{"plain text", "hello world", "<p>hello world</p>\n"},
-		{"bold", "**bold**", "<p><strong>bold</strong></p>\n"},
-		{"escaped newlines", `line1\nline2`, "<p>line1<br>\nline2</p>\n"},
-		{"code block", "```\ncode\n```", "<pre><code>code\n</code></pre>\n"},
-		{"link", "[link](https://example.com)", "<p><a href=\"https://example.com\">link</a></p>\n"},
+func TestBeadPage_Found(t *testing.T) {
+	ds := &mockDataSource{
+		issue: &dolt.Issue{
+			ID:          "aegis-001",
+			Title:       "Fix the widget",
+			Status:      "open",
+			Priority:    1,
+			Type:        "bug",
+			Description: "The widget is broken.",
+			CreatedAt:   time.Date(2026, 2, 10, 0, 0, 0, 0, time.UTC),
+			UpdatedAt:   time.Date(2026, 2, 14, 0, 0, 0, 0, time.UTC),
+		},
+		comments: []dolt.Comment{
+			{ID: 1, IssueID: "aegis-001", Author: "nux", Body: "Working on it."},
+		},
+		deps: []dolt.Dependency{
+			{FromID: "aegis-001", ToID: "aegis-002", Type: "blocks"},
+		},
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := string(renderMarkdown(tt.in))
-			if got != tt.want {
-				t.Errorf("renderMarkdown(%q) =\n  %q\nwant\n  %q", tt.in, got, tt.want)
-			}
-		})
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/bead/beads_aegis/aegis-001", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
+	}
+
+	body := w.Body.String()
+	checks := []string{
+		"Fix the widget",
+		"aegis-001",
+		"The widget is broken.",
+		"Working on it.",
+		"nux",
+		"aegis-002",
+	}
+	for _, check := range checks {
+		if !strings.Contains(body, check) {
+			t.Errorf("body missing %q", check)
+		}
 	}
 }
 
-func TestTemplatesParse(t *testing.T) {
-	funcMap := template.FuncMap{
-		"priorityLabel": priorityLabel,
-		"statusBadge":   statusBadge,
-		"progressPct":   progressPct,
-		"payloadString": func(s string) string { return s },
-		"timeAgo":       timeAgo,
-		"shortActor":    shortActor,
-		"fmtDuration":   fmtDuration,
-		"rigName":       func(s string) string { return strings.TrimPrefix(s, "beads_") },
-		"nl":            func(s string) string { return strings.ReplaceAll(s, `\n`, "\n") },
-		"markdown":      renderMarkdown,
+func TestBeadPage_NotFound(t *testing.T) {
+	ds := &mockDataSource{
+		issue: nil, // not found
 	}
 
-	for _, name := range []string{"monthly.html", "bead.html", "beads.html", "epic.html"} {
-		_, err := template.New(name).Funcs(funcMap).ParseFS(templateFS,
-			"templates/layout.html", "templates/"+name)
-		if err != nil {
-			t.Errorf("parse %s: %v", name, err)
-		}
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/bead/beads_aegis/nonexistent", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusNotFound {
+		t.Errorf("status = %d, want %d", w.Code, http.StatusNotFound)
+	}
+}
+
+func TestBeadPage_NilDataSource(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/bead/beads_aegis/aegis-001", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
+	}
+
+	body := w.Body.String()
+	if !strings.Contains(body, "No database connection configured") {
+		t.Error("expected error message for nil data source")
+	}
+}
+
+func TestStaticAssets(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/static/style.css", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
+	}
+	if !strings.Contains(w.Body.String(), ":root") {
+		t.Error("expected CSS content")
+	}
+}
+
+func TestMonthNavigation(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/2026/01", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	body := w.Body.String()
+	// Should have link to previous month (December 2025)
+	if !strings.Contains(body, "/2025/12") {
+		t.Error("expected link to December 2025")
+	}
+	// Should have link to next month (February 2026)
+	if !strings.Contains(body, "/2026/02") {
+		t.Error("expected link to February 2026")
 	}
 }

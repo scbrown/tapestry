@@ -1,52 +1,23 @@
-{{define "head"}}<!DOCTYPE html>
+{{define "layout"}}
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{{end}}
-
-{{define "headclose"}}</title>
-  <link rel="stylesheet" href="/static/style.css">
-  <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{template "title" .}} — Tapestry</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <script src="https://unpkg.com/htmx.org@2.0.4"></script>
 </head>
 <body>
-  <a href="#main" class="skip-link">Skip to content</a>
-  <nav class="topnav" role="navigation" aria-label="Main">
-    <a href="/" class="logo">tapestry</a>
-    <a href="/work">work</a>
-    <a href="/epics">epics</a>
-    <a href="/agents">agents</a>
-    <a href="/decisions">decisions</a>
-    <a href="/commits">commits</a>
-    <a href="/beads">all beads</a>
-    <a href="/events">events</a>
-    <div class="nav-search">
-      <form action="/search" method="get">
-        <input type="search" name="q" id="search-input" placeholder="Search beads..." aria-label="Search beads">
-        <span class="search-hint">/</span>
-      </form>
-    </div>
-  </nav>
-  <main id="main">
-{{end}}
-
-{{define "foot"}}
-  </main>
-  <footer>
-    <p>tapestry — the archivist for your agent fleet</p>
-  </footer>
-  <script>
-    document.addEventListener('keydown', function(e) {
-      if (e.key === '/' && !e.ctrlKey && !e.metaKey) {
-        var el = document.activeElement;
-        if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA')) return;
-        e.preventDefault();
-        document.getElementById('search-input').focus();
-      }
-      if (e.key === 'Escape') {
-        document.activeElement.blur();
-      }
-    });
-  </script>
+    <header>
+        <nav>
+            <a href="/" class="logo">Tapestry</a>
+            <span class="tagline">archivist dashboard</span>
+        </nav>
+    </header>
+    <main id="content">
+        {{template "content" .}}
+    </main>
 </body>
-</html>{{end}}
+</html>
+{{end}}
