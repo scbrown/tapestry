@@ -14,6 +14,7 @@ type Issue struct {
 	Assignee    string
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
+	Rig         string // database name, set by caller
 }
 
 // Comment represents an issue comment row.

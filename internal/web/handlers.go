@@ -1,7 +1,9 @@
 package web
 
 import (
+	"context"
 	"fmt"
+	"log"
 	"net/http"
 	"strconv"
 	"time"
@@ -44,9 +46,37 @@ type beadData struct {
 	Err      string
 }
 
+type beadsListData struct {
+	Issues    []dolt.Issue
+	Total     int
+	Status    string
+	Rig       string
+	Type      string
+	Priority  string
+	Assignee  string
+	Rigs      []string
+	Assignees []string
+	Page      int
+	Pages     int
+	PageLinks []pageLink
+	Err       string
+}
+
+type pageLink struct {
+	Num    int
+	URL    string
+	Active bool
+}
+
+type searchData struct {
+	Query  string
+	Issues []dolt.Issue
+	Err    string
+}
+
 func (s *Server) handleIndex(w http.ResponseWriter, r *http.Request) {
 	now := time.Now()
-	http.Redirect(w, r, fmt.Sprintf("/%d/%02d", now.Year(), now.Month()), http.StatusFound)
+	s.handleMonthly(w, r, strconv.Itoa(now.Year()), fmt.Sprintf("%02d", now.Month()))
 }
 
 func (s *Server) handleMonthly(w http.ResponseWriter, r *http.Request, yearStr, monthStr string) {
@@ -175,4 +205,231 @@ func (s *Server) handleBead(w http.ResponseWriter, r *http.Request, database, id
 	}
 
 	s.render(w, r, "bead", data)
+}
+
+// handleBeadLookup handles 2-segment /bead/{id} URLs by searching across all
+// databases for the bead. This avoids the N+1 query pattern of the old code
+// by trying databases in a sensible order.
+func (s *Server) handleBeadLookup(w http.ResponseWriter, r *http.Request, id string) {
+	if s.ds == nil {
+		http.Error(w, "no database", http.StatusServiceUnavailable)
+		return
+	}
+
+	ctx := r.Context()
+
+	dbs, err := s.ds.ListBeadsDatabases(ctx)
+	if err != nil {
+		http.Error(w, "database error", http.StatusInternalServerError)
+		return
+	}
+
+	// Also check non-beads_ databases that might contain issues
+	allDBs, _ := s.allDatabases(ctx)
+
+	// Try beads_ databases first, then others
+	tried := make(map[string]bool)
+	for _, db := range dbs {
+		tried[db.Name] = true
+		issue, err := s.ds.IssueByID(ctx, db.Name, id)
+		if err != nil {
+			continue
+		}
+		if issue != nil {
+			s.handleBead(w, r, db.Name, id)
+			return
+		}
+	}
+	for _, db := range allDBs {
+		if tried[db] {
+			continue
+		}
+		issue, err := s.ds.IssueByID(ctx, db, id)
+		if err != nil {
+			continue
+		}
+		if issue != nil {
+			s.handleBead(w, r, db, id)
+			return
+		}
+	}
+
+	http.NotFound(w, r)
+}
+
+// handleBeadList serves the /beads page with filterable bead listing.
+func (s *Server) handleBeadList(w http.ResponseWriter, r *http.Request) {
+	data := beadsListData{
+		Status:   r.URL.Query().Get("status"),
+		Rig:      r.URL.Query().Get("rig"),
+		Type:     r.URL.Query().Get("type"),
+		Priority: r.URL.Query().Get("priority"),
+		Assignee: r.URL.Query().Get("assignee"),
+		Page:     1,
+	}
+
+	if p := r.URL.Query().Get("page"); p != "" {
+		if pn, err := strconv.Atoi(p); err == nil && pn > 0 {
+			data.Page = pn
+		}
+	}
+
+	if s.ds == nil {
+		data.Err = "No database connection configured"
+		s.render(w, r, "beads", data)
+		return
+	}
+
+	ctx := r.Context()
+
+	dbs, err := s.ds.ListBeadsDatabases(ctx)
+	if err != nil {
+		data.Err = fmt.Sprintf("Failed to list databases: %v", err)
+		s.render(w, r, "beads", data)
+		return
+	}
+
+	// Also include non-beads_ databases
+	allDBs, _ := s.allDatabases(ctx)
+	dbSet := make(map[string]bool)
+	for _, db := range dbs {
+		dbSet[db.Name] = true
+	}
+	for _, db := range allDBs {
+		if !dbSet[db] {
+			dbs = append(dbs, dolt.DatabaseInfo{Name: db})
+			dbSet[db] = true
+		}
+	}
+
+	filter := dolt.IssueFilter{}
+	if data.Status != "" {
+		filter.Status = data.Status
+	}
+	if data.Type != "" {
+		filter.Type = data.Type
+	}
+	if data.Priority != "" {
+		if p, err := strconv.Atoi(data.Priority); err == nil {
+			filter.Priority = p
+		}
+	}
+	if data.Assignee != "" {
+		filter.Assignee = data.Assignee
+	}
+
+	rigSet := make(map[string]bool)
+	assigneeSet := make(map[string]bool)
+
+	for _, db := range dbs {
+		if data.Rig != "" && db.Name != data.Rig {
+			continue
+		}
+
+		issues, err := s.ds.Issues(ctx, db.Name, filter)
+		if err != nil {
+			log.Printf("beads list: query %s: %v", db.Name, err)
+			continue
+		}
+
+		for i := range issues {
+			issues[i].Rig = db.Name
+		}
+		data.Issues = append(data.Issues, issues...)
+
+		rigSet[db.Name] = true
+		assignees, _ := s.ds.DistinctAssignees(ctx, db.Name)
+		for _, a := range assignees {
+			assigneeSet[a] = true
+		}
+	}
+
+	data.Total = len(data.Issues)
+
+	// Pagination: 50 per page
+	const perPage = 50
+	if data.Total > perPage {
+		data.Pages = (data.Total + perPage - 1) / perPage
+		start := (data.Page - 1) * perPage
+		end := start + perPage
+		if end > data.Total {
+			end = data.Total
+		}
+		if start < data.Total {
+			data.Issues = data.Issues[start:end]
+		} else {
+			data.Issues = nil
+		}
+	} else {
+		data.Pages = 1
+	}
+
+	for rig := range rigSet {
+		data.Rigs = append(data.Rigs, rig)
+	}
+	for a := range assigneeSet {
+		data.Assignees = append(data.Assignees, a)
+	}
+
+	s.render(w, r, "beads", data)
+}
+
+// handleSearch serves the /search endpoint.
+func (s *Server) handleSearch(w http.ResponseWriter, r *http.Request) {
+	q := r.URL.Query().Get("q")
+	data := searchData{Query: q}
+
+	if s.ds == nil || q == "" {
+		s.render(w, r, "search", data)
+		return
+	}
+
+	ctx := r.Context()
+
+	dbs, err := s.ds.ListBeadsDatabases(ctx)
+	if err != nil {
+		data.Err = fmt.Sprintf("Failed to list databases: %v", err)
+		s.render(w, r, "search", data)
+		return
+	}
+
+	allDBs, _ := s.allDatabases(ctx)
+	dbSet := make(map[string]bool)
+	for _, db := range dbs {
+		dbSet[db.Name] = true
+	}
+	for _, db := range allDBs {
+		if !dbSet[db] {
+			dbs = append(dbs, dolt.DatabaseInfo{Name: db})
+		}
+	}
+
+	for _, db := range dbs {
+		results, err := s.ds.SearchIssues(ctx, db.Name, q, 20)
+		if err != nil {
+			continue
+		}
+		for i := range results {
+			results[i].Rig = db.Name
+		}
+		data.Issues = append(data.Issues, results...)
+	}
+
+	s.render(w, r, "search", data)
+}
+
+// allDatabases returns database names that contain an issues table
+// but don't start with "beads_" (to complement ListBeadsDatabases).
+func (s *Server) allDatabases(ctx context.Context) ([]string, error) {
+	// Check well-known databases that aren't prefixed with beads_
+	known := []string{"aegis", "gastown", "tapestry", "bobbin"}
+	var result []string
+	for _, db := range known {
+		// Quick probe: try to read a single issue
+		_, err := s.ds.IssueByID(ctx, db, "__probe__")
+		if err == nil {
+			result = append(result, db)
+		}
+	}
+	return result, nil
 }

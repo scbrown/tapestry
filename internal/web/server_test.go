@@ -60,21 +60,27 @@ func (m *mockDataSource) Dependencies(_ context.Context, _, _ string) ([]dolt.De
 	return m.deps, m.err
 }
 
-func TestIndexRedirect(t *testing.T) {
+func (m *mockDataSource) SearchIssues(_ context.Context, _, _ string, _ int) ([]dolt.Issue, error) {
+	return m.issues, m.err
+}
+
+func (m *mockDataSource) DistinctAssignees(_ context.Context, _ string) ([]string, error) {
+	return nil, m.err
+}
+
+func TestIndexRendersMonthly(t *testing.T) {
 	srv := New(nil)
 	req := httptest.NewRequest("GET", "/", nil)
 	w := httptest.NewRecorder()
 
 	srv.ServeHTTP(w, req)
 
-	if w.Code != http.StatusFound {
-		t.Fatalf("GET / status = %d, want %d", w.Code, http.StatusFound)
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET / status = %d, want %d", w.Code, http.StatusOK)
 	}
-	loc := w.Header().Get("Location")
-	now := time.Now()
-	want := "/" + time.Now().Format("2006") + "/" + now.Format("01")
-	if loc != want {
-		t.Errorf("redirect location = %q, want %q", loc, want)
+	body := w.Body.String()
+	if !strings.Contains(strings.ToLower(body), "tapestry") {
+		t.Error("expected 'tapestry' in home page")
 	}
 }
 

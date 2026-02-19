@@ -31,6 +31,8 @@ type DataSource interface {
 	IssueByID(ctx context.Context, database, id string) (*dolt.Issue, error)
 	Comments(ctx context.Context, database, issueID string) ([]dolt.Comment, error)
 	Dependencies(ctx context.Context, database, issueID string) ([]dolt.Dependency, error)
+	SearchIssues(ctx context.Context, database, q string, limit int) ([]dolt.Issue, error)
+	DistinctAssignees(ctx context.Context, database string) ([]string, error)
 }
 
 // Server serves the Tapestry web dashboard.
@@ -77,6 +79,46 @@ var funcMap = template.FuncMap{
 			return "—"
 		}
 	},
+	"statusBadge": func(s string) template.HTML {
+		cls := "status-other"
+		switch s {
+		case "open":
+			cls = "status-open"
+		case "closed", "completed":
+			cls = "status-closed"
+		case "in_progress":
+			cls = "status-progress"
+		case "hooked":
+			cls = "status-progress"
+		}
+		return template.HTML(fmt.Sprintf(`<span class="badge %s">%s</span>`, cls, template.HTMLEscapeString(s)))
+	},
+	"timeAgo": func(t time.Time) string {
+		if t.IsZero() {
+			return "—"
+		}
+		d := time.Since(t)
+		switch {
+		case d < time.Minute:
+			return "just now"
+		case d < time.Hour:
+			return fmt.Sprintf("%dm ago", int(d.Minutes()))
+		case d < 24*time.Hour:
+			return fmt.Sprintf("%dh ago", int(d.Hours()))
+		default:
+			return fmt.Sprintf("%dd ago", int(d.Hours()/24))
+		}
+	},
+	"shortActor": func(s string) string {
+		if s == "" {
+			return "—"
+		}
+		parts := strings.Split(s, "/")
+		return parts[len(parts)-1]
+	},
+	"rigName": func(s string) string {
+		return strings.TrimPrefix(s, "beads_")
+	},
 	"fmtMonth": func(m time.Month) string {
 		return fmt.Sprintf("%02d", int(m))
 	},
@@ -104,6 +146,14 @@ func (s *Server) parseTemplates() {
 			template.New("").Funcs(funcMap).ParseFS(templateFS,
 				"templates/layout.html", "templates/bead.html"),
 		),
+		"beads": template.Must(
+			template.New("").Funcs(funcMap).ParseFS(templateFS,
+				"templates/layout.html", "templates/beads.html"),
+		),
+		"search": template.Must(
+			template.New("").Funcs(funcMap).ParseFS(templateFS,
+				"templates/layout.html", "templates/search.html"),
+		),
 	}
 }
 
@@ -129,8 +179,14 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	segments := strings.Split(strings.TrimPrefix(path, "/"), "/")
 
 	switch {
+	case len(segments) == 1 && segments[0] == "beads":
+		s.handleBeadList(w, r)
+	case len(segments) == 1 && segments[0] == "search":
+		s.handleSearch(w, r)
 	case len(segments) == 3 && segments[0] == "bead":
 		s.handleBead(w, r, segments[1], segments[2])
+	case len(segments) == 2 && segments[0] == "bead":
+		s.handleBeadLookup(w, r, segments[1])
 	case len(segments) == 2:
 		s.handleMonthly(w, r, segments[0], segments[1])
 	default:
