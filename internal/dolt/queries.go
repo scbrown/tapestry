@@ -421,6 +421,46 @@ func (c *Client) AddComment(ctx context.Context, database, issueID, author, body
 	return nil
 }
 
+// BlockedIssues returns issues that have unresolved depends_on dependencies.
+// An issue is "blocked" if it depends on at least one non-closed issue.
+func (c *Client) BlockedIssues(ctx context.Context, database string) ([]BlockedIssue, error) {
+	query := `SELECT i.id, i.title, i.status, i.priority, i.issue_type,
+		COALESCE(i.owner,''), COALESCE(i.assignee,''),
+		i.created_at, i.updated_at,
+		blocker.id, blocker.title, blocker.status,
+		COALESCE(blocker.owner,''), COALESCE(blocker.assignee,'')
+		FROM dependencies d
+		JOIN issues i ON i.id = d.issue_id
+		JOIN issues blocker ON blocker.id = d.depends_on
+		WHERE d.dep_type = 'depends_on'
+		AND i.deleted_at IS NULL AND i.status != 'closed'
+		AND blocker.deleted_at IS NULL AND blocker.status != 'closed'
+		AND i.issue_type IN ('task','bug','epic')
+		ORDER BY i.priority ASC, i.updated_at DESC`
+	rows, err := c.queryDB(ctx, database, query)
+	if err != nil {
+		return nil, fmt.Errorf("dolt: blocked issues: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+
+	var result []BlockedIssue
+	for rows.Next() {
+		var bi BlockedIssue
+		if err := rows.Scan(
+			&bi.Issue.ID, &bi.Issue.Title, &bi.Issue.Status,
+			&bi.Issue.Priority, &bi.Issue.Type,
+			&bi.Issue.Owner, &bi.Issue.Assignee,
+			&bi.Issue.CreatedAt, &bi.Issue.UpdatedAt,
+			&bi.Blocker.ID, &bi.Blocker.Title, &bi.Blocker.Status,
+			&bi.Blocker.Owner, &bi.Blocker.Assignee,
+		); err != nil {
+			return nil, fmt.Errorf("dolt: scan blocked issue: %w", err)
+		}
+		result = append(result, bi)
+	}
+	return result, rows.Err()
+}
+
 // AllChildDependencies returns all child_of dependency edges in the database.
 // Used for building task hierarchy trees efficiently without N+1 queries.
 func (c *Client) AllChildDependencies(ctx context.Context, database string) ([]Dependency, error) {

@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"sort"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/scbrown/tapestry/internal/dolt"
@@ -427,4 +429,220 @@ func (s *Server) allDatabases(ctx context.Context) ([]string, error) {
 		}
 	}
 	return result, nil
+}
+
+// ── Executive Status ────────────────────────────────────────────
+
+type statusData struct {
+	GeneratedAt    time.Time
+	ActiveWork     []dolt.Issue
+	KeeperPipeline []keeperGroup
+	BlockedWork    []blockedRow
+	RecentClosed   []dolt.Issue
+	ActionItems    []actionItem
+}
+
+type keeperGroup struct {
+	Name       string
+	Open       int
+	InProgress int
+}
+
+type blockedRow struct {
+	Issue        dolt.Issue
+	Blocker      dolt.Issue
+	BlockerOwner string
+	IsHuman      bool
+}
+
+type actionItem struct {
+	Issue      dolt.Issue
+	Reason     string
+	WaitingFor string
+}
+
+func (s *Server) handleStatus(w http.ResponseWriter, r *http.Request) {
+	data := statusData{GeneratedAt: time.Now()}
+
+	if s.ds == nil {
+		s.render(w, r, "status", data)
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(r.Context(), 15*time.Second)
+	defer cancel()
+	yesterday := time.Now().Add(-24 * time.Hour)
+
+	dbs, err := s.ds.ListBeadsDatabases(ctx)
+	if err != nil {
+		log.Printf("status: list dbs: %v", err)
+		s.render(w, r, "status", data)
+		return
+	}
+
+	for _, db := range dbs {
+		// 1. Active Initiatives: P0/P1 in_progress or open
+		for _, status := range []string{"in_progress", "open"} {
+			issues, err := s.ds.Issues(ctx, db.Name, dolt.IssueFilter{
+				Status:   status,
+				Priority: 1,
+				Limit:    30,
+			})
+			if err != nil {
+				log.Printf("status: active %s %s: %v", status, db.Name, err)
+				continue
+			}
+			for _, iss := range issues {
+				if isMolecule(iss.Title) {
+					continue
+				}
+				if status == "in_progress" || (status == "open" && iss.Priority <= 1) {
+					data.ActiveWork = append(data.ActiveWork, iss)
+				}
+			}
+		}
+
+		// 2. Keeper Pipeline: group by assignee
+		inFlight, err := s.ds.Issues(ctx, db.Name, dolt.IssueFilter{Limit: 200})
+		if err != nil {
+			log.Printf("status: pipeline %s: %v", db.Name, err)
+		} else {
+			keeperMap := make(map[string]*keeperGroup)
+			for _, iss := range inFlight {
+				if iss.Status == "closed" || isMolecule(iss.Title) {
+					continue
+				}
+				agent := iss.Assignee
+				if agent == "" {
+					agent = iss.Owner
+				}
+				if agent == "" {
+					continue
+				}
+				kg, ok := keeperMap[agent]
+				if !ok {
+					kg = &keeperGroup{Name: agent}
+					keeperMap[agent] = kg
+				}
+				switch iss.Status {
+				case "open":
+					kg.Open++
+				case "in_progress", "hooked":
+					kg.InProgress++
+				}
+			}
+			for _, kg := range keeperMap {
+				data.KeeperPipeline = append(data.KeeperPipeline, *kg)
+			}
+		}
+
+		// 3. Blocked Work
+		blocked, err := s.ds.BlockedIssues(ctx, db.Name)
+		if err != nil {
+			log.Printf("status: blocked %s: %v", db.Name, err)
+		} else {
+			for _, bi := range blocked {
+				if isMolecule(bi.Issue.Title) || isMolecule(bi.Blocker.Title) {
+					continue
+				}
+				owner := bi.Blocker.Assignee
+				if owner == "" {
+					owner = bi.Blocker.Owner
+				}
+				data.BlockedWork = append(data.BlockedWork, blockedRow{
+					Issue:        bi.Issue,
+					Blocker:      bi.Blocker,
+					BlockerOwner: owner,
+					IsHuman:      isHumanOwner(owner),
+				})
+			}
+		}
+
+		// 4. Recent Completions (last 24h)
+		recent, err := s.ds.Issues(ctx, db.Name, dolt.IssueFilter{
+			Status:       "closed",
+			UpdatedAfter: yesterday,
+			Limit:        20,
+		})
+		if err != nil {
+			log.Printf("status: recent %s: %v", db.Name, err)
+		} else {
+			for _, iss := range recent {
+				if !isMolecule(iss.Title) {
+					data.RecentClosed = append(data.RecentClosed, iss)
+				}
+			}
+		}
+
+		// 5. Action Items: beads owned by or assigned to human
+		humanIssues, err := s.ds.Issues(ctx, db.Name, dolt.IssueFilter{Limit: 100})
+		if err != nil {
+			log.Printf("status: action items %s: %v", db.Name, err)
+		} else {
+			for _, iss := range humanIssues {
+				if iss.Status == "closed" || isMolecule(iss.Title) {
+					continue
+				}
+				reason := ""
+				waitingFor := ""
+				if isHumanOwner(iss.Owner) {
+					reason = "Human-owned issue"
+					waitingFor = iss.Owner
+				} else if isHumanOwner(iss.Assignee) {
+					reason = "Assigned to human"
+					waitingFor = iss.Assignee
+				}
+				if reason != "" {
+					data.ActionItems = append(data.ActionItems, actionItem{
+						Issue:      iss,
+						Reason:     reason,
+						WaitingFor: waitingFor,
+					})
+				}
+			}
+		}
+	}
+
+	// Sort active work by priority then updated
+	sort.Slice(data.ActiveWork, func(i, j int) bool {
+		if data.ActiveWork[i].Priority != data.ActiveWork[j].Priority {
+			return data.ActiveWork[i].Priority < data.ActiveWork[j].Priority
+		}
+		return data.ActiveWork[i].UpdatedAt.After(data.ActiveWork[j].UpdatedAt)
+	})
+	if len(data.ActiveWork) > 20 {
+		data.ActiveWork = data.ActiveWork[:20]
+	}
+
+	sort.Slice(data.KeeperPipeline, func(i, j int) bool {
+		return data.KeeperPipeline[i].InProgress > data.KeeperPipeline[j].InProgress
+	})
+
+	sort.Slice(data.RecentClosed, func(i, j int) bool {
+		return data.RecentClosed[i].UpdatedAt.After(data.RecentClosed[j].UpdatedAt)
+	})
+	if len(data.RecentClosed) > 15 {
+		data.RecentClosed = data.RecentClosed[:15]
+	}
+
+	sort.Slice(data.ActionItems, func(i, j int) bool {
+		return data.ActionItems[i].Issue.Priority < data.ActionItems[j].Issue.Priority
+	})
+
+	s.render(w, r, "status", data)
+}
+
+func isMolecule(title string) bool {
+	return strings.HasPrefix(title, "mol-")
+}
+
+func isHumanOwner(owner string) bool {
+	if owner == "" {
+		return false
+	}
+	if strings.Contains(owner, "@") {
+		return true
+	}
+	lower := strings.ToLower(owner)
+	return lower == "stiwi" || lower == "braino" || strings.HasPrefix(lower, "scbrown")
 }

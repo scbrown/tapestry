@@ -108,3 +108,9 @@ type EpicProgress struct {
 	Total  int
 	Closed int
 }
+
+// BlockedIssue pairs a blocked issue with the issue that blocks it.
+type BlockedIssue struct {
+	Issue   Issue
+	Blocker Issue
+}

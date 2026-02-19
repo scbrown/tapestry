@@ -1,0 +1,131 @@
+{{define "title"}}Executive Status{{end}}
+{{define "content"}}
+<div class="status-page" hx-get="/status" hx-trigger="every 60s" hx-select=".status-page" hx-swap="outerHTML">
+
+  <div class="status-header">
+    <div>
+      <h1>Executive Status</h1>
+      <span class="status-time">{{.GeneratedAt.Format "Jan 02, 2006 15:04"}}</span>
+    </div>
+  </div>
+
+  <div class="status-grid">
+
+    {{/* 1. Active Initiatives */}}
+    <section class="status-card status-active">
+      <h2 class="status-card-title">Active Initiatives <span class="status-count">{{len .ActiveWork}}</span></h2>
+      {{if .ActiveWork}}
+      <div class="status-work-list">
+        {{range .ActiveWork}}
+        <a href="/bead/{{.Rig}}/{{.ID}}" class="work-item">
+          <span class="work-priority {{priorityClass .Priority}}">P{{.Priority}}</span>
+          {{statusBadge .Status}}
+          <span class="work-title">{{.Title}}</span>
+          <span class="work-meta">
+            <span class="work-id">{{.ID}}</span>
+            {{if .Assignee}}<span class="work-agent">{{shortActor .Assignee}}</span>{{end}}
+            <span class="work-age">{{timeAgo .UpdatedAt}}</span>
+          </span>
+        </a>
+        {{end}}
+      </div>
+      {{else}}
+      <p class="status-empty">No active P0/P1 initiatives.</p>
+      {{end}}
+    </section>
+
+    {{/* 2. Keeper Pipeline */}}
+    <section class="status-card status-keepers">
+      <h2 class="status-card-title">Keeper Pipeline <span class="status-count">{{len .KeeperPipeline}}</span></h2>
+      {{if .KeeperPipeline}}
+      <div class="agent-work-list">
+        {{range .KeeperPipeline}}
+        <div class="agent-work-group">
+          <div class="agent-work-name">
+            <span class="agent-indicator"></span>
+            <span>{{shortActor .Name}}</span>
+            <span class="agent-work-count">{{.Open}} open &middot; {{.InProgress}} active</span>
+          </div>
+        </div>
+        {{end}}
+      </div>
+      {{else}}
+      <p class="status-empty">No keepers with active work.</p>
+      {{end}}
+    </section>
+
+    {{/* 3. Blocked Work */}}
+    <section class="status-card status-blocked">
+      <h2 class="status-card-title">Blocked Work <span class="status-count">{{len .BlockedWork}}</span></h2>
+      {{if .BlockedWork}}
+      <div class="blocked-list">
+        {{range .BlockedWork}}
+        <div class="blocked-item{{if .IsHuman}} blocked-human{{end}}">
+          <div class="blocked-issue">
+            <a href="/bead/{{.Issue.ID}}">{{.Issue.ID}}</a>
+            <span class="work-title">{{.Issue.Title}}</span>
+          </div>
+          <div class="blocked-by">
+            blocked by <a href="/bead/{{.Blocker.ID}}">{{.Blocker.ID}}</a>
+            <span class="text-dim">{{.Blocker.Title}}</span>
+            {{if .BlockerOwner}}
+            <span class="blocker-owner{{if .IsHuman}} human-owner{{end}}">{{shortActor .BlockerOwner}}</span>
+            {{end}}
+          </div>
+        </div>
+        {{end}}
+      </div>
+      {{else}}
+      <p class="status-empty">No blocked work.</p>
+      {{end}}
+    </section>
+
+    {{/* 4. Recent Completions */}}
+    <section class="status-card status-recent">
+      <h2 class="status-card-title">Recent Completions (24h) <span class="status-count">{{len .RecentClosed}}</span></h2>
+      {{if .RecentClosed}}
+      <div class="status-work-list">
+        {{range .RecentClosed}}
+        <a href="/bead/{{.Rig}}/{{.ID}}" class="work-item">
+          <span class="activity-check">&#10003;</span>
+          <span class="work-title">{{.Title}}</span>
+          <span class="work-meta">
+            <span class="work-id">{{.ID}}</span>
+            <span class="work-age">{{timeAgo .UpdatedAt}}</span>
+          </span>
+        </a>
+        {{end}}
+      </div>
+      {{else}}
+      <p class="status-empty">No completions in the last 24 hours.</p>
+      {{end}}
+    </section>
+
+    {{/* 5. Action Items */}}
+    <section class="status-card status-actions">
+      <h2 class="status-card-title">Action Items (Human Input Needed) <span class="status-count">{{len .ActionItems}}</span></h2>
+      {{if .ActionItems}}
+      <div class="action-list">
+        {{range .ActionItems}}
+        <div class="action-item{{if gt (daysAgo .Issue.UpdatedAt) 2}} action-overdue{{end}}">
+          <div class="action-issue">
+            <span class="work-priority {{priorityClass .Issue.Priority}}">P{{.Issue.Priority}}</span>
+            <a href="/bead/{{.Issue.ID}}">{{.Issue.ID}}</a>
+            <span class="work-title">{{.Issue.Title}}</span>
+          </div>
+          <div class="action-detail">
+            <span class="action-reason">{{.Reason}}</span>
+            <span class="action-waiting">waiting: {{.WaitingFor}}</span>
+            {{if gt (daysAgo .Issue.UpdatedAt) 2}}<span class="action-overdue-badge">{{daysAgo .Issue.UpdatedAt}}d overdue</span>{{end}}
+          </div>
+        </div>
+        {{end}}
+      </div>
+      {{else}}
+      <p class="status-empty">No items awaiting human action.</p>
+      {{end}}
+    </section>
+
+  </div>
+</div>
+{{end}}

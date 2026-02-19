@@ -68,6 +68,10 @@ func (m *mockDataSource) DistinctAssignees(_ context.Context, _ string) ([]strin
 	return nil, m.err
 }
 
+func (m *mockDataSource) BlockedIssues(_ context.Context, _ string) ([]dolt.BlockedIssue, error) {
+	return nil, m.err
+}
+
 func TestIndexRendersMonthly(t *testing.T) {
 	srv := New(nil)
 	req := httptest.NewRequest("GET", "/", nil)

@@ -33,6 +33,7 @@ type DataSource interface {
 	Dependencies(ctx context.Context, database, issueID string) ([]dolt.Dependency, error)
 	SearchIssues(ctx context.Context, database, q string, limit int) ([]dolt.Issue, error)
 	DistinctAssignees(ctx context.Context, database string) ([]string, error)
+	BlockedIssues(ctx context.Context, database string) ([]dolt.BlockedIssue, error)
 }
 
 // Server serves the Tapestry web dashboard.
@@ -122,6 +123,12 @@ var funcMap = template.FuncMap{
 	"fmtMonth": func(m time.Month) string {
 		return fmt.Sprintf("%02d", int(m))
 	},
+	"priorityClass": func(p int) string {
+		return fmt.Sprintf("p%d", p)
+	},
+	"daysAgo": func(t time.Time) int {
+		return int(time.Since(t).Hours() / 24)
+	},
 }
 
 // New creates a new Server. The DataSource may be nil, in which case pages
@@ -154,6 +161,10 @@ func (s *Server) parseTemplates() {
 			template.New("").Funcs(funcMap).ParseFS(templateFS,
 				"templates/layout.html", "templates/search.html"),
 		),
+		"status": template.Must(
+			template.New("").Funcs(funcMap).ParseFS(templateFS,
+				"templates/layout.html", "templates/status.html"),
+		),
 	}
 }
 
@@ -183,6 +194,8 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		s.handleBeadList(w, r)
 	case len(segments) == 1 && segments[0] == "search":
 		s.handleSearch(w, r)
+	case len(segments) == 1 && segments[0] == "status":
+		s.handleStatus(w, r)
 	case len(segments) == 3 && segments[0] == "bead":
 		s.handleBead(w, r, segments[1], segments[2])
 	case len(segments) == 2 && segments[0] == "bead":

@@ -300,3 +300,190 @@ main {
     padding: 1rem;
     margin-bottom: 1rem;
 }
+
+/* ── Executive Status Page ─────────────────────────────── */
+
+@keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+.status-page { animation: fade-in 0.3s ease; }
+
+.status-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border);
+}
+.status-header h1 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+}
+.status-time {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    font-family: monospace;
+}
+
+.status-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+.status-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.25rem;
+    animation: fade-in 0.4s ease;
+}
+.status-card-title {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+}
+.status-count {
+    display: inline-block;
+    background: var(--bg);
+    border-radius: 1rem;
+    padding: 0 0.5rem;
+    font-size: 0.8rem;
+    font-weight: 700;
+}
+.status-empty {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    font-style: italic;
+}
+
+.status-active { border-left: 3px solid var(--warning); }
+.status-keepers { border-left: 3px solid var(--link); }
+.status-blocked { border-left: 3px solid var(--danger); }
+.status-recent { border-left: 3px solid var(--success); }
+.status-actions {
+    grid-column: 1 / -1;
+    border-left: 3px solid var(--info);
+}
+
+/* Work item lists */
+.status-work-list { display: flex; flex-direction: column; gap: 0.25rem; }
+.work-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.375rem 0.5rem;
+    border-radius: var(--radius);
+    font-size: 0.85rem;
+    color: var(--text);
+}
+.work-item:hover { background: var(--bg); text-decoration: none; }
+.work-priority { font-weight: 700; font-size: 0.75rem; }
+.work-priority.p0 { color: var(--danger); }
+.work-priority.p1 { color: #e67700; }
+.work-priority.p2 { color: var(--text-muted); }
+.work-title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.work-meta { display: flex; gap: 0.5rem; font-size: 0.75rem; color: var(--text-muted); }
+.work-id { font-family: monospace; }
+.work-agent { font-weight: 600; }
+.work-age { }
+.activity-check { color: var(--success); font-weight: 700; }
+.text-dim { color: var(--text-muted); }
+
+/* Agent pipeline */
+.agent-work-list { display: flex; flex-direction: column; gap: 0.375rem; }
+.agent-work-group { padding: 0.375rem 0.5rem; }
+.agent-work-name {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+}
+.agent-indicator {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--success);
+}
+.agent-work-count { font-size: 0.75rem; color: var(--text-muted); }
+
+/* Blocked work items */
+.blocked-list { display: flex; flex-direction: column; gap: 0.5rem; }
+.blocked-item {
+    padding: 0.5rem;
+    border-radius: var(--radius);
+    font-size: 0.85rem;
+    border-bottom: 1px solid var(--border);
+}
+.blocked-item:last-child { border-bottom: none; }
+.blocked-item:hover { background: var(--bg); }
+.blocked-human { background: #fff5f5; }
+.blocked-issue {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.25rem;
+}
+.blocked-by {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    padding-left: 0.5rem;
+}
+.blocker-owner {
+    display: inline-block;
+    padding: 0.1em 0.4em;
+    border-radius: 3px;
+    font-size: 0.75rem;
+    background: var(--border);
+    color: var(--text);
+    margin-left: 0.25rem;
+}
+.human-owner {
+    background: #fff5f5;
+    color: var(--danger);
+    border: 1px solid var(--danger);
+}
+
+/* Action items */
+.action-list { display: flex; flex-direction: column; gap: 0.5rem; }
+.action-item {
+    padding: 0.5rem;
+    border-radius: var(--radius);
+    font-size: 0.85rem;
+    border-bottom: 1px solid var(--border);
+}
+.action-item:last-child { border-bottom: none; }
+.action-item:hover { background: var(--bg); }
+.action-item.action-overdue { background: #fff9db; }
+.action-issue {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.25rem;
+}
+.action-detail {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    padding-left: 0.5rem;
+}
+.action-reason { color: var(--text-muted); }
+.action-waiting { color: var(--link); }
+.action-overdue-badge {
+    display: inline-block;
+    padding: 0.1em 0.4em;
+    border-radius: 3px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    background: var(--warning);
+    color: #000;
+}
+
+@media (max-width: 768px) {
+    .status-grid { grid-template-columns: 1fr; }
+    .status-actions { grid-column: auto; }
+    .status-header { flex-direction: column; align-items: flex-start; }
+}
