@@ -43,5 +43,5 @@ func (c Config) DSN() string {
 	if c.Password != "" {
 		auth = c.User + ":" + c.Password
 	}
-	return fmt.Sprintf("%s@tcp(%s:%d)/?parseTime=true&multiStatements=true", auth, c.Host, c.Port)
+	return fmt.Sprintf("%s@tcp(%s:%d)/?parseTime=true&multiStatements=true&readTimeout=10s&writeTimeout=10s&timeout=5s", auth, c.Host, c.Port)
 }

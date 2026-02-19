@@ -77,12 +77,12 @@ func TestConfig_DSN(t *testing.T) {
 		{
 			name: "no password",
 			cfg:  Config{Host: "127.0.0.1", Port: 3306, User: "root"},
-			want: "root@tcp(127.0.0.1:3306)/?parseTime=true&multiStatements=true",
+			want: "root@tcp(127.0.0.1:3306)/?parseTime=true&multiStatements=true&readTimeout=10s&writeTimeout=10s&timeout=5s",
 		},
 		{
 			name: "with password",
 			cfg:  Config{Host: "dolt.svc", Port: 3307, User: "tapestry", Password: "secret"},
-			want: "tapestry:secret@tcp(dolt.svc:3307)/?parseTime=true&multiStatements=true",
+			want: "tapestry:secret@tcp(dolt.svc:3307)/?parseTime=true&multiStatements=true&readTimeout=10s&writeTimeout=10s&timeout=5s",
 		},
 	}
 
