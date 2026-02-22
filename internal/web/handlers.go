@@ -120,7 +120,7 @@ func (s *Server) handleMonthly(w http.ResponseWriter, r *http.Request, yearStr, 
 
 	ctx := r.Context()
 
-	dbs, err := s.ds.ListBeadsDatabases(ctx)
+	dbs, err := s.databases(ctx)
 	if err != nil {
 		data.Err = fmt.Sprintf("Failed to list databases: %v", err)
 		s.render(w, r, "monthly", data)
@@ -215,38 +215,19 @@ func (s *Server) handleBeadLookup(w http.ResponseWriter, r *http.Request, id str
 
 	ctx := r.Context()
 
-	dbs, err := s.ds.ListBeadsDatabases(ctx)
+	dbs, err := s.databases(ctx)
 	if err != nil {
 		http.Error(w, "database error", http.StatusInternalServerError)
 		return
 	}
 
-	// Also check non-beads_ databases that might contain issues
-	allDBs, _ := s.allDatabases(ctx)
-
-	// Try beads_ databases first, then others
-	tried := make(map[string]bool)
 	for _, db := range dbs {
-		tried[db.Name] = true
 		issue, err := s.ds.IssueByID(ctx, db.Name, id)
 		if err != nil {
 			continue
 		}
 		if issue != nil {
 			s.handleBead(w, r, db.Name, id)
-			return
-		}
-	}
-	for _, db := range allDBs {
-		if tried[db] {
-			continue
-		}
-		issue, err := s.ds.IssueByID(ctx, db, id)
-		if err != nil {
-			continue
-		}
-		if issue != nil {
-			s.handleBead(w, r, db, id)
 			return
 		}
 	}
@@ -279,24 +260,11 @@ func (s *Server) handleBeadList(w http.ResponseWriter, r *http.Request) {
 
 	ctx := r.Context()
 
-	dbs, err := s.ds.ListBeadsDatabases(ctx)
+	dbs, err := s.databases(ctx)
 	if err != nil {
 		data.Err = fmt.Sprintf("Failed to list databases: %v", err)
 		s.render(w, r, "beads", data)
 		return
-	}
-
-	// Also include non-beads_ databases
-	allDBs, _ := s.allDatabases(ctx)
-	dbSet := make(map[string]bool)
-	for _, db := range dbs {
-		dbSet[db.Name] = true
-	}
-	for _, db := range allDBs {
-		if !dbSet[db] {
-			dbs = append(dbs, dolt.DatabaseInfo{Name: db})
-			dbSet[db] = true
-		}
 	}
 
 	filter := dolt.IssueFilter{}
@@ -383,22 +351,11 @@ func (s *Server) handleSearch(w http.ResponseWriter, r *http.Request) {
 
 	ctx := r.Context()
 
-	dbs, err := s.ds.ListBeadsDatabases(ctx)
+	dbs, err := s.databases(ctx)
 	if err != nil {
 		data.Err = fmt.Sprintf("Failed to list databases: %v", err)
 		s.render(w, r, "search", data)
 		return
-	}
-
-	allDBs, _ := s.allDatabases(ctx)
-	dbSet := make(map[string]bool)
-	for _, db := range dbs {
-		dbSet[db.Name] = true
-	}
-	for _, db := range allDBs {
-		if !dbSet[db] {
-			dbs = append(dbs, dolt.DatabaseInfo{Name: db})
-		}
 	}
 
 	for _, db := range dbs {
@@ -413,22 +370,6 @@ func (s *Server) handleSearch(w http.ResponseWriter, r *http.Request) {
 	}
 
 	s.render(w, r, "search", data)
-}
-
-// allDatabases returns database names that contain an issues table
-// but don't start with "beads_" (to complement ListBeadsDatabases).
-func (s *Server) allDatabases(ctx context.Context) ([]string, error) {
-	// Check well-known databases that aren't prefixed with beads_
-	known := []string{"aegis", "gastown", "tapestry", "bobbin", "hq"}
-	var result []string
-	for _, db := range known {
-		// Quick probe: try to read a single issue
-		_, err := s.ds.IssueByID(ctx, db, "__probe__")
-		if err == nil {
-			result = append(result, db)
-		}
-	}
-	return result, nil
 }
 
 // ── Executive Status ────────────────────────────────────────────
@@ -473,7 +414,7 @@ func (s *Server) handleStatus(w http.ResponseWriter, r *http.Request) {
 	defer cancel()
 	yesterday := time.Now().Add(-24 * time.Hour)
 
-	dbs, err := s.ds.ListBeadsDatabases(ctx)
+	dbs, err := s.databases(ctx)
 	if err != nil {
 		log.Printf("status: list dbs: %v", err)
 		s.render(w, r, "status", data)

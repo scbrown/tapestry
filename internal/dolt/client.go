@@ -87,9 +87,49 @@ func (c *Client) ListDatabases(ctx context.Context, prefix string) ([]DatabaseIn
 	return dbs, rows.Err()
 }
 
-// ListBeadsDatabases returns databases whose names start with "beads_".
+// isSystemDatabase returns true for databases that never contain beads data.
+func isSystemDatabase(name string) bool {
+	switch name {
+	case "information_schema", "mysql":
+		return true
+	}
+	return strings.HasPrefix(name, "dolt_")
+}
+
+// hasIssuesTable checks whether a database has an issues table.
+func (c *Client) hasIssuesTable(ctx context.Context, database string) bool {
+	rows, err := c.db.QueryContext(ctx,
+		fmt.Sprintf("SHOW TABLES FROM `%s` LIKE 'issues'", database))
+	if err != nil {
+		return false
+	}
+	defer func() { _ = rows.Close() }()
+	return rows.Next()
+}
+
+// ListBeadsDatabases returns all databases containing beads data.
+// It discovers databases with the "beads_" prefix automatically and also
+// probes other non-system databases for an issues table (legacy databases
+// like "aegis" or "gastown" that predate the beads_ naming convention).
 func (c *Client) ListBeadsDatabases(ctx context.Context) ([]DatabaseInfo, error) {
-	return c.ListDatabases(ctx, "beads_")
+	all, err := c.ListDatabases(ctx, "")
+	if err != nil {
+		return nil, err
+	}
+	var result []DatabaseInfo
+	for _, db := range all {
+		if strings.HasPrefix(db.Name, "beads_") {
+			result = append(result, db)
+			continue
+		}
+		if isSystemDatabase(db.Name) {
+			continue
+		}
+		if c.hasIssuesTable(ctx, db.Name) {
+			result = append(result, db)
+		}
+	}
+	return result, nil
 }
 
 // queryDB gets a dedicated connection, switches to the database, and runs

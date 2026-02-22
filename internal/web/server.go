@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/scbrown/tapestry/internal/dolt"
@@ -41,6 +42,36 @@ type Server struct {
 	ds        DataSource
 	templates map[string]*template.Template
 	static    http.Handler
+
+	dbMu    sync.Mutex
+	dbCache []dolt.DatabaseInfo
+	dbExp   time.Time
+}
+
+const dbCacheTTL = 5 * time.Minute
+
+// databases returns all known beads databases, caching the discovery result
+// for dbCacheTTL to avoid repeated SHOW DATABASES + probe queries per request.
+func (s *Server) databases(ctx context.Context) ([]dolt.DatabaseInfo, error) {
+	s.dbMu.Lock()
+	if s.dbCache != nil && time.Now().Before(s.dbExp) {
+		result := s.dbCache
+		s.dbMu.Unlock()
+		return result, nil
+	}
+	s.dbMu.Unlock()
+
+	dbs, err := s.ds.ListBeadsDatabases(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	s.dbMu.Lock()
+	s.dbCache = dbs
+	s.dbExp = time.Now().Add(dbCacheTTL)
+	s.dbMu.Unlock()
+
+	return dbs, nil
 }
 
 var funcMap = template.FuncMap{
