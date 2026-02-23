@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/scbrown/tapestry/internal/config"
 	"github.com/scbrown/tapestry/internal/dolt"
 	"github.com/scbrown/tapestry/internal/web"
 	"github.com/spf13/cobra"
@@ -23,6 +24,27 @@ func newServeCmd() *cobra.Command {
 		Short: "Start the web dashboard",
 		Long:  "Start the Tapestry web dashboard server.\nServes the HTMX-based dashboard for browsing beads, events, and agent activity.",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			// Load TOML config as defaults; CLI flags override.
+			fileCfg, err := config.Load()
+			if err != nil {
+				_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "warning: config load: %v\n", err)
+			}
+			if !cmd.Flags().Changed("host") && fileCfg.Server.Host != "" {
+				host = fileCfg.Server.Host
+			}
+			if !cmd.Flags().Changed("port") && fileCfg.Server.Port != 0 {
+				port = fileCfg.Server.Port
+			}
+			if !cmd.Flags().Changed("dolt-host") && fileCfg.Dolt.Host != "" {
+				doltHost = fileCfg.Dolt.Host
+			}
+			if !cmd.Flags().Changed("dolt-port") && fileCfg.Dolt.Port != 0 {
+				doltPort = fileCfg.Dolt.Port
+			}
+			if !cmd.Flags().Changed("dolt-user") && fileCfg.Dolt.User != "" {
+				doltUser = fileCfg.Dolt.User
+			}
+
 			addr := fmt.Sprintf("%s:%d", host, port)
 
 			// Connect to Dolt (optional — server starts without it)

@@ -419,7 +419,7 @@ func (s *Server) handleSearch(w http.ResponseWriter, r *http.Request) {
 // but don't start with "beads_" (to complement ListBeadsDatabases).
 func (s *Server) allDatabases(ctx context.Context) ([]string, error) {
 	// Check well-known databases that aren't prefixed with beads_
-	known := []string{"aegis", "gastown", "tapestry", "bobbin"}
+	known := []string{"aegis", "gastown", "tapestry", "bobbin", "hq"}
 	var result []string
 	for _, db := range known {
 		// Quick probe: try to read a single issue
