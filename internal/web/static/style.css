@@ -1,17 +1,14 @@
 :root {
-    --bg: #282a36;
-    --surface: #44475a;
-    --text: #f8f8f2;
-    --text-muted: #6272a4;
-    --link: #8be9fd;
-    --border: #6272a4;
-    --success: #50fa7b;
-    --warning: #f1fa8c;
-    --danger: #ff5555;
-    --info: #8be9fd;
-    --purple: #bd93f9;
-    --pink: #ff79c6;
-    --orange: #ffb86c;
+    --bg: #f8f9fa;
+    --surface: #ffffff;
+    --text: #212529;
+    --text-muted: #6c757d;
+    --link: #0d6efd;
+    --border: #dee2e6;
+    --success: #198754;
+    --warning: #ffc107;
+    --danger: #dc3545;
+    --info: #0dcaf0;
     --radius: 6px;
 }
 
@@ -137,10 +134,10 @@ main {
     font-weight: 600;
 }
 
-.status-open { background: rgba(139, 233, 253, 0.15); color: #8be9fd; }
-.status-closed { background: rgba(80, 250, 123, 0.15); color: #50fa7b; }
-.status-progress { background: rgba(241, 250, 140, 0.15); color: #f1fa8c; }
-.status-other { background: rgba(98, 114, 164, 0.2); color: #f8f8f2; }
+.status-open { background: #e7f5ff; color: #1971c2; }
+.status-closed { background: #d3f9d8; color: #2b8a3e; }
+.status-progress { background: #fff3bf; color: #e67700; }
+.status-other { background: #f1f3f5; color: #495057; }
 
 /* Tables */
 .issues-table,
@@ -296,9 +293,9 @@ main {
 
 /* Error messages */
 .error {
-    background: rgba(255, 85, 85, 0.1);
+    background: #fff5f5;
     color: var(--danger);
-    border: 1px solid rgba(255, 85, 85, 0.4);
+    border: 1px solid #ffc9c9;
     border-radius: var(--radius);
     padding: 1rem;
     margin-bottom: 1rem;
@@ -383,7 +380,7 @@ main {
 .work-item:hover { background: var(--bg); text-decoration: none; }
 .work-priority { font-weight: 700; font-size: 0.75rem; }
 .work-priority.p0 { color: var(--danger); }
-.work-priority.p1 { color: var(--orange); }
+.work-priority.p1 { color: #e67700; }
 .work-priority.p2 { color: var(--text-muted); }
 .work-title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .work-meta { display: flex; gap: 0.5rem; font-size: 0.75rem; color: var(--text-muted); }
@@ -421,7 +418,7 @@ main {
 }
 .blocked-item:last-child { border-bottom: none; }
 .blocked-item:hover { background: var(--bg); }
-.blocked-human { background: rgba(255, 85, 85, 0.1); }
+.blocked-human { background: #fff5f5; }
 .blocked-issue {
     display: flex;
     align-items: center;
@@ -443,7 +440,7 @@ main {
     margin-left: 0.25rem;
 }
 .human-owner {
-    background: rgba(255, 85, 85, 0.15);
+    background: #fff5f5;
     color: var(--danger);
     border: 1px solid var(--danger);
 }
@@ -458,7 +455,7 @@ main {
 }
 .action-item:last-child { border-bottom: none; }
 .action-item:hover { background: var(--bg); }
-.action-item.action-overdue { background: rgba(241, 250, 140, 0.1); }
+.action-item.action-overdue { background: #fff9db; }
 .action-issue {
     display: flex;
     align-items: center;
@@ -482,7 +479,7 @@ main {
     font-size: 0.7rem;
     font-weight: 600;
     background: var(--warning);
-    color: #282a36;
+    color: #000;
 }
 
 @media (max-width: 768px) {
@@ -535,10 +532,10 @@ header nav a:hover { background: var(--bg); text-decoration: none; }
     font-size: 0.7rem;
     font-weight: 700;
 }
-.priority-badge.p0 { background: rgba(255, 85, 85, 0.2); color: #ff5555; }
-.priority-badge.p1 { background: rgba(255, 184, 108, 0.2); color: #ffb86c; }
-.priority-badge.p2 { background: rgba(139, 233, 253, 0.15); color: #8be9fd; }
-.priority-badge.p3 { background: rgba(98, 114, 164, 0.2); color: #f8f8f2; }
+.priority-badge.p0 { background: #fff5f5; color: var(--danger); }
+.priority-badge.p1 { background: #fff9db; color: #e67700; }
+.priority-badge.p2 { background: #e7f5ff; color: #1971c2; }
+.priority-badge.p3 { background: #f1f3f5; color: #495057; }
 .briefing-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
 .briefing-table th {
     text-align: left; padding: 0.375rem 0.5rem;

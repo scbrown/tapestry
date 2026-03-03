@@ -751,17 +751,14 @@ func (s *Server) handleAgents(w http.ResponseWriter, r *http.Request) {
 			if a.Name == "(unowned)" || a.Name == "" {
 				continue
 			}
-			// Merge by short name to combine duplicate identities
-			key := shortActorName(a.Name)
-			if existing, ok := agentMap[key]; ok {
+			if existing, ok := agentMap[a.Name]; ok {
 				existing.Owned += a.Owned
 				existing.Closed += a.Closed
 				existing.Open += a.Open
 				existing.InProgress += a.InProgress
 			} else {
-				merged := a
-				merged.Name = key
-				agentMap[key] = &merged
+				copy := a
+				agentMap[a.Name] = &copy
 			}
 		}
 	}
@@ -774,18 +771,6 @@ func (s *Server) handleAgents(w http.ResponseWriter, r *http.Request) {
 	})
 
 	s.render(w, r, "agents", data)
-}
-
-// shortActorName extracts a display name from an email or path-style identity.
-func shortActorName(s string) string {
-	if s == "" {
-		return "—"
-	}
-	if idx := strings.Index(s, "@"); idx > 0 {
-		return s[:idx]
-	}
-	parts := strings.Split(s, "/")
-	return parts[len(parts)-1]
 }
 
 func isMolecule(title string) bool {
