@@ -1,6 +1,6 @@
 {{define "title"}}Executive Status{{end}}
 {{define "content"}}
-<div class="status-page" hx-get="/status" hx-trigger="every 60s" hx-select=".status-page" hx-swap="outerHTML">
+<div class="status-page" hx-get="/status" hx-trigger="every 60s, sse-refresh from:body" hx-select=".status-page" hx-swap="outerHTML">
 
   <div class="status-header">
     <div>

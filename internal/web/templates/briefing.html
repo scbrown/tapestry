@@ -1,6 +1,6 @@
 {{define "title"}}Briefing{{end}}
 {{define "content"}}
-<div class="briefing-page" hx-get="/briefing" hx-trigger="every 60s" hx-select=".briefing-page" hx-swap="outerHTML">
+<div class="briefing-page" hx-get="/briefing" hx-trigger="every 60s, sse-refresh from:body" hx-select=".briefing-page" hx-swap="outerHTML">
   <h1>Briefing <time class="text-dim">{{.GeneratedAt.Format "Jan 02, 2006 15:04"}}</time></h1>
 
   <div class="briefing-grid">

@@ -13,6 +13,7 @@ import (
 type Config struct {
 	Server    ServerConfig      `toml:"server"`
 	Dolt      DoltConfig        `toml:"dolt"`
+	Reactor   ReactorConfig     `toml:"reactor"`
 	Workspace []WorkspaceConfig `toml:"workspace"`
 	Repos     map[string]string `toml:"repos,omitempty"`
 }
@@ -29,6 +30,11 @@ type DoltConfig struct {
 	Port     int    `toml:"port"`
 	User     string `toml:"user"`
 	Password string `toml:"password,omitempty"`
+}
+
+// ReactorConfig holds reactor SSE connection settings.
+type ReactorConfig struct {
+	URL string `toml:"url"` // e.g. "http://dolt.lan:8075/events/stream"
 }
 
 // WorkspaceConfig describes a Gas Town workspace to monitor.

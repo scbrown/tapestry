@@ -41,6 +41,7 @@ type DataSource interface {
 // Server serves the Tapestry web dashboard.
 type Server struct {
 	ds        DataSource
+	hub       *EventHub
 	templates map[string]*template.Template
 	static    http.Handler
 
@@ -169,9 +170,10 @@ var funcMap = template.FuncMap{
 }
 
 // New creates a new Server. The DataSource may be nil, in which case pages
-// will display a "no database" message instead of data.
-func New(ds DataSource) *Server {
-	s := &Server{ds: ds}
+// will display a "no database" message instead of data. The EventHub may be
+// nil if reactor SSE is not configured.
+func New(ds DataSource, hub *EventHub) *Server {
+	s := &Server{ds: ds, hub: hub}
 	s.parseTemplates()
 
 	staticSub, _ := fs.Sub(staticFS, "static")
@@ -224,6 +226,12 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	if strings.HasPrefix(path, "/static/") {
 		s.static.ServeHTTP(w, r)
+		return
+	}
+
+	// SSE stream (long-lived connection, routed before segment parsing)
+	if path == "/stream" {
+		s.handleEventStream(w, r)
 		return
 	}
 

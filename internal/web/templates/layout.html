@@ -7,12 +7,14 @@
     <title>{{template "title" .}} — Tapestry</title>
     <link rel="stylesheet" href="/static/style.css">
     <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+    <script src="/static/events.js" defer></script>
 </head>
 <body>
     <header>
         <nav>
             <a href="/" class="logo">Tapestry</a>
             <span class="tagline">archivist dashboard</span>
+            <span id="sse-status" class="sse-indicator" title="Live updates"></span>
             <a href="/status">status</a>
             <a href="/briefing">briefing</a>
             <a href="/agents">agents</a>

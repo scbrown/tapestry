@@ -574,3 +574,59 @@ header nav a:hover { background: var(--bg); text-decoration: none; }
 .agent-stats-row { display: flex; flex-wrap: wrap; gap: 0.75rem; }
 .agent-stat { font-size: 0.8rem; color: var(--text-muted); }
 .agent-stat strong { color: var(--text); }
+
+/* ── SSE Live Updates ─────────────────────────────── */
+.sse-indicator {
+    display: inline-block;
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--text-muted);
+    margin-left: 0.25rem;
+    transition: background 0.3s;
+}
+.sse-connected { background: var(--success); }
+.sse-disconnected { background: var(--danger); }
+
+#sse-toasts {
+    position: fixed;
+    bottom: 1rem;
+    right: 1rem;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    max-width: 420px;
+}
+.sse-toast {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--link);
+    padding: 0.625rem 0.875rem;
+    border-radius: var(--radius);
+    font-size: 0.8rem;
+    opacity: 0;
+    transform: translateX(20px);
+    transition: opacity 0.3s, transform 0.3s;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+.sse-toast-show {
+    opacity: 1;
+    transform: translateX(0);
+}
+.sse-toast-type {
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--link);
+    white-space: nowrap;
+}
+.sse-toast-msg {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
