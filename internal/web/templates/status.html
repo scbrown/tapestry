@@ -17,7 +17,7 @@
       {{if .ActiveWork}}
       <div class="status-work-list">
         {{range .ActiveWork}}
-        <a href="/bead/{{.Rig}}/{{.ID}}" class="work-item">
+        <a href="/bead/{{if .Rig}}{{.Rig}}/{{end}}{{.ID}}" class="work-item">
           <span class="work-priority {{priorityClass .Priority}}">P{{.Priority}}</span>
           {{statusBadge .Status}}
           <span class="work-title">{{.Title}}</span>
@@ -86,7 +86,7 @@
       {{if .RecentClosed}}
       <div class="status-work-list">
         {{range .RecentClosed}}
-        <a href="/bead/{{.Rig}}/{{.ID}}" class="work-item">
+        <a href="/bead/{{if .Rig}}{{.Rig}}/{{end}}{{.ID}}" class="work-item">
           <span class="activity-check">&#10003;</span>
           <span class="work-title">{{.Title}}</span>
           <span class="work-meta">
