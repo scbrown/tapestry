@@ -72,6 +72,10 @@ func (m *mockDataSource) BlockedIssues(_ context.Context, _ string) ([]dolt.Bloc
 	return nil, m.err
 }
 
+func (m *mockDataSource) AgentActivity(_ context.Context, _ string) ([]dolt.AgentStats, error) {
+	return nil, m.err
+}
+
 func TestIndexRendersMonthly(t *testing.T) {
 	srv := New(nil)
 	req := httptest.NewRequest("GET", "/", nil)

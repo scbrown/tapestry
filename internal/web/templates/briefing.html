@@ -1,6 +1,6 @@
-{{template "head"}}Briefing — tapestry{{template "headclose"}}
-
-<div class="briefing-page">
+{{define "title"}}Briefing{{end}}
+{{define "content"}}
+<div class="briefing-page" hx-get="/briefing" hx-trigger="every 60s" hx-select=".briefing-page" hx-swap="outerHTML">
   <h1>Briefing <time class="text-dim">{{.GeneratedAt.Format "Jan 02, 2006 15:04"}}</time></h1>
 
   <div class="briefing-grid">
@@ -48,7 +48,7 @@
           <a href="/bead/{{.ID}}">{{.ID}}</a>
           <span class="priority-badge p{{.Priority}}">P{{.Priority}}</span>
           {{.Title}}
-          {{if .Assignee}}<span class="text-dim">{{.Assignee}}</span>{{end}}
+          {{if .Assignee}}<span class="text-dim">{{shortActor .Assignee}}</span>{{end}}
         </li>
         {{end}}
       </ul>
@@ -67,7 +67,7 @@
           <a href="/bead/{{.ID}}">{{.ID}}</a>
           <span class="priority-badge p{{.Priority}}">P{{.Priority}}</span>
           {{.Title}}
-          {{if .Assignee}}<span class="text-dim">{{.Assignee}}</span>{{end}}
+          {{if .Assignee}}<span class="text-dim">{{shortActor .Assignee}}</span>{{end}}
         </li>
         {{end}}
       </ul>
@@ -94,27 +94,6 @@
       {{end}}
     </section>
 
-    {{/* ── Recent Commits ── */}}
-    <section class="briefing-card">
-      <h2>Recent Commits</h2>
-      {{if .RecentCommits}}
-      <div class="commit-list">
-        {{range .RecentCommits}}
-        <div class="commit-row">
-          {{if .CommitURL}}<a href="{{.CommitURL}}" class="commit-sha-link" target="_blank"><code class="commit-sha">{{.ShortSHA}}</code></a>{{else}}<code class="commit-sha">{{.ShortSHA}}</code>{{end}}
-          <span class="commit-subject">
-            {{.Subject}}
-            {{range .BeadIDs}}<a href="/bead/{{.}}" class="bead-link">{{.}}</a>{{end}}
-          </span>
-          <span class="text-dim">{{.RepoName}}</span>
-        </div>
-        {{end}}
-      </div>
-      {{else}}
-      <p class="empty">No recent commits.</p>
-      {{end}}
-    </section>
-
     {{/* ── Crew Health ── */}}
     <section class="briefing-card">
       <h2>Crew Health</h2>
@@ -126,7 +105,7 @@
         <tbody>
           {{range .AgentStats}}
           <tr>
-            <td>{{if .Name}}<a href="/agent/{{.Name}}">{{.Name}}</a>{{else}}(unowned){{end}}</td>
+            <td>{{if .Name}}<a href="/agent/{{.Name}}">{{shortActor .Name}}</a>{{else}}(unowned){{end}}</td>
             <td>{{.Open}}</td>
             <td>{{.InProgress}}</td>
             <td>{{.Closed}}</td>
@@ -141,5 +120,4 @@
 
   </div>
 </div>
-
-{{template "foot"}}
+{{end}}

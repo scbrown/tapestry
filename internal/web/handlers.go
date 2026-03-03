@@ -573,6 +573,206 @@ func (s *Server) handleStatus(w http.ResponseWriter, r *http.Request) {
 	s.render(w, r, "status", data)
 }
 
+// ── Briefing ────────────────────────────────────────────────
+
+type briefingData struct {
+	GeneratedAt     time.Time
+	OpenCount       int
+	InProgressCount int
+	ClosedCount     int
+	TotalBeads      int
+	ClosedToday     int
+	CreatedToday    int
+	NeedsAttention  []dolt.Issue
+	InFlight        []dolt.Issue
+	RecentlyClosed  []dolt.Issue
+	AgentStats      []dolt.AgentStats
+}
+
+func (s *Server) handleBriefing(w http.ResponseWriter, r *http.Request) {
+	now := time.Now()
+	todayStart := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
+	todayEnd := todayStart.AddDate(0, 0, 1)
+	yesterday := now.Add(-24 * time.Hour)
+
+	data := briefingData{GeneratedAt: now}
+
+	if s.ds == nil {
+		s.render(w, r, "briefing", data)
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(r.Context(), 15*time.Second)
+	defer cancel()
+
+	dbs, err := s.databases(ctx)
+	if err != nil {
+		log.Printf("briefing: list dbs: %v", err)
+		s.render(w, r, "briefing", data)
+		return
+	}
+
+	agentMap := make(map[string]*dolt.AgentStats)
+
+	for _, db := range dbs {
+		counts, err := s.ds.CountByStatus(ctx, db.Name)
+		if err != nil {
+			log.Printf("briefing: counts %s: %v", db.Name, err)
+			continue
+		}
+		data.OpenCount += counts["open"]
+		data.InProgressCount += counts["in_progress"] + counts["hooked"]
+		data.ClosedCount += counts["closed"] + counts["completed"]
+		for _, v := range counts {
+			data.TotalBeads += v
+		}
+
+		created, err := s.ds.CountCreatedInRange(ctx, db.Name, todayStart, todayEnd)
+		if err == nil {
+			data.CreatedToday += created
+		}
+		closed, err := s.ds.CountClosedInRange(ctx, db.Name, todayStart, todayEnd)
+		if err == nil {
+			data.ClosedToday += closed
+		}
+
+		// Needs attention: human-owned P0/P1 open beads
+		issues, err := s.ds.Issues(ctx, db.Name, dolt.IssueFilter{Limit: 100})
+		if err != nil {
+			log.Printf("briefing: issues %s: %v", db.Name, err)
+			continue
+		}
+		for _, iss := range issues {
+			if iss.Status == "closed" || isMolecule(iss.Title) {
+				continue
+			}
+			if isHumanOwner(iss.Owner) || isHumanOwner(iss.Assignee) {
+				data.NeedsAttention = append(data.NeedsAttention, iss)
+			}
+			if iss.Status == "in_progress" || iss.Status == "hooked" {
+				data.InFlight = append(data.InFlight, iss)
+			}
+		}
+
+		// Recently closed (24h)
+		recent, err := s.ds.Issues(ctx, db.Name, dolt.IssueFilter{
+			Status:       "closed",
+			UpdatedAfter: yesterday,
+			Limit:        20,
+		})
+		if err == nil {
+			for _, iss := range recent {
+				if !isMolecule(iss.Title) {
+					data.RecentlyClosed = append(data.RecentlyClosed, iss)
+				}
+			}
+		}
+
+		// Agent stats
+		agents, err := s.ds.AgentActivity(ctx, db.Name)
+		if err == nil {
+			for _, a := range agents {
+				if existing, ok := agentMap[a.Name]; ok {
+					existing.Owned += a.Owned
+					existing.Closed += a.Closed
+					existing.Open += a.Open
+					existing.InProgress += a.InProgress
+				} else {
+					copy := a
+					agentMap[a.Name] = &copy
+				}
+			}
+		}
+	}
+
+	for _, a := range agentMap {
+		data.AgentStats = append(data.AgentStats, *a)
+	}
+	sort.Slice(data.AgentStats, func(i, j int) bool {
+		return data.AgentStats[i].Owned > data.AgentStats[j].Owned
+	})
+
+	sort.Slice(data.NeedsAttention, func(i, j int) bool {
+		return data.NeedsAttention[i].Priority < data.NeedsAttention[j].Priority
+	})
+	if len(data.NeedsAttention) > 15 {
+		data.NeedsAttention = data.NeedsAttention[:15]
+	}
+
+	sort.Slice(data.InFlight, func(i, j int) bool {
+		return data.InFlight[i].Priority < data.InFlight[j].Priority
+	})
+	if len(data.InFlight) > 20 {
+		data.InFlight = data.InFlight[:20]
+	}
+
+	sort.Slice(data.RecentlyClosed, func(i, j int) bool {
+		return data.RecentlyClosed[i].UpdatedAt.After(data.RecentlyClosed[j].UpdatedAt)
+	})
+	if len(data.RecentlyClosed) > 15 {
+		data.RecentlyClosed = data.RecentlyClosed[:15]
+	}
+
+	s.render(w, r, "briefing", data)
+}
+
+// ── Agents ──────────────────────────────────────────────────
+
+type agentsData struct {
+	Agents []dolt.AgentStats
+}
+
+func (s *Server) handleAgents(w http.ResponseWriter, r *http.Request) {
+	data := agentsData{}
+
+	if s.ds == nil {
+		s.render(w, r, "agents", data)
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
+	defer cancel()
+
+	dbs, err := s.databases(ctx)
+	if err != nil {
+		log.Printf("agents: list dbs: %v", err)
+		s.render(w, r, "agents", data)
+		return
+	}
+
+	agentMap := make(map[string]*dolt.AgentStats)
+	for _, db := range dbs {
+		agents, err := s.ds.AgentActivity(ctx, db.Name)
+		if err != nil {
+			log.Printf("agents: activity %s: %v", db.Name, err)
+			continue
+		}
+		for _, a := range agents {
+			if a.Name == "(unowned)" || a.Name == "" {
+				continue
+			}
+			if existing, ok := agentMap[a.Name]; ok {
+				existing.Owned += a.Owned
+				existing.Closed += a.Closed
+				existing.Open += a.Open
+				existing.InProgress += a.InProgress
+			} else {
+				copy := a
+				agentMap[a.Name] = &copy
+			}
+		}
+	}
+
+	for _, a := range agentMap {
+		data.Agents = append(data.Agents, *a)
+	}
+	sort.Slice(data.Agents, func(i, j int) bool {
+		return data.Agents[i].InProgress > data.Agents[j].InProgress
+	})
+
+	s.render(w, r, "agents", data)
+}
+
 func isMolecule(title string) bool {
 	return strings.HasPrefix(title, "mol-")
 }

@@ -35,6 +35,7 @@ type DataSource interface {
 	SearchIssues(ctx context.Context, database, q string, limit int) ([]dolt.Issue, error)
 	DistinctAssignees(ctx context.Context, database string) ([]string, error)
 	BlockedIssues(ctx context.Context, database string) ([]dolt.BlockedIssue, error)
+	AgentActivity(ctx context.Context, database string) ([]dolt.AgentStats, error)
 }
 
 // Server serves the Tapestry web dashboard.
@@ -145,6 +146,11 @@ var funcMap = template.FuncMap{
 		if s == "" {
 			return "—"
 		}
+		// Handle email addresses: extract local part
+		if idx := strings.Index(s, "@"); idx > 0 {
+			return s[:idx]
+		}
+		// Handle path-style names: aegis/crew/ellie → ellie
 		parts := strings.Split(s, "/")
 		return parts[len(parts)-1]
 	},
@@ -196,6 +202,14 @@ func (s *Server) parseTemplates() {
 			template.New("").Funcs(funcMap).ParseFS(templateFS,
 				"templates/layout.html", "templates/status.html"),
 		),
+		"briefing": template.Must(
+			template.New("").Funcs(funcMap).ParseFS(templateFS,
+				"templates/layout.html", "templates/briefing.html"),
+		),
+		"agents": template.Must(
+			template.New("").Funcs(funcMap).ParseFS(templateFS,
+				"templates/layout.html", "templates/agents.html"),
+		),
 	}
 }
 
@@ -227,6 +241,10 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		s.handleSearch(w, r)
 	case len(segments) == 1 && segments[0] == "status":
 		s.handleStatus(w, r)
+	case len(segments) == 1 && segments[0] == "briefing":
+		s.handleBriefing(w, r)
+	case len(segments) == 1 && segments[0] == "agents":
+		s.handleAgents(w, r)
 	case len(segments) == 3 && segments[0] == "bead":
 		s.handleBead(w, r, segments[1], segments[2])
 	case len(segments) == 2 && segments[0] == "bead":

@@ -1,5 +1,5 @@
-{{template "head"}}Agents — tapestry{{template "headclose"}}
-
+{{define "title"}}Agents{{end}}
+{{define "content"}}
 <div class="agents-page">
   <h1>Agents</h1>
   {{if .Agents}}
@@ -21,5 +21,4 @@
   <p class="empty">No agents found.</p>
   {{end}}
 </div>
-
-{{template "foot"}}
+{{end}}
