@@ -138,7 +138,8 @@ test.describe('Tapestry Smoke Tests', () => {
   test('design doc renders markdown', async ({ page }) => {
     await page.goto('/designs/clean-desk');
     await expect(page.locator('.design-content')).toBeVisible();
-    await expect(page.locator('.design-content h2')).toHaveCount({ minimum: 1 });
+    const h2Count = await page.locator('.design-content h2').count();
+    expect(h2Count).toBeGreaterThan(0);
   });
 
   test('search page loads', async ({ page }) => {
