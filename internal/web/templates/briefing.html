@@ -94,6 +94,33 @@
       {{end}}
     </section>
 
+    {{/* ── Human Alignment ── */}}
+    <section class="briefing-card">
+      <h2>Human Alignment</h2>
+      {{if .HLA.Online}}
+      <div class="stat-grid">
+        <div class="stat">
+          <span class="stat-value accent">{{.HLA.RecentCount}}</span>
+          <span class="stat-label">Recent directives</span>
+        </div>
+        {{if not .HLA.LastDirective.IsZero}}
+        <div class="stat">
+          <span class="stat-value">{{timeAgo .HLA.LastDirective}}</span>
+          <span class="stat-label">Last directive</span>
+        </div>
+        {{end}}
+      </div>
+      {{else}}
+      <p class="hla-degraded">
+        <span class="badge status-other">degraded</span>
+        {{.HLA.Error}}
+        {{if .HLA.TrackerBead}}
+        <br><a href="/bead/{{.HLA.TrackerBead}}">{{.HLA.TrackerBead}}</a>
+        {{end}}
+      </p>
+      {{end}}
+    </section>
+
     {{/* ── Crew Health ── */}}
     <section class="briefing-card">
       <h2>Crew Health</h2>

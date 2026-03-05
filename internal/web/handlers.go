@@ -575,6 +575,14 @@ func (s *Server) handleStatus(w http.ResponseWriter, r *http.Request) {
 
 // ── Briefing ────────────────────────────────────────────────
 
+type hlaStatus struct {
+	Online        bool
+	Error         string
+	RecentCount   int
+	LastDirective time.Time
+	TrackerBead   string
+}
+
 type briefingData struct {
 	GeneratedAt     time.Time
 	OpenCount       int
@@ -587,6 +595,7 @@ type briefingData struct {
 	InFlight        []dolt.Issue
 	RecentlyClosed  []dolt.Issue
 	AgentStats      []dolt.AgentStats
+	HLA             hlaStatus
 }
 
 func (s *Server) handleBriefing(w http.ResponseWriter, r *http.Request) {
@@ -595,7 +604,14 @@ func (s *Server) handleBriefing(w http.ResponseWriter, r *http.Request) {
 	todayEnd := todayStart.AddDate(0, 0, 1)
 	yesterday := now.Add(-24 * time.Hour)
 
-	data := briefingData{GeneratedAt: now}
+	data := briefingData{
+		GeneratedAt: now,
+		HLA: hlaStatus{
+			Online:      false,
+			Error:       "HLA archive not yet integrated — pending SSH auth fix",
+			TrackerBead: "aegis-fjsnsc",
+		},
+	}
 
 	if s.ds == nil {
 		s.render(w, r, "briefing", data)

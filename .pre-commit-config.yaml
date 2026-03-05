@@ -15,3 +15,4 @@ repos:
     hooks:
       - id: markdownlint-cli2
         args: []
+

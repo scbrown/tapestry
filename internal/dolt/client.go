@@ -164,3 +164,4 @@ func (c *Client) queryDB(ctx context.Context, database, query string, args ...an
 	}
 	return &Rows{Rows: rows, conn: conn}, nil
 }
+
