@@ -114,6 +114,19 @@ test.describe('Tapestry Smoke Tests', () => {
     expect(cards).toBeGreaterThan(0);
   });
 
+  test('homelab page loads', async ({ page }) => {
+    await page.goto('/homelab');
+    await expect(page).toHaveTitle(/Homelab — Tapestry/);
+    await expect(page.locator('.homelab-page h1')).toBeVisible();
+    await expect(page.locator('.briefing-card')).toHaveCount(3);
+  });
+
+  test('homelab shows target status', async ({ page }) => {
+    await page.goto('/homelab');
+    const upBadges = await page.locator('.badge.status-closed').count();
+    expect(upBadges).toBeGreaterThan(0);
+  });
+
   test('search page loads', async ({ page }) => {
     await page.goto('/search');
     await expect(page).toHaveTitle(/Search — Tapestry/);
@@ -136,6 +149,9 @@ test.describe('Tapestry Smoke Tests', () => {
 
     await page.goto('/achievements');
     await expect(page.locator('.achievements-page h1')).toBeVisible();
+
+    await page.goto('/homelab');
+    await expect(page.locator('.homelab-page h1')).toBeVisible();
 
     await page.goto('/beads');
     await expect(page).toHaveTitle(/Beads — Tapestry/);
