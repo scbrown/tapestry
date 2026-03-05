@@ -10,7 +10,7 @@ context — but nobody's weaving the threads together. Tapestry does.
 
 ## What It Does
 
-```
+```text
 February 2026 Summary
 ├── 47 beads closed, 23 created, 8 epics advanced
 ├── Reliability Foundation (aegis-gzl) ─── 85% → 100%
@@ -71,7 +71,7 @@ tapestry serve
 
 ## Architecture
 
-```
+```text
 ┌─────────────────────────────────────────────┐
 │            tapestry serve                    │
 │  Go HTTP server + HTMX templates            │

@@ -33,7 +33,7 @@ just check           # Run all quality checks (pre-push gate)
 
 ## Project Structure
 
-```
+```text
 cmd/tapestry/        # CLI entry point (cobra)
 internal/
   dolt/              # Dolt connection and queries
@@ -71,7 +71,7 @@ just docs build      # If you changed documentation
 
 Follow conventional commits:
 
-```
+```text
 feat: add monthly summary aggregation
 fix: handle missing Dolt database gracefully
 docs: add configuration guide
