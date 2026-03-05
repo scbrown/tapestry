@@ -96,6 +96,16 @@ func isSystemDatabase(name string) bool {
 	return strings.HasPrefix(name, "dolt_")
 }
 
+// isLegacyDatabase returns true for pre-Gas Town databases that contain
+// stale data with incorrect agent names and shouldn't be shown in Tapestry.
+func isLegacyDatabase(name string) bool {
+	switch name {
+	case "beads":
+		return true
+	}
+	return false
+}
+
 // hasIssuesTable checks whether a database has an issues table.
 func (c *Client) hasIssuesTable(ctx context.Context, database string) bool {
 	rows, err := c.db.QueryContext(ctx,
@@ -118,6 +128,9 @@ func (c *Client) ListBeadsDatabases(ctx context.Context) ([]DatabaseInfo, error)
 	}
 	var result []DatabaseInfo
 	for _, db := range all {
+		if isLegacyDatabase(db.Name) {
+			continue
+		}
 		if strings.HasPrefix(db.Name, "beads_") {
 			result = append(result, db)
 			continue
