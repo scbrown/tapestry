@@ -596,6 +596,9 @@ type briefingData struct {
 	RecentlyClosed  []dolt.Issue
 	AgentStats      []dolt.AgentStats
 	HLA             hlaStatus
+	FreshAttention  time.Time
+	FreshInFlight   time.Time
+	FreshClosed     time.Time
 }
 
 func (s *Server) handleBriefing(w http.ResponseWriter, r *http.Request) {
@@ -714,6 +717,11 @@ func (s *Server) handleBriefing(w http.ResponseWriter, r *http.Request) {
 	if len(data.NeedsAttention) > 15 {
 		data.NeedsAttention = data.NeedsAttention[:15]
 	}
+	for _, iss := range data.NeedsAttention {
+		if iss.UpdatedAt.After(data.FreshAttention) {
+			data.FreshAttention = iss.UpdatedAt
+		}
+	}
 
 	sort.Slice(data.InFlight, func(i, j int) bool {
 		return data.InFlight[i].Priority < data.InFlight[j].Priority
@@ -721,12 +729,22 @@ func (s *Server) handleBriefing(w http.ResponseWriter, r *http.Request) {
 	if len(data.InFlight) > 20 {
 		data.InFlight = data.InFlight[:20]
 	}
+	for _, iss := range data.InFlight {
+		if iss.UpdatedAt.After(data.FreshInFlight) {
+			data.FreshInFlight = iss.UpdatedAt
+		}
+	}
 
 	sort.Slice(data.RecentlyClosed, func(i, j int) bool {
 		return data.RecentlyClosed[i].UpdatedAt.After(data.RecentlyClosed[j].UpdatedAt)
 	})
 	if len(data.RecentlyClosed) > 50 {
 		data.RecentlyClosed = data.RecentlyClosed[:50]
+	}
+	for _, iss := range data.RecentlyClosed {
+		if iss.UpdatedAt.After(data.FreshClosed) {
+			data.FreshClosed = iss.UpdatedAt
+		}
 	}
 
 	s.render(w, r, "briefing", data)

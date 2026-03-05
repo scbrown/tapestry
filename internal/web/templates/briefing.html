@@ -40,7 +40,7 @@
 
     {{/* ── Needs Your Attention ── */}}
     <section class="briefing-card">
-      <h2>Needs Your Attention</h2>
+      <h2>Needs Your Attention {{if not .FreshAttention.IsZero}}<time class="text-dim freshness">{{timeAgo .FreshAttention}}</time>{{end}}</h2>
       {{if .NeedsAttention}}
       <ul class="briefing-list">
         {{range .NeedsAttention}}
@@ -59,7 +59,7 @@
 
     {{/* ── In Flight ── */}}
     <section class="briefing-card">
-      <h2>In Flight</h2>
+      <h2>In Flight {{if not .FreshInFlight.IsZero}}<time class="text-dim freshness">{{timeAgo .FreshInFlight}}</time>{{end}}</h2>
       {{if .InFlight}}
       <ul class="briefing-list">
         {{range .InFlight}}
@@ -78,7 +78,7 @@
 
     {{/* ── Recently Closed ── */}}
     <section class="briefing-card">
-      <h2>Recently Closed</h2>
+      <h2>Recently Closed {{if not .FreshClosed.IsZero}}<time class="text-dim freshness">{{timeAgo .FreshClosed}}</time>{{end}}</h2>
       {{if .RecentlyClosed}}
       <ul class="briefing-list">
         {{range .RecentlyClosed}}
