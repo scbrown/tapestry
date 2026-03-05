@@ -127,6 +127,20 @@ test.describe('Tapestry Smoke Tests', () => {
     expect(upBadges).toBeGreaterThan(0);
   });
 
+  test('designs page loads', async ({ page }) => {
+    await page.goto('/designs');
+    await expect(page).toHaveTitle(/Designs — Tapestry/);
+    await expect(page.locator('.designs-page h1')).toBeVisible();
+    const cards = await page.locator('.design-card').count();
+    expect(cards).toBeGreaterThan(10);
+  });
+
+  test('design doc renders markdown', async ({ page }) => {
+    await page.goto('/designs/clean-desk');
+    await expect(page.locator('.design-content')).toBeVisible();
+    await expect(page.locator('.design-content h2')).toHaveCount({ minimum: 1 });
+  });
+
   test('search page loads', async ({ page }) => {
     await page.goto('/search');
     await expect(page).toHaveTitle(/Search — Tapestry/);
@@ -152,6 +166,9 @@ test.describe('Tapestry Smoke Tests', () => {
 
     await page.goto('/homelab');
     await expect(page.locator('.homelab-page h1')).toBeVisible();
+
+    await page.goto('/designs');
+    await expect(page.locator('.designs-page h1')).toBeVisible();
 
     await page.goto('/beads');
     await expect(page).toHaveTitle(/Beads — Tapestry/);
