@@ -562,8 +562,8 @@ func (s *Server) handleStatus(w http.ResponseWriter, r *http.Request) {
 	sort.Slice(data.RecentClosed, func(i, j int) bool {
 		return data.RecentClosed[i].UpdatedAt.After(data.RecentClosed[j].UpdatedAt)
 	})
-	if len(data.RecentClosed) > 15 {
-		data.RecentClosed = data.RecentClosed[:15]
+	if len(data.RecentClosed) > 50 {
+		data.RecentClosed = data.RecentClosed[:50]
 	}
 
 	sort.Slice(data.ActionItems, func(i, j int) bool {
@@ -709,8 +709,8 @@ func (s *Server) handleBriefing(w http.ResponseWriter, r *http.Request) {
 	sort.Slice(data.RecentlyClosed, func(i, j int) bool {
 		return data.RecentlyClosed[i].UpdatedAt.After(data.RecentlyClosed[j].UpdatedAt)
 	})
-	if len(data.RecentlyClosed) > 15 {
-		data.RecentlyClosed = data.RecentlyClosed[:15]
+	if len(data.RecentlyClosed) > 50 {
+		data.RecentlyClosed = data.RecentlyClosed[:50]
 	}
 
 	s.render(w, r, "briefing", data)
