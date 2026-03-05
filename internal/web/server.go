@@ -45,6 +45,7 @@ type DataSource interface {
 // Server serves the Tapestry web dashboard.
 type Server struct {
 	ds        DataSource
+	prom      *promClient
 	templates map[string]*template.Template
 	static    http.Handler
 
@@ -175,7 +176,7 @@ var funcMap = template.FuncMap{
 // New creates a new Server. The DataSource may be nil, in which case pages
 // will display a "no database" message instead of data.
 func New(ds DataSource) *Server {
-	s := &Server{ds: ds}
+	s := &Server{ds: ds, prom: newPromClient()}
 	s.parseTemplates()
 
 	staticSub, _ := fs.Sub(staticFS, "static")
@@ -222,6 +223,10 @@ func (s *Server) parseTemplates() {
 			template.New("").Funcs(funcMap).ParseFS(templateFS,
 				"templates/layout.html", "templates/achievements.html"),
 		),
+		"homelab": template.Must(
+			template.New("").Funcs(funcMap).ParseFS(templateFS,
+				"templates/layout.html", "templates/homelab.html"),
+		),
 	}
 }
 
@@ -261,6 +266,8 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		s.handleDecisions(w, r)
 	case len(segments) == 1 && segments[0] == "achievements":
 		s.handleAchievements(w, r)
+	case len(segments) == 1 && segments[0] == "homelab":
+		s.handleHomelab(w, r)
 	case len(segments) == 3 && segments[0] == "bead":
 		s.handleBead(w, r, segments[1], segments[2])
 	case len(segments) == 2 && segments[0] == "bead":

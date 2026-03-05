@@ -610,3 +610,19 @@ header nav a:hover { background: var(--bg); text-decoration: none; }
 .achievement-icon { font-size: 2rem; flex-shrink: 0; width: 2.5rem; text-align: center; }
 .achievement-info h3 { font-size: 0.95rem; margin-bottom: 0.25rem; }
 .achievement-desc { font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.25rem; }
+
+/* ── Homelab ── */
+.homelab-page h1 { margin-bottom: 1rem; }
+.homelab-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+@media (max-width: 900px) { .homelab-grid { grid-template-columns: 1fr; } }
+.homelab-alerts { grid-column: 1 / -1; }
+.homelab-targets { grid-column: 1 / -1; }
+.stat-value.danger { color: var(--danger); }
+.badge.sev-critical { background: var(--danger); color: var(--bg); }
+.badge.sev-warning { background: var(--warning); color: var(--bg); }
+.badge.sev-review { background: var(--orange); color: var(--bg); }
+.badge.sev-info { background: var(--info); color: var(--bg); }
+.badge.sev-firing { background: var(--danger); color: var(--bg); }
+tr.silenced { opacity: 0.5; }
+.alert-summary { display: block; font-size: 0.8rem; }
+.error-banner { background: rgba(255,85,85,0.15); border: 1px solid var(--danger); border-radius: var(--radius); padding: 0.75rem 1rem; margin-bottom: 1rem; }

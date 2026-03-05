@@ -1,0 +1,99 @@
+{{define "title"}}Homelab{{end}}
+{{define "content"}}
+<div class="homelab-page" hx-get="/homelab" hx-trigger="every 30s" hx-select=".homelab-page" hx-swap="outerHTML">
+  <h1>Homelab Status <time class="text-dim">{{.GeneratedAt.Format "Jan 02, 2006 15:04"}}</time></h1>
+
+  {{if .Err}}
+  <div class="error-banner">{{.Err}}</div>
+  {{else}}
+
+  <div class="homelab-grid">
+
+    {{/* Overview */}}
+    <section class="briefing-card">
+      <h2>Overview</h2>
+      <div class="stat-grid">
+        <div class="stat">
+          <span class="stat-value{{if gt .DownCount 0}} danger{{end}}">{{.DownCount}}</span>
+          <span class="stat-label">Down</span>
+        </div>
+        <div class="stat">
+          <span class="stat-value accent">{{.UpCount}}</span>
+          <span class="stat-label">Up</span>
+        </div>
+        <div class="stat">
+          <span class="stat-value">{{.TotalCount}}</span>
+          <span class="stat-label">Total</span>
+        </div>
+      </div>
+      <div class="stat-grid" style="margin-top:0.5rem">
+        <div class="stat">
+          <span class="stat-value{{if gt .Firing 0}} danger{{end}}">{{.Firing}}</span>
+          <span class="stat-label">Firing</span>
+        </div>
+        <div class="stat">
+          <span class="stat-value">{{.Silenced}}</span>
+          <span class="stat-label">Silenced</span>
+        </div>
+      </div>
+    </section>
+
+    {{/* Active Alerts */}}
+    <section class="briefing-card homelab-alerts">
+      <h2>Active Alerts</h2>
+      {{if .Alerts}}
+      <table class="briefing-table">
+        <thead>
+          <tr><th>Alert</th><th>Severity</th><th>Host</th><th>State</th></tr>
+        </thead>
+        <tbody>
+          {{range .Alerts}}
+          <tr class="{{if .Silenced}}silenced{{end}}">
+            <td>
+              {{.Name}}
+              {{if .Summary}}<span class="text-dim alert-summary">{{.Summary}}</span>{{end}}
+            </td>
+            <td><span class="badge sev-{{.Severity}}">{{.Severity}}</span></td>
+            <td>{{if .Instance}}{{.Instance}}{{else}}<span class="text-dim">--</span>{{end}}</td>
+            <td>
+              {{if .Silenced}}<span class="badge status-other">silenced</span>
+              {{else if eq .State "firing"}}<span class="badge sev-firing">firing</span>
+              {{else}}<span class="badge status-other">{{.State}}</span>
+              {{end}}
+            </td>
+          </tr>
+          {{end}}
+        </tbody>
+      </table>
+      {{else}}
+      <p class="empty">No active alerts.</p>
+      {{end}}
+    </section>
+
+    {{/* Targets */}}
+    <section class="briefing-card homelab-targets">
+      <h2>Scrape Targets</h2>
+      <table class="briefing-table">
+        <thead>
+          <tr><th>Service</th><th>Job</th><th>Status</th></tr>
+        </thead>
+        <tbody>
+          {{range .Targets}}
+          <tr>
+            <td>{{.Name}}</td>
+            <td><span class="text-dim">{{.Job}}</span></td>
+            <td>
+              {{if .Up}}<span class="badge status-closed">up</span>
+              {{else}}<span class="badge sev-critical">down</span>
+              {{end}}
+            </td>
+          </tr>
+          {{end}}
+        </tbody>
+      </table>
+    </section>
+
+  </div>
+  {{end}}
+</div>
+{{end}}
