@@ -36,6 +36,8 @@ type DataSource interface {
 	DistinctAssignees(ctx context.Context, database string) ([]string, error)
 	BlockedIssues(ctx context.Context, database string) ([]dolt.BlockedIssue, error)
 	AgentActivity(ctx context.Context, database string) ([]dolt.AgentStats, error)
+	Decisions(ctx context.Context, database string) ([]dolt.Issue, error)
+	LabelsForIssue(ctx context.Context, database, issueID string) ([]string, error)
 }
 
 // Server serves the Tapestry web dashboard.
@@ -210,6 +212,10 @@ func (s *Server) parseTemplates() {
 			template.New("").Funcs(funcMap).ParseFS(templateFS,
 				"templates/layout.html", "templates/agents.html"),
 		),
+		"decisions": template.Must(
+			template.New("").Funcs(funcMap).ParseFS(templateFS,
+				"templates/layout.html", "templates/decisions.html"),
+		),
 	}
 }
 
@@ -245,6 +251,8 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		s.handleBriefing(w, r)
 	case len(segments) == 1 && segments[0] == "agents":
 		s.handleAgents(w, r)
+	case len(segments) == 1 && segments[0] == "decisions":
+		s.handleDecisions(w, r)
 	case len(segments) == 3 && segments[0] == "bead":
 		s.handleBead(w, r, segments[1], segments[2])
 	case len(segments) == 2 && segments[0] == "bead":
