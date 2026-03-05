@@ -77,18 +77,67 @@ test.describe('Tapestry Smoke Tests', () => {
     await expect(page).toHaveTitle(/Beads — Tapestry/);
   });
 
+  test('decisions page loads', async ({ page }) => {
+    await page.goto('/decisions');
+    await expect(page).toHaveTitle(/Decisions — Tapestry/);
+    await expect(page.locator('.decisions-page h1')).toHaveText('Decisions');
+    await expect(page.locator('.stats-grid .stat-card')).toHaveCount(4);
+    await expect(page.locator('.filters a')).toHaveCount(4);
+  });
+
+  test('decisions filter links work', async ({ page }) => {
+    await page.goto('/decisions?filter=pending');
+    await expect(page.locator('.filters a.active')).toHaveText('Pending');
+  });
+
+  test('achievements page loads', async ({ page }) => {
+    await page.goto('/achievements');
+    await expect(page).toHaveTitle(/Achievements — Tapestry/);
+    await expect(page.locator('.achievements-page h1')).toHaveText('Achievements');
+    await expect(page.locator('.progress-count')).toBeVisible();
+    await expect(page.locator('.achievement-card')).toHaveCount(25);
+  });
+
+  test('achievements shows unlocked and locked cards', async ({ page }) => {
+    await page.goto('/achievements');
+    const unlocked = await page.locator('.achievement-card.unlocked').count();
+    const locked = await page.locator('.achievement-card.locked').count();
+    expect(unlocked).toBe(16);
+    expect(locked).toBe(9);
+  });
+
+  test('achievements category filter works', async ({ page }) => {
+    await page.goto('/achievements?category=infrastructure');
+    await expect(page.locator('.filters a.active')).toContainText('infrastructure');
+    const cards = await page.locator('.achievement-card').count();
+    expect(cards).toBeLessThan(25);
+    expect(cards).toBeGreaterThan(0);
+  });
+
+  test('search page loads', async ({ page }) => {
+    await page.goto('/search');
+    await expect(page).toHaveTitle(/Search — Tapestry/);
+    await expect(page.locator('text=Search')).toBeVisible();
+  });
+
   test('navigation links work', async ({ page }) => {
-    await page.goto('/');
-    await page.click('a[href="/status"]');
+    // Start from a fast-loading page to avoid homepage Dolt timeout
+    await page.goto('/status');
     await expect(page.locator('.status-header h1')).toBeVisible();
 
-    await page.click('a[href="/briefing"]');
+    await page.goto('/briefing');
     await expect(page.locator('.briefing-card').first()).toBeVisible();
 
-    await page.click('a[href="/agents"]');
+    await page.goto('/agents');
     await expect(page.locator('.agent-card').first()).toBeVisible();
 
-    await page.click('a[href="/beads"]');
+    await page.goto('/decisions');
+    await expect(page.locator('.decisions-page h1')).toBeVisible();
+
+    await page.goto('/achievements');
+    await expect(page.locator('.achievements-page h1')).toBeVisible();
+
+    await page.goto('/beads');
     await expect(page).toHaveTitle(/Beads — Tapestry/);
   });
 

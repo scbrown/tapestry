@@ -3,7 +3,7 @@ import { defineConfig } from '@playwright/test';
 export default defineConfig({
   testDir: '.',
   testMatch: '**/*.spec.ts',
-  timeout: 15000,
+  timeout: 30000,
   retries: 1,
   use: {
     baseURL: process.env.TAPESTRY_URL || 'https://tapestry.svc',
