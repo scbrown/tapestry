@@ -80,7 +80,7 @@ func (c *Client) Comments(ctx context.Context, database, issueID string) ([]Comm
 
 // Dependencies returns dependency edges for the given issue.
 func (c *Client) Dependencies(ctx context.Context, database, issueID string) ([]Dependency, error) {
-	query := "SELECT issue_id, depends_on, dep_type FROM dependencies WHERE issue_id = ? OR depends_on = ?"
+	query := "SELECT issue_id, depends_on_id, type FROM dependencies WHERE issue_id = ? OR depends_on_id = ?"
 	rows, err := c.queryDB(ctx, database, query, issueID, issueID)
 	if err != nil {
 		return nil, fmt.Errorf("dolt: dependencies: %w", err)
@@ -434,8 +434,8 @@ func (c *Client) BlockedIssues(ctx context.Context, database string) ([]BlockedI
 		COALESCE(blocker.owner,''), COALESCE(blocker.assignee,'')
 		FROM dependencies d
 		JOIN issues i ON i.id = d.issue_id
-		JOIN issues blocker ON blocker.id = d.depends_on
-		WHERE d.dep_type = 'depends_on'
+		JOIN issues blocker ON blocker.id = d.depends_on_id
+		WHERE d.type = 'depends_on'
 		AND i.status != 'closed'
 		AND blocker.status != 'closed'
 		AND i.issue_type IN ('task','bug','epic')
@@ -467,7 +467,7 @@ func (c *Client) BlockedIssues(ctx context.Context, database string) ([]BlockedI
 // AllChildDependencies returns all child_of dependency edges in the database.
 // Used for building task hierarchy trees efficiently without N+1 queries.
 func (c *Client) AllChildDependencies(ctx context.Context, database string) ([]Dependency, error) {
-	query := "SELECT issue_id, depends_on, dep_type FROM dependencies WHERE dep_type = 'child_of'"
+	query := "SELECT issue_id, depends_on_id, type FROM dependencies WHERE type = 'child_of'"
 	rows, err := c.queryDB(ctx, database, query)
 	if err != nil {
 		return nil, fmt.Errorf("dolt: all child deps: %w", err)
