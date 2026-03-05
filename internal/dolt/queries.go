@@ -203,6 +203,8 @@ func (c *Client) EpicChildIDs(ctx context.Context, database, epicID string) ([]s
 }
 
 // AgentActivity returns aggregated stats per agent (by owner field).
+// Only includes agents with issues updated in the last 30 days to avoid
+// showing stale identities from legacy data.
 func (c *Client) AgentActivity(ctx context.Context, database string) ([]AgentStats, error) {
 	query := `SELECT COALESCE(owner,'(unowned)') AS agent,
 		COUNT(*) AS total,
@@ -210,6 +212,7 @@ func (c *Client) AgentActivity(ctx context.Context, database string) ([]AgentSta
 		SUM(CASE WHEN status = 'open' THEN 1 ELSE 0 END) AS open_count,
 		SUM(CASE WHEN status IN ('in_progress','hooked') THEN 1 ELSE 0 END) AS in_progress
 		FROM issues WHERE deleted_at IS NULL AND issue_type IN ('task','bug','epic')
+		AND updated_at >= NOW() - INTERVAL 30 DAY
 		GROUP BY owner ORDER BY total DESC`
 	rows, err := c.queryDB(ctx, database, query)
 	if err != nil {
