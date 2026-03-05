@@ -36,7 +36,7 @@ func (c *Client) IssuesAsOf(ctx context.Context, database string, ts time.Time, 
 func (c *Client) IssueByID(ctx context.Context, database, id string) (*Issue, error) {
 	query := "SELECT id, title, description, status, priority, issue_type, " +
 		"COALESCE(owner,''), COALESCE(assignee,''), created_at, updated_at " +
-		"FROM issues WHERE id = ? AND deleted_at IS NULL"
+		"FROM issues WHERE id = ?"
 	rows, err := c.queryDB(ctx, database, query, id)
 	if err != nil {
 		return nil, fmt.Errorf("dolt: issue by id: %w", err)
@@ -122,8 +122,8 @@ func (c *Client) Diff(ctx context.Context, database, table, from, to string) ([]
 
 // CountByStatus returns a map of status -> count for issues in the database.
 func (c *Client) CountByStatus(ctx context.Context, database string) (map[string]int, error) {
-	query := "SELECT status, COUNT(*) FROM issues WHERE deleted_at IS NULL " +
-		"AND issue_type IN ('task','bug','epic') GROUP BY status"
+	query := "SELECT status, COUNT(*) FROM issues " +
+		"WHERE issue_type IN ('task','bug','epic') GROUP BY status"
 	rows, err := c.queryDB(ctx, database, query)
 	if err != nil {
 		return nil, fmt.Errorf("dolt: count by status: %w", err)
@@ -144,8 +144,7 @@ func (c *Client) CountByStatus(ctx context.Context, database string) (map[string
 
 // CountCreatedInRange counts issues created within the given time range.
 func (c *Client) CountCreatedInRange(ctx context.Context, database string, start, end time.Time) (int, error) {
-	query := "SELECT COUNT(*) FROM issues WHERE deleted_at IS NULL " +
-		"AND issue_type IN ('task','bug','epic') " +
+	query := "SELECT COUNT(*) FROM issues WHERE issue_type IN ('task','bug','epic') " +
 		"AND created_at >= ? AND created_at < ?"
 	rows, err := c.queryDB(ctx, database, query, start, end)
 	if err != nil {
@@ -164,8 +163,7 @@ func (c *Client) CountCreatedInRange(ctx context.Context, database string, start
 
 // CountClosedInRange counts issues closed (status='closed', updated) within the given time range.
 func (c *Client) CountClosedInRange(ctx context.Context, database string, start, end time.Time) (int, error) {
-	query := "SELECT COUNT(*) FROM issues WHERE deleted_at IS NULL " +
-		"AND issue_type IN ('task','bug','epic') " +
+	query := "SELECT COUNT(*) FROM issues WHERE issue_type IN ('task','bug','epic') " +
 		"AND status = 'closed' AND updated_at >= ? AND updated_at < ?"
 	rows, err := c.queryDB(ctx, database, query, start, end)
 	if err != nil {
@@ -212,7 +210,7 @@ func (c *Client) AgentActivity(ctx context.Context, database string) ([]AgentSta
 		SUM(CASE WHEN status = 'closed' THEN 1 ELSE 0 END) AS closed,
 		SUM(CASE WHEN status = 'open' THEN 1 ELSE 0 END) AS open_count,
 		SUM(CASE WHEN status IN ('in_progress','hooked') THEN 1 ELSE 0 END) AS in_progress
-		FROM issues WHERE deleted_at IS NULL AND issue_type IN ('task','bug','epic')
+		FROM issues WHERE issue_type IN ('task','bug','epic')
 		AND assignee IS NOT NULL AND assignee <> ''
 		AND updated_at >= NOW() - INTERVAL 7 DAY
 		GROUP BY assignee ORDER BY in_progress DESC, total DESC`
@@ -237,7 +235,7 @@ func (c *Client) AgentActivity(ctx context.Context, database string) ([]AgentSta
 // the given time range. Only issues with a non-empty assignee are counted.
 func (c *Client) AgentActivityInRange(ctx context.Context, database string, from, to time.Time) (map[string]int, error) {
 	query := "SELECT assignee, COUNT(*) FROM issues " +
-		"WHERE deleted_at IS NULL AND issue_type IN ('task','bug','epic') " +
+		"WHERE issue_type IN ('task','bug','epic') " +
 		"AND updated_at >= ? AND updated_at < ? AND assignee != '' " +
 		"GROUP BY assignee ORDER BY COUNT(*) DESC"
 	rows, err := c.queryDB(ctx, database, query, from, to)
@@ -266,7 +264,7 @@ func (c *Client) SearchIssues(ctx context.Context, database, q string, limit int
 	pattern := "%" + q + "%"
 	query := "SELECT id, title, description, status, priority, issue_type, " +
 		"COALESCE(owner,''), COALESCE(assignee,''), created_at, updated_at " +
-		"FROM issues WHERE deleted_at IS NULL AND issue_type IN ('task','bug','epic') " +
+		"FROM issues WHERE issue_type IN ('task','bug','epic') " +
 		"AND (title LIKE ? OR description LIKE ?) " +
 		"ORDER BY updated_at DESC"
 	if limit > 0 {
@@ -322,8 +320,8 @@ func (c *Client) StatusHistory(ctx context.Context, database, issueID string) ([
 
 // DistinctAssignees returns distinct non-empty assignee values from the database.
 func (c *Client) DistinctAssignees(ctx context.Context, database string) ([]string, error) {
-	query := "SELECT DISTINCT COALESCE(assignee,'') FROM issues WHERE deleted_at IS NULL " +
-		"AND issue_type IN ('task','bug','epic') AND assignee IS NOT NULL AND assignee != '' " +
+	query := "SELECT DISTINCT COALESCE(assignee,'') FROM issues " +
+		"WHERE issue_type IN ('task','bug','epic') AND assignee IS NOT NULL AND assignee != '' " +
 		"ORDER BY assignee"
 	rows, err := c.queryDB(ctx, database, query)
 	if err != nil {
@@ -345,7 +343,7 @@ func (c *Client) DistinctAssignees(ctx context.Context, database string) ([]stri
 func (c *Client) Decisions(ctx context.Context, database string) ([]Issue, error) {
 	query := "SELECT id, title, description, status, priority, issue_type, " +
 		"COALESCE(owner,''), COALESCE(assignee,''), created_at, updated_at " +
-		"FROM issues WHERE deleted_at IS NULL AND issue_type = 'decision' " +
+		"FROM issues WHERE issue_type = 'decision' " +
 		"ORDER BY updated_at DESC"
 	rows, err := c.queryDB(ctx, database, query)
 	if err != nil {
@@ -438,8 +436,8 @@ func (c *Client) BlockedIssues(ctx context.Context, database string) ([]BlockedI
 		JOIN issues i ON i.id = d.issue_id
 		JOIN issues blocker ON blocker.id = d.depends_on
 		WHERE d.dep_type = 'depends_on'
-		AND i.deleted_at IS NULL AND i.status != 'closed'
-		AND blocker.deleted_at IS NULL AND blocker.status != 'closed'
+		AND i.status != 'closed'
+		AND blocker.status != 'closed'
 		AND i.issue_type IN ('task','bug','epic')
 		ORDER BY i.priority ASC, i.updated_at DESC`
 	rows, err := c.queryDB(ctx, database, query)
@@ -502,7 +500,7 @@ func buildIssueQuery(f IssueFilter, asOf string) (string, []any) {
 		b.WriteString("issues")
 	}
 
-	conditions := []string{"deleted_at IS NULL", "issue_type IN ('task','bug','epic')"}
+	conditions := []string{"issue_type IN ('task','bug','epic')"}
 	if f.Status != "" {
 		conditions = append(conditions, "status = ?")
 		args = append(args, f.Status)

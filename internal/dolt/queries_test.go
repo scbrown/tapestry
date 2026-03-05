@@ -18,7 +18,7 @@ func TestBuildIssueQuery(t *testing.T) {
 			name:     "no filters",
 			filter:   IssueFilter{},
 			wantArgs: 0,
-			contains: []string{"SELECT", "FROM issues", "deleted_at IS NULL", "ORDER BY updated_at DESC"},
+			contains: []string{"SELECT", "FROM issues", "issue_type IN", "ORDER BY updated_at DESC"},
 		},
 		{
 			name:     "status filter",
