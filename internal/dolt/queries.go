@@ -214,7 +214,8 @@ func (c *Client) AgentActivity(ctx context.Context, database string) ([]AgentSta
 		SUM(CASE WHEN status IN ('in_progress','hooked') THEN 1 ELSE 0 END) AS in_progress
 		FROM issues WHERE deleted_at IS NULL AND issue_type IN ('task','bug','epic')
 		AND assignee IS NOT NULL AND assignee <> ''
-		GROUP BY assignee ORDER BY total DESC`
+		AND updated_at >= NOW() - INTERVAL 7 DAY
+		GROUP BY assignee ORDER BY in_progress DESC, total DESC`
 	rows, err := c.queryDB(ctx, database, query)
 	if err != nil {
 		return nil, fmt.Errorf("dolt: agent activity: %w", err)
