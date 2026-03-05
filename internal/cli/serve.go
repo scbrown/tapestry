@@ -1,7 +1,6 @@
 package cli
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 
@@ -13,12 +12,11 @@ import (
 
 func newServeCmd() *cobra.Command {
 	var (
-		host       string
-		port       int
-		doltHost   string
-		doltPort   int
-		doltUser   string
-		reactorURL string
+		host     string
+		port     int
+		doltHost string
+		doltPort int
+		doltUser string
 	)
 
 	cmd := &cobra.Command{
@@ -46,9 +44,6 @@ func newServeCmd() *cobra.Command {
 			if !cmd.Flags().Changed("dolt-user") && fileCfg.Dolt.User != "" {
 				doltUser = fileCfg.Dolt.User
 			}
-			if !cmd.Flags().Changed("reactor-url") && fileCfg.Reactor.URL != "" {
-				reactorURL = fileCfg.Reactor.URL
-			}
 
 			addr := fmt.Sprintf("%s:%d", host, port)
 
@@ -63,15 +58,7 @@ func newServeCmd() *cobra.Command {
 				defer func() { _ = client.Close() }()
 			}
 
-			// Start reactor SSE hub (optional)
-			var hub *web.EventHub
-			if reactorURL != "" {
-				hub = web.NewEventHub(reactorURL)
-				hub.Start(context.Background())
-				_, _ = fmt.Fprintf(cmd.OutOrStdout(), "reactor SSE: subscribing to %s\n", reactorURL)
-			}
-
-			srv := web.New(ds, hub)
+			srv := web.New(ds)
 			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "tapestry server listening on http://%s\n", addr)
 			return http.ListenAndServe(addr, srv)
 		},
@@ -82,7 +69,6 @@ func newServeCmd() *cobra.Command {
 	cmd.Flags().StringVar(&doltHost, "dolt-host", "127.0.0.1", "Dolt server host")
 	cmd.Flags().IntVar(&doltPort, "dolt-port", 3306, "Dolt server port")
 	cmd.Flags().StringVar(&doltUser, "dolt-user", "root", "Dolt server user")
-	cmd.Flags().StringVar(&reactorURL, "reactor-url", "", "Reactor SSE URL (e.g. http://dolt.lan:8075/events/stream)")
 
 	return cmd
 }

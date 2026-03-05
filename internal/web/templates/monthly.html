@@ -42,6 +42,7 @@
     </div>
 
     {{range .Databases}}
+    {{if gt .Total 0}}
     <section class="db-section">
         <h2>{{.Name}}</h2>
         {{if .Err}}
@@ -50,7 +51,9 @@
         <div class="db-stats">
             <span class="stat">Total: {{.Total}}</span>
             {{range $status, $count := .Counts}}
+            {{if and (ne $status "hooked") (ne $status "pinned") (ne $status "blocked")}}
             <span class="badge {{statusClass $status}}">{{$status}}: {{$count}}</span>
+            {{end}}
             {{end}}
             <span class="stat">Created: {{.Created}}</span>
             <span class="stat">Closed: {{.Closed}}</span>
@@ -59,6 +62,7 @@
         <a href="/beads?rig={{.Name}}" hx-get="/beads?rig={{.Name}}" hx-target="#content" hx-push-url="true">Browse beads &rarr;</a>
         {{end}}
     </section>
+    {{end}}
     {{end}}
 
     {{if .Agents}}

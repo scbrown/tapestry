@@ -77,7 +77,7 @@ func (m *mockDataSource) AgentActivity(_ context.Context, _ string) ([]dolt.Agen
 }
 
 func TestIndexRendersMonthly(t *testing.T) {
-	srv := New(nil, nil)
+	srv := New(nil)
 	req := httptest.NewRequest("GET", "/", nil)
 	w := httptest.NewRecorder()
 
@@ -93,7 +93,7 @@ func TestIndexRendersMonthly(t *testing.T) {
 }
 
 func TestMonthlyPage_NilDataSource(t *testing.T) {
-	srv := New(nil, nil)
+	srv := New(nil)
 	req := httptest.NewRequest("GET", "/2026/02", nil)
 	w := httptest.NewRecorder()
 
@@ -123,7 +123,7 @@ func TestMonthlyPage_WithData(t *testing.T) {
 		},
 	}
 
-	srv := New(ds, nil)
+	srv := New(ds)
 	req := httptest.NewRequest("GET", "/2026/02", nil)
 	w := httptest.NewRecorder()
 
@@ -148,7 +148,7 @@ func TestMonthlyPage_WithData(t *testing.T) {
 }
 
 func TestMonthlyPage_HTMXPartial(t *testing.T) {
-	srv := New(nil, nil)
+	srv := New(nil)
 	req := httptest.NewRequest("GET", "/2026/02", nil)
 	req.Header.Set("HX-Request", "true")
 	w := httptest.NewRecorder()
@@ -170,7 +170,7 @@ func TestMonthlyPage_HTMXPartial(t *testing.T) {
 }
 
 func TestMonthlyPage_InvalidMonth(t *testing.T) {
-	srv := New(nil, nil)
+	srv := New(nil)
 
 	tests := []struct {
 		path string
@@ -211,7 +211,7 @@ func TestBeadPage_Found(t *testing.T) {
 		},
 	}
 
-	srv := New(ds, nil)
+	srv := New(ds)
 	req := httptest.NewRequest("GET", "/bead/beads_aegis/aegis-001", nil)
 	w := httptest.NewRecorder()
 
@@ -242,7 +242,7 @@ func TestBeadPage_NotFound(t *testing.T) {
 		issue: nil, // not found
 	}
 
-	srv := New(ds, nil)
+	srv := New(ds)
 	req := httptest.NewRequest("GET", "/bead/beads_aegis/nonexistent", nil)
 	w := httptest.NewRecorder()
 
@@ -254,7 +254,7 @@ func TestBeadPage_NotFound(t *testing.T) {
 }
 
 func TestBeadPage_NilDataSource(t *testing.T) {
-	srv := New(nil, nil)
+	srv := New(nil)
 	req := httptest.NewRequest("GET", "/bead/beads_aegis/aegis-001", nil)
 	w := httptest.NewRecorder()
 
@@ -271,7 +271,7 @@ func TestBeadPage_NilDataSource(t *testing.T) {
 }
 
 func TestStaticAssets(t *testing.T) {
-	srv := New(nil, nil)
+	srv := New(nil)
 	req := httptest.NewRequest("GET", "/static/style.css", nil)
 	w := httptest.NewRecorder()
 
@@ -286,7 +286,7 @@ func TestStaticAssets(t *testing.T) {
 }
 
 func TestMonthNavigation(t *testing.T) {
-	srv := New(nil, nil)
+	srv := New(nil)
 	req := httptest.NewRequest("GET", "/2026/01", nil)
 	w := httptest.NewRecorder()
 
@@ -304,7 +304,7 @@ func TestMonthNavigation(t *testing.T) {
 }
 
 func TestBeadsList_NilDataSource(t *testing.T) {
-	srv := New(nil, nil)
+	srv := New(nil)
 	req := httptest.NewRequest("GET", "/beads", nil)
 	w := httptest.NewRecorder()
 
@@ -330,7 +330,7 @@ func TestBeadsList_WithData(t *testing.T) {
 		},
 	}
 
-	srv := New(ds, nil)
+	srv := New(ds)
 	req := httptest.NewRequest("GET", "/beads", nil)
 	w := httptest.NewRecorder()
 
@@ -352,7 +352,7 @@ func TestBeadsList_WithData(t *testing.T) {
 }
 
 func TestSearch_EmptyQuery(t *testing.T) {
-	srv := New(nil, nil)
+	srv := New(nil)
 	req := httptest.NewRequest("GET", "/search", nil)
 	w := httptest.NewRecorder()
 
@@ -375,7 +375,7 @@ func TestSearch_WithResults(t *testing.T) {
 		},
 	}
 
-	srv := New(ds, nil)
+	srv := New(ds)
 	req := httptest.NewRequest("GET", "/search?q=found", nil)
 	w := httptest.NewRecorder()
 
