@@ -434,7 +434,7 @@ func (s *Server) handleStatus(w http.ResponseWriter, r *http.Request) {
 				continue
 			}
 			for _, iss := range issues {
-				if isMolecule(iss.Title) {
+				if isNoise(iss.ID, iss.Title) {
 					continue
 				}
 				if status == "in_progress" || (status == "open" && iss.Priority <= 1) {
@@ -450,7 +450,7 @@ func (s *Server) handleStatus(w http.ResponseWriter, r *http.Request) {
 		} else {
 			keeperMap := make(map[string]*keeperGroup)
 			for _, iss := range inFlight {
-				if iss.Status == "closed" || isMolecule(iss.Title) {
+				if iss.Status == "closed" || isNoise(iss.ID, iss.Title) {
 					continue
 				}
 				agent := iss.Assignee
@@ -483,7 +483,7 @@ func (s *Server) handleStatus(w http.ResponseWriter, r *http.Request) {
 			log.Printf("status: blocked %s: %v", db.Name, err)
 		} else {
 			for _, bi := range blocked {
-				if isMolecule(bi.Issue.Title) || isMolecule(bi.Blocker.Title) {
+				if isNoise(bi.Issue.ID, bi.Issue.Title) || isNoise(bi.Blocker.ID, bi.Blocker.Title) {
 					continue
 				}
 				owner := bi.Blocker.Assignee
@@ -509,7 +509,7 @@ func (s *Server) handleStatus(w http.ResponseWriter, r *http.Request) {
 			log.Printf("status: recent %s: %v", db.Name, err)
 		} else {
 			for _, iss := range recent {
-				if !isMolecule(iss.Title) {
+				if !isNoise(iss.ID, iss.Title) {
 					data.RecentClosed = append(data.RecentClosed, iss)
 				}
 			}
@@ -521,7 +521,7 @@ func (s *Server) handleStatus(w http.ResponseWriter, r *http.Request) {
 			log.Printf("status: action items %s: %v", db.Name, err)
 		} else {
 			for _, iss := range humanIssues {
-				if iss.Status == "closed" || isMolecule(iss.Title) {
+				if iss.Status == "closed" || isNoise(iss.ID, iss.Title) {
 					continue
 				}
 				reason := ""
@@ -643,13 +643,13 @@ func (s *Server) handleBriefing(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 		for _, iss := range issues {
-			if iss.Status == "closed" || isMolecule(iss.Title) {
+			if iss.Status == "closed" || isNoise(iss.ID, iss.Title) {
 				continue
 			}
 			if isHumanOwner(iss.Owner) || isHumanOwner(iss.Assignee) {
 				data.NeedsAttention = append(data.NeedsAttention, iss)
 			}
-			if iss.Status == "in_progress" || iss.Status == "hooked" {
+			if (iss.Status == "in_progress" || iss.Status == "hooked") && iss.Priority <= 1 {
 				data.InFlight = append(data.InFlight, iss)
 			}
 		}
@@ -662,7 +662,7 @@ func (s *Server) handleBriefing(w http.ResponseWriter, r *http.Request) {
 		})
 		if err == nil {
 			for _, iss := range recent {
-				if !isMolecule(iss.Title) {
+				if !isNoise(iss.ID, iss.Title) {
 					data.RecentlyClosed = append(data.RecentlyClosed, iss)
 				}
 			}
@@ -790,6 +790,20 @@ func shortActorName(s string) string {
 
 func isMolecule(title string) bool {
 	return strings.HasPrefix(title, "mol-")
+}
+
+func isWisp(id, title string) bool {
+	if strings.Contains(id, "wisp") {
+		return true
+	}
+	lower := strings.ToLower(title)
+	return strings.HasPrefix(lower, "🤝 handoff") ||
+		strings.HasPrefix(lower, "handoff:") ||
+		strings.HasPrefix(title, "gt-wisp-")
+}
+
+func isNoise(id, title string) bool {
+	return isMolecule(title) || isWisp(id, title)
 }
 
 func isHumanOwner(owner string) bool {
