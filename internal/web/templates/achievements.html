@@ -1,0 +1,48 @@
+{{define "title"}}Achievements{{if .Selected}} ({{.Selected}}){{end}}{{end}}
+{{define "content"}}
+<div class="achievements-page">
+  <h1>Achievements</h1>
+
+  {{if .Err}}
+  <p class="error">{{.Err}}</p>
+  {{else}}
+
+  <div class="achievement-progress">
+    <div class="progress-header">
+      <span class="progress-count">{{.Unlocked}} / {{.Total}}</span>
+      <span class="progress-pct">({{.Percent}}%)</span>
+    </div>
+    <div class="progress-bar-track">
+      <div class="progress-bar-fill" style="width: {{.Percent}}%"></div>
+    </div>
+  </div>
+
+  <div class="filters">
+    <a href="/achievements" {{if eq .Selected ""}}class="active"{{end}}>All</a>
+    {{range .Categories}}
+    <a href="/achievements?category={{.Name}}" {{if eq $.Selected .Name}}class="active"{{end}}>{{.Name}} ({{.Unlocked}}/{{.Total}})</a>
+    {{end}}
+  </div>
+
+  {{if .Achievements}}
+  <div class="achievement-grid">
+    {{range .Achievements}}
+    <div class="achievement-card {{if .Unlocked}}unlocked{{else}}locked{{end}}" data-category="{{.Category}}">
+      <div class="achievement-icon">{{if .Unlocked}}{{.Icon}}{{else}}🔒{{end}}</div>
+      <div class="achievement-info">
+        <h3>{{if .Unlocked}}{{.Name}}{{else}}???{{end}}</h3>
+        <p class="achievement-desc">{{if .Unlocked}}{{.Description}}{{else}}Keep exploring...{{end}}</p>
+        {{if .Unlocked}}
+        <time class="text-dim">{{formatDate .UnlockedAt}}</time>
+        {{end}}
+      </div>
+    </div>
+    {{end}}
+  </div>
+  {{else}}
+  <p class="empty">No achievements found{{if .Selected}} in category "{{.Selected}}"{{end}}.</p>
+  {{end}}
+
+  {{end}}
+</div>
+{{end}}

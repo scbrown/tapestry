@@ -84,6 +84,14 @@ func (m *mockDataSource) LabelsForIssue(_ context.Context, _, _ string) ([]strin
 	return nil, m.err
 }
 
+func (m *mockDataSource) AchievementDefs(_ context.Context, _ string) ([]dolt.AchievementDef, error) {
+	return nil, m.err
+}
+
+func (m *mockDataSource) AchievementUnlocks(_ context.Context, _ string) ([]dolt.AchievementUnlock, error) {
+	return nil, m.err
+}
+
 func TestIndexRendersMonthly(t *testing.T) {
 	srv := New(nil)
 	req := httptest.NewRequest("GET", "/", nil)

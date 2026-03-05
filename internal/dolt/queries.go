@@ -541,6 +541,48 @@ func buildIssueQuery(f IssueFilter, asOf string) (string, []any) {
 	return b.String(), args
 }
 
+// AchievementDefs returns all achievement definitions ordered by sort_order.
+func (c *Client) AchievementDefs(ctx context.Context, database string) ([]AchievementDef, error) {
+	query := `SELECT id, name, description, icon, category, trigger_expr, sort_order
+		FROM achievement_defs ORDER BY sort_order`
+	rows, err := c.queryDB(ctx, database, query)
+	if err != nil {
+		return nil, fmt.Errorf("dolt: achievement defs: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+
+	var defs []AchievementDef
+	for rows.Next() {
+		var d AchievementDef
+		if err := rows.Scan(&d.ID, &d.Name, &d.Description, &d.Icon, &d.Category, &d.TriggerExpr, &d.SortOrder); err != nil {
+			return nil, fmt.Errorf("dolt: scan achievement def: %w", err)
+		}
+		defs = append(defs, d)
+	}
+	return defs, rows.Err()
+}
+
+// AchievementUnlocks returns all unlocked achievements.
+func (c *Client) AchievementUnlocks(ctx context.Context, database string) ([]AchievementUnlock, error) {
+	query := `SELECT id, unlocked_at, COALESCE(unlocked_by,''), COALESCE(note,'')
+		FROM achievement_unlocks ORDER BY unlocked_at DESC`
+	rows, err := c.queryDB(ctx, database, query)
+	if err != nil {
+		return nil, fmt.Errorf("dolt: achievement unlocks: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+
+	var unlocks []AchievementUnlock
+	for rows.Next() {
+		var u AchievementUnlock
+		if err := rows.Scan(&u.ID, &u.UnlockedAt, &u.UnlockedBy, &u.Note); err != nil {
+			return nil, fmt.Errorf("dolt: scan achievement unlock: %w", err)
+		}
+		unlocks = append(unlocks, u)
+	}
+	return unlocks, rows.Err()
+}
+
 // scanIssue scans a single issue row from the given scanner.
 func scanIssue(s interface{ Scan(...any) error }, iss *Issue) error {
 	return s.Scan(

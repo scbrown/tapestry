@@ -114,3 +114,22 @@ type BlockedIssue struct {
 	Issue   Issue
 	Blocker Issue
 }
+
+// AchievementDef describes an achievement that can be unlocked.
+type AchievementDef struct {
+	ID          string
+	Name        string
+	Description string
+	Icon        string
+	Category    string
+	TriggerExpr string
+	SortOrder   int
+}
+
+// AchievementUnlock records when an achievement was unlocked.
+type AchievementUnlock struct {
+	ID         string
+	UnlockedAt time.Time
+	UnlockedBy string
+	Note       string
+}

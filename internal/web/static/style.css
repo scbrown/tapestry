@@ -577,3 +577,36 @@ header nav a:hover { background: var(--bg); text-decoration: none; }
 .agent-stats-row { display: flex; flex-wrap: wrap; gap: 0.75rem; }
 .agent-stat { font-size: 0.8rem; color: var(--text-muted); }
 .agent-stat strong { color: var(--text); }
+
+/* Achievements */
+.achievement-progress { margin-bottom: 1.5rem; }
+.progress-header { display: flex; align-items: baseline; gap: 0.5rem; margin-bottom: 0.5rem; }
+.progress-count { font-size: 1.5rem; font-weight: 700; color: var(--text); }
+.progress-pct { font-size: 1rem; color: var(--text-muted); }
+.progress-bar-track { height: 8px; background: var(--surface); border-radius: 4px; overflow: hidden; }
+.progress-bar-fill { height: 100%; background: var(--success); border-radius: 4px; transition: width 0.3s; }
+
+.achievement-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1rem;
+}
+.achievement-card {
+    display: flex;
+    gap: 1rem;
+    padding: 1rem;
+    background: var(--surface);
+    border-radius: var(--radius);
+    border-left: 3px solid var(--text-muted);
+    transition: border-color 0.15s, opacity 0.15s;
+}
+.achievement-card.locked { opacity: 0.45; }
+.achievement-card.unlocked:hover { border-color: var(--link); }
+.achievement-card[data-category="infrastructure"] { border-left-color: #8be9fd; }
+.achievement-card[data-category="development"] { border-left-color: #bd93f9; }
+.achievement-card[data-category="operations"] { border-left-color: #ffb86c; }
+.achievement-card[data-category="milestones"] { border-left-color: #f1fa8c; }
+.achievement-card[data-category="special"] { border-left-color: #ff79c6; }
+.achievement-icon { font-size: 2rem; flex-shrink: 0; width: 2.5rem; text-align: center; }
+.achievement-info h3 { font-size: 0.95rem; margin-bottom: 0.25rem; }
+.achievement-desc { font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.25rem; }
