@@ -46,6 +46,7 @@ type DataSource interface {
 type Server struct {
 	ds        DataSource
 	prom      *promClient
+	forgejo   *forgejoClient
 	templates map[string]*template.Template
 	static    http.Handler
 
@@ -176,7 +177,7 @@ var funcMap = template.FuncMap{
 // New creates a new Server. The DataSource may be nil, in which case pages
 // will display a "no database" message instead of data.
 func New(ds DataSource) *Server {
-	s := &Server{ds: ds, prom: newPromClient()}
+	s := &Server{ds: ds, prom: newPromClient(), forgejo: newForgejoClient()}
 	s.parseTemplates()
 
 	staticSub, _ := fs.Sub(staticFS, "static")
@@ -227,6 +228,14 @@ func (s *Server) parseTemplates() {
 			template.New("").Funcs(funcMap).ParseFS(templateFS,
 				"templates/layout.html", "templates/homelab.html"),
 		),
+		"designs": template.Must(
+			template.New("").Funcs(funcMap).ParseFS(templateFS,
+				"templates/layout.html", "templates/designs.html"),
+		),
+		"design": template.Must(
+			template.New("").Funcs(funcMap).ParseFS(templateFS,
+				"templates/layout.html", "templates/design.html"),
+		),
 	}
 }
 
@@ -268,6 +277,10 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		s.handleAchievements(w, r)
 	case len(segments) == 1 && segments[0] == "homelab":
 		s.handleHomelab(w, r)
+	case len(segments) == 1 && segments[0] == "designs":
+		s.handleDesignsList(w, r)
+	case len(segments) == 2 && segments[0] == "designs":
+		s.handleDesignView(w, r, segments[1])
 	case len(segments) == 3 && segments[0] == "bead":
 		s.handleBead(w, r, segments[1], segments[2])
 	case len(segments) == 2 && segments[0] == "bead":

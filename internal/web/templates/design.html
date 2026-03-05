@@ -1,0 +1,18 @@
+{{define "title"}}{{.Title}}{{end}}
+{{define "content"}}
+<div class="design-page">
+  <div class="design-header">
+    <a href="/designs" class="text-dim">&larr; All Designs</a>
+    <h1>{{.Title}}</h1>
+    {{if .GitURL}}<a href="{{.GitURL}}" class="text-dim git-link" target="_blank">View on Forgejo</a>{{end}}
+  </div>
+
+  {{if .Err}}
+  <div class="error-banner">{{.Err}}</div>
+  {{else}}
+  <article class="design-content">
+    {{.Content}}
+  </article>
+  {{end}}
+</div>
+{{end}}

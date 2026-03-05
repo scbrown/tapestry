@@ -1,0 +1,21 @@
+{{define "title"}}Designs{{end}}
+{{define "content"}}
+<div class="designs-page">
+  <h1>Design Docs <span class="text-dim">({{.Total}})</span></h1>
+
+  {{if .Err}}
+  <div class="error-banner">{{.Err}}</div>
+  {{else if .Designs}}
+  <div class="designs-grid">
+    {{range .Designs}}
+    <a href="/designs/{{.Name}}" class="design-card">
+      <h3>{{.Title}}</h3>
+      <span class="text-dim">{{.Size}} bytes</span>
+    </a>
+    {{end}}
+  </div>
+  {{else}}
+  <p class="empty">No design docs found.</p>
+  {{end}}
+</div>
+{{end}}

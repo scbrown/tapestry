@@ -627,3 +627,27 @@ tr.silenced { opacity: 0.5; }
 .alert-summary { display: block; font-size: 0.8rem; }
 .error-banner { background: rgba(255,85,85,0.15); border: 1px solid var(--danger); border-radius: var(--radius); padding: 0.75rem 1rem; margin-bottom: 1rem; }
 .freshness { font-size: 0.75rem; font-weight: normal; margin-left: 0.5rem; }
+
+/* ── Designs ── */
+.designs-page h1 { margin-bottom: 1rem; }
+.designs-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 0.75rem; }
+.design-card { display: block; background: var(--surface); border-radius: var(--radius); padding: 0.75rem 1rem; border-left: 3px solid var(--purple); transition: border-color 0.15s; }
+.design-card:hover { border-color: var(--link); text-decoration: none; }
+.design-card h3 { font-size: 0.9rem; margin-bottom: 0.25rem; color: var(--text); }
+.design-page { max-width: 900px; margin: 0 auto; }
+.design-header { margin-bottom: 1.5rem; }
+.design-header h1 { margin: 0.5rem 0; }
+.git-link { font-size: 0.85rem; }
+.design-content { background: var(--surface); border-radius: var(--radius); padding: 1.5rem 2rem; line-height: 1.7; }
+.design-content h1 { font-size: 1.5rem; margin: 1.5rem 0 0.75rem; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem; }
+.design-content h2 { font-size: 1.25rem; margin: 1.25rem 0 0.5rem; }
+.design-content h3 { font-size: 1.1rem; margin: 1rem 0 0.5rem; }
+.design-content p { margin: 0.5rem 0; }
+.design-content ul, .design-content ol { margin: 0.5rem 0; padding-left: 1.5rem; }
+.design-content code { background: var(--bg); padding: 0.15rem 0.4rem; border-radius: 3px; font-size: 0.85em; }
+.design-content pre { background: var(--bg); padding: 1rem; border-radius: var(--radius); overflow-x: auto; margin: 0.75rem 0; }
+.design-content pre code { background: none; padding: 0; }
+.design-content blockquote { border-left: 3px solid var(--purple); padding-left: 1rem; margin: 0.75rem 0; color: var(--text-muted); }
+.design-content table { border-collapse: collapse; width: 100%; margin: 0.75rem 0; }
+.design-content th, .design-content td { border: 1px solid var(--border); padding: 0.5rem 0.75rem; text-align: left; }
+.design-content th { background: var(--bg); }
