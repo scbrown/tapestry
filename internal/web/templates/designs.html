@@ -3,6 +3,13 @@
 <div class="designs-page">
   <h1>Design Docs <span class="text-dim">({{.Total}})</span></h1>
 
+  <div class="filters">
+    <a href="/designs" {{if eq .Filter ""}}class="active"{{end}}>All</a>
+    <a href="/designs?filter=review" {{if eq .Filter "review"}}class="active"{{end}}>Awaiting Review</a>
+    <a href="/designs?filter=progress" {{if eq .Filter "progress"}}class="active"{{end}}>In Progress</a>
+    <a href="/designs?filter=done" {{if eq .Filter "done"}}class="active"{{end}}>Implemented</a>
+  </div>
+
   {{if .Err}}
   <div class="error-banner">{{.Err}}</div>
   {{else if .Designs}}
@@ -11,13 +18,17 @@
     <a href="/designs/{{.Name}}" class="design-card">
       <h3>{{.Title}}</h3>
       <div class="design-card-meta">
+        {{if .BeadID}}
+        {{if gt .Priority 0}}<span class="priority-badge {{priorityClass .Priority}}">{{priorityLabel .Priority}}</span>{{end}}
+        {{statusBadge .BeadStatus}}
+        {{end}}
         <span class="text-dim">{{timeAgo .Modified}}</span>
       </div>
     </a>
     {{end}}
   </div>
   {{else}}
-  <p class="empty">No design docs found.</p>
+  <p class="empty">No design docs match this filter.</p>
   {{end}}
 </div>
 {{end}}

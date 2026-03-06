@@ -24,15 +24,19 @@ import (
 type designsListData struct {
 	Designs []designEntry
 	Total   int
+	Filter  string
 	Err     string
 }
 
 type designEntry struct {
-	Name     string
-	Title    string
-	Size     int
-	Path     string
-	Modified time.Time
+	Name       string
+	Title      string
+	Size       int
+	Path       string
+	Modified   time.Time
+	BeadID     string
+	BeadStatus string
+	Priority   int
 }
 
 type designViewData struct {
@@ -186,6 +190,7 @@ func renderMarkdown(source string) (template.HTML, error) {
 
 func (s *Server) handleDesignsList(w http.ResponseWriter, r *http.Request) {
 	data := designsListData{}
+	data.Filter = r.URL.Query().Get("filter")
 
 	if s.forgejo == nil {
 		data.Err = "Forgejo client not configured"
@@ -193,7 +198,7 @@ func (s *Server) handleDesignsList(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(r.Context(), 15*time.Second)
 	defer cancel()
 
 	designs, err := s.forgejo.listDesigns(ctx)
@@ -204,9 +209,75 @@ func (s *Server) handleDesignsList(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Enrich designs with bead metadata
+	if s.ds != nil {
+		s.enrichDesignsWithBeads(ctx, designs)
+	}
+
+	// Apply filter
+	if data.Filter != "" {
+		var filtered []designEntry
+		for _, d := range designs {
+			switch data.Filter {
+			case "review":
+				if d.BeadStatus == "open" || d.BeadStatus == "" {
+					filtered = append(filtered, d)
+				}
+			case "progress":
+				if d.BeadStatus == "in_progress" {
+					filtered = append(filtered, d)
+				}
+			case "done":
+				if d.BeadStatus == "closed" {
+					filtered = append(filtered, d)
+				}
+			}
+		}
+		designs = filtered
+	}
+
 	data.Designs = designs
 	data.Total = len(designs)
 	s.render(w, r, "designs", data)
+}
+
+func (s *Server) enrichDesignsWithBeads(ctx context.Context, designs []designEntry) {
+	dbs, err := s.databases(ctx)
+	if err != nil {
+		return
+	}
+
+	// Build a map of all beads across DBs for matching
+	type beadInfo struct {
+		ID       string
+		Status   string
+		Priority int
+	}
+	allBeads := map[string]beadInfo{} // lowercase title fragment → bead info
+
+	for _, db := range dbs {
+		issues, err := s.ds.Issues(ctx, db.Name, dolt.IssueFilter{Limit: 5000})
+		if err != nil {
+			continue
+		}
+		for _, iss := range issues {
+			titleLower := strings.ToLower(iss.Title)
+			allBeads[titleLower] = beadInfo{ID: iss.ID, Status: iss.Status, Priority: iss.Priority}
+		}
+	}
+
+	// Match each design to a bead by checking if design name appears in bead title
+	for i := range designs {
+		nameLower := strings.ToLower(designs[i].Name)
+		for title, info := range allBeads {
+			if strings.Contains(title, nameLower) || strings.Contains(title, strings.ReplaceAll(nameLower, "-", " ")) {
+				designs[i].BeadID = info.ID
+				designs[i].BeadStatus = info.Status
+				designs[i].Priority = info.Priority
+				break
+			}
+		}
+	}
 }
 
 func (s *Server) handleDesignView(w http.ResponseWriter, r *http.Request, name string) {
