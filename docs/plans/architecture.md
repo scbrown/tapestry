@@ -88,7 +88,7 @@ Shows:
 
 ### 2. Epic View
 
-```
+```text
 /epic/aegis-gzl             → single epic with full tree
 ```
 

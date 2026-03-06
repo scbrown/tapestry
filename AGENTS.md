@@ -53,7 +53,7 @@ just docs check      # Full docs quality gate
 
 ## Project Structure
 
-```
+```text
 cmd/tapestry/        # CLI entry point (cobra)
 internal/
   dolt/              # Dolt connection, queries, time-travel
@@ -119,11 +119,13 @@ until `git push` succeeds.
 1. **Run quality gates** — `just check` must pass
 2. **Build docs** — `just docs build` must succeed (if docs changed)
 3. **Commit and push**:
+
    ```bash
    git add <files>
    git commit -m "<type>: <description>"
    git push
    ```
+
 4. **Verify** — All changes committed AND pushed
 
 **CRITICAL RULES:**
