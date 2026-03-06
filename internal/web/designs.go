@@ -9,11 +9,13 @@ import (
 	"html/template"
 	"log"
 	"net/http"
+	"regexp"
 	"sort"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/scbrown/tapestry/internal/dolt"
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/extension"
 	"github.com/yuin/goldmark/renderer/html"
@@ -34,12 +36,16 @@ type designEntry struct {
 }
 
 type designViewData struct {
-	Name    string
-	Title   string
-	Content template.HTML
-	Raw     string
-	GitURL  string
-	Err     string
+	Name     string
+	Title    string
+	Content  template.HTML
+	Raw      string
+	GitURL   string
+	Err      string
+	BeadID   string
+	BeadDB   string
+	Comments []dolt.Comment
+	Feedback string
 }
 
 type forgejoClient struct {
@@ -215,6 +221,15 @@ func (s *Server) handleDesignView(w http.ResponseWriter, r *http.Request, name s
 		GitURL: fmt.Sprintf("http://git.svc/%s/src/branch/main/%s/%s.md", designsRepo, designsPath, name),
 	}
 
+	switch r.URL.Query().Get("feedback") {
+	case "ok":
+		data.Feedback = "Comment added."
+	case "missing":
+		data.Feedback = "All fields are required."
+	case "error":
+		data.Feedback = "Failed to save comment."
+	}
+
 	if s.forgejo == nil {
 		data.Err = "Forgejo client not configured"
 		s.render(w, r, "design", data)
@@ -252,5 +267,97 @@ func (s *Server) handleDesignView(w http.ResponseWriter, r *http.Request, name s
 		}
 	}
 
+	// Parse bead link from markdown: <!-- bead: aegis-xxxx --> or <!-- bead: aegis/aegis-xxxx -->
+	if beadID, beadDB := parseBeadLink(content); beadID != "" {
+		data.BeadID = beadID
+		data.BeadDB = beadDB
+	}
+
+	// Fallback: search for a bead whose title matches the design doc name
+	if data.BeadID == "" && s.ds != nil {
+		dbs, _ := s.databases(ctx)
+		for _, db := range dbs {
+			results, err := s.ds.SearchIssues(ctx, db.Name, name, 1)
+			if err == nil && len(results) > 0 {
+				data.BeadID = results[0].ID
+				data.BeadDB = db.Name
+				break
+			}
+		}
+	}
+
+	// Load comments for linked bead
+	if data.BeadID != "" && s.ds != nil {
+		comments, err := s.ds.Comments(ctx, data.BeadDB, data.BeadID)
+		if err != nil {
+			log.Printf("designs: comments for %s: %v", data.BeadID, err)
+		} else {
+			data.Comments = comments
+		}
+	}
+
 	s.render(w, r, "design", data)
+}
+
+var beadLinkRe = regexp.MustCompile(`<!--\s*bead:\s*(?:(\w+)/)?(\S+)\s*-->`)
+
+func parseBeadLink(content string) (beadID, database string) {
+	m := beadLinkRe.FindStringSubmatch(content)
+	if m == nil {
+		return "", ""
+	}
+	database = "aegis"
+	if m[1] != "" {
+		database = m[1]
+	}
+	return m[2], database
+}
+
+func (s *Server) handleDesignComment(w http.ResponseWriter, r *http.Request, name string) {
+	// Sanitize name
+	for _, c := range name {
+		if !((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '-' || c == '_') {
+			http.NotFound(w, r)
+			return
+		}
+	}
+
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "bad request", http.StatusBadRequest)
+		return
+	}
+
+	beadID := strings.TrimSpace(r.FormValue("bead_id"))
+	beadDB := strings.TrimSpace(r.FormValue("bead_db"))
+	author := strings.TrimSpace(r.FormValue("author"))
+	body := strings.TrimSpace(r.FormValue("body"))
+
+	if beadID == "" || beadDB == "" || author == "" || body == "" {
+		http.Redirect(w, r, "/designs/"+name+"?feedback=missing", http.StatusSeeOther)
+		return
+	}
+
+	// Sanitize author: alphanumeric, hyphens, underscores, dots only
+	for _, c := range author {
+		if !((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '-' || c == '_' || c == '.') {
+			http.Redirect(w, r, "/designs/"+name+"?feedback=invalid", http.StatusSeeOther)
+			return
+		}
+	}
+
+	if s.ds == nil {
+		http.Redirect(w, r, "/designs/"+name+"?feedback=nodb", http.StatusSeeOther)
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
+	defer cancel()
+
+	if err := s.ds.AddComment(ctx, beadDB, beadID, author, body); err != nil {
+		log.Printf("designs: add comment on %s: %v", beadID, err)
+		http.Redirect(w, r, "/designs/"+name+"?feedback=error", http.StatusSeeOther)
+		return
+	}
+
+	http.Redirect(w, r, "/designs/"+name+"?feedback=ok", http.StatusSeeOther)
 }

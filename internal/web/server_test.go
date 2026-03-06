@@ -92,6 +92,10 @@ func (m *mockDataSource) AchievementUnlocks(_ context.Context, _ string) ([]dolt
 	return nil, m.err
 }
 
+func (m *mockDataSource) AddComment(_ context.Context, _, _, _, _ string) error {
+	return m.err
+}
+
 func TestIndexRendersMonthly(t *testing.T) {
 	srv := New(nil)
 	req := httptest.NewRequest("GET", "/", nil)

@@ -40,6 +40,7 @@ type DataSource interface {
 	LabelsForIssue(ctx context.Context, database, issueID string) ([]string, error)
 	AchievementDefs(ctx context.Context, database string) ([]dolt.AchievementDef, error)
 	AchievementUnlocks(ctx context.Context, database string) ([]dolt.AchievementUnlock, error)
+	AddComment(ctx context.Context, database, issueID, author, body string) error
 }
 
 // Server serves the Tapestry web dashboard.
@@ -241,11 +242,6 @@ func (s *Server) parseTemplates() {
 
 // ServeHTTP routes requests to the appropriate handler.
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
 	path := r.URL.Path
 
 	if strings.HasPrefix(path, "/static/") {
@@ -253,12 +249,22 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Allow POST for design comments
+	segments := strings.Split(strings.TrimPrefix(path, "/"), "/")
+	if r.Method == http.MethodPost && len(segments) == 3 && segments[0] == "designs" && segments[2] == "comment" {
+		s.handleDesignComment(w, r, segments[1])
+		return
+	}
+
+	if r.Method != http.MethodGet {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
 	if path == "/" {
 		s.handleIndex(w, r)
 		return
 	}
-
-	segments := strings.Split(strings.TrimPrefix(path, "/"), "/")
 
 	switch {
 	case len(segments) == 1 && segments[0] == "beads":

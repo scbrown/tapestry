@@ -142,6 +142,13 @@ test.describe('Tapestry Smoke Tests', () => {
     expect(h2Count).toBeGreaterThan(0);
   });
 
+  test('design doc shows feedback section', async ({ page }) => {
+    await page.goto('/designs/game-server-hosting');
+    await expect(page.locator('.design-comments h2')).toHaveText('Feedback');
+    await expect(page.locator('.comment-form')).toBeVisible();
+    await expect(page.locator('.bead-link')).toBeVisible();
+  });
+
   test('search page loads', async ({ page }) => {
     await page.goto('/search');
     await expect(page).toHaveTitle(/Search — Tapestry/);

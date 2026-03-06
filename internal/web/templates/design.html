@@ -5,7 +5,10 @@
     <a href="/designs" class="text-dim">&larr; All Designs</a>
     <h1>{{.Title}}</h1>
     {{if .GitURL}}<a href="{{.GitURL}}" class="text-dim git-link" target="_blank">View on Forgejo</a>{{end}}
+    {{if .BeadID}}<a href="/bead/{{.BeadID}}" class="text-dim bead-link">{{.BeadID}}</a>{{end}}
   </div>
+
+  {{if .Feedback}}<div class="feedback-banner">{{.Feedback}}</div>{{end}}
 
   {{if .Err}}
   <div class="error-banner">{{.Err}}</div>
@@ -13,6 +16,46 @@
   <article class="design-content">
     {{.Content}}
   </article>
+
+  {{if .BeadID}}
+  <section class="design-comments">
+    <h2>Feedback</h2>
+    {{if .Comments}}
+    <div class="comment-list">
+      {{range .Comments}}
+      <div class="comment">
+        <div class="comment-meta">
+          <strong>{{shortActor .Author}}</strong>
+          <time class="text-dim">{{formatDateTime .CreatedAt}}</time>
+        </div>
+        <div class="comment-body">{{.Body}}</div>
+      </div>
+      {{end}}
+    </div>
+    {{else}}
+    <p class="text-dim">No feedback yet.</p>
+    {{end}}
+
+    <form class="comment-form" method="POST" action="/designs/{{.Name}}/comment">
+      <input type="hidden" name="bead_id" value="{{.BeadID}}">
+      <input type="hidden" name="bead_db" value="{{.BeadDB}}">
+      <div class="form-row">
+        <label for="author">Name</label>
+        <input type="text" id="author" name="author" placeholder="stiwi" required>
+      </div>
+      <div class="form-row">
+        <label for="body">Comment</label>
+        <textarea id="body" name="body" rows="3" placeholder="Your feedback on this design..." required></textarea>
+      </div>
+      <button type="submit">Add Comment</button>
+    </form>
+  </section>
+  {{else}}
+  <section class="design-comments">
+    <p class="text-dim">No bead linked. Add <code>&lt;!-- bead: aegis-xxxx --&gt;</code> to the design doc to enable feedback.</p>
+  </section>
+  {{end}}
+
   {{end}}
 </div>
 {{end}}
