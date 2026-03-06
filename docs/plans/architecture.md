@@ -21,7 +21,7 @@ drillable retrospective views of what happened, when, and why.
 
 ### Sources
 
-```
+```text
 Dolt Server (dolt.svc:3306)
 ├── beads_aegis          ← issues, comments, deps for aegis rig
 ├── beads_gastown         ← issues for gastown rig
@@ -40,7 +40,7 @@ Git Repos
 
 ### Aggregation Layers
 
-```
+```text
 Raw Data (Dolt + Events + Git)
         │
         ▼
@@ -72,13 +72,14 @@ Raw Data (Dolt + Events + Git)
 
 ### 1. Monthly Summary (landing page)
 
-```
+```text
 /                           → current month
 /2026/02                    → February 2026
 /2026/02?rig=aegis          → filtered by rig
 ```
 
 Shows:
+
 - Headline stats (created, closed, in-progress, epic advancement)
 - Top completions (epics that progressed most)
 - Agent activity table (who did what)
@@ -92,6 +93,7 @@ Shows:
 ```
 
 Shows:
+
 - Epic metadata (title, priority, dates)
 - Child bead tree with status badges
 - Progress over time (chart or timeline)
@@ -100,11 +102,12 @@ Shows:
 
 ### 3. Bead Detail
 
-```
+```text
 /bead/aegis-0a9             → single bead
 ```
 
 Shows:
+
 - Full bead metadata
 - Comment thread (chronological)
 - Status transition history (from Dolt diff)
@@ -113,12 +116,13 @@ Shows:
 
 ### 4. Agent View
 
-```
+```text
 /agent/aegis/crew/goldblum  → single agent
 /agents                     → all agents
 ```
 
 Shows:
+
 - Beads created, closed, commented
 - Dispatch patterns (what rigs, what priorities)
 - Handoff frequency and session lengths
@@ -126,24 +130,26 @@ Shows:
 
 ### 5. Event Timeline
 
-```
+```text
 /events                     → full event stream
 /events?type=done           → filtered by type
 /events?agent=goldblum      → filtered by agent
 ```
 
 Shows:
+
 - Chronological event feed (sling, hook, done, spawn, kill, handoff, etc.)
 - Filterable by type, agent, rig, time range
 - Correlated with bead changes (e.g., "done" event → bead closed)
 
 ### 6. Cross-Rig Dashboard
 
-```
+```text
 /rigs                       → all rigs across all workspaces
 ```
 
 Shows:
+
 - Per-rig summary (open beads, active agents, recent closures)
 - Cross-rig activity patterns
 - Unified view across multiple Gas Town installations
