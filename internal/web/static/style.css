@@ -634,6 +634,7 @@ tr.silenced { opacity: 0.5; }
 .design-card { display: block; background: var(--surface); border-radius: var(--radius); padding: 0.75rem 1rem; border-left: 3px solid var(--purple); transition: border-color 0.15s; }
 .design-card:hover { border-color: var(--link); text-decoration: none; }
 .design-card h3 { font-size: 0.9rem; margin-bottom: 0.25rem; color: var(--text); }
+.design-card-meta { font-size: 0.75rem; }
 .design-page { max-width: 900px; margin: 0 auto; }
 .design-header { margin-bottom: 1.5rem; }
 .design-header h1 { margin: 0.5rem 0; }

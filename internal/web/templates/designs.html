@@ -10,7 +10,9 @@
     {{range .Designs}}
     <a href="/designs/{{.Name}}" class="design-card">
       <h3>{{.Title}}</h3>
-      <span class="text-dim">{{.Size}} bytes</span>
+      <div class="design-card-meta">
+        <span class="text-dim">{{timeAgo .Modified}}</span>
+      </div>
     </a>
     {{end}}
   </div>

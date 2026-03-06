@@ -67,10 +67,11 @@ func newForgejoClient() *forgejoClient {
 }
 
 type forgejoFile struct {
-	Name    string `json:"name"`
-	Path    string `json:"path"`
-	Size    int    `json:"size"`
-	Content string `json:"content"`
+	Name           string `json:"name"`
+	Path           string `json:"path"`
+	Size           int    `json:"size"`
+	Content        string `json:"content"`
+	LastCommitWhen string `json:"last_commit_when"`
 }
 
 func (f *forgejoClient) listDesigns(ctx context.Context) ([]designEntry, error) {
@@ -114,16 +115,18 @@ func (f *forgejoClient) listDesigns(ctx context.Context) ([]designEntry, error) 
 		if len(title) > 0 {
 			title = strings.ToUpper(title[:1]) + title[1:]
 		}
+		modified, _ := time.Parse(time.RFC3339, file.LastCommitWhen)
 		designs = append(designs, designEntry{
-			Name:  name,
-			Title: title,
-			Size:  file.Size,
-			Path:  file.Path,
+			Name:     name,
+			Title:    title,
+			Size:     file.Size,
+			Path:     file.Path,
+			Modified: modified,
 		})
 	}
 
 	sort.Slice(designs, func(i, j int) bool {
-		return designs[i].Name < designs[j].Name
+		return designs[i].Modified.After(designs[j].Modified)
 	})
 
 	f.mu.Lock()
