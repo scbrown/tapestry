@@ -41,6 +41,8 @@ type DataSource interface {
 	AchievementDefs(ctx context.Context, database string) ([]dolt.AchievementDef, error)
 	AchievementUnlocks(ctx context.Context, database string) ([]dolt.AchievementUnlock, error)
 	AddComment(ctx context.Context, database, issueID, author, body string) error
+	UpdateStatus(ctx context.Context, database, issueID, status string) error
+	AddLabel(ctx context.Context, database, issueID, label string) error
 }
 
 // Server serves the Tapestry web dashboard.
@@ -251,8 +253,15 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	// Allow POST for design comments
 	segments := strings.Split(strings.TrimPrefix(path, "/"), "/")
-	if r.Method == http.MethodPost && len(segments) == 3 && segments[0] == "designs" && segments[2] == "comment" {
-		s.handleDesignComment(w, r, segments[1])
+	if r.Method == http.MethodPost && len(segments) == 3 && segments[0] == "designs" {
+		switch segments[2] {
+		case "comment":
+			s.handleDesignComment(w, r, segments[1])
+		case "approve":
+			s.handleDesignApprove(w, r, segments[1])
+		default:
+			http.NotFound(w, r)
+		}
 		return
 	}
 

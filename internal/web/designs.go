@@ -224,6 +224,8 @@ func (s *Server) handleDesignView(w http.ResponseWriter, r *http.Request, name s
 	switch r.URL.Query().Get("feedback") {
 	case "ok":
 		data.Feedback = "Comment added."
+	case "approved":
+		data.Feedback = "Design approved — GO."
 	case "missing":
 		data.Feedback = "All fields are required."
 	case "error":
@@ -299,22 +301,64 @@ func (s *Server) handleDesignView(w http.ResponseWriter, r *http.Request, name s
 	s.render(w, r, "design", data)
 }
 
+var mentionRe = regexp.MustCompile(`@([a-zA-Z][a-zA-Z0-9_-]*)`)
+
 func notifyDesignFeedback(design, beadID, author, body string) {
+	mentions := parseMentions(body)
+
 	msg := fmt.Sprintf("[%s] %s on /designs/%s:\n%s", beadID, author, design, body)
 	if len(msg) > 500 {
 		msg = msg[:500]
 	}
-	req, err := http.NewRequest("POST", "http://ntfy.lan/tapestry", strings.NewReader(msg))
+
+	title := fmt.Sprintf("Design feedback: %s", design)
+	if len(mentions) > 0 {
+		atMentions := make([]string, len(mentions))
+		for i, m := range mentions {
+			atMentions[i] = "@" + m
+		}
+		title = fmt.Sprintf("Design feedback: %s (cc %s)", design, strings.Join(atMentions, " "))
+	}
+
+	// Always notify the design-feedback topic (routing agent watches this)
+	sendNtfy("design-feedback", title, msg, "memo,tapestry", "3")
+
+	// For each @mention, send a targeted notification
+	for _, m := range mentions {
+		mentionMsg := fmt.Sprintf("%s mentioned you in feedback on /designs/%s [%s]:\n%s", author, design, beadID, body)
+		if len(mentionMsg) > 500 {
+			mentionMsg = mentionMsg[:500]
+		}
+		sendNtfy("crew-"+m, fmt.Sprintf("Design feedback mention: %s", design), mentionMsg, "speech_balloon,tapestry", "4")
+	}
+}
+
+func parseMentions(body string) []string {
+	matches := mentionRe.FindAllStringSubmatch(body, -1)
+	seen := map[string]bool{}
+	var result []string
+	for _, m := range matches {
+		name := strings.ToLower(m[1])
+		if !seen[name] {
+			seen[name] = true
+			result = append(result, name)
+		}
+	}
+	return result
+}
+
+func sendNtfy(topic, title, msg, tags, priority string) {
+	req, err := http.NewRequest("POST", "http://ntfy.svc/"+topic, strings.NewReader(msg))
 	if err != nil {
 		log.Printf("designs: ntfy request: %v", err)
 		return
 	}
-	req.Header.Set("Title", fmt.Sprintf("Design feedback: %s", design))
-	req.Header.Set("Tags", "memo,tapestry")
-	req.Header.Set("Priority", "3")
+	req.Header.Set("Title", title)
+	req.Header.Set("Tags", tags)
+	req.Header.Set("Priority", priority)
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		log.Printf("designs: ntfy send: %v", err)
+		log.Printf("designs: ntfy send to %s: %v", topic, err)
 		return
 	}
 	resp.Body.Close()
@@ -384,4 +428,54 @@ func (s *Server) handleDesignComment(w http.ResponseWriter, r *http.Request, nam
 	go notifyDesignFeedback(name, beadID, author, body)
 
 	http.Redirect(w, r, "/designs/"+name+"?feedback=ok", http.StatusSeeOther)
+}
+
+func (s *Server) handleDesignApprove(w http.ResponseWriter, r *http.Request, name string) {
+	for _, c := range name {
+		if !((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '-' || c == '_') {
+			http.NotFound(w, r)
+			return
+		}
+	}
+
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "bad request", http.StatusBadRequest)
+		return
+	}
+
+	beadID := strings.TrimSpace(r.FormValue("bead_id"))
+	beadDB := strings.TrimSpace(r.FormValue("bead_db"))
+
+	if beadID == "" || beadDB == "" || s.ds == nil {
+		http.Redirect(w, r, "/designs/"+name+"?feedback=error", http.StatusSeeOther)
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
+	defer cancel()
+
+	// Update status to closed (approved)
+	if err := s.ds.UpdateStatus(ctx, beadDB, beadID, "closed"); err != nil {
+		log.Printf("designs: approve %s: update status: %v", beadID, err)
+		http.Redirect(w, r, "/designs/"+name+"?feedback=error", http.StatusSeeOther)
+		return
+	}
+
+	// Add approved label
+	if err := s.ds.AddLabel(ctx, beadDB, beadID, "approved"); err != nil {
+		log.Printf("designs: approve %s: add label: %v", beadID, err)
+	}
+
+	// Add approval comment
+	if err := s.ds.AddComment(ctx, beadDB, beadID, "stiwi", "Approved — GO"); err != nil {
+		log.Printf("designs: approve %s: add comment: %v", beadID, err)
+	}
+
+	// Notify
+	go sendNtfy("design-feedback",
+		fmt.Sprintf("APPROVED: %s", name),
+		fmt.Sprintf("Design %s (%s) approved by Stiwi — GO. Begin implementation.", name, beadID),
+		"white_check_mark,tapestry", "4")
+
+	http.Redirect(w, r, "/designs/"+name+"?feedback=approved", http.StatusSeeOther)
 }

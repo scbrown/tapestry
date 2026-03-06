@@ -4,8 +4,17 @@
   <div class="design-header">
     <a href="/designs" class="text-dim">&larr; All Designs</a>
     <h1>{{.Title}}</h1>
-    {{if .GitURL}}<a href="{{.GitURL}}" class="text-dim git-link" target="_blank">View on Forgejo</a>{{end}}
-    {{if .BeadID}}<a href="/bead/{{.BeadID}}" class="text-dim bead-link">{{.BeadID}}</a>{{end}}
+    <div class="design-actions">
+      {{if .GitURL}}<a href="{{.GitURL}}" class="text-dim git-link" target="_blank">View on Forgejo</a>{{end}}
+      {{if .BeadID}}<a href="/bead/{{.BeadID}}" class="text-dim bead-link">{{.BeadID}}</a>{{end}}
+      {{if .BeadID}}
+      <form class="approve-form" method="POST" action="/designs/{{.Name}}/approve">
+        <input type="hidden" name="bead_id" value="{{.BeadID}}">
+        <input type="hidden" name="bead_db" value="{{.BeadDB}}">
+        <button type="submit" class="btn-go" onclick="return confirm('Approve this design? This will mark it GO for implementation.')">GO</button>
+      </form>
+      {{end}}
+    </div>
   </div>
 
   {{if .Feedback}}<div class="feedback-banner">{{.Feedback}}</div>{{end}}

@@ -424,6 +424,23 @@ func (c *Client) AddComment(ctx context.Context, database, issueID, author, body
 	return nil
 }
 
+// UpdateStatus sets the status of an issue.
+func (c *Client) UpdateStatus(ctx context.Context, database, issueID, status string) error {
+	query := "UPDATE issues SET status = ?, updated_at = NOW() WHERE id = ?"
+	conn, err := c.db.Conn(ctx)
+	if err != nil {
+		return fmt.Errorf("dolt: conn: %w", err)
+	}
+	defer func() { _ = conn.Close() }()
+	if _, err := conn.ExecContext(ctx, fmt.Sprintf("USE `%s`", database)); err != nil {
+		return fmt.Errorf("dolt: use %s: %w", database, err)
+	}
+	if _, err := conn.ExecContext(ctx, query, status, issueID); err != nil {
+		return fmt.Errorf("dolt: update status: %w", err)
+	}
+	return nil
+}
+
 // BlockedIssues returns issues that have unresolved depends_on dependencies.
 // An issue is "blocked" if it depends on at least one non-closed issue.
 func (c *Client) BlockedIssues(ctx context.Context, database string) ([]BlockedIssue, error) {

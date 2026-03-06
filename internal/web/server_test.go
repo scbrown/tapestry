@@ -96,6 +96,14 @@ func (m *mockDataSource) AddComment(_ context.Context, _, _, _, _ string) error 
 	return m.err
 }
 
+func (m *mockDataSource) UpdateStatus(_ context.Context, _, _, _ string) error {
+	return m.err
+}
+
+func (m *mockDataSource) AddLabel(_ context.Context, _, _, _ string) error {
+	return m.err
+}
+
 func TestIndexRendersMonthly(t *testing.T) {
 	srv := New(nil)
 	req := httptest.NewRequest("GET", "/", nil)
