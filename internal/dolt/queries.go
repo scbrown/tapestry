@@ -600,6 +600,121 @@ func (c *Client) AchievementUnlocks(ctx context.Context, database string) ([]Ach
 	return unlocks, rows.Err()
 }
 
+// ThemeParks returns all theme parks ordered by name.
+func (c *Client) ThemeParks(ctx context.Context, database string) ([]ThemePark, error) {
+	query := `SELECT id, name, COALESCE(location,''), COALESCE(region,''),
+		COALESCE(website,''), COALESCE(notes,''), COALESCE(rating,0),
+		COALESCE(visited,0), COALESCE(wishlist,0), created_at, updated_at
+		FROM theme_parks ORDER BY name`
+	rows, err := c.queryDB(ctx, database, query)
+	if err != nil {
+		return nil, fmt.Errorf("dolt: theme parks: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+
+	var parks []ThemePark
+	for rows.Next() {
+		var p ThemePark
+		if err := rows.Scan(&p.ID, &p.Name, &p.Location, &p.Region,
+			&p.Website, &p.Notes, &p.Rating,
+			&p.Visited, &p.Wishlist, &p.CreatedAt, &p.UpdatedAt); err != nil {
+			return nil, fmt.Errorf("dolt: scan theme park: %w", err)
+		}
+		parks = append(parks, p)
+	}
+	return parks, rows.Err()
+}
+
+// Rides returns rides for a specific park, or all rides if parkID is empty.
+func (c *Client) Rides(ctx context.Context, database, parkID string) ([]Ride, error) {
+	query := `SELECT id, park_id, name, COALESCE(type,''), COALESCE(thrill_level,0),
+		COALESCE(height_req_inches,0), COALESCE(notes,''), COALESCE(rating,0),
+		COALESCE(ridden,0), COALESCE(wishlist,0), created_at, updated_at
+		FROM rides`
+	var args []any
+	if parkID != "" {
+		query += " WHERE park_id = ?"
+		args = append(args, parkID)
+	}
+	query += " ORDER BY name"
+	rows, err := c.queryDB(ctx, database, query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("dolt: rides: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+
+	var rides []Ride
+	for rows.Next() {
+		var r Ride
+		if err := rows.Scan(&r.ID, &r.ParkID, &r.Name, &r.Type, &r.ThrillLevel,
+			&r.HeightReqInches, &r.Notes, &r.Rating,
+			&r.Ridden, &r.Wishlist, &r.CreatedAt, &r.UpdatedAt); err != nil {
+			return nil, fmt.Errorf("dolt: scan ride: %w", err)
+		}
+		rides = append(rides, r)
+	}
+	return rides, rows.Err()
+}
+
+// ParkVisits returns visit history, optionally filtered by park.
+func (c *Client) ParkVisits(ctx context.Context, database, parkID string) ([]ParkVisit, error) {
+	query := `SELECT v.id, v.park_id, p.name, v.visit_date,
+		COALESCE(v.party_size,0), COALESCE(v.weather,''), COALESCE(v.crowd_level,''),
+		COALESCE(v.highlights,''), COALESCE(v.notes,''), COALESCE(v.overall_rating,0),
+		v.created_at
+		FROM park_visits v JOIN theme_parks p ON v.park_id = p.id`
+	var args []any
+	if parkID != "" {
+		query += " WHERE v.park_id = ?"
+		args = append(args, parkID)
+	}
+	query += " ORDER BY v.visit_date DESC"
+	rows, err := c.queryDB(ctx, database, query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("dolt: park visits: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+
+	var visits []ParkVisit
+	for rows.Next() {
+		var v ParkVisit
+		if err := rows.Scan(&v.ID, &v.ParkID, &v.ParkName, &v.VisitDate,
+			&v.PartySize, &v.Weather, &v.CrowdLevel,
+			&v.Highlights, &v.Notes, &v.OverallRating, &v.CreatedAt); err != nil {
+			return nil, fmt.Errorf("dolt: scan park visit: %w", err)
+		}
+		visits = append(visits, v)
+	}
+	return visits, rows.Err()
+}
+
+// TripPlans returns upcoming trip plans.
+func (c *Client) TripPlans(ctx context.Context, database string) ([]TripPlan, error) {
+	query := `SELECT t.id, t.park_id, p.name, COALESCE(t.planned_date, CURRENT_DATE),
+		COALESCE(t.status,'planned'), COALESCE(t.priority_rides,''),
+		COALESCE(t.budget_estimate,0), COALESCE(t.notes,''),
+		t.created_at, t.updated_at
+		FROM trip_plans t JOIN theme_parks p ON t.park_id = p.id
+		ORDER BY t.planned_date`
+	rows, err := c.queryDB(ctx, database, query)
+	if err != nil {
+		return nil, fmt.Errorf("dolt: trip plans: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+
+	var plans []TripPlan
+	for rows.Next() {
+		var t TripPlan
+		if err := rows.Scan(&t.ID, &t.ParkID, &t.ParkName, &t.PlannedDate,
+			&t.Status, &t.PriorityRides, &t.BudgetEstimate,
+			&t.Notes, &t.CreatedAt, &t.UpdatedAt); err != nil {
+			return nil, fmt.Errorf("dolt: scan trip plan: %w", err)
+		}
+		plans = append(plans, t)
+	}
+	return plans, rows.Err()
+}
+
 // scanIssue scans a single issue row from the given scanner.
 func scanIssue(s interface{ Scan(...any) error }, iss *Issue) error {
 	return s.Scan(

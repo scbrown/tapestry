@@ -1,0 +1,139 @@
+{{define "title"}}Theme Parks{{end}}
+{{define "content"}}
+<div class="theme-parks-page">
+  <h1>Theme Parks & Coasters</h1>
+
+  {{if .Err}}
+  <p class="error">{{.Err}}</p>
+  {{else}}
+
+  <div class="stat-row">
+    <div class="stat-card">
+      <div class="stat-value">{{.Stats.TotalParks}}</div>
+      <div class="stat-label">Parks</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">{{.Stats.Visited}}</div>
+      <div class="stat-label">Visited</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">{{.Stats.TotalRides}}</div>
+      <div class="stat-label">Rides Tracked</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">{{.Stats.Ridden}}</div>
+      <div class="stat-label">Ridden</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">{{.Stats.TotalVisits}}</div>
+      <div class="stat-label">Visits</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">{{.Stats.PlannedTrips}}</div>
+      <div class="stat-label">Planned</div>
+    </div>
+  </div>
+
+  {{if .Plans}}
+  <h2>Upcoming Trips</h2>
+  <div class="trip-plans">
+    {{range .Plans}}
+    <div class="trip-card">
+      <div class="trip-park">{{.ParkName}}</div>
+      <div class="trip-date">{{formatDate .PlannedDate}}</div>
+      <span class="badge {{if eq .Status "planned"}}status-open{{else if eq .Status "booked"}}status-progress{{else}}status-closed{{end}}">{{.Status}}</span>
+      {{if .PriorityRides}}<div class="trip-rides text-dim">Must-ride: {{.PriorityRides}}</div>{{end}}
+      {{if .Notes}}<div class="trip-notes text-dim">{{.Notes}}</div>{{end}}
+    </div>
+    {{end}}
+  </div>
+  {{end}}
+
+  <h2>Parks</h2>
+  <div class="filters">
+    <a href="/theme-parks" {{if eq .Filter "all"}}class="active"{{end}}>All ({{.Stats.TotalParks}})</a>
+    <a href="/theme-parks?filter=visited" {{if eq .Filter "visited"}}class="active"{{end}}>Visited ({{.Stats.Visited}})</a>
+    <a href="/theme-parks?filter=wishlist" {{if eq .Filter "wishlist"}}class="active"{{end}}>Wishlist ({{.Stats.Wishlisted}})</a>
+  </div>
+
+  {{if .Parks}}
+  <div class="park-grid">
+    {{range .Parks}}
+    <div class="park-card {{if .Visited}}visited{{end}}">
+      <div class="park-header">
+        <h3>{{.Name}}</h3>
+        {{if .Visited}}<span class="badge status-closed">visited</span>{{end}}
+        {{if .Wishlist}}<span class="badge status-open">wishlist</span>{{end}}
+      </div>
+      <div class="park-location text-dim">{{.Location}}</div>
+      {{if .Region}}<div class="park-region text-dim">{{.Region}}</div>{{end}}
+      {{if gt .Rating 0}}
+      <div class="park-rating">
+        {{if ge .Rating 5}}★★★★★{{else if ge .Rating 4}}★★★★☆{{else if ge .Rating 3}}★★★☆☆{{else if ge .Rating 2}}★★☆☆☆{{else}}★☆☆☆☆{{end}}
+      </div>
+      {{end}}
+      {{if .Notes}}<div class="park-notes">{{.Notes}}</div>{{end}}
+      {{if .Website}}<a href="{{.Website}}" class="park-link text-dim" target="_blank">website</a>{{end}}
+    </div>
+    {{end}}
+  </div>
+  {{else}}
+  <p class="empty">No parks found{{if ne .Filter "all"}} matching filter "{{.Filter}}"{{end}}.</p>
+  {{end}}
+
+  <h2>Coasters & Rides</h2>
+  {{if .Rides}}
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Ride</th>
+        <th>Type</th>
+        <th>Thrill</th>
+        <th>Status</th>
+        <th>Notes</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{range .Rides}}
+      <tr>
+        <td><strong>{{.Name}}</strong></td>
+        <td>{{.Type}}</td>
+        <td>{{if gt .ThrillLevel 0}}{{.ThrillLevel}}/5{{else}}—{{end}}</td>
+        <td>
+          {{if .Ridden}}<span class="badge status-closed">ridden</span>
+          {{else if .Wishlist}}<span class="badge status-open">wishlist</span>
+          {{else}}—{{end}}
+        </td>
+        <td class="text-dim">{{.Notes}}</td>
+      </tr>
+      {{end}}
+    </tbody>
+  </table>
+  {{else}}
+  <p class="empty">No rides tracked yet.</p>
+  {{end}}
+
+  {{if .Visits}}
+  <h2>Visit History</h2>
+  {{range .Visits}}
+  <div class="visit-card">
+    <div class="visit-header">
+      <strong>{{.ParkName}}</strong>
+      <time>{{formatDate .VisitDate}}</time>
+    </div>
+    {{if .CrowdLevel}}<span class="badge">crowds: {{.CrowdLevel}}</span>{{end}}
+    {{if .Weather}}<span class="badge">{{.Weather}}</span>{{end}}
+    {{if gt .PartySize 0}}<span class="text-dim">party of {{.PartySize}}</span>{{end}}
+    {{if gt .OverallRating 0}}
+    <div class="visit-rating">
+      {{if ge .OverallRating 5}}★★★★★{{else if ge .OverallRating 4}}★★★★☆{{else if ge .OverallRating 3}}★★★☆☆{{else if ge .OverallRating 2}}★★☆☆☆{{else}}★☆☆☆☆{{end}}
+    </div>
+    {{end}}
+    {{if .Highlights}}<div class="visit-highlights">{{.Highlights}}</div>{{end}}
+  </div>
+  {{end}}
+  {{end}}
+
+  {{end}}
+</div>
+{{end}}

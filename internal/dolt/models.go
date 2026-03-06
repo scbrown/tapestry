@@ -133,3 +133,63 @@ type AchievementUnlock struct {
 	UnlockedBy string
 	Note       string
 }
+
+// ThemePark represents a theme park in the tracker.
+type ThemePark struct {
+	ID        string
+	Name      string
+	Location  string
+	Region    string
+	Website   string
+	Notes     string
+	Rating    int
+	Visited   bool
+	Wishlist  bool
+	CreatedAt time.Time
+	UpdatedAt time.Time
+}
+
+// Ride represents a ride or attraction at a theme park.
+type Ride struct {
+	ID              string
+	ParkID          string
+	Name            string
+	Type            string
+	ThrillLevel     int
+	HeightReqInches int
+	Notes           string
+	Rating          int
+	Ridden          bool
+	Wishlist        bool
+	CreatedAt       time.Time
+	UpdatedAt       time.Time
+}
+
+// ParkVisit records a visit to a theme park.
+type ParkVisit struct {
+	ID            string
+	ParkID        string
+	ParkName      string // joined from theme_parks
+	VisitDate     time.Time
+	PartySize     int
+	Weather       string
+	CrowdLevel    string
+	Highlights    string
+	Notes         string
+	OverallRating int
+	CreatedAt     time.Time
+}
+
+// TripPlan represents a planned future visit.
+type TripPlan struct {
+	ID             string
+	ParkID         string
+	ParkName       string // joined from theme_parks
+	PlannedDate    time.Time
+	Status         string
+	PriorityRides  string
+	BudgetEstimate float64
+	Notes          string
+	CreatedAt      time.Time
+	UpdatedAt      time.Time
+}

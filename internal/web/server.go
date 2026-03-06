@@ -43,6 +43,10 @@ type DataSource interface {
 	AddComment(ctx context.Context, database, issueID, author, body string) error
 	UpdateStatus(ctx context.Context, database, issueID, status string) error
 	AddLabel(ctx context.Context, database, issueID, label string) error
+	ThemeParks(ctx context.Context, database string) ([]dolt.ThemePark, error)
+	Rides(ctx context.Context, database, parkID string) ([]dolt.Ride, error)
+	ParkVisits(ctx context.Context, database, parkID string) ([]dolt.ParkVisit, error)
+	TripPlans(ctx context.Context, database string) ([]dolt.TripPlan, error)
 }
 
 // Server serves the Tapestry web dashboard.
@@ -239,6 +243,10 @@ func (s *Server) parseTemplates() {
 			template.New("").Funcs(funcMap).ParseFS(templateFS,
 				"templates/layout.html", "templates/design.html"),
 		),
+		"theme-parks": template.Must(
+			template.New("").Funcs(funcMap).ParseFS(templateFS,
+				"templates/layout.html", "templates/theme-parks.html"),
+		),
 	}
 }
 
@@ -290,6 +298,8 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		s.handleDecisions(w, r)
 	case len(segments) == 1 && segments[0] == "achievements":
 		s.handleAchievements(w, r)
+	case len(segments) == 1 && segments[0] == "theme-parks":
+		s.handleThemeParks(w, r)
 	case len(segments) == 1 && segments[0] == "homelab":
 		s.handleHomelab(w, r)
 	case len(segments) == 1 && segments[0] == "designs":
