@@ -299,6 +299,27 @@ func (s *Server) handleDesignView(w http.ResponseWriter, r *http.Request, name s
 	s.render(w, r, "design", data)
 }
 
+func notifyDesignFeedback(design, beadID, author, body string) {
+	msg := fmt.Sprintf("[%s] %s on /designs/%s:\n%s", beadID, author, design, body)
+	if len(msg) > 500 {
+		msg = msg[:500]
+	}
+	req, err := http.NewRequest("POST", "http://ntfy.lan/tapestry", strings.NewReader(msg))
+	if err != nil {
+		log.Printf("designs: ntfy request: %v", err)
+		return
+	}
+	req.Header.Set("Title", fmt.Sprintf("Design feedback: %s", design))
+	req.Header.Set("Tags", "memo,tapestry")
+	req.Header.Set("Priority", "3")
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		log.Printf("designs: ntfy send: %v", err)
+		return
+	}
+	resp.Body.Close()
+}
+
 var beadLinkRe = regexp.MustCompile(`<!--\s*bead:\s*(?:(\w+)/)?(\S+)\s*-->`)
 
 func parseBeadLink(content string) (beadID, database string) {
@@ -358,6 +379,9 @@ func (s *Server) handleDesignComment(w http.ResponseWriter, r *http.Request, nam
 		http.Redirect(w, r, "/designs/"+name+"?feedback=error", http.StatusSeeOther)
 		return
 	}
+
+	// Notify via ntfy so feedback is visible immediately
+	go notifyDesignFeedback(name, beadID, author, body)
 
 	http.Redirect(w, r, "/designs/"+name+"?feedback=ok", http.StatusSeeOther)
 }
