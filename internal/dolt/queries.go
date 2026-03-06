@@ -265,12 +265,12 @@ func (c *Client) SearchIssues(ctx context.Context, database, q string, limit int
 	query := "SELECT id, title, description, status, priority, issue_type, " +
 		"COALESCE(owner,''), COALESCE(assignee,''), created_at, updated_at " +
 		"FROM issues WHERE issue_type IN ('task','bug','epic') " +
-		"AND (title LIKE ? OR description LIKE ?) " +
+		"AND (id LIKE ? OR title LIKE ? OR description LIKE ?) " +
 		"ORDER BY updated_at DESC"
 	if limit > 0 {
 		query += fmt.Sprintf(" LIMIT %d", limit)
 	}
-	rows, err := c.queryDB(ctx, database, query, pattern, pattern)
+	rows, err := c.queryDB(ctx, database, query, pattern, pattern, pattern)
 	if err != nil {
 		return nil, fmt.Errorf("dolt: search issues: %w", err)
 	}

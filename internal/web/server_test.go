@@ -104,6 +104,22 @@ func (m *mockDataSource) AddLabel(_ context.Context, _, _, _ string) error {
 	return m.err
 }
 
+func (m *mockDataSource) ThemeParks(_ context.Context, _ string) ([]dolt.ThemePark, error) {
+	return nil, m.err
+}
+
+func (m *mockDataSource) Rides(_ context.Context, _, _ string) ([]dolt.Ride, error) {
+	return nil, m.err
+}
+
+func (m *mockDataSource) ParkVisits(_ context.Context, _, _ string) ([]dolt.ParkVisit, error) {
+	return nil, m.err
+}
+
+func (m *mockDataSource) TripPlans(_ context.Context, _ string) ([]dolt.TripPlan, error) {
+	return nil, m.err
+}
+
 func TestIndexRendersMonthly(t *testing.T) {
 	srv := New(nil)
 	req := httptest.NewRequest("GET", "/", nil)
