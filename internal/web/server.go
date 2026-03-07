@@ -57,6 +57,7 @@ type DataSource interface {
 	IssuesByLabel(ctx context.Context, database, label string) ([]dolt.Issue, error)
 	AllDependenciesWithIssues(ctx context.Context, database string) ([]dolt.DepEdge, error)
 	CountByPriorityStatus(ctx context.Context, database string) ([]dolt.PriorityStatusCount, error)
+	CountByAssigneeStatus(ctx context.Context, database string) ([]dolt.AssigneeStatusCount, error)
 }
 
 // Server serves the Tapestry web dashboard.
@@ -396,6 +397,10 @@ func (s *Server) parseTemplates() {
 			template.New("").Funcs(funcMap).ParseFS(templateFS,
 				"templates/layout.html", "templates/types.html"),
 		),
+		"matrix": template.Must(
+			template.New("").Funcs(funcMap).ParseFS(templateFS,
+				"templates/layout.html", "templates/matrix.html"),
+		),
 	}
 }
 
@@ -501,6 +506,8 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		s.handleOwners(w, r)
 	case len(segments) == 1 && segments[0] == "types":
 		s.handleTypes(w, r)
+	case len(segments) == 1 && segments[0] == "matrix":
+		s.handleMatrix(w, r)
 	case len(segments) == 1 && segments[0] == "homelab":
 		s.handleHomelab(w, r)
 	case len(segments) == 1 && segments[0] == "designs":

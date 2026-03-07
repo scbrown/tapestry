@@ -164,6 +164,27 @@ func (c *Client) CountByPriorityStatus(ctx context.Context, database string) ([]
 	return result, rows.Err()
 }
 
+// CountByAssigneeStatus returns issue counts grouped by assignee and status.
+func (c *Client) CountByAssigneeStatus(ctx context.Context, database string) ([]AssigneeStatusCount, error) {
+	query := "SELECT COALESCE(NULLIF(assignee,''), '(unassigned)'), status, COUNT(*) FROM issues " +
+		"WHERE issue_type IN ('task','bug','epic') GROUP BY assignee, status ORDER BY assignee, status"
+	rows, err := c.queryDB(ctx, database, query)
+	if err != nil {
+		return nil, fmt.Errorf("dolt: count by assignee status: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+
+	var result []AssigneeStatusCount
+	for rows.Next() {
+		var asc AssigneeStatusCount
+		if err := rows.Scan(&asc.Assignee, &asc.Status, &asc.Count); err != nil {
+			return nil, fmt.Errorf("dolt: scan assignee status count: %w", err)
+		}
+		result = append(result, asc)
+	}
+	return result, rows.Err()
+}
+
 // CountCreatedInRange counts issues created within the given time range.
 func (c *Client) CountCreatedInRange(ctx context.Context, database string, start, end time.Time) (int, error) {
 	query := "SELECT COUNT(*) FROM issues WHERE issue_type IN ('task','bug','epic') " +

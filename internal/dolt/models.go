@@ -135,6 +135,13 @@ type DepEdge struct {
 	Type string // "depends_on", "child_of", etc.
 }
 
+// AssigneeStatusCount holds the count of issues for a given assignee and status.
+type AssigneeStatusCount struct {
+	Assignee string
+	Status   string
+	Count    int
+}
+
 // AchievementDef describes an achievement that can be unlocked.
 type AchievementDef struct {
 	ID          string

@@ -1,0 +1,56 @@
+{{define "title"}}Matrix{{end}}
+
+{{define "content"}}
+<div class="matrix-view">
+  <h1>Assignee / Status Matrix</h1>
+
+  {{if .Err}}
+  <div class="error">{{.Err}}</div>
+  {{else}}
+
+  <div class="results-meta">{{.GrandTot}} beads across {{len .Rows}} assignees</div>
+
+  {{if .Rows}}
+  <div class="table-wrap">
+  <table class="bead-table matrix-table">
+    <thead>
+      <tr>
+        <th>Assignee</th>
+        {{range $.Statuses}}<th>{{.}}</th>{{end}}
+        <th>Total</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{range .Rows}}
+      <tr>
+        <td><a href="/agent/{{.Assignee}}">{{.Assignee}}</a></td>
+        {{$row := .}}
+        {{range $.Statuses}}
+          {{$cell := index $row.Cells .}}
+          {{if $cell.Count}}
+          <td class="matrix-cell" style="background: rgba(189, 147, 249, {{divf (itof $cell.Count) (itof $.MaxCell)}});">
+            {{$cell.Count}}
+          </td>
+          {{else}}
+          <td class="matrix-cell matrix-empty">&mdash;</td>
+          {{end}}
+        {{end}}
+        <td><strong>{{.Total}}</strong></td>
+      </tr>
+      {{end}}
+    </tbody>
+  </table>
+  </div>
+
+  <div class="matrix-legend">
+    <span class="legend-label">Heat:</span>
+    <span class="matrix-scale-low">low</span>
+    <span class="matrix-scale-high">high</span>
+  </div>
+  {{else}}
+  <p class="empty">No beads found.</p>
+  {{end}}
+
+  {{end}}
+</div>
+{{end}}

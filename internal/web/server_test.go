@@ -28,6 +28,7 @@ type mockDataSource struct {
 	labelCounts   []dolt.LabelCount
 	depEdges        []dolt.DepEdge
 	priorityCounts  []dolt.PriorityStatusCount
+	assigneeCounts  []dolt.AssigneeStatusCount
 	err             error
 }
 
@@ -164,6 +165,10 @@ func (m *mockDataSource) AllDependenciesWithIssues(_ context.Context, _ string) 
 
 func (m *mockDataSource) CountByPriorityStatus(_ context.Context, _ string) ([]dolt.PriorityStatusCount, error) {
 	return m.priorityCounts, m.err
+}
+
+func (m *mockDataSource) CountByAssigneeStatus(_ context.Context, _ string) ([]dolt.AssigneeStatusCount, error) {
+	return m.assigneeCounts, m.err
 }
 
 func TestIndexRendersMonthly(t *testing.T) {
@@ -1725,5 +1730,54 @@ func TestTypesPage_WithData(t *testing.T) {
 	}
 	if !strings.Contains(body, "epic") {
 		t.Error("expected epic type row")
+	}
+}
+
+func TestMatrixPage_NilDataSource(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/matrix", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /matrix status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Matrix") {
+		t.Error("expected 'Matrix' heading")
+	}
+}
+
+func TestMatrixPage_WithData(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		assigneeCounts: []dolt.AssigneeStatusCount{
+			{Assignee: "aegis/crew/arnold", Status: "open", Count: 5},
+			{Assignee: "aegis/crew/arnold", Status: "closed", Count: 12},
+			{Assignee: "aegis/crew/ellie", Status: "in_progress", Count: 3},
+			{Assignee: "aegis/crew/ellie", Status: "closed", Count: 8},
+			{Assignee: "(unassigned)", Status: "open", Count: 15},
+		},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/matrix", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /matrix status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "arnold") {
+		t.Error("expected arnold in matrix")
+	}
+	if !strings.Contains(body, "ellie") {
+		t.Error("expected ellie in matrix")
+	}
+	if !strings.Contains(body, "43") {
+		t.Error("expected grand total of 43")
 	}
 }
