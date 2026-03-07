@@ -1209,3 +1209,17 @@ tr.silenced { opacity: 0.5; }
   .exec-kpi { padding: 0.5rem; }
   .exec-kpi-value { font-size: 1.3rem; }
 }
+
+/* ── Labels Page ─────────────────────────────────────── */
+.label-cloud { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 1rem 0 1.5rem; }
+.label-tag {
+  display: inline-flex; align-items: center; gap: 0.35rem;
+  padding: 0.3rem 0.65rem; border-radius: 4px;
+  background: var(--surface); border: 1px solid var(--border);
+  color: var(--text); font-size: 0.85rem; text-decoration: none;
+  transition: background 0.15s, border-color 0.15s;
+}
+.label-tag:hover { background: var(--bg); border-color: var(--purple); }
+.label-tag.active { background: var(--purple); border-color: var(--purple); color: #fff; }
+.label-count { font-size: 0.75rem; color: var(--text-muted); }
+.label-tag.active .label-count { color: rgba(255,255,255,0.7); }

@@ -53,6 +53,8 @@ type DataSource interface {
 	Rides(ctx context.Context, database, parkID string) ([]dolt.Ride, error)
 	ParkVisits(ctx context.Context, database, parkID string) ([]dolt.ParkVisit, error)
 	TripPlans(ctx context.Context, database string) ([]dolt.TripPlan, error)
+	DistinctLabels(ctx context.Context, database string) ([]dolt.LabelCount, error)
+	IssuesByLabel(ctx context.Context, database, label string) ([]dolt.Issue, error)
 }
 
 // Server serves the Tapestry web dashboard.
@@ -360,6 +362,10 @@ func (s *Server) parseTemplates() {
 			template.New("").Funcs(funcMap).ParseFS(templateFS,
 				"templates/layout.html", "templates/blocked.html"),
 		),
+		"labels": template.Must(
+			template.New("").Funcs(funcMap).ParseFS(templateFS,
+				"templates/layout.html", "templates/labels.html"),
+		),
 	}
 }
 
@@ -449,6 +455,8 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		s.handleExecutive(w, r)
 	case len(segments) == 1 && segments[0] == "blocked":
 		s.handleBlocked(w, r)
+	case len(segments) == 1 && segments[0] == "labels":
+		s.handleLabels(w, r)
 	case len(segments) == 1 && segments[0] == "homelab":
 		s.handleHomelab(w, r)
 	case len(segments) == 1 && segments[0] == "designs":

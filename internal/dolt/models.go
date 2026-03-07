@@ -109,6 +109,12 @@ type EpicProgress struct {
 	Closed int
 }
 
+// LabelCount pairs a label name with the number of issues it's applied to.
+type LabelCount struct {
+	Label string
+	Count int
+}
+
 // BlockedIssue pairs a blocked issue with the issue that blocks it.
 type BlockedIssue struct {
 	Issue   Issue

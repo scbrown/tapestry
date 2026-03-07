@@ -1,0 +1,63 @@
+{{define "title"}}Labels{{end}}
+
+{{define "content"}}
+<div class="labels-view">
+  <h1>Labels</h1>
+
+  {{if .Err}}
+  <div class="error">{{.Err}}</div>
+  {{else}}
+
+  <div class="results-meta">{{.Total}} distinct labels across all rigs</div>
+
+  {{if .Labels}}
+  <div class="label-cloud">
+    {{range .Labels}}
+    <a href="/labels?label={{.Label}}" class="label-tag {{if eq $.Filter .Label}}active{{end}}">{{.Label}} <span class="label-count">{{.Count}}</span></a>
+    {{end}}
+  </div>
+  {{else}}
+  <p class="empty">No labels found.</p>
+  {{end}}
+
+  {{if .Filter}}
+  <h2>Beads labeled "{{.Filter}}"</h2>
+  {{if .Issues}}
+  <div class="table-wrap">
+  <table class="bead-table">
+    <thead>
+      <tr>
+        <th>Rig</th>
+        <th>ID</th>
+        <th>Title</th>
+        <th>Pri</th>
+        <th>Type</th>
+        <th>Status</th>
+        <th>Assignee</th>
+        <th>Updated</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{range .Issues}}
+      <tr>
+        <td><span class="rig-label">{{rigName .Rig}}</span></td>
+        <td><a href="/bead/{{.Issue.ID}}">{{.Issue.ID}}</a></td>
+        <td>{{.Issue.Title}}</td>
+        <td>{{priorityLabel .Issue.Priority}}</td>
+        <td>{{.Issue.Type}}</td>
+        <td>{{statusBadge .Issue.Status}}</td>
+        <td title="{{.Issue.Assignee}}">{{shortActor .Issue.Assignee}}</td>
+        <td>{{timeAgo .Issue.UpdatedAt}}</td>
+      </tr>
+      {{end}}
+    </tbody>
+  </table>
+  </div>
+  {{else}}
+  <p class="empty">No beads with this label.</p>
+  {{end}}
+  {{end}}
+
+  {{end}}
+</div>
+{{end}}

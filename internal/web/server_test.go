@@ -25,6 +25,7 @@ type mockDataSource struct {
 	statusHistory []dolt.StatusTransition
 	children      []dolt.Issue
 	blockedIssues []dolt.BlockedIssue
+	labelCounts   []dolt.LabelCount
 	err           error
 }
 
@@ -145,6 +146,14 @@ func (m *mockDataSource) ParkVisits(_ context.Context, _, _ string) ([]dolt.Park
 
 func (m *mockDataSource) TripPlans(_ context.Context, _ string) ([]dolt.TripPlan, error) {
 	return nil, m.err
+}
+
+func (m *mockDataSource) DistinctLabels(_ context.Context, _ string) ([]dolt.LabelCount, error) {
+	return m.labelCounts, m.err
+}
+
+func (m *mockDataSource) IssuesByLabel(_ context.Context, _, _ string) ([]dolt.Issue, error) {
+	return m.issues, m.err
 }
 
 func TestIndexRendersMonthly(t *testing.T) {
@@ -1237,6 +1246,70 @@ func TestBeadComment_EmptyBody(t *testing.T) {
 
 	if w.Code != http.StatusBadRequest {
 		t.Fatalf("POST empty comment status = %d, want %d", w.Code, http.StatusBadRequest)
+	}
+}
+
+func TestLabelsPage_NilDataSource(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/labels", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /labels status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Labels") {
+		t.Error("expected 'Labels' heading")
+	}
+}
+
+func TestLabelsPage_WithData(t *testing.T) {
+	ds := &mockDataSource{
+		databases:   []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		labelCounts: []dolt.LabelCount{{Label: "desire-path", Count: 5}, {Label: "bug", Count: 3}},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/labels", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /labels status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "desire-path") {
+		t.Error("expected label 'desire-path' in output")
+	}
+	if !strings.Contains(body, "bug") {
+		t.Error("expected label 'bug' in output")
+	}
+}
+
+func TestLabelsPage_FilterByLabel(t *testing.T) {
+	ds := &mockDataSource{
+		databases:   []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		labelCounts: []dolt.LabelCount{{Label: "bug", Count: 2}},
+		issues: []dolt.Issue{
+			{ID: "aegis-l1", Title: "Fix bug", Status: "open", Priority: 1, UpdatedAt: time.Now()},
+		},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/labels?label=bug", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /labels?label=bug status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "aegis-l1") {
+		t.Error("expected filtered issue ID in output")
 	}
 }
 

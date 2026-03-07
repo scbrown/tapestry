@@ -374,6 +374,53 @@ func (c *Client) LabelsForIssue(ctx context.Context, database, issueID string) (
 	return labels, rows.Err()
 }
 
+// DistinctLabels returns all unique labels with issue counts, ordered by count descending.
+func (c *Client) DistinctLabels(ctx context.Context, database string) ([]LabelCount, error) {
+	query := "SELECT label, COUNT(*) as cnt FROM labels GROUP BY label ORDER BY cnt DESC, label ASC"
+	rows, err := c.queryDB(ctx, database, query)
+	if err != nil {
+		return nil, fmt.Errorf("dolt: distinct labels: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+
+	var result []LabelCount
+	for rows.Next() {
+		var lc LabelCount
+		if err := rows.Scan(&lc.Label, &lc.Count); err != nil {
+			return nil, fmt.Errorf("dolt: scan label count: %w", err)
+		}
+		result = append(result, lc)
+	}
+	return result, rows.Err()
+}
+
+// IssuesByLabel returns all non-closed issues with the given label.
+func (c *Client) IssuesByLabel(ctx context.Context, database, label string) ([]Issue, error) {
+	query := `SELECT i.id, i.title, i.status, i.priority, i.issue_type,
+		COALESCE(i.owner,''), COALESCE(i.assignee,''),
+		i.created_at, i.updated_at, COALESCE(i.description,'')
+		FROM issues i JOIN labels l ON l.issue_id = i.id
+		WHERE l.label = ?
+		ORDER BY i.priority ASC, i.updated_at DESC`
+	rows, err := c.queryDB(ctx, database, query, label)
+	if err != nil {
+		return nil, fmt.Errorf("dolt: issues by label: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+
+	var result []Issue
+	for rows.Next() {
+		var iss Issue
+		if err := rows.Scan(&iss.ID, &iss.Title, &iss.Status, &iss.Priority, &iss.Type,
+			&iss.Owner, &iss.Assignee,
+			&iss.CreatedAt, &iss.UpdatedAt, &iss.Description); err != nil {
+			return nil, fmt.Errorf("dolt: scan issue by label: %w", err)
+		}
+		result = append(result, iss)
+	}
+	return result, rows.Err()
+}
+
 // MetadataForIssue returns parsed metadata for the given issue from the JSON
 // metadata column. Returns an empty IssueMetadata (not nil) if not found or empty.
 func (c *Client) MetadataForIssue(ctx context.Context, database, issueID string) (*IssueMetadata, error) {
