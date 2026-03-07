@@ -647,6 +647,74 @@ func TestBriefingPage_WithData(t *testing.T) {
 	}
 }
 
+func TestBriefingPage_StaleWork(t *testing.T) {
+	staleDate := time.Now().AddDate(0, 0, -10) // 10 days old
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		counts:    map[string]int{"open": 5},
+		issues: []dolt.Issue{
+			{ID: "aegis-stale1", Title: "Forgotten task", Status: "open", Priority: 1, UpdatedAt: staleDate},
+			{ID: "aegis-fresh1", Title: "Fresh task", Status: "open", Priority: 1, UpdatedAt: time.Now()},
+		},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/briefing", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /briefing status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Forgotten task") {
+		t.Error("expected stale 'Forgotten task' in briefing")
+	}
+	if !strings.Contains(body, "idle") {
+		t.Error("expected 'idle' indicator for stale work")
+	}
+}
+
+func TestAgentDetailPage_NilDataSource(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/agent/arnold", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /agent/arnold status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "arnold") {
+		t.Error("expected agent name in page")
+	}
+}
+
+func TestAgentDetailPage_WithData(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issues: []dolt.Issue{
+			{ID: "aegis-a1", Title: "Agent task", Status: "open", Priority: 1, Assignee: "aegis/crew/arnold", UpdatedAt: time.Now()},
+		},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/agent/aegis/crew/arnold", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /agent/aegis/crew/arnold status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Agent task") {
+		t.Errorf("body missing agent's issue")
+	}
+}
+
 func TestAgentsPage_NilDataSource(t *testing.T) {
 	srv := New(nil)
 	req := httptest.NewRequest("GET", "/agents", nil)
