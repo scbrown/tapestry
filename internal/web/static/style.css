@@ -836,3 +836,10 @@ tr.silenced { opacity: 0.5; }
 .blocked-item { display: flex; flex-wrap: wrap; gap: 0.25rem; align-items: baseline; }
 .blocked-reason { font-size: 0.8rem; color: var(--danger); margin-left: 0.25rem; }
 .blocked-reason a { color: var(--orange); }
+
+/* ── Epic Detail Progress ────────────────────────────────── */
+.epic-progress { margin: 1.5rem 0; }
+.epic-progress .progress-bar { width: 100%; height: 10px; margin: 0.5rem 0; }
+.epic-progress .progress-label { font-size: 0.9rem; color: var(--text-muted); }
+.epics-page { max-width: 1200px; margin: 0 auto; padding: 1.5rem; }
+.epics-page h1 { font-size: 1.5rem; margin-bottom: 1rem; }

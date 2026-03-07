@@ -1,27 +1,27 @@
-{{template "head"}}{{.Issue.ID}} — tapestry{{template "headclose"}}
-
+{{define "title"}}{{.Issue.ID}}{{end}}
+{{define "content"}}
 <div class="bead-detail">
   <div class="bead-header">
     <h1>{{.Issue.Title}}</h1>
     <div class="bead-meta">
       <span class="bead-id">{{.Issue.ID}}</span>
       {{statusBadge .Issue.Status}}
-      <span>{{priorityLabel .Issue.Priority}}</span>
+      <span class="work-priority p{{.Issue.Priority}}">{{priorityLabel .Issue.Priority}}</span>
       <span>epic</span>
-      <span class="rig-label">{{.RigName}}</span>
+      <span class="rig-label text-dim">{{.RigName}}</span>
     </div>
   </div>
 
   {{if .Issue.Description}}
-  <div class="description"><p>{{.Issue.Description | nl}}</p></div>
+  <div class="description"><p>{{.Issue.Description}}</p></div>
   {{end}}
 
   <div class="bead-info">
     <dl>
-      {{if .Issue.Owner}}<dt>Owner</dt><dd><a href="/agent/{{.Issue.Owner}}">{{.Issue.Owner}}</a></dd>{{end}}
-      {{if .Issue.Assignee}}<dt>Assignee</dt><dd><a href="/agent/{{.Issue.Assignee}}">{{.Issue.Assignee}}</a></dd>{{end}}
-      <dt>Created</dt><dd>{{.Issue.CreatedAt.Format "2006-01-02 15:04"}}</dd>
-      <dt>Updated</dt><dd>{{.Issue.UpdatedAt.Format "2006-01-02 15:04"}}</dd>
+      {{if .Issue.Owner}}<dt>Owner</dt><dd><a href="/agent/{{.Issue.Owner}}">{{shortActor .Issue.Owner}}</a></dd>{{end}}
+      {{if .Issue.Assignee}}<dt>Assignee</dt><dd><a href="/agent/{{.Issue.Assignee}}">{{shortActor .Issue.Assignee}}</a></dd>{{end}}
+      <dt>Created</dt><dd>{{formatDateTime .Issue.CreatedAt}}</dd>
+      <dt>Updated</dt><dd>{{formatDateTime .Issue.UpdatedAt}} ({{timeAgo .Issue.UpdatedAt}})</dd>
     </dl>
   </div>
 
@@ -36,16 +36,17 @@
     <h2>Children ({{len .Children}})</h2>
     <div class="table-wrap">
     <table class="bead-table">
-      <thead><tr><th>ID</th><th>Title</th><th>Priority</th><th>Type</th><th>Status</th><th>Assignee</th></tr></thead>
+      <thead><tr><th>ID</th><th>Title</th><th>Priority</th><th>Type</th><th>Status</th><th>Assignee</th><th>Updated</th></tr></thead>
       <tbody>
         {{range .Children}}
         <tr>
           <td><a href="/bead/{{.ID}}">{{.ID}}</a></td>
           <td>{{.Title}}</td>
-          <td>{{priorityLabel .Priority}}</td>
+          <td><span class="work-priority p{{.Priority}}">{{priorityLabel .Priority}}</span></td>
           <td>{{.Type}}</td>
           <td>{{statusBadge .Status}}</td>
-          <td>{{if .Assignee}}<a href="/agent/{{.Assignee}}">{{.Assignee}}</a>{{end}}</td>
+          <td>{{if .Assignee}}<a href="/agent/{{.Assignee}}">{{shortActor .Assignee}}</a>{{end}}</td>
+          <td>{{timeAgo .UpdatedAt}}</td>
         </tr>
         {{end}}
       </tbody>
@@ -61,12 +62,11 @@
     <h2>Comments ({{len .Comments}})</h2>
     {{range .Comments}}
     <div class="comment">
-      <div class="comment-meta"><strong>{{.Author}}</strong> <time>{{.CreatedAt.Format "2006-01-02 15:04"}}</time></div>
-      <div class="comment-body">{{.Body | nl}}</div>
+      <div class="comment-meta"><strong>{{.Author}}</strong> <time>{{formatDateTime .CreatedAt}}</time></div>
+      <div class="comment-body">{{.Body}}</div>
     </div>
     {{end}}
   </section>
   {{end}}
 </div>
-
-{{template "foot"}}
+{{end}}
