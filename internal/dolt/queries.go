@@ -2,6 +2,7 @@ package dolt
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -371,6 +372,45 @@ func (c *Client) LabelsForIssue(ctx context.Context, database, issueID string) (
 		labels = append(labels, l)
 	}
 	return labels, rows.Err()
+}
+
+// MetadataForIssue returns parsed metadata for the given issue from the JSON
+// metadata column. Returns an empty IssueMetadata (not nil) if not found or empty.
+func (c *Client) MetadataForIssue(ctx context.Context, database, issueID string) (*IssueMetadata, error) {
+	query := "SELECT COALESCE(metadata, '{}') FROM issues WHERE id = ?"
+	rows, err := c.queryDB(ctx, database, query, issueID)
+	if err != nil {
+		return &IssueMetadata{}, fmt.Errorf("dolt: metadata: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+
+	if !rows.Next() {
+		return &IssueMetadata{}, rows.Err()
+	}
+	var raw string
+	if err := rows.Scan(&raw); err != nil {
+		return &IssueMetadata{}, fmt.Errorf("dolt: scan metadata: %w", err)
+	}
+	var meta IssueMetadata
+	if err := json.Unmarshal([]byte(raw), &meta); err != nil {
+		return &IssueMetadata{}, nil // ignore malformed JSON
+	}
+	return &meta, nil
+}
+
+// ChildIssues returns issues that are children of the given parent (epic).
+func (c *Client) ChildIssues(ctx context.Context, database, parentID string) ([]Issue, error) {
+	query := "SELECT i.id, i.title, i.description, i.status, i.priority, i.issue_type, " +
+		"COALESCE(i.owner,''), COALESCE(i.assignee,''), i.created_at, i.updated_at " +
+		"FROM issues i JOIN dependencies d ON i.id = d.issue_id " +
+		"WHERE d.depends_on_id = ? AND d.type = 'child_of' " +
+		"ORDER BY i.priority, i.id"
+	rows, err := c.queryDB(ctx, database, query, parentID)
+	if err != nil {
+		return nil, fmt.Errorf("dolt: child issues: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+	return scanIssues(rows)
 }
 
 // AddLabel inserts a label for an issue. Ignores duplicates.

@@ -27,10 +27,81 @@
         <span>Updated: {{formatDate .Issue.UpdatedAt}}</span>
     </div>
 
+    {{if .Metadata}}{{if .Metadata.Lineage}}
+    <section class="bead-lineage">
+        <h2>Lineage</h2>
+        <div class="lineage-chain">
+            {{with .Metadata.Lineage}}
+            {{if .Origin}}
+            <div class="lineage-step">
+                <span class="lineage-label">Origin</span>
+                <span class="lineage-value">{{.Origin}}{{if .OriginHuman}} ({{.OriginHuman}}){{end}}{{if .OriginChannel}} via {{.OriginChannel}}{{end}}</span>
+            </div>
+            {{end}}
+            {{if .OriginTimestamp}}
+            <div class="lineage-step">
+                <span class="lineage-label">When</span>
+                <span class="lineage-value">{{.OriginTimestamp}}</span>
+            </div>
+            {{end}}
+            {{if .PlannedBy}}
+            <div class="lineage-step">
+                <span class="lineage-label">Planned by</span>
+                <span class="lineage-value"><a href="/agent/{{.PlannedBy}}">{{.PlannedBy}}</a></span>
+            </div>
+            {{end}}
+            {{if .DesignedBy}}
+            <div class="lineage-step">
+                <span class="lineage-label">Designed by</span>
+                <span class="lineage-value"><a href="/agent/{{.DesignedBy}}">{{.DesignedBy}}</a></span>
+            </div>
+            {{end}}
+            {{if .ExecutedBy}}
+            <div class="lineage-step">
+                <span class="lineage-label">Executed by</span>
+                <span class="lineage-value"><a href="/agent/{{.ExecutedBy}}">{{.ExecutedBy}}</a></span>
+            </div>
+            {{end}}
+            {{end}}
+        </div>
+    </section>
+    {{end}}{{end}}
+
+    {{if .StatusHistory}}
+    <section class="bead-timeline">
+        <h2>Status Timeline</h2>
+        <div class="timeline">
+            {{range .StatusHistory}}
+            <div class="timeline-event">
+                <span class="timeline-dot {{statusClass .ToStatus}}"></span>
+                <span class="timeline-status badge {{statusClass .ToStatus}}">{{.ToStatus}}</span>
+                {{if .FromStatus}}<span class="text-dim">from {{.FromStatus}}</span>{{end}}
+                <time class="text-dim">{{.CommitDate.Format "Jan 02 15:04"}}</time>
+            </div>
+            {{end}}
+        </div>
+    </section>
+    {{end}}
+
     {{if .Issue.Description}}
     <section class="bead-description">
         <h2>Description</h2>
         <pre class="description-text">{{.Issue.Description}}</pre>
+    </section>
+    {{end}}
+
+    {{if .Children}}
+    <section class="bead-children">
+        <h2>Children ({{len .Children}})</h2>
+        <div class="children-list">
+            {{range .Children}}
+            <div class="child-row">
+                <span class="badge {{statusClass .Status}}">{{.Status}}</span>
+                <a href="/bead/{{.ID}}" hx-get="/bead/{{.ID}}" hx-target="#content" hx-push-url="true">{{.ID}}</a>
+                <span class="child-title">{{.Title}}</span>
+            </div>
+            {{end}}
+        </div>
     </section>
     {{end}}
 

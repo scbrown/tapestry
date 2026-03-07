@@ -226,15 +226,121 @@ main {
 
 .bead-description,
 .bead-comments,
-.bead-deps {
+.bead-deps,
+.bead-lineage,
+.bead-timeline,
+.bead-children {
     margin-bottom: 1.5rem;
 }
 
 .bead-description h2,
 .bead-comments h2,
-.bead-deps h2 {
+.bead-deps h2,
+.bead-lineage h2,
+.bead-timeline h2,
+.bead-children h2 {
     font-size: 1.125rem;
     margin-bottom: 0.75rem;
+}
+
+/* Lineage */
+.lineage-chain {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 0.75rem 1rem;
+}
+
+.lineage-step {
+    display: flex;
+    gap: 1rem;
+    padding: 0.375rem 0;
+    align-items: baseline;
+}
+
+.lineage-step + .lineage-step {
+    border-top: 1px solid var(--border);
+}
+
+.lineage-label {
+    min-width: 6rem;
+    font-size: 0.8125rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.lineage-value {
+    font-size: 0.875rem;
+}
+
+.lineage-value a {
+    color: var(--cyan);
+}
+
+/* Status Timeline */
+.timeline {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 0.75rem 1rem;
+}
+
+.timeline-event {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    padding: 0.375rem 0;
+    font-size: 0.875rem;
+}
+
+.timeline-event + .timeline-event {
+    border-top: 1px solid var(--border);
+}
+
+.timeline-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.timeline-dot.status-open { background: var(--cyan); }
+.timeline-dot.status-in-progress { background: var(--orange); }
+.timeline-dot.status-closed { background: var(--green); }
+.timeline-dot.status-blocked { background: var(--red); }
+.timeline-dot.status-deferred { background: var(--purple); }
+.timeline-dot.status-hooked { background: var(--orange); }
+
+/* Children */
+.children-list {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+}
+
+.child-row {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+}
+
+.child-row + .child-row {
+    border-top: 1px solid var(--border);
+}
+
+.child-row a {
+    color: var(--cyan);
+    white-space: nowrap;
+}
+
+.child-title {
+    color: var(--text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .description-text,

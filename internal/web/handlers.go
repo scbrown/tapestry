@@ -43,13 +43,16 @@ type dbSummary struct {
 }
 
 type beadData struct {
-	Database string
-	Issue    *dolt.Issue
-	Labels   []string
-	Comments []dolt.Comment
-	Deps     []dolt.Dependency
-	Commits  []beadCommit
-	Err      string
+	Database      string
+	Issue         *dolt.Issue
+	Labels        []string
+	Comments      []dolt.Comment
+	Deps          []dolt.Dependency
+	Commits       []beadCommit
+	Metadata      *dolt.IssueMetadata
+	StatusHistory []dolt.StatusTransition
+	Children      []dolt.Issue
+	Err           string
 }
 
 type beadsListData struct {
@@ -223,6 +226,23 @@ func (s *Server) handleBead(w http.ResponseWriter, r *http.Request, database, id
 	deps, err := s.ds.Dependencies(ctx, database, id)
 	if err == nil {
 		data.Deps = deps
+	}
+
+	meta, err := s.ds.MetadataForIssue(ctx, database, id)
+	if err == nil {
+		data.Metadata = meta
+	}
+
+	history, err := s.ds.StatusHistory(ctx, database, id)
+	if err == nil {
+		data.StatusHistory = history
+	}
+
+	if issue.Type == "epic" {
+		children, err := s.ds.ChildIssues(ctx, database, id)
+		if err == nil {
+			data.Children = children
+		}
 	}
 
 	if s.forgejo != nil {

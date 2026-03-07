@@ -134,6 +134,22 @@ type AchievementUnlock struct {
 	Note       string
 }
 
+// IssueMetadata holds parsed metadata from the JSON metadata column.
+type IssueMetadata struct {
+	Lineage *Lineage `json:"lineage,omitempty"`
+}
+
+// Lineage tracks the origin and execution chain for a bead.
+type Lineage struct {
+	Origin          string `json:"origin,omitempty"`
+	OriginHuman     string `json:"origin_human,omitempty"`
+	OriginChannel   string `json:"origin_channel,omitempty"`
+	OriginTimestamp string `json:"origin_timestamp,omitempty"`
+	PlannedBy       string `json:"planned_by,omitempty"`
+	DesignedBy      string `json:"designed_by,omitempty"`
+	ExecutedBy      string `json:"executed_by,omitempty"`
+}
+
 // ThemePark represents a theme park in the tracker.
 type ThemePark struct {
 	ID        string

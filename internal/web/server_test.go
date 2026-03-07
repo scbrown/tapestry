@@ -12,16 +12,19 @@ import (
 )
 
 type mockDataSource struct {
-	databases []dolt.DatabaseInfo
-	counts    map[string]int
-	created   int
-	closed    int
-	activity  map[string]int
-	issues    []dolt.Issue
-	issue     *dolt.Issue
-	comments  []dolt.Comment
-	deps      []dolt.Dependency
-	err       error
+	databases     []dolt.DatabaseInfo
+	counts        map[string]int
+	created       int
+	closed        int
+	activity      map[string]int
+	issues        []dolt.Issue
+	issue         *dolt.Issue
+	comments      []dolt.Comment
+	deps          []dolt.Dependency
+	metadata      *dolt.IssueMetadata
+	statusHistory []dolt.StatusTransition
+	children      []dolt.Issue
+	err           error
 }
 
 func (m *mockDataSource) ListBeadsDatabases(_ context.Context) ([]dolt.DatabaseInfo, error) {
@@ -82,6 +85,21 @@ func (m *mockDataSource) Decisions(_ context.Context, _ string) ([]dolt.Issue, e
 
 func (m *mockDataSource) LabelsForIssue(_ context.Context, _, _ string) ([]string, error) {
 	return nil, m.err
+}
+
+func (m *mockDataSource) MetadataForIssue(_ context.Context, _, _ string) (*dolt.IssueMetadata, error) {
+	if m.metadata != nil {
+		return m.metadata, m.err
+	}
+	return &dolt.IssueMetadata{}, m.err
+}
+
+func (m *mockDataSource) StatusHistory(_ context.Context, _, _ string) ([]dolt.StatusTransition, error) {
+	return m.statusHistory, m.err
+}
+
+func (m *mockDataSource) ChildIssues(_ context.Context, _, _ string) ([]dolt.Issue, error) {
+	return m.children, m.err
 }
 
 func (m *mockDataSource) AchievementDefs(_ context.Context, _ string) ([]dolt.AchievementDef, error) {
@@ -898,5 +916,100 @@ func TestSearch_WithResults(t *testing.T) {
 	}
 	if !strings.Contains(body, "Found bead") {
 		t.Errorf("body missing search result title")
+	}
+}
+
+func TestBeadPage_WithLineage(t *testing.T) {
+	ds := &mockDataSource{
+		issue: &dolt.Issue{
+			ID:        "aegis-100",
+			Title:     "Bead with lineage",
+			Status:    "closed",
+			Priority:  1,
+			Type:      "task",
+			CreatedAt: time.Date(2026, 2, 10, 0, 0, 0, 0, time.UTC),
+			UpdatedAt: time.Date(2026, 2, 14, 0, 0, 0, 0, time.UTC),
+		},
+		metadata: &dolt.IssueMetadata{
+			Lineage: &dolt.Lineage{
+				Origin:      "human",
+				OriginHuman: "stiwi",
+				ExecutedBy:  "aegis/crew/goldblum",
+			},
+		},
+		statusHistory: []dolt.StatusTransition{
+			{ToStatus: "open", CommitDate: time.Date(2026, 2, 10, 0, 0, 0, 0, time.UTC)},
+			{FromStatus: "open", ToStatus: "in_progress", CommitDate: time.Date(2026, 2, 12, 0, 0, 0, 0, time.UTC)},
+			{FromStatus: "in_progress", ToStatus: "closed", CommitDate: time.Date(2026, 2, 14, 0, 0, 0, 0, time.UTC)},
+		},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/bead/beads_aegis/aegis-100", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
+	}
+
+	body := w.Body.String()
+	checks := []string{
+		"Lineage",
+		"human",
+		"stiwi",
+		"aegis/crew/goldblum",
+		"Status Timeline",
+		"open",
+		"in_progress",
+		"closed",
+	}
+	for _, check := range checks {
+		if !strings.Contains(body, check) {
+			t.Errorf("body missing %q", check)
+		}
+	}
+}
+
+func TestBeadPage_EpicWithChildren(t *testing.T) {
+	ds := &mockDataSource{
+		issue: &dolt.Issue{
+			ID:        "aegis-epic-1",
+			Title:     "Parent epic",
+			Status:    "open",
+			Priority:  1,
+			Type:      "epic",
+			CreatedAt: time.Date(2026, 2, 10, 0, 0, 0, 0, time.UTC),
+			UpdatedAt: time.Date(2026, 2, 14, 0, 0, 0, 0, time.UTC),
+		},
+		children: []dolt.Issue{
+			{ID: "aegis-epic-1.1", Title: "Child task one", Status: "closed", Priority: 1},
+			{ID: "aegis-epic-1.2", Title: "Child task two", Status: "open", Priority: 2},
+		},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/bead/beads_aegis/aegis-epic-1", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
+	}
+
+	body := w.Body.String()
+	checks := []string{
+		"Children (2)",
+		"aegis-epic-1.1",
+		"Child task one",
+		"aegis-epic-1.2",
+		"Child task two",
+	}
+	for _, check := range checks {
+		if !strings.Contains(body, check) {
+			t.Errorf("body missing %q", check)
+		}
 	}
 }
