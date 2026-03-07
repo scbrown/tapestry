@@ -384,6 +384,10 @@ func (s *Server) parseTemplates() {
 			template.New("").Funcs(funcMap).ParseFS(templateFS,
 				"templates/layout.html", "templates/priorities.html"),
 		),
+		"activity": template.Must(
+			template.New("").Funcs(funcMap).ParseFS(templateFS,
+				"templates/layout.html", "templates/activity.html"),
+		),
 	}
 }
 
@@ -483,6 +487,8 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		s.handleDeps(w, r)
 	case len(segments) == 1 && segments[0] == "priorities":
 		s.handlePriorities(w, r)
+	case len(segments) == 1 && segments[0] == "activity":
+		s.handleActivity(w, r)
 	case len(segments) == 1 && segments[0] == "homelab":
 		s.handleHomelab(w, r)
 	case len(segments) == 1 && segments[0] == "designs":

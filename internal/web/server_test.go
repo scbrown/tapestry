@@ -1590,3 +1590,49 @@ func TestPrioritiesPage_WithData(t *testing.T) {
 		t.Error("expected grand total of 40")
 	}
 }
+
+func TestActivityPage_NilDataSource(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/activity", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /activity status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Activity") {
+		t.Error("expected 'Activity' heading")
+	}
+}
+
+func TestActivityPage_WithData(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issues: []dolt.Issue{
+			{ID: "aegis-act1", Title: "Recent work", Status: "in_progress", Priority: 1, UpdatedAt: time.Now()},
+			{ID: "aegis-act2", Title: "Just closed", Status: "closed", Priority: 2, UpdatedAt: time.Now().Add(-time.Hour)},
+		},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/activity?hours=4", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /activity status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "aegis-act1") {
+		t.Error("expected recent issue ID")
+	}
+	if !strings.Contains(body, "aegis-act2") {
+		t.Error("expected second issue ID")
+	}
+	if !strings.Contains(body, "4h") {
+		t.Error("expected 4h filter option to be highlighted")
+	}
+}

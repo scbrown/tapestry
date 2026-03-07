@@ -1,0 +1,57 @@
+{{define "title"}}Activity{{end}}
+
+{{define "content"}}
+<div class="activity-view">
+  <h1>Recent Activity</h1>
+
+  {{if .Err}}
+  <div class="error">{{.Err}}</div>
+  {{else}}
+
+  <div class="results-meta">{{.Total}} beads updated in the last {{.Hours}}h</div>
+
+  <div class="dep-filters">
+    <a href="/activity?hours=1" class="badge {{if eq .Hours 1}}filter-active{{end}}">1h</a>
+    <a href="/activity?hours=4" class="badge {{if eq .Hours 4}}filter-active{{end}}">4h</a>
+    <a href="/activity?hours=12" class="badge {{if eq .Hours 12}}filter-active{{end}}">12h</a>
+    <a href="/activity?hours=24" class="badge {{if eq .Hours 24}}filter-active{{end}}">24h</a>
+    <a href="/activity?hours=48" class="badge {{if eq .Hours 48}}filter-active{{end}}">48h</a>
+    <a href="/activity?hours=168" class="badge {{if eq .Hours 168}}filter-active{{end}}">7d</a>
+  </div>
+
+  {{if .Entries}}
+  <div class="table-wrap">
+  <table class="bead-table">
+    <thead>
+      <tr>
+        <th>Updated</th>
+        <th>Rig</th>
+        <th>ID</th>
+        <th>Title</th>
+        <th>Status</th>
+        <th>Pri</th>
+        <th>Assignee</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{range .Entries}}
+      <tr>
+        <td title="{{formatDateTime .Issue.UpdatedAt}}">{{timeAgo .Issue.UpdatedAt}}</td>
+        <td><span class="rig-label">{{rigName .Rig}}</span></td>
+        <td><a href="/bead/{{.Issue.ID}}">{{.Issue.ID}}</a></td>
+        <td class="title-cell">{{.Issue.Title}}</td>
+        <td>{{statusBadge .Issue.Status}}</td>
+        <td>{{priorityLabel .Issue.Priority}}</td>
+        <td title="{{.Issue.Assignee}}">{{shortActor .Issue.Assignee}}</td>
+      </tr>
+      {{end}}
+    </tbody>
+  </table>
+  </div>
+  {{else}}
+  <p class="empty">No activity in the last {{.Hours}} hours.</p>
+  {{end}}
+
+  {{end}}
+</div>
+{{end}}
