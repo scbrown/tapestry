@@ -1,8 +1,8 @@
-{{template "head"}}{{.Name}} — tapestry{{template "headclose"}}
-
+{{define "title"}}{{shortActor .Name}}{{end}}
+{{define "content"}}
 <div class="agent-detail">
   <h1>{{shortActor .Name}}</h1>
-  <p class="agent-full-path">{{.Name}}</p>
+  <p class="agent-full-path text-dim">{{.Name}}</p>
 
   <div class="stats-grid">
     <div class="stat-card"><div class="stat-value">{{.Stats.Owned}}</div><div class="stat-label">Owned</div></div>
@@ -21,10 +21,10 @@
         <tr>
           <td><a href="/bead/{{.ID}}">{{.ID}}</a></td>
           <td>{{.Title}}</td>
-          <td>{{priorityLabel .Priority}}</td>
+          <td><span class="work-priority p{{.Priority}}">{{priorityLabel .Priority}}</span></td>
           <td>{{.Type}}</td>
           <td>{{statusBadge .Status}}</td>
-          <td>{{.UpdatedAt.Format "Jan 02"}}</td>
+          <td>{{timeAgo .UpdatedAt}}</td>
         </tr>
         {{end}}
       </tbody>
@@ -35,5 +35,4 @@
   <p class="empty">No issues found for this agent.</p>
   {{end}}
 </div>
-
-{{template "foot"}}
+{{end}}
