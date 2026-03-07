@@ -1781,3 +1781,50 @@ func TestMatrixPage_WithData(t *testing.T) {
 		t.Error("expected grand total of 43")
 	}
 }
+
+func TestSLAPage_NilDataSource(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/sla", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /sla status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "SLA") {
+		t.Error("expected 'SLA' heading")
+	}
+}
+
+func TestSLAPage_WithBreachedBeads(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issues: []dolt.Issue{
+			{ID: "a1", Title: "P0 old", Priority: 0, Status: "open", CreatedAt: time.Now().Add(-48 * time.Hour), UpdatedAt: time.Now()},
+			{ID: "a2", Title: "P2 recent", Priority: 2, Status: "in_progress", CreatedAt: time.Now().Add(-1 * time.Hour), UpdatedAt: time.Now()},
+			{ID: "a3", Title: "Already closed", Priority: 1, Status: "closed", CreatedAt: time.Now().Add(-72 * time.Hour), UpdatedAt: time.Now()},
+		},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/sla", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /sla status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "P0 old") {
+		t.Error("expected breached P0 bead")
+	}
+	if !strings.Contains(body, "Breached") {
+		t.Error("expected 'Breached' section")
+	}
+	if strings.Contains(body, "Already closed") {
+		t.Error("closed beads should be excluded from SLA tracking")
+	}
+}

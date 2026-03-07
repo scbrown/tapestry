@@ -1,0 +1,111 @@
+{{define "title"}}SLA{{end}}
+
+{{define "content"}}
+<div class="sla-view">
+  <h1>SLA Tracker</h1>
+
+  {{if .Err}}
+  <div class="error">{{.Err}}</div>
+  {{else}}
+
+  <div class="sla-summary">
+    <div class="stat">
+      <span class="stat-value {{if .Breached}}text-red{{else}}accent{{end}}">{{len .Breached}}</span>
+      <span class="stat-label">breached</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value {{if .AtRisk}}text-yellow{{end}}">{{len .AtRisk}}</span>
+      <span class="stat-label">at risk (&gt;75%)</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value accent">{{.OnTrack}}</span>
+      <span class="stat-label">on track</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value">{{.Total}}</span>
+      <span class="stat-label">active beads</span>
+    </div>
+  </div>
+
+  <div class="sla-targets">
+    <span class="text-dim">Targets: P0=24h | P1=3d | P2=7d | P3=14d | P4=30d</span>
+  </div>
+
+  {{if .Breached}}
+  <section>
+    <h2 class="text-red">Breached ({{len .Breached}})</h2>
+    <div class="table-wrap">
+    <table class="bead-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Title</th>
+          <th>Priority</th>
+          <th>Status</th>
+          <th>Assignee</th>
+          <th>Age</th>
+          <th>Overdue</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{range .Breached}}
+        <tr>
+          <td><a href="/bead/{{.Issue.ID}}">{{.Issue.ID}}</a></td>
+          <td>{{.Issue.Title}}</td>
+          <td>{{priorityLabel .Issue.Priority}}</td>
+          <td>{{statusBadge .Issue.Status}}</td>
+          <td title="{{.Issue.Assignee}}">{{shortActor .Issue.Assignee}}</td>
+          <td>{{printf "%.0f" .Age.Hours}}h</td>
+          <td class="text-red">+{{printf "%.0f" .OverdueH}}h</td>
+        </tr>
+        {{end}}
+      </tbody>
+    </table>
+    </div>
+  </section>
+  {{end}}
+
+  {{if .AtRisk}}
+  <section>
+    <h2 class="text-yellow">At Risk ({{len .AtRisk}})</h2>
+    <div class="table-wrap">
+    <table class="bead-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Title</th>
+          <th>Priority</th>
+          <th>Status</th>
+          <th>Assignee</th>
+          <th>SLA Used</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{range .AtRisk}}
+        <tr>
+          <td><a href="/bead/{{.Issue.ID}}">{{.Issue.ID}}</a></td>
+          <td>{{.Issue.Title}}</td>
+          <td>{{priorityLabel .Issue.Priority}}</td>
+          <td>{{statusBadge .Issue.Status}}</td>
+          <td title="{{.Issue.Assignee}}">{{shortActor .Issue.Assignee}}</td>
+          <td>
+            <div class="sla-bar-track">
+              <div class="sla-bar-fill sla-warning" style="width: {{if gt .PctUsed 100.0}}100{{else}}{{printf "%.0f" .PctUsed}}{{end}}%"></div>
+            </div>
+            <span class="text-dim">{{printf "%.0f" .PctUsed}}%</span>
+          </td>
+        </tr>
+        {{end}}
+      </tbody>
+    </table>
+    </div>
+  </section>
+  {{end}}
+
+  {{if and (not .Breached) (not .AtRisk)}}
+  <p class="empty accent">All active beads are within SLA targets.</p>
+  {{end}}
+
+  {{end}}
+</div>
+{{end}}
