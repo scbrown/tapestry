@@ -1264,3 +1264,6 @@ tr.silenced { opacity: 0.5; }
   border-radius: var(--radius); overflow: hidden;
 }
 .completion-fill { height: 100%; background: var(--success); transition: width 0.3s; }
+
+/* ── Nav Separators ──────────────────────────────────── */
+.nav-sep { color: var(--border); font-size: 0.75rem; opacity: 0.5; user-select: none; }
