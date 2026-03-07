@@ -254,6 +254,94 @@ func (s *Server) handleWork(w http.ResponseWriter, r *http.Request) {
 	s.render(w, r, "work", data)
 }
 
+// ── Epics Page ────────────────────────────────────────────
+
+type epicsData struct {
+	Epics []epicTree
+}
+
+func (s *Server) handleEpics(w http.ResponseWriter, r *http.Request) {
+	data := epicsData{}
+
+	if s.ds == nil {
+		s.render(w, r, "epics", data)
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(r.Context(), 15*time.Second)
+	defer cancel()
+
+	dbs, err := s.databases(ctx)
+	if err != nil {
+		log.Printf("epics: list dbs: %v", err)
+		s.render(w, r, "epics", data)
+		return
+	}
+
+	type epicsDBResult struct {
+		epics []epicTree
+	}
+	results := make([]epicsDBResult, len(dbs))
+	var wg sync.WaitGroup
+	for i, db := range dbs {
+		wg.Add(1)
+		go func(i int, dbName string) {
+			defer wg.Done()
+			var r epicsDBResult
+
+			epics, err := s.ds.Epics(ctx, dbName)
+			if err != nil {
+				log.Printf("epics: %s: %v", dbName, err)
+				results[i] = r
+				return
+			}
+
+			childDeps, _ := s.ds.AllChildDependencies(ctx, dbName)
+			parentChildren := make(map[string][]string)
+			for _, dep := range childDeps {
+				parentChildren[dep.ToID] = append(parentChildren[dep.ToID], dep.FromID)
+			}
+
+			issueMap := make(map[string]dolt.Issue)
+			allIssues, _ := s.ds.Issues(ctx, dbName, dolt.IssueFilter{Limit: 500})
+			for _, iss := range allIssues {
+				issueMap[iss.ID] = iss
+			}
+
+			for _, epic := range epics {
+				if isNoise(epic.ID, epic.Title) {
+					continue
+				}
+				et := epicTree{Epic: epic, Rig: dbName}
+				for _, childID := range parentChildren[epic.ID] {
+					if child, ok := issueMap[childID]; ok {
+						et.Progress.Total++
+						if child.Status == "closed" {
+							et.Progress.Closed++
+						}
+					}
+				}
+				r.epics = append(r.epics, et)
+			}
+			results[i] = r
+		}(i, db.Name)
+	}
+	wg.Wait()
+
+	for _, r := range results {
+		data.Epics = append(data.Epics, r.epics...)
+	}
+
+	sort.Slice(data.Epics, func(i, j int) bool {
+		if data.Epics[i].Epic.Priority != data.Epics[j].Epic.Priority {
+			return data.Epics[i].Epic.Priority < data.Epics[j].Epic.Priority
+		}
+		return data.Epics[i].Epic.UpdatedAt.After(data.Epics[j].Epic.UpdatedAt)
+	})
+
+	s.render(w, r, "epics", data)
+}
+
 func countIssueStats(s *repoStats, iss dolt.Issue) {
 	switch iss.Status {
 	case "open":

@@ -1,6 +1,6 @@
-{{template "head"}}Epics — tapestry{{template "headclose"}}
-
-<div class="bead-list">
+{{define "title"}}Epics{{end}}
+{{define "content"}}
+<div class="epics-page">
   <h1>Epics</h1>
   {{if .Epics}}
   <div class="table-wrap">
@@ -9,17 +9,17 @@
     <tbody>
       {{range .Epics}}
       <tr>
-        <td><a href="/epic/{{.Issue.ID}}">{{.Issue.ID}}</a></td>
-        <td>{{.Issue.Title}}</td>
-        <td>{{priorityLabel .Issue.Priority}}</td>
-        <td>{{statusBadge .Issue.Status}}</td>
+        <td><a href="/bead/{{.Epic.ID}}">{{.Epic.ID}}</a></td>
+        <td>{{.Epic.Title}}</td>
+        <td><span class="work-priority p{{.Epic.Priority}}">{{priorityLabel .Epic.Priority}}</span></td>
+        <td>{{statusBadge .Epic.Status}}</td>
         <td>
           {{if gt .Progress.Total 0}}
           <div class="progress-bar progress-bar-sm"><div class="progress-fill" style="width: {{progressPct .Progress}}%"></div></div>
           <span class="progress-label-sm">{{.Progress.Closed}}/{{.Progress.Total}}</span>
           {{else}}<span class="text-dim">-</span>{{end}}
         </td>
-        <td>{{.RigName}}</td>
+        <td>{{rigName .Rig}}</td>
       </tr>
       {{end}}
     </tbody>
@@ -29,5 +29,4 @@
   <p class="empty">No epics found.</p>
   {{end}}
 </div>
-
-{{template "foot"}}
+{{end}}

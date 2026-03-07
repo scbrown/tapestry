@@ -263,6 +263,10 @@ func (s *Server) parseTemplates() {
 			template.New("").Funcs(funcMap).ParseFS(templateFS,
 				"templates/layout.html", "templates/commits.html"),
 		),
+		"epics": template.Must(
+			template.New("").Funcs(funcMap).ParseFS(templateFS,
+				"templates/layout.html", "templates/epics.html"),
+		),
 	}
 }
 
@@ -326,6 +330,8 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		s.handleWork(w, r)
 	case len(segments) == 1 && segments[0] == "commits":
 		s.handleCommits(w, r)
+	case len(segments) == 1 && segments[0] == "epics":
+		s.handleEpics(w, r)
 	case len(segments) == 1 && segments[0] == "homelab":
 		s.handleHomelab(w, r)
 	case len(segments) == 1 && segments[0] == "designs":
