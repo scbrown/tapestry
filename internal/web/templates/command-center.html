@@ -1,11 +1,10 @@
-{{template "head"}}Command Center — tapestry{{template "headclose"}}
-
+{{define "title"}}Command Center{{end}}
+{{define "content"}}
 <div class="cc">
-  {{/* ── Fleet Status Bar ── */}}
   <div class="cc-header">
     <div class="cc-title">
       <h1>Command Center</h1>
-      <time class="cc-time">{{.GeneratedAt.Format "Jan 02, 15:04"}}</time>
+      <time class="cc-time">{{formatDateTime .GeneratedAt}}</time>
     </div>
     <div class="cc-fleet-stats">
       <div class="fleet-stat">
@@ -34,7 +33,6 @@
   </div>
 
   <div class="cc-grid">
-    {{/* ── Critical Work ── */}}
     <section class="cc-card cc-critical">
       <h2 class="cc-card-title">Critical Work <span class="cc-count">{{len .CriticalWork}}</span></h2>
       {{if .CriticalWork}}
@@ -56,7 +54,6 @@
       {{end}}
     </section>
 
-    {{/* ── Active Agents ── */}}
     <section class="cc-card cc-agents">
       <h2 class="cc-card-title">Active Agents <span class="cc-count">{{len .AgentWork}}</span></h2>
       {{if .AgentWork}}
@@ -65,7 +62,7 @@
         <div class="agent-work-group">
           <div class="agent-work-name">
             <span class="agent-indicator pulse"></span>
-            {{shortActor .Agent}}
+            {{.Agent}}
             <span class="agent-work-count">{{len .Issues}} tasks</span>
           </div>
           {{range .Issues}}
@@ -83,17 +80,16 @@
       {{end}}
     </section>
 
-    {{/* ── Epic Progress ── */}}
     <section class="cc-card cc-epics">
       <h2 class="cc-card-title">Epic Progress <span class="cc-count">{{len .EpicProgress}}</span></h2>
       {{if .EpicProgress}}
       <div class="epic-progress-list">
         {{range .EpicProgress}}
-        <a href="/epic/{{.Issue.ID}}" class="epic-row">
+        <a href="/epic/{{.Epic.ID}}" class="epic-row">
           <div class="epic-row-header">
-            <span class="work-priority p{{.Issue.Priority}}">P{{.Issue.Priority}}</span>
-            <span class="epic-row-title">{{.Issue.Title}}</span>
-            <span class="epic-row-rig">{{rigName .RigName}}</span>
+            <span class="work-priority p{{.Epic.Priority}}">P{{.Epic.Priority}}</span>
+            <span class="epic-row-title">{{.Epic.Title}}</span>
+            <span class="epic-row-rig">{{rigName .Rig}}</span>
           </div>
           <div class="epic-row-bar">
             <div class="progress-bar">
@@ -110,7 +106,6 @@
       {{end}}
     </section>
 
-    {{/* ── Recent Activity ── */}}
     <section class="cc-card cc-recent">
       <h2 class="cc-card-title">Recent Activity</h2>
       <div class="cc-activity-split">
@@ -142,5 +137,4 @@
     </section>
   </div>
 </div>
-
-{{template "foot"}}
+{{end}}

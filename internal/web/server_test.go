@@ -533,6 +533,58 @@ func TestWorkPage_PriorityMode(t *testing.T) {
 	}
 }
 
+func TestCommandCenter_NilDataSource(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/command-center", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /command-center status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Command Center") {
+		t.Error("expected 'Command Center' heading")
+	}
+}
+
+func TestCommandCenter_WithData(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		counts:    map[string]int{"open": 10, "in_progress": 3, "closed": 50},
+		closed:    2,
+		issues: []dolt.Issue{
+			{ID: "aegis-crit1", Title: "Critical fix", Status: "in_progress", Priority: 1, Type: "task", Assignee: "aegis/crew/arnold", UpdatedAt: time.Now()},
+			{ID: "aegis-epic1", Title: "Big Epic", Status: "open", Priority: 1, Type: "epic", UpdatedAt: time.Now()},
+		},
+		deps: []dolt.Dependency{
+			{FromID: "aegis-child1", ToID: "aegis-epic1", Type: "child_of"},
+		},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/command-center", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /command-center status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	checks := []string{
+		"Command Center",
+		"Critical fix",
+		"arnold",
+	}
+	for _, check := range checks {
+		if !strings.Contains(body, check) {
+			t.Errorf("body missing %q", check)
+		}
+	}
+}
+
 func TestSearch_WithResults(t *testing.T) {
 	ds := &mockDataSource{
 		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
