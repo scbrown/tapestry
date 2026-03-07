@@ -92,6 +92,14 @@ func (m *mockDataSource) AchievementUnlocks(_ context.Context, _ string) ([]dolt
 	return nil, m.err
 }
 
+func (m *mockDataSource) Epics(_ context.Context, _ string) ([]dolt.Issue, error) {
+	return m.issues, m.err
+}
+
+func (m *mockDataSource) AllChildDependencies(_ context.Context, _ string) ([]dolt.Dependency, error) {
+	return m.deps, m.err
+}
+
 func (m *mockDataSource) AddComment(_ context.Context, _, _, _, _ string) error {
 	return m.err
 }
@@ -408,6 +416,79 @@ func TestSearch_EmptyQuery(t *testing.T) {
 	body := w.Body.String()
 	if !strings.Contains(body, "Search") {
 		t.Error("expected 'Search' heading")
+	}
+}
+
+func TestWorkPage_NilDataSource(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/work", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /work status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Work") {
+		t.Error("expected 'Work' heading")
+	}
+}
+
+func TestWorkPage_WithData(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issues: []dolt.Issue{
+			{ID: "aegis-epic1", Title: "Big Epic", Status: "open", Priority: 1, Type: "epic", UpdatedAt: time.Now()},
+			{ID: "aegis-task1", Title: "Standalone task", Status: "in_progress", Priority: 2, Type: "task", UpdatedAt: time.Now()},
+		},
+		deps: []dolt.Dependency{
+			{FromID: "aegis-child1", ToID: "aegis-epic1", Type: "child_of"},
+		},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/work", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /work status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Big Epic") {
+		t.Errorf("body missing epic title")
+	}
+	if !strings.Contains(body, "Standalone task") {
+		t.Errorf("body missing standalone task")
+	}
+}
+
+func TestWorkPage_PriorityMode(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issues: []dolt.Issue{
+			{ID: "aegis-t1", Title: "P1 task", Status: "open", Priority: 1, Type: "task", UpdatedAt: time.Now()},
+			{ID: "aegis-t2", Title: "P2 task", Status: "open", Priority: 2, Type: "task", UpdatedAt: time.Now()},
+		},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/work?mode=priority", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /work?mode=priority status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "P1 task") {
+		t.Errorf("body missing P1 task")
+	}
+	if !strings.Contains(body, "P2 task") {
+		t.Errorf("body missing P2 task")
 	}
 }
 

@@ -719,3 +719,85 @@ tr.silenced { opacity: 0.5; }
 
     .comment-form { padding: 0.75rem; }
 }
+
+/* ── Work Page ────────────────────────────────────────────── */
+.work-page { max-width: 1200px; margin: 0 auto; padding: 1.5rem; }
+.work-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; }
+.work-header h1 { font-size: 1.5rem; }
+.work-controls { display: flex; align-items: center; gap: 1rem; }
+.mode-toggle { display: flex; gap: 0; }
+.mode-btn {
+    padding: 0.35rem 0.75rem;
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    text-decoration: none;
+}
+.mode-btn:first-child { border-radius: var(--radius) 0 0 var(--radius); }
+.mode-btn:last-child { border-radius: 0 var(--radius) var(--radius) 0; border-left: none; }
+.mode-btn.active { background: var(--surface); color: var(--text); }
+.mode-btn:hover { text-decoration: none; color: var(--text); }
+.closed-toggle { font-size: 0.85rem; color: var(--text-muted); cursor: pointer; display: flex; align-items: center; gap: 0.35rem; }
+.work-count { color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1rem; }
+
+.work-section { margin-bottom: 0.75rem; }
+.work-section details { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+.work-section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.6rem 1rem;
+    background: var(--surface);
+    cursor: pointer;
+    list-style: none;
+}
+.work-section-header::-webkit-details-marker { display: none; }
+.work-section-title { font-size: 1rem; font-weight: 600; }
+.work-section-stats { display: flex; gap: 0.75rem; font-size: 0.8rem; }
+.ws-stat { color: var(--text-muted); }
+.ws-stat.active { color: var(--purple); font-weight: 600; }
+.ws-stat.open { color: var(--warning); }
+.ws-stat.closed { color: var(--success); }
+.work-section-body { padding: 0.5rem 0; }
+
+.epic-tree { margin: 0 0.5rem 0.25rem; }
+.epic-tree-header { display: flex; align-items: center; justify-content: space-between; padding: 0.4rem 0.5rem; }
+.epic-tree-link { display: flex; align-items: center; gap: 0.5rem; color: var(--text); text-decoration: none; flex: 1; min-width: 0; }
+.epic-tree-link:hover { color: var(--link); text-decoration: none; }
+.tree-icon { font-size: 0.7rem; color: var(--text-muted); }
+.epic-tree-title { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.epic-tree-rig { font-size: 0.75rem; color: var(--text-muted); flex-shrink: 0; }
+.epic-tree-progress { display: flex; align-items: center; gap: 0.5rem; flex-shrink: 0; margin-left: 0.5rem; }
+
+.progress-bar { height: 6px; background: var(--surface); border-radius: 3px; overflow: hidden; }
+.progress-bar-sm { width: 80px; }
+.progress-fill { height: 100%; background: var(--success); border-radius: 3px; transition: width 0.3s; }
+.progress-label-sm { font-size: 0.75rem; color: var(--text-muted); white-space: nowrap; }
+
+.epic-children { margin-left: 1.5rem; border-left: 2px solid var(--border); }
+.child-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.3rem 0.75rem;
+    color: var(--text);
+    text-decoration: none;
+    font-size: 0.9rem;
+}
+.child-item:hover { background: rgba(255,255,255,0.03); text-decoration: none; }
+.child-indent { width: 0; }
+.child-title { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1; min-width: 0; }
+.child-meta { display: flex; gap: 0.5rem; flex-shrink: 0; font-size: 0.75rem; color: var(--text-muted); }
+.work-id { font-family: monospace; }
+.work-agent { color: var(--purple); }
+.work-age { color: var(--text-muted); }
+.work-rig-label { color: var(--orange); }
+
+.work-priority { font-size: 0.75rem; font-weight: 700; padding: 0.1rem 0.35rem; border-radius: 3px; flex-shrink: 0; }
+.work-priority.p1 { background: var(--danger); color: #fff; }
+.work-priority.p2 { background: var(--orange); color: #282a36; }
+.work-priority.p3 { background: var(--text-muted); color: #fff; }
+
+.standalone-tasks { margin: 0 0.5rem; }
+.standalone-label { font-size: 0.8rem; color: var(--text-muted); padding: 0.5rem 0.75rem 0.25rem; font-weight: 500; }
+.child-item.standalone { margin-left: 0; }

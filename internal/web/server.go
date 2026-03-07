@@ -40,6 +40,8 @@ type DataSource interface {
 	LabelsForIssue(ctx context.Context, database, issueID string) ([]string, error)
 	AchievementDefs(ctx context.Context, database string) ([]dolt.AchievementDef, error)
 	AchievementUnlocks(ctx context.Context, database string) ([]dolt.AchievementUnlock, error)
+	Epics(ctx context.Context, database string) ([]dolt.Issue, error)
+	AllChildDependencies(ctx context.Context, database string) ([]dolt.Dependency, error)
 	AddComment(ctx context.Context, database, issueID, author, body string) error
 	UpdateStatus(ctx context.Context, database, issueID, status string) error
 	AddLabel(ctx context.Context, database, issueID, label string) error
@@ -179,6 +181,12 @@ var funcMap = template.FuncMap{
 	"daysAgo": func(t time.Time) int {
 		return int(time.Since(t).Hours() / 24)
 	},
+	"progressPct": func(p dolt.EpicProgress) int {
+		if p.Total == 0 {
+			return 0
+		}
+		return p.Closed * 100 / p.Total
+	},
 }
 
 // New creates a new Server. The DataSource may be nil, in which case pages
@@ -247,6 +255,10 @@ func (s *Server) parseTemplates() {
 			template.New("").Funcs(funcMap).ParseFS(templateFS,
 				"templates/layout.html", "templates/theme-parks.html"),
 		),
+		"work": template.Must(
+			template.New("").Funcs(funcMap).ParseFS(templateFS,
+				"templates/layout.html", "templates/work.html"),
+		),
 	}
 }
 
@@ -306,6 +318,8 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		s.handleAchievements(w, r)
 	case len(segments) == 1 && segments[0] == "theme-parks":
 		s.handleThemeParks(w, r)
+	case len(segments) == 1 && segments[0] == "work":
+		s.handleWork(w, r)
 	case len(segments) == 1 && segments[0] == "homelab":
 		s.handleHomelab(w, r)
 	case len(segments) == 1 && segments[0] == "designs":

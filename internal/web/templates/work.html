@@ -1,5 +1,5 @@
-{{template "head"}}Work — tapestry{{template "headclose"}}
-
+{{define "title"}}Work{{end}}
+{{define "content"}}
 <div class="work-page">
   <div class="work-header">
     <h1>Work</h1>
@@ -8,29 +8,21 @@
         <a href="/work?mode=repo{{if .ShowClosed}}&closed=1{{end}}"
            class="mode-btn{{if eq .Mode "repo"}} active{{end}}"
            hx-get="/work?mode=repo{{if .ShowClosed}}&closed=1{{end}}"
-           hx-target="#work-content" hx-push-url="true">By Repo</a>
+           hx-target="#content" hx-push-url="true">By Repo</a>
         <a href="/work?mode=priority{{if .ShowClosed}}&closed=1{{end}}"
            class="mode-btn{{if eq .Mode "priority"}} active{{end}}"
            hx-get="/work?mode=priority{{if .ShowClosed}}&closed=1{{end}}"
-           hx-target="#work-content" hx-push-url="true">By Priority</a>
+           hx-target="#content" hx-push-url="true">By Priority</a>
       </div>
       <label class="closed-toggle">
         <input type="checkbox" {{if .ShowClosed}}checked{{end}}
                hx-get="/work?mode={{.Mode}}{{if not .ShowClosed}}&closed=1{{end}}"
-               hx-target="#work-content" hx-push-url="true">
+               hx-target="#content" hx-push-url="true">
         show closed
       </label>
     </div>
   </div>
 
-  <div id="work-content">
-    {{template "work-content" .}}
-  </div>
-</div>
-
-{{template "foot"}}
-
-{{define "work-content"}}
   <div class="work-count">{{.TotalCount}} items</div>
 
   {{if eq .Mode "repo"}}
@@ -51,7 +43,7 @@
           {{range .Epics}}
           <div class="epic-tree">
             <div class="epic-tree-header">
-              <a href="/epic/{{.Epic.ID}}" class="epic-tree-link">
+              <a href="/bead/{{.Epic.ID}}" class="epic-tree-link">
                 <span class="tree-icon">&#9654;</span>
                 <span class="work-priority p{{.Epic.Priority}}">P{{.Epic.Priority}}</span>
                 {{statusBadge .Epic.Status}}
@@ -109,7 +101,6 @@
     {{end}}
 
   {{else}}
-    {{/* Priority mode */}}
     {{range .Priorities}}
     <section class="work-section priority-section p{{.Priority}}-section">
       <details open>
@@ -124,7 +115,7 @@
           {{range .Epics}}
           <div class="epic-tree">
             <div class="epic-tree-header">
-              <a href="/epic/{{.Epic.ID}}" class="epic-tree-link">
+              <a href="/bead/{{.Epic.ID}}" class="epic-tree-link">
                 <span class="tree-icon">&#9654;</span>
                 {{statusBadge .Epic.Status}}
                 <span class="epic-tree-title">{{.Epic.Title}}</span>
@@ -175,4 +166,5 @@
     </section>
     {{end}}
   {{end}}
+</div>
 {{end}}
