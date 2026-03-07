@@ -909,5 +909,11 @@ tr.silenced { opacity: 0.5; }
 }
 .pulse { animation: pulse 2s ease-in-out infinite; }
 
+/* ── Nav Search ────────────────────────────────────── */
+.nav-search { margin-left: auto; }
+.nav-search-input { background: var(--bg); border: 1px solid var(--border); border-radius: 4px; color: var(--fg); padding: 0.25rem 0.5rem; font-size: 0.85rem; width: 140px; transition: width 0.2s; }
+.nav-search-input:focus { width: 200px; outline: none; border-color: var(--purple); }
+.nav-search-input::placeholder { color: var(--text-muted); }
+
 /* ── Label badges ────────────────────────────────────── */
 .badge.label { background: var(--comment); color: var(--fg); font-size: 0.75rem; padding: 0.15rem 0.5rem; border-radius: 10px; }
