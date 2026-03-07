@@ -67,6 +67,23 @@
     </section>
     {{end}}
 
+    {{if .Commits}}
+    <section class="bead-commits">
+        <h2>Linked Commits ({{len .Commits}})</h2>
+        <div class="commit-list">
+            {{range .Commits}}
+            <div class="commit-row">
+                {{if .CommitURL}}<a href="{{.CommitURL}}" class="commit-sha-link" target="_blank"><code class="commit-sha">{{.ShortSHA}}</code></a>{{else}}<code class="commit-sha">{{.ShortSHA}}</code>{{end}}
+                <span class="commit-subject">{{.Subject}}</span>
+                <span class="text-dim">{{.Author}}</span>
+                <time class="text-dim">{{.Timestamp.Format "Jan 02 15:04"}}</time>
+                <span class="text-dim">{{.RepoName}}</span>
+            </div>
+            {{end}}
+        </div>
+    </section>
+    {{end}}
+
     {{end}}
 </div>
 {{end}}

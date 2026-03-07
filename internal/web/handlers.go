@@ -46,6 +46,7 @@ type beadData struct {
 	Issue    *dolt.Issue
 	Comments []dolt.Comment
 	Deps     []dolt.Dependency
+	Commits  []beadCommit
 	Err      string
 }
 
@@ -215,6 +216,10 @@ func (s *Server) handleBead(w http.ResponseWriter, r *http.Request, database, id
 	deps, err := s.ds.Dependencies(ctx, database, id)
 	if err == nil {
 		data.Deps = deps
+	}
+
+	if s.forgejo != nil {
+		data.Commits = s.forgejo.searchCommitsForBead(ctx, id)
 	}
 
 	s.render(w, r, "bead", data)

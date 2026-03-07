@@ -504,6 +504,108 @@ func (s *Server) handleDesignComment(w http.ResponseWriter, r *http.Request, nam
 	http.Redirect(w, r, "/designs/"+name+"?feedback=ok", http.StatusSeeOther)
 }
 
+// forgejoCommit represents a commit returned by the Forgejo API.
+type forgejoCommit struct {
+	SHA    string `json:"sha"`
+	Commit struct {
+		Message string `json:"message"`
+		Author  struct {
+			Name string `json:"name"`
+			Date string `json:"date"`
+		} `json:"author"`
+	} `json:"commit"`
+	HTMLURL string `json:"html_url"`
+}
+
+// beadCommit is a simplified commit for display on bead pages.
+type beadCommit struct {
+	SHA       string
+	ShortSHA  string
+	Subject   string
+	Author    string
+	Timestamp time.Time
+	CommitURL string
+	RepoName  string
+}
+
+// searchRepos is the list of repos to search for bead-linked commits.
+var searchRepos = []string{
+	"stiwi/aegis",
+	"stiwi/gastown",
+	"stiwi/beads",
+	"stiwi/bobbin",
+	"stiwi/tapestry",
+}
+
+// searchCommitsForBead searches Forgejo repos for commits mentioning a bead ID.
+func (f *forgejoClient) searchCommitsForBead(ctx context.Context, beadID string) []beadCommit {
+	var results []beadCommit
+	var mu sync.Mutex
+	var wg sync.WaitGroup
+
+	for _, repo := range searchRepos {
+		wg.Add(1)
+		go func(repo string) {
+			defer wg.Done()
+			url := fmt.Sprintf("%s/api/v1/repos/%s/git/commits?sha=main&keyword=%s&limit=20",
+				f.baseURL, repo, beadID)
+			req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+			if err != nil {
+				return
+			}
+			resp, err := http.DefaultClient.Do(req)
+			if err != nil {
+				return
+			}
+			defer resp.Body.Close()
+			if resp.StatusCode != 200 {
+				return
+			}
+			var commits []forgejoCommit
+			if err := json.NewDecoder(resp.Body).Decode(&commits); err != nil {
+				return
+			}
+			// Extract repo short name
+			parts := strings.Split(repo, "/")
+			repoName := parts[len(parts)-1]
+
+			mu.Lock()
+			defer mu.Unlock()
+			for _, c := range commits {
+				// Verify bead ID actually appears in message (keyword search may be fuzzy)
+				if !strings.Contains(c.Commit.Message, beadID) {
+					continue
+				}
+				subject := c.Commit.Message
+				if idx := strings.IndexByte(subject, '\n'); idx > 0 {
+					subject = subject[:idx]
+				}
+				shortSHA := c.SHA
+				if len(shortSHA) > 7 {
+					shortSHA = shortSHA[:7]
+				}
+				ts, _ := time.Parse(time.RFC3339, c.Commit.Author.Date)
+				results = append(results, beadCommit{
+					SHA:       c.SHA,
+					ShortSHA:  shortSHA,
+					Subject:   subject,
+					Author:    c.Commit.Author.Name,
+					Timestamp: ts,
+					CommitURL: c.HTMLURL,
+					RepoName:  repoName,
+				})
+			}
+		}(repo)
+	}
+	wg.Wait()
+
+	// Sort by timestamp descending
+	sort.Slice(results, func(i, j int) bool {
+		return results[i].Timestamp.After(results[j].Timestamp)
+	})
+	return results
+}
+
 func (s *Server) handleDesignApprove(w http.ResponseWriter, r *http.Request, name string) {
 	for _, c := range name {
 		if !((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '-' || c == '_') {
