@@ -15,9 +15,11 @@ import (
 type epicDetailData struct {
 	Issue    dolt.Issue
 	RigName  string
+	Database string
 	Children []dolt.Issue
 	Progress dolt.EpicProgress
 	Comments []dolt.Comment
+	Labels   []string
 	Err      string
 }
 
@@ -93,9 +95,16 @@ func (s *Server) handleEpicDetail(w http.ResponseWriter, r *http.Request, id str
 		return data.Children[i].Priority < data.Children[j].Priority
 	})
 
+	data.Database = foundDB
+
 	comments, err := s.ds.Comments(ctx, foundDB, id)
 	if err == nil {
 		data.Comments = comments
+	}
+
+	labels, err := s.ds.LabelsForIssue(ctx, foundDB, id)
+	if err == nil {
+		data.Labels = labels
 	}
 
 	s.render(w, r, "epic", data)

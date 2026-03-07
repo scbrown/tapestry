@@ -9,6 +9,7 @@
       <span class="work-priority p{{.Issue.Priority}}">{{priorityLabel .Issue.Priority}}</span>
       <span>epic</span>
       <span class="rig-label text-dim">{{.RigName}}</span>
+      {{range .Labels}}<a href="/labels?label={{.}}" class="badge label">{{.}}</a>{{end}}
     </div>
   </div>
 
@@ -57,16 +58,22 @@
   <p class="empty">No children linked to this epic.</p>
   {{end}}
 
-  {{if .Comments}}
   <section class="comments">
     <h2>Comments ({{len .Comments}})</h2>
+    <div id="comments-list">
     {{range .Comments}}
     <div class="comment">
       <div class="comment-meta"><strong>{{.Author}}</strong> <time>{{formatDateTime .CreatedAt}}</time></div>
       <div class="comment-body">{{.Body}}</div>
     </div>
     {{end}}
+    </div>
+    {{if .Database}}
+    <form class="comment-form" hx-post="/bead/{{.Database}}/{{.Issue.ID}}/comment" hx-target="#comments-list" hx-swap="beforeend" hx-on::after-request="this.reset()">
+        <textarea name="body" placeholder="Add a comment..." rows="3" class="comment-input" required></textarea>
+        <button type="submit" class="btn btn-sm btn-comment">Post Comment</button>
+    </form>
+    {{end}}
   </section>
-  {{end}}
 </div>
 {{end}}
