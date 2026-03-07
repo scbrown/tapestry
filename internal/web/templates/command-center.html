@@ -1,6 +1,6 @@
 {{define "title"}}Command Center{{end}}
 {{define "content"}}
-<div class="cc">
+<div class="cc" hx-get="/command-center" hx-trigger="every 30s" hx-target="#content" hx-swap="innerHTML">
   <div class="cc-header">
     <div class="cc-title">
       <h1>Command Center</h1>
