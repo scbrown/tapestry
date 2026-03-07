@@ -70,11 +70,14 @@ func newForgejoClient() *forgejoClient {
 	token := os.Getenv("FORGEJO_API_TOKEN")
 	transport := http.DefaultTransport
 	if token != "" {
+		log.Printf("forgejo: using API token (%d chars)", len(token))
 		transport = &tokenTransport{token: token, base: http.DefaultTransport}
+	} else {
+		log.Printf("forgejo: no FORGEJO_API_TOKEN set, commit search will fail on authenticated instances")
 	}
 	return &forgejoClient{
 		baseURL: "http://git.svc",
-		http:    &http.Client{Timeout: 5 * time.Second, Transport: transport},
+		http:    &http.Client{Timeout: 10 * time.Second, Transport: transport},
 	}
 }
 
@@ -558,6 +561,8 @@ var searchRepos = []string{
 }
 
 // searchCommitsForBead searches Forgejo repos for commits mentioning a bead ID.
+// Forgejo's /commits endpoint ignores the keyword param, so we fetch recent
+// commits and filter client-side.
 func (f *forgejoClient) searchCommitsForBead(ctx context.Context, beadID string) []beadCommit {
 	var results []beadCommit
 	var mu sync.Mutex
@@ -567,59 +572,62 @@ func (f *forgejoClient) searchCommitsForBead(ctx context.Context, beadID string)
 		wg.Add(1)
 		go func(repo string) {
 			defer wg.Done()
-			url := fmt.Sprintf("%s/api/v1/repos/%s/git/commits?sha=main&keyword=%s&limit=20",
-				f.baseURL, repo, beadID)
-			req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
-			if err != nil {
-				return
-			}
-			resp, err := f.http.Do(req)
-			if err != nil {
-				return
-			}
-			defer resp.Body.Close()
-			if resp.StatusCode != 200 {
-				return
-			}
-			var commits []forgejoCommit
-			if err := json.NewDecoder(resp.Body).Decode(&commits); err != nil {
-				return
-			}
-			// Extract repo short name
 			parts := strings.Split(repo, "/")
 			repoName := parts[len(parts)-1]
 
-			mu.Lock()
-			defer mu.Unlock()
-			for _, c := range commits {
-				// Verify bead ID actually appears in message (keyword search may be fuzzy)
-				if !strings.Contains(c.Commit.Message, beadID) {
-					continue
+			// Fetch up to 3 pages of 50 commits (150 total per repo)
+			for page := 1; page <= 3; page++ {
+				url := fmt.Sprintf("%s/api/v1/repos/%s/commits?sha=main&limit=50&page=%d",
+					f.baseURL, repo, page)
+				req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+				if err != nil {
+					return
 				}
-				subject := c.Commit.Message
-				if idx := strings.IndexByte(subject, '\n'); idx > 0 {
-					subject = subject[:idx]
+				resp, err := f.http.Do(req)
+				if err != nil {
+					return
 				}
-				shortSHA := c.SHA
-				if len(shortSHA) > 7 {
-					shortSHA = shortSHA[:7]
+				var commits []forgejoCommit
+				err = json.NewDecoder(resp.Body).Decode(&commits)
+				resp.Body.Close()
+				if err != nil || len(commits) == 0 {
+					return
 				}
-				ts, _ := time.Parse(time.RFC3339, c.Commit.Author.Date)
-				results = append(results, beadCommit{
-					SHA:       c.SHA,
-					ShortSHA:  shortSHA,
-					Subject:   subject,
-					Author:    c.Commit.Author.Name,
-					Timestamp: ts,
-					CommitURL: c.HTMLURL,
-					RepoName:  repoName,
-				})
+
+				mu.Lock()
+				for _, c := range commits {
+					if !strings.Contains(c.Commit.Message, beadID) {
+						continue
+					}
+					subject := c.Commit.Message
+					if idx := strings.IndexByte(subject, '\n'); idx > 0 {
+						subject = subject[:idx]
+					}
+					shortSHA := c.SHA
+					if len(shortSHA) > 7 {
+						shortSHA = shortSHA[:7]
+					}
+					ts, _ := time.Parse(time.RFC3339, c.Commit.Author.Date)
+					results = append(results, beadCommit{
+						SHA:       c.SHA,
+						ShortSHA:  shortSHA,
+						Subject:   subject,
+						Author:    c.Commit.Author.Name,
+						Timestamp: ts,
+						CommitURL: c.HTMLURL,
+						RepoName:  repoName,
+					})
+				}
+				mu.Unlock()
+
+				if len(commits) < 50 {
+					return // no more pages
+				}
 			}
 		}(repo)
 	}
 	wg.Wait()
 
-	// Sort by timestamp descending
 	sort.Slice(results, func(i, j int) bool {
 		return results[i].Timestamp.After(results[j].Timestamp)
 	})

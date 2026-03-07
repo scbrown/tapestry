@@ -63,13 +63,13 @@ func (s *Server) handleCommits(w http.ResponseWriter, r *http.Request) {
 		wg.Add(1)
 		go func(repo string) {
 			defer wg.Done()
-			url := fmt.Sprintf("%s/api/v1/repos/%s/git/commits?sha=main&limit=50",
+			url := fmt.Sprintf("%s/api/v1/repos/%s/commits?sha=main&limit=50",
 				s.forgejo.baseURL, repo)
 			req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 			if err != nil {
 				return
 			}
-			resp, err := http.DefaultClient.Do(req)
+			resp, err := s.forgejo.http.Do(req)
 			if err != nil {
 				log.Printf("commits: fetch %s: %v", repo, err)
 				return
