@@ -66,6 +66,7 @@ type beadsListData struct {
 	Type      string
 	Priority  string
 	Assignee  string
+	Sort      string
 	Rigs      []string
 	Assignees []string
 	Page      int
@@ -295,7 +296,11 @@ func (s *Server) handleBeadList(w http.ResponseWriter, r *http.Request) {
 		Type:     r.URL.Query().Get("type"),
 		Priority: r.URL.Query().Get("priority"),
 		Assignee: r.URL.Query().Get("assignee"),
+		Sort:     r.URL.Query().Get("sort"),
 		Page:     1,
+	}
+	if data.Sort == "" {
+		data.Sort = "updated"
 	}
 
 	if p := r.URL.Query().Get("page"); p != "" {
@@ -385,6 +390,29 @@ func (s *Server) handleBeadList(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// Sort before pagination
+	switch data.Sort {
+	case "priority":
+		sort.Slice(data.Issues, func(i, j int) bool {
+			if data.Issues[i].Priority != data.Issues[j].Priority {
+				return data.Issues[i].Priority < data.Issues[j].Priority
+			}
+			return data.Issues[i].UpdatedAt.After(data.Issues[j].UpdatedAt)
+		})
+	case "oldest":
+		sort.Slice(data.Issues, func(i, j int) bool {
+			return data.Issues[i].UpdatedAt.Before(data.Issues[j].UpdatedAt)
+		})
+	case "created":
+		sort.Slice(data.Issues, func(i, j int) bool {
+			return data.Issues[i].CreatedAt.After(data.Issues[j].CreatedAt)
+		})
+	default: // "updated" — newest first
+		sort.Slice(data.Issues, func(i, j int) bool {
+			return data.Issues[i].UpdatedAt.After(data.Issues[j].UpdatedAt)
+		})
+	}
+
 	data.Total = len(data.Issues)
 
 	// Pagination: 50 per page
@@ -410,6 +438,19 @@ func (s *Server) handleBeadList(w http.ResponseWriter, r *http.Request) {
 	}
 	for a := range assigneeSet {
 		data.Assignees = append(data.Assignees, a)
+	}
+
+	// Build page links
+	if data.Pages > 1 {
+		baseParams := r.URL.Query()
+		for p := 1; p <= data.Pages; p++ {
+			baseParams.Set("page", strconv.Itoa(p))
+			data.PageLinks = append(data.PageLinks, pageLink{
+				Num:    p,
+				URL:    "/beads?" + baseParams.Encode(),
+				Active: p == data.Page,
+			})
+		}
 	}
 
 	s.render(w, r, "beads", data)

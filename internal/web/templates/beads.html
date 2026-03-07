@@ -62,6 +62,15 @@
           {{end}}
         </select>
       </div>
+      <div class="filter-group">
+        <label for="f-sort">Sort</label>
+        <select name="sort" id="f-sort">
+          <option value="updated" {{if eq .Sort "updated"}}selected{{end}}>Newest</option>
+          <option value="oldest" {{if eq .Sort "oldest"}}selected{{end}}>Oldest</option>
+          <option value="priority" {{if eq .Sort "priority"}}selected{{end}}>Priority</option>
+          <option value="created" {{if eq .Sort "created"}}selected{{end}}>Created</option>
+        </select>
+      </div>
     </div>
   </form>
 
