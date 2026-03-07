@@ -32,3 +32,4 @@ mail/
 
 # mdbook build output
 book/_build/
+test-results/
