@@ -1,0 +1,61 @@
+{{define "title"}}Recently Closed{{end}}
+
+{{define "content"}}
+<div class="closed-view">
+  <h1>Recently Closed</h1>
+
+  {{if .Err}}
+  <div class="error">{{.Err}}</div>
+  {{else}}
+
+  <div class="filter-bar">
+    <form hx-get="/closed" hx-target="#content" hx-push-url="true">
+      <label for="f-days">Time window:</label>
+      <select name="days" id="f-days" onchange="this.form.requestSubmit()">
+        <option value="1" {{if eq .Days 1}}selected{{end}}>Last 24h</option>
+        <option value="3" {{if eq .Days 3}}selected{{end}}>Last 3 days</option>
+        <option value="7" {{if eq .Days 7}}selected{{end}}>Last 7 days</option>
+        <option value="14" {{if eq .Days 14}}selected{{end}}>Last 14 days</option>
+        <option value="30" {{if eq .Days 30}}selected{{end}}>Last 30 days</option>
+      </select>
+    </form>
+  </div>
+
+  <div class="results-meta">{{.Total}} beads closed in the last {{.Days}} days</div>
+
+  {{if .Entries}}
+  <div class="table-wrap">
+  <table class="bead-table">
+    <thead>
+      <tr>
+        <th>Rig</th>
+        <th>ID</th>
+        <th>Title</th>
+        <th>Pri</th>
+        <th>Type</th>
+        <th>Assignee</th>
+        <th>Closed</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{range .Entries}}
+      <tr>
+        <td><span class="rig-label">{{rigName .Rig}}</span></td>
+        <td><a href="/bead/{{.Issue.ID}}">{{.Issue.ID}}</a></td>
+        <td>{{.Issue.Title}}</td>
+        <td>{{priorityLabel .Issue.Priority}}</td>
+        <td>{{.Issue.Type}}</td>
+        <td title="{{.Issue.Assignee}}">{{shortActor .Issue.Assignee}}</td>
+        <td>{{timeAgo .Issue.UpdatedAt}}</td>
+      </tr>
+      {{end}}
+    </tbody>
+  </table>
+  </div>
+  {{else}}
+  <p class="empty">No beads closed in this time window.</p>
+  {{end}}
+
+  {{end}}
+</div>
+{{end}}
