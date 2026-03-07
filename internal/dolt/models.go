@@ -121,6 +121,13 @@ type BlockedIssue struct {
 	Blocker Issue
 }
 
+// PriorityStatusCount holds the count of issues for a given priority and status.
+type PriorityStatusCount struct {
+	Priority int
+	Status   string
+	Count    int
+}
+
 // DepEdge represents a dependency edge with issue details for both sides.
 type DepEdge struct {
 	From Issue

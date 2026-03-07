@@ -56,6 +56,7 @@ type DataSource interface {
 	DistinctLabels(ctx context.Context, database string) ([]dolt.LabelCount, error)
 	IssuesByLabel(ctx context.Context, database, label string) ([]dolt.Issue, error)
 	AllDependenciesWithIssues(ctx context.Context, database string) ([]dolt.DepEdge, error)
+	CountByPriorityStatus(ctx context.Context, database string) ([]dolt.PriorityStatusCount, error)
 }
 
 // Server serves the Tapestry web dashboard.
@@ -379,6 +380,10 @@ func (s *Server) parseTemplates() {
 			template.New("").Funcs(funcMap).ParseFS(templateFS,
 				"templates/layout.html", "templates/deps.html"),
 		),
+		"priorities": template.Must(
+			template.New("").Funcs(funcMap).ParseFS(templateFS,
+				"templates/layout.html", "templates/priorities.html"),
+		),
 	}
 }
 
@@ -476,6 +481,8 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		s.handleClosed(w, r)
 	case len(segments) == 1 && segments[0] == "deps":
 		s.handleDeps(w, r)
+	case len(segments) == 1 && segments[0] == "priorities":
+		s.handlePriorities(w, r)
 	case len(segments) == 1 && segments[0] == "homelab":
 		s.handleHomelab(w, r)
 	case len(segments) == 1 && segments[0] == "designs":

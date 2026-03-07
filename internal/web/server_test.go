@@ -26,8 +26,9 @@ type mockDataSource struct {
 	children      []dolt.Issue
 	blockedIssues []dolt.BlockedIssue
 	labelCounts   []dolt.LabelCount
-	depEdges      []dolt.DepEdge
-	err           error
+	depEdges        []dolt.DepEdge
+	priorityCounts  []dolt.PriorityStatusCount
+	err             error
 }
 
 func (m *mockDataSource) ListBeadsDatabases(_ context.Context) ([]dolt.DatabaseInfo, error) {
@@ -159,6 +160,10 @@ func (m *mockDataSource) IssuesByLabel(_ context.Context, _, _ string) ([]dolt.I
 
 func (m *mockDataSource) AllDependenciesWithIssues(_ context.Context, _ string) ([]dolt.DepEdge, error) {
 	return m.depEdges, m.err
+}
+
+func (m *mockDataSource) CountByPriorityStatus(_ context.Context, _ string) ([]dolt.PriorityStatusCount, error) {
+	return m.priorityCounts, m.err
 }
 
 func TestIndexRendersMonthly(t *testing.T) {
@@ -1534,5 +1539,54 @@ func TestDepsPage_FilterByType(t *testing.T) {
 	}
 	if strings.Contains(body, "aegis-d1") {
 		t.Error("depends_on entry should be filtered out")
+	}
+}
+
+func TestPrioritiesPage_NilDataSource(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/priorities", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /priorities status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Priority") {
+		t.Error("expected 'Priority' heading")
+	}
+}
+
+func TestPrioritiesPage_WithData(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		priorityCounts: []dolt.PriorityStatusCount{
+			{Priority: 0, Status: "open", Count: 2},
+			{Priority: 1, Status: "in_progress", Count: 5},
+			{Priority: 1, Status: "closed", Count: 10},
+			{Priority: 2, Status: "open", Count: 20},
+			{Priority: 3, Status: "deferred", Count: 3},
+		},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/priorities", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /priorities status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "P0") {
+		t.Error("expected P0 row")
+	}
+	if !strings.Contains(body, "P1") {
+		t.Error("expected P1 row")
+	}
+	if !strings.Contains(body, "40") {
+		t.Error("expected grand total of 40")
 	}
 }

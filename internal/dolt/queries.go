@@ -143,6 +143,27 @@ func (c *Client) CountByStatus(ctx context.Context, database string) (map[string
 	return counts, rows.Err()
 }
 
+// CountByPriorityStatus returns issue counts grouped by priority and status.
+func (c *Client) CountByPriorityStatus(ctx context.Context, database string) ([]PriorityStatusCount, error) {
+	query := "SELECT priority, status, COUNT(*) FROM issues " +
+		"WHERE issue_type IN ('task','bug','epic') GROUP BY priority, status ORDER BY priority ASC, status"
+	rows, err := c.queryDB(ctx, database, query)
+	if err != nil {
+		return nil, fmt.Errorf("dolt: count by priority status: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+
+	var result []PriorityStatusCount
+	for rows.Next() {
+		var psc PriorityStatusCount
+		if err := rows.Scan(&psc.Priority, &psc.Status, &psc.Count); err != nil {
+			return nil, fmt.Errorf("dolt: scan priority status count: %w", err)
+		}
+		result = append(result, psc)
+	}
+	return result, rows.Err()
+}
+
 // CountCreatedInRange counts issues created within the given time range.
 func (c *Client) CountCreatedInRange(ctx context.Context, database string, start, end time.Time) (int, error) {
 	query := "SELECT COUNT(*) FROM issues WHERE issue_type IN ('task','bug','epic') " +

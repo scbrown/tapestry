@@ -1,0 +1,79 @@
+{{define "title"}}Priorities{{end}}
+
+{{define "content"}}
+<div class="priorities-view">
+  <h1>Priority Distribution</h1>
+
+  {{if .Err}}
+  <div class="error">{{.Err}}</div>
+  {{else}}
+
+  <div class="results-meta">{{.GrandTot}} beads across all rigs</div>
+
+  {{if .Rows}}
+  <div class="priority-bars">
+    {{range .Rows}}
+    <div class="priority-bar-row">
+      <span class="priority-label {{lower .Label}}">{{.Label}}</span>
+      <div class="priority-bar-track">
+        {{if .Closed}}<div class="bar-segment status-closed" style="width: {{mulf (divf (itof .Closed) (itof $.GrandTot)) 100.0}}%" title="{{.Closed}} closed"></div>{{end}}
+        {{if .Progress}}<div class="bar-segment status-progress" style="width: {{mulf (divf (itof .Progress) (itof $.GrandTot)) 100.0}}%" title="{{.Progress}} in progress"></div>{{end}}
+        {{if .Open}}<div class="bar-segment status-open" style="width: {{mulf (divf (itof .Open) (itof $.GrandTot)) 100.0}}%" title="{{.Open}} open"></div>{{end}}
+        {{if .Blocked}}<div class="bar-segment status-blocked" style="width: {{mulf (divf (itof .Blocked) (itof $.GrandTot)) 100.0}}%" title="{{.Blocked}} blocked"></div>{{end}}
+        {{if .Deferred}}<div class="bar-segment status-deferred" style="width: {{mulf (divf (itof .Deferred) (itof $.GrandTot)) 100.0}}%" title="{{.Deferred}} deferred"></div>{{end}}
+      </div>
+      <span class="priority-count">{{.Total}}</span>
+    </div>
+    {{end}}
+  </div>
+
+  <div class="priority-legend">
+    <span class="legend-item"><span class="badge status-closed">closed</span></span>
+    <span class="legend-item"><span class="badge status-progress">in_progress</span></span>
+    <span class="legend-item"><span class="badge status-open">open</span></span>
+    <span class="legend-item"><span class="badge status-blocked">blocked</span></span>
+    <span class="legend-item"><span class="badge status-deferred">deferred</span></span>
+  </div>
+
+  <div class="table-wrap">
+  <table class="bead-table">
+    <thead>
+      <tr>
+        <th>Priority</th>
+        <th>Total</th>
+        <th>Open</th>
+        <th>In Progress</th>
+        <th>Blocked</th>
+        <th>Closed</th>
+        <th>Deferred</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{range .Rows}}
+      <tr>
+        <td><strong>{{.Label}}</strong></td>
+        <td><strong>{{.Total}}</strong></td>
+        <td>{{if .Open}}<a href="/work?mode=priority">{{.Open}}</a>{{else}}—{{end}}</td>
+        <td>{{if .Progress}}{{.Progress}}{{else}}—{{end}}</td>
+        <td>{{if .Blocked}}<a href="/blocked">{{.Blocked}}</a>{{else}}—{{end}}</td>
+        <td>{{if .Closed}}{{.Closed}}{{else}}—{{end}}</td>
+        <td>{{if .Deferred}}{{.Deferred}}{{else}}—{{end}}</td>
+      </tr>
+      {{end}}
+    </tbody>
+    <tfoot>
+      <tr>
+        <td><strong>Total</strong></td>
+        <td><strong>{{.GrandTot}}</strong></td>
+        <td colspan="5"></td>
+      </tr>
+    </tfoot>
+  </table>
+  </div>
+  {{else}}
+  <p class="empty">No beads found.</p>
+  {{end}}
+
+  {{end}}
+</div>
+{{end}}

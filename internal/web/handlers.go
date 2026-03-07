@@ -205,15 +205,7 @@ func (s *Server) handleBead(w http.ResponseWriter, r *http.Request, database, id
 
 	ctx := r.Context()
 
-	logSlow := func(label string, start time.Time) {
-		if d := time.Since(start); d > 100*time.Millisecond {
-			log.Printf("handleBead %s/%s: %s took %v", database, id, label, d)
-		}
-	}
-
-	t := time.Now()
 	issue, err := s.ds.IssueByID(ctx, database, id)
-	logSlow("IssueByID", t)
 	if err != nil {
 		data.Err = fmt.Sprintf("Failed to load issue: %v", err)
 		s.render(w, r, "bead", data)
@@ -226,56 +218,45 @@ func (s *Server) handleBead(w http.ResponseWriter, r *http.Request, database, id
 	data.Issue = issue
 	data.DispatchInfo, data.CleanDesc = parseDescriptionMetadata(issue.Description)
 
-	t = time.Now()
 	labels, err := s.ds.LabelsForIssue(ctx, database, id)
-	logSlow("LabelsForIssue", t)
 	if err == nil {
 		data.Labels = labels
 	}
 
-	t = time.Now()
 	comments, err := s.ds.Comments(ctx, database, id)
-	logSlow("Comments", t)
 	if err == nil {
 		data.Comments = comments
 	}
 
-	t = time.Now()
 	deps, err := s.ds.Dependencies(ctx, database, id)
-	logSlow("Dependencies", t)
 	if err == nil {
 		data.Deps = deps
 	}
 
-	t = time.Now()
 	meta, err := s.ds.MetadataForIssue(ctx, database, id)
-	logSlow("MetadataForIssue", t)
 	if err == nil {
 		data.Metadata = meta
 	}
 
+	// StatusHistory queries dolt_history_issues which scans the full commit
+	// graph — expensive on databases with many commits (e.g. aegis has 23k+).
+	// Bound with a short timeout so it degrades gracefully.
 	histCtx, histCancel := context.WithTimeout(ctx, 2*time.Second)
-	t = time.Now()
 	history, err := s.ds.StatusHistory(histCtx, database, id)
 	histCancel()
-	logSlow("StatusHistory", t)
 	if err == nil {
 		data.StatusHistory = history
 	}
 
 	if issue.Type == "epic" {
-		t = time.Now()
 		children, err := s.ds.ChildIssues(ctx, database, id)
-		logSlow("ChildIssues", t)
 		if err == nil {
 			data.Children = children
 		}
 	}
 
 	if s.forgejo != nil {
-		t = time.Now()
 		data.Commits = s.forgejo.searchCommitsForBead(ctx, id)
-		logSlow("searchCommitsForBead", t)
 	}
 
 	s.render(w, r, "bead", data)
@@ -285,7 +266,6 @@ func (s *Server) handleBead(w http.ResponseWriter, r *http.Request, database, id
 // databases for the bead. This avoids the N+1 query pattern of the old code
 // by trying databases in a sensible order.
 func (s *Server) handleBeadLookup(w http.ResponseWriter, r *http.Request, id string) {
-	start := time.Now()
 	if s.ds == nil {
 		http.Error(w, "no database", http.StatusServiceUnavailable)
 		return
@@ -293,28 +273,19 @@ func (s *Server) handleBeadLookup(w http.ResponseWriter, r *http.Request, id str
 
 	ctx := r.Context()
 
-	t0 := time.Now()
 	dbs, err := s.databases(ctx)
-	log.Printf("bead-lookup %s: databases() took %v (%d dbs)", id, time.Since(t0), len(dbs))
 	if err != nil {
 		http.Error(w, "database error", http.StatusInternalServerError)
 		return
 	}
 
-	for i, db := range dbs {
-		t1 := time.Now()
+	for _, db := range dbs {
 		issue, err := s.ds.IssueByID(ctx, db.Name, id)
-		d := time.Since(t1)
-		if d > 100*time.Millisecond {
-			log.Printf("bead-lookup %s: IssueByID(%s) slow: %v", id, db.Name, d)
-		}
 		if err != nil {
 			continue
 		}
 		if issue != nil {
-			log.Printf("bead-lookup %s: found in %s (db %d/%d), lookup took %v", id, db.Name, i+1, len(dbs), time.Since(start))
 			s.handleBead(w, r, db.Name, id)
-			log.Printf("bead-lookup %s: total %v", id, time.Since(start))
 			return
 		}
 	}
