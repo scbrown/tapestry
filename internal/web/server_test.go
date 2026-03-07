@@ -1636,3 +1636,47 @@ func TestActivityPage_WithData(t *testing.T) {
 		t.Error("expected 4h filter option to be highlighted")
 	}
 }
+
+func TestOwnersPage_NilDataSource(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/owners", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /owners status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Workload") {
+		t.Error("expected 'Workload' heading")
+	}
+}
+
+func TestOwnersPage_WithData(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issues: []dolt.Issue{
+			{ID: "a1", Title: "Task 1", Status: "open", Owner: "aegis/crew/arnold", UpdatedAt: time.Now()},
+			{ID: "a2", Title: "Task 2", Status: "closed", Owner: "aegis/crew/arnold", UpdatedAt: time.Now()},
+			{ID: "a3", Title: "Task 3", Status: "in_progress", Owner: "aegis/crew/grant", UpdatedAt: time.Now()},
+		},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/owners", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /owners status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "arnold") {
+		t.Error("expected arnold in owners list")
+	}
+	if !strings.Contains(body, "grant") {
+		t.Error("expected grant in owners list")
+	}
+}

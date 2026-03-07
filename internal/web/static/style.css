@@ -1257,3 +1257,10 @@ tr.silenced { opacity: 0.5; }
 .dep-arrow { text-align: center; color: var(--text-muted); width: 2rem; }
 .title-cell { max-width: 18rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .count-badge { font-size: 0.8rem; color: var(--text-muted); font-weight: 400; }
+
+/* ── Owners Page ─────────────────────────────────────── */
+.completion-bar {
+  width: 5rem; height: 0.75rem; background: var(--surface);
+  border-radius: var(--radius); overflow: hidden;
+}
+.completion-fill { height: 100%; background: var(--success); transition: width 0.3s; }

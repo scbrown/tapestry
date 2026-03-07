@@ -1,0 +1,52 @@
+{{define "title"}}Owners{{end}}
+
+{{define "content"}}
+<div class="owners-view">
+  <h1>Workload by Owner</h1>
+
+  {{if .Err}}
+  <div class="error">{{.Err}}</div>
+  {{else}}
+
+  {{if .Rows}}
+  <div class="table-wrap">
+  <table class="bead-table">
+    <thead>
+      <tr>
+        <th>Owner</th>
+        <th>Total</th>
+        <th>Open</th>
+        <th>In Progress</th>
+        <th>Blocked</th>
+        <th>Closed</th>
+        <th>Deferred</th>
+        <th>Completion</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{range .Rows}}
+      <tr>
+        <td>{{if eq .Name "(unassigned)"}}<em>{{.Name}}</em>{{else}}<a href="/agent/{{.Name}}">{{shortActor .Name}}</a>{{end}}</td>
+        <td><strong>{{.Total}}</strong></td>
+        <td>{{if .Open}}{{.Open}}{{else}}—{{end}}</td>
+        <td>{{if .Progress}}{{.Progress}}{{else}}—{{end}}</td>
+        <td>{{if .Blocked}}{{.Blocked}}{{else}}—{{end}}</td>
+        <td>{{if .Closed}}{{.Closed}}{{else}}—{{end}}</td>
+        <td>{{if .Deferred}}{{.Deferred}}{{else}}—{{end}}</td>
+        <td>
+          <div class="completion-bar">
+            <div class="completion-fill" style="width: {{if .Total}}{{mulf (divf (itof .Closed) (itof .Total)) 100.0}}%{{else}}0%{{end}}"></div>
+          </div>
+        </td>
+      </tr>
+      {{end}}
+    </tbody>
+  </table>
+  </div>
+  {{else}}
+  <p class="empty">No beads found.</p>
+  {{end}}
+
+  {{end}}
+</div>
+{{end}}
