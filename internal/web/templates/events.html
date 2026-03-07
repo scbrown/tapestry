@@ -1,5 +1,5 @@
-{{template "head"}}Events — tapestry{{template "headclose"}}
-
+{{define "title"}}Events{{end}}
+{{define "content"}}
 <div class="events-page">
   <h1>Events <span class="text-dim">({{.Total}} total)</span></h1>
 
@@ -14,6 +14,10 @@
   <p class="filter-note">Filtered by actor: <strong>{{.ActorFilter}}</strong> <a href="/events{{if .TypeFilter}}?type={{.TypeFilter}}{{end}}">[clear]</a></p>
   {{end}}
 
+  {{if .Err}}
+  <div class="error-banner">{{.Err}}</div>
+  {{end}}
+
   {{if .Events}}
   <div class="event-list">
     {{range .Events}}
@@ -25,6 +29,7 @@
         {{if payloadString . "bead"}}<a href="/bead/{{payloadString . "bead"}}">{{payloadString . "bead"}}</a>{{end}}
         {{if payloadString . "target"}}&#8594; {{payloadString . "target"}}{{end}}
         {{if payloadString . "reason"}}{{payloadString . "reason"}}{{end}}
+        {{if payloadString . "subject"}}{{payloadString . "subject"}}{{end}}
       </span>
     </div>
     {{end}}
@@ -33,5 +38,4 @@
   <p class="empty">No events found.</p>
   {{end}}
 </div>
-
-{{template "foot"}}
+{{end}}

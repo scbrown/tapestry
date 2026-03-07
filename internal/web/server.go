@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/scbrown/tapestry/internal/dolt"
+	"github.com/scbrown/tapestry/internal/events"
 )
 
 //go:embed templates/*.html
@@ -53,11 +54,12 @@ type DataSource interface {
 
 // Server serves the Tapestry web dashboard.
 type Server struct {
-	ds        DataSource
-	prom      *promClient
-	forgejo   *forgejoClient
-	templates map[string]*template.Template
-	static    http.Handler
+	ds            DataSource
+	prom          *promClient
+	forgejo       *forgejoClient
+	templates     map[string]*template.Template
+	static        http.Handler
+	workspacePath string // path to Gas Town workspace root (for events)
 
 	dbMu    sync.Mutex
 	dbCache []dolt.DatabaseInfo
@@ -187,12 +189,40 @@ var funcMap = template.FuncMap{
 		}
 		return p.Closed * 100 / p.Total
 	},
+	"fmtDuration": func(d time.Duration) string {
+		if d < time.Minute {
+			return "< 1m"
+		}
+		if d < time.Hour {
+			return fmt.Sprintf("%dm", int(d.Minutes()))
+		}
+		h := int(d.Hours())
+		m := int(d.Minutes()) % 60
+		if m == 0 {
+			return fmt.Sprintf("%dh", h)
+		}
+		return fmt.Sprintf("%dh%dm", h, m)
+	},
+	"payloadString": func(e events.Event, key string) string {
+		return events.PayloadString(e, key)
+	},
+}
+
+// Option configures the server.
+type Option func(*Server)
+
+// WithWorkspace sets the Gas Town workspace path for reading events.
+func WithWorkspace(path string) Option {
+	return func(s *Server) { s.workspacePath = path }
 }
 
 // New creates a new Server. The DataSource may be nil, in which case pages
 // will display a "no database" message instead of data.
-func New(ds DataSource) *Server {
+func New(ds DataSource, opts ...Option) *Server {
 	s := &Server{ds: ds, prom: newPromClient(), forgejo: newForgejoClient()}
+	for _, o := range opts {
+		o(s)
+	}
 	s.parseTemplates()
 
 	staticSub, _ := fs.Sub(staticFS, "static")
@@ -279,6 +309,14 @@ func (s *Server) parseTemplates() {
 			template.New("").Funcs(funcMap).ParseFS(templateFS,
 				"templates/layout.html", "templates/command-center.html"),
 		),
+		"events": template.Must(
+			template.New("").Funcs(funcMap).ParseFS(templateFS,
+				"templates/layout.html", "templates/events.html"),
+		),
+		"handoffs": template.Must(
+			template.New("").Funcs(funcMap).ParseFS(templateFS,
+				"templates/layout.html", "templates/handoffs.html"),
+		),
 	}
 }
 
@@ -346,6 +384,10 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		s.handleEpics(w, r)
 	case len(segments) == 1 && segments[0] == "command-center":
 		s.handleCommandCenter(w, r)
+	case len(segments) == 1 && segments[0] == "events":
+		s.handleEvents(w, r)
+	case len(segments) == 1 && segments[0] == "handoffs":
+		s.handleHandoffs(w, r)
 	case len(segments) == 1 && segments[0] == "homelab":
 		s.handleHomelab(w, r)
 	case len(segments) == 1 && segments[0] == "designs":

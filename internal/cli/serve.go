@@ -58,7 +58,12 @@ func newServeCmd() *cobra.Command {
 				defer func() { _ = client.Close() }()
 			}
 
-			srv := web.New(ds)
+			var opts []web.Option
+			if len(fileCfg.Workspace) > 0 && fileCfg.Workspace[0].Path != "" {
+				opts = append(opts, web.WithWorkspace(fileCfg.Workspace[0].Path))
+			}
+
+			srv := web.New(ds, opts...)
 			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "tapestry server listening on http://%s\n", addr)
 			return http.ListenAndServe(addr, srv)
 		},

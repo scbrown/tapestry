@@ -731,6 +731,38 @@ func TestBeadLookup_CrossDB(t *testing.T) {
 	}
 }
 
+func TestEventsPage_NoWorkspace(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/events", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /events status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Events") {
+		t.Error("expected 'Events' heading")
+	}
+}
+
+func TestHandoffsPage_NoWorkspace(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/handoffs", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /handoffs status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Handoff") {
+		t.Error("expected 'Handoff' heading")
+	}
+}
+
 func TestSearch_WithResults(t *testing.T) {
 	ds := &mockDataSource{
 		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
