@@ -278,6 +278,12 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if path == "/healthz" {
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprint(w, "ok")
+		return
+	}
+
 	if path == "/" {
 		s.handleIndex(w, r)
 		return
