@@ -44,9 +44,10 @@ func New(cfg Config) (*Client, error) {
 	if err != nil {
 		return nil, fmt.Errorf("dolt: open: %w", err)
 	}
-	db.SetMaxOpenConns(10)
-	db.SetMaxIdleConns(5)
-	db.SetConnMaxLifetime(5 * time.Minute)
+	db.SetMaxOpenConns(5)
+	db.SetMaxIdleConns(2)
+	db.SetConnMaxLifetime(4 * time.Minute)
+	db.SetConnMaxIdleTime(30 * time.Second)
 	return &Client{db: db, cfg: cfg}, nil
 }
 
