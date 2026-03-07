@@ -403,6 +403,47 @@ func TestBeadsList_WithData(t *testing.T) {
 	}
 }
 
+func TestCommitsPage_NoForgejo(t *testing.T) {
+	srv := &Server{forgejo: nil}
+	srv.parseTemplates()
+	req := httptest.NewRequest("GET", "/commits", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /commits status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Commits") {
+		t.Error("expected 'Commits' heading")
+	}
+}
+
+func TestExtractBeadIDs(t *testing.T) {
+	tests := []struct {
+		msg  string
+		want []string
+	}{
+		{"fix(aegis): resolve aegis-abc123 issue", []string{"aegis-abc123"}},
+		{"no bead refs here", nil},
+		{"multiple aegis-aaa hq-bbb tp-cc", []string{"aegis-aaa", "hq-bbb", "tp-cc"}},
+		{"dupes aegis-xx aegis-xx", []string{"aegis-xx"}},
+	}
+	for _, tt := range tests {
+		got := extractBeadIDs(tt.msg)
+		if len(got) != len(tt.want) {
+			t.Errorf("extractBeadIDs(%q) = %v, want %v", tt.msg, got, tt.want)
+			continue
+		}
+		for i := range got {
+			if got[i] != tt.want[i] {
+				t.Errorf("extractBeadIDs(%q)[%d] = %q, want %q", tt.msg, i, got[i], tt.want[i])
+			}
+		}
+	}
+}
+
 func TestSearch_EmptyQuery(t *testing.T) {
 	srv := New(nil)
 	req := httptest.NewRequest("GET", "/search", nil)

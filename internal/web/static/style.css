@@ -801,3 +801,33 @@ tr.silenced { opacity: 0.5; }
 .standalone-tasks { margin: 0 0.5rem; }
 .standalone-label { font-size: 0.8rem; color: var(--text-muted); padding: 0.5rem 0.75rem 0.25rem; font-weight: 500; }
 .child-item.standalone { margin-left: 0; }
+
+/* ── Commits Page ─────────────────────────────────────────── */
+.commits-page { max-width: 1200px; margin: 0 auto; padding: 1.5rem; }
+.commits-page h1 { font-size: 1.5rem; margin-bottom: 1rem; }
+.commits-page h2 { font-size: 1.1rem; margin: 1.5rem 0 0.75rem; color: var(--text-muted); }
+.commit-list { display: flex; flex-direction: column; gap: 2px; }
+.commit-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.4rem 0.75rem;
+    font-size: 0.9rem;
+    border-radius: var(--radius);
+}
+.commit-row:hover { background: rgba(255,255,255,0.03); }
+.commit-sha { font-family: monospace; font-size: 0.85rem; color: var(--purple); background: rgba(189,147,249,0.1); padding: 0.1rem 0.4rem; border-radius: 3px; }
+.commit-sha-link { text-decoration: none; }
+.commit-sha-link:hover .commit-sha { background: rgba(189,147,249,0.2); }
+.commit-subject { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bead-link {
+    font-family: monospace;
+    font-size: 0.8rem;
+    color: var(--link);
+    background: rgba(139,233,253,0.1);
+    padding: 0.05rem 0.35rem;
+    border-radius: 3px;
+    margin-left: 0.25rem;
+    text-decoration: none;
+}
+.bead-link:hover { background: rgba(139,233,253,0.2); text-decoration: none; }

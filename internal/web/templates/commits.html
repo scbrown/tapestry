@@ -1,5 +1,5 @@
-{{template "head"}}Commits — tapestry{{template "headclose"}}
-
+{{define "title"}}Commits{{end}}
+{{define "content"}}
 <div class="commits-page">
   <h1>Commits <span class="text-dim">({{.TotalCommits}} total, {{.LinkedCount}} linked to beads)</span></h1>
 
@@ -45,5 +45,4 @@
   <p class="empty">No commits found. Configure workspace paths in config.toml.</p>
   {{end}}
 </div>
-
-{{template "foot"}}
+{{end}}
