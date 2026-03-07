@@ -1680,3 +1680,50 @@ func TestOwnersPage_WithData(t *testing.T) {
 		t.Error("expected grant in owners list")
 	}
 }
+
+func TestTypesPage_NilDataSource(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/types", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /types status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Type") {
+		t.Error("expected 'Type' heading")
+	}
+}
+
+func TestTypesPage_WithData(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issues: []dolt.Issue{
+			{ID: "t1", Title: "A task", Type: "task", Status: "open", UpdatedAt: time.Now()},
+			{ID: "t2", Title: "A bug", Type: "bug", Status: "closed", UpdatedAt: time.Now()},
+			{ID: "t3", Title: "An epic", Type: "epic", Status: "in_progress", UpdatedAt: time.Now()},
+		},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/types", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /types status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "task") {
+		t.Error("expected task type row")
+	}
+	if !strings.Contains(body, "bug") {
+		t.Error("expected bug type row")
+	}
+	if !strings.Contains(body, "epic") {
+		t.Error("expected epic type row")
+	}
+}

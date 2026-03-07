@@ -1,0 +1,117 @@
+package web
+
+import (
+	"log"
+	"net/http"
+	"sort"
+	"sync"
+
+	"github.com/scbrown/tapestry/internal/dolt"
+)
+
+type typeRow struct {
+	Type     string
+	Total    int
+	Open     int
+	Progress int
+	Blocked  int
+	Closed   int
+	Deferred int
+}
+
+type typesData struct {
+	Rows     []typeRow
+	GrandTot int
+	Err      string
+}
+
+func (s *Server) handleTypes(w http.ResponseWriter, r *http.Request) {
+	if s.ds == nil {
+		s.render(w, r, "types", typesData{})
+		return
+	}
+
+	ctx := r.Context()
+	dbs, err := s.databases(ctx)
+	if err != nil {
+		log.Printf("types: list dbs: %v", err)
+		s.render(w, r, "types", typesData{Err: err.Error()})
+		return
+	}
+
+	type dbResult struct {
+		issues []dolt.Issue
+	}
+
+	results := make([]dbResult, len(dbs))
+	var wg sync.WaitGroup
+	for i, db := range dbs {
+		wg.Add(1)
+		go func(i int, dbName string) {
+			defer wg.Done()
+			issues, err := s.ds.Issues(ctx, dbName, dolt.IssueFilter{})
+			if err != nil {
+				log.Printf("types %s: %v", dbName, err)
+				return
+			}
+			results[i] = dbResult{issues: issues}
+		}(i, db.Name)
+	}
+	wg.Wait()
+
+	byType := map[string]*typeRow{}
+	for _, r := range results {
+		for _, issue := range r.issues {
+			t := issue.Type
+			if t == "" {
+				t = "(none)"
+			}
+			row, ok := byType[t]
+			if !ok {
+				row = &typeRow{Type: t}
+				byType[t] = row
+			}
+			row.Total++
+			switch issue.Status {
+			case "open":
+				row.Open++
+			case "in_progress", "hooked":
+				row.Progress++
+			case "blocked":
+				row.Blocked++
+			case "closed":
+				row.Closed++
+			case "deferred":
+				row.Deferred++
+			}
+		}
+	}
+
+	// Sort: epic, task, bug, then others alphabetically
+	order := map[string]int{"epic": 0, "task": 1, "bug": 2}
+	var rows []typeRow
+	grandTotal := 0
+	for _, row := range byType {
+		rows = append(rows, *row)
+		grandTotal += row.Total
+	}
+	sort.Slice(rows, func(i, j int) bool {
+		oi, ok1 := order[rows[i].Type]
+		oj, ok2 := order[rows[j].Type]
+		if ok1 && ok2 {
+			return oi < oj
+		}
+		if ok1 {
+			return true
+		}
+		if ok2 {
+			return false
+		}
+		return rows[i].Type < rows[j].Type
+	})
+
+	s.render(w, r, "types", typesData{
+		Rows:     rows,
+		GrandTot: grandTotal,
+	})
+}
