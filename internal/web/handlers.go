@@ -3,6 +3,7 @@ package web
 import (
 	"context"
 	"fmt"
+	"html/template"
 	"log"
 	"net/http"
 	"sort"
@@ -1124,6 +1125,52 @@ func (s *Server) handleBeadStatusUpdate(w http.ResponseWriter, r *http.Request, 
 		<button hx-post="/bead/%s/%s/status" hx-vals='{"status":"open"}' hx-target="#bead-actions" hx-swap="outerHTML" class="btn btn-sm btn-reopen">Reopen</button>`, database, id)
 	}
 	fmt.Fprint(w, `</div>`)
+}
+
+func (s *Server) handleBeadComment(w http.ResponseWriter, r *http.Request, database, id string) {
+	if s.ds == nil {
+		http.Error(w, "no database", http.StatusServiceUnavailable)
+		return
+	}
+
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "bad request", http.StatusBadRequest)
+		return
+	}
+
+	body := strings.TrimSpace(r.FormValue("body"))
+	if body == "" {
+		http.Error(w, "comment body required", http.StatusBadRequest)
+		return
+	}
+
+	// Sanitize: limit body length
+	if len(body) > 4000 {
+		body = body[:4000]
+	}
+
+	author := "tapestry-web"
+
+	if err := s.ds.AddComment(r.Context(), database, id, author, body); err != nil {
+		log.Printf("bead comment: %v", err)
+		http.Error(w, "failed to add comment", http.StatusInternalServerError)
+		return
+	}
+
+	// Return the new comment as HTMX partial, plus clear the form
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	now := time.Now()
+	fmt.Fprintf(w, `<div class="comment">
+		<div class="comment-header">
+			<strong>%s</strong>
+			<time>%s</time>
+		</div>
+		<pre class="comment-body">%s</pre>
+	</div>`,
+		template.HTMLEscapeString(author),
+		template.HTMLEscapeString(now.Format("Jan 2, 2006 15:04")),
+		template.HTMLEscapeString(body),
+	)
 }
 
 func statusClassName(s string) string {

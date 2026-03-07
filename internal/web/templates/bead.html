@@ -139,9 +139,9 @@
     </section>
     {{end}}
 
-    {{if .Comments}}
     <section class="bead-comments">
-        <h2>Comments ({{len .Comments}})</h2>
+        <h2>Comments{{if .Comments}} ({{len .Comments}}){{end}}</h2>
+        <div id="comments-list">
         {{range .Comments}}
         <div class="comment">
             <div class="comment-header">
@@ -151,8 +151,12 @@
             <pre class="comment-body">{{.Body}}</pre>
         </div>
         {{end}}
+        </div>
+        <form class="comment-form" hx-post="/bead/{{.Database}}/{{.Issue.ID}}/comment" hx-target="#comments-list" hx-swap="beforeend" hx-on::after-request="this.reset()">
+            <textarea name="body" placeholder="Add a comment..." rows="3" class="comment-input" required></textarea>
+            <button type="submit" class="btn btn-sm btn-comment">Post Comment</button>
+        </form>
     </section>
-    {{end}}
 
     {{if .Deps}}
     <section class="bead-deps">

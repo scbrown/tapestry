@@ -1113,6 +1113,13 @@ tr.silenced { opacity: 0.5; }
 .net-growing { color: var(--red); }
 .net-shrinking { color: var(--green); }
 
+/* ── Comment form ──────────────────────────────────── */
+.comment-form { margin-top: 1rem; display: flex; flex-direction: column; gap: 0.5rem; }
+.comment-input { background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: var(--radius); padding: 0.5rem; font-family: inherit; font-size: 0.85rem; resize: vertical; min-height: 60px; }
+.comment-input:focus { outline: none; border-color: var(--link); }
+.btn-comment { align-self: flex-end; border: 1px solid var(--purple); color: var(--purple); background: transparent; padding: 0.25rem 0.75rem; border-radius: var(--radius); cursor: pointer; font-size: 0.8rem; }
+.btn-comment:hover { background: var(--purple); color: var(--bg); }
+
 /* ── Unclaimed queue ───────────────────────────────── */
 .unclaimed-item { color: var(--warning); }
 

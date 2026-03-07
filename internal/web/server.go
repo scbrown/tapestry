@@ -388,6 +388,12 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// POST /bead/{db}/{id}/comment — add comment via HTMX
+	if r.Method == http.MethodPost && len(segments) == 4 && segments[0] == "bead" && segments[3] == "comment" {
+		s.handleBeadComment(w, r, segments[1], segments[2])
+		return
+	}
+
 	if r.Method != http.MethodGet {
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 		return

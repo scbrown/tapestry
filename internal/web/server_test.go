@@ -1194,3 +1194,47 @@ func TestExecutivePage_WithData(t *testing.T) {
 		t.Error("expected agent leaderboard section")
 	}
 }
+
+func TestBeadComment_Post(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issue:     &dolt.Issue{ID: "aegis-c1", Title: "Test bead", Status: "open"},
+	}
+
+	srv := New(ds)
+	body := strings.NewReader("body=Hello+comment")
+	req := httptest.NewRequest("POST", "/bead/beads_aegis/aegis-c1/comment", body)
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("POST comment status = %d, want %d", w.Code, http.StatusOK)
+	}
+	result := w.Body.String()
+	if !strings.Contains(result, "Hello comment") {
+		t.Error("response missing comment body")
+	}
+	if !strings.Contains(result, "tapestry-web") {
+		t.Error("response missing author")
+	}
+}
+
+func TestBeadComment_EmptyBody(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+	}
+
+	srv := New(ds)
+	body := strings.NewReader("body=")
+	req := httptest.NewRequest("POST", "/bead/beads_aegis/aegis-c1/comment", body)
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusBadRequest {
+		t.Fatalf("POST empty comment status = %d, want %d", w.Code, http.StatusBadRequest)
+	}
+}
