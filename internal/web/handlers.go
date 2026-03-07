@@ -716,6 +716,7 @@ type briefingData struct {
 	CreatedToday    int
 	NeedsAttention  []dolt.Issue
 	InFlight        []dolt.Issue
+	UnclaimedQueue  []dolt.Issue
 	BlockedItems    []briefingBlockedItem
 	RecentlyClosed  []dolt.Issue
 	AgentStats      []dolt.AgentStats
@@ -765,6 +766,7 @@ func (s *Server) handleBriefing(w http.ResponseWriter, r *http.Request) {
 		closedToday     int
 		needsAttention  []dolt.Issue
 		inFlight        []dolt.Issue
+		unclaimedQueue  []dolt.Issue
 		blockedItems    []briefingBlockedItem
 		recentlyClosed  []dolt.Issue
 		staleWork       []dolt.Issue
@@ -817,6 +819,9 @@ func (s *Server) handleBriefing(w http.ResponseWriter, r *http.Request) {
 				}
 				if (iss.Status == "in_progress" || iss.Status == "hooked") && iss.Priority <= 1 {
 					r.inFlight = append(r.inFlight, iss)
+				}
+				if iss.Status == "open" && iss.Priority <= 2 && iss.Assignee == "" {
+					r.unclaimedQueue = append(r.unclaimedQueue, iss)
 				}
 				if iss.Priority <= 2 && iss.UpdatedAt.Before(staleThreshold) &&
 					(iss.Status == "open" || iss.Status == "in_progress") {
@@ -873,6 +878,7 @@ func (s *Server) handleBriefing(w http.ResponseWriter, r *http.Request) {
 		data.ClosedToday += r.closedToday
 		data.NeedsAttention = append(data.NeedsAttention, r.needsAttention...)
 		data.InFlight = append(data.InFlight, r.inFlight...)
+		data.UnclaimedQueue = append(data.UnclaimedQueue, r.unclaimedQueue...)
 		data.BlockedItems = append(data.BlockedItems, r.blockedItems...)
 		data.RecentlyClosed = append(data.RecentlyClosed, r.recentlyClosed...)
 		data.StaleWork = append(data.StaleWork, r.staleWork...)
@@ -906,6 +912,13 @@ func (s *Server) handleBriefing(w http.ResponseWriter, r *http.Request) {
 		if iss.UpdatedAt.After(data.FreshAttention) {
 			data.FreshAttention = iss.UpdatedAt
 		}
+	}
+
+	sort.Slice(data.UnclaimedQueue, func(i, j int) bool {
+		return data.UnclaimedQueue[i].Priority < data.UnclaimedQueue[j].Priority
+	})
+	if len(data.UnclaimedQueue) > 15 {
+		data.UnclaimedQueue = data.UnclaimedQueue[:15]
 	}
 
 	sort.Slice(data.BlockedItems, func(i, j int) bool {

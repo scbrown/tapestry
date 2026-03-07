@@ -68,6 +68,7 @@
           <span class="priority-badge p{{.Priority}}">P{{.Priority}}</span>
           {{.Title}}
           {{if .Assignee}}<span class="text-dim">{{shortActor .Assignee}}</span>{{end}}
+          <time class="text-dim freshness">{{timeAgo .UpdatedAt}}</time>
         </li>
         {{end}}
       </ul>
@@ -75,6 +76,23 @@
       <p class="empty">No work in progress.</p>
       {{end}}
     </section>
+
+    {{/* ── Unclaimed Queue ── */}}
+    {{if .UnclaimedQueue}}
+    <section class="briefing-card">
+      <h2>Unclaimed Queue <span class="text-dim">({{len .UnclaimedQueue}})</span></h2>
+      <ul class="briefing-list">
+        {{range .UnclaimedQueue}}
+        <li class="unclaimed-item">
+          <a href="/bead/{{.ID}}">{{.ID}}</a>
+          <span class="priority-badge p{{.Priority}}">P{{.Priority}}</span>
+          {{.Title}}
+          <time class="text-dim freshness">{{timeAgo .CreatedAt}}</time>
+        </li>
+        {{end}}
+      </ul>
+    </section>
+    {{end}}
 
     {{/* ── Blocked Work ── */}}
     {{if .BlockedItems}}

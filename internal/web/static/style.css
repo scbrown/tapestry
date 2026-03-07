@@ -1113,6 +1113,9 @@ tr.silenced { opacity: 0.5; }
 .net-growing { color: var(--red); }
 .net-shrinking { color: var(--green); }
 
+/* ── Unclaimed queue ───────────────────────────────── */
+.unclaimed-item { color: var(--warning); }
+
 /* ── Stale work ────────────────────────────────────── */
 .stale-item { color: var(--orange); }
 .stale-age { font-size: 0.8rem; color: var(--red); font-weight: bold; margin-left: 0.5rem; }
