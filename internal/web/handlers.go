@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/scbrown/tapestry/internal/dolt"
+	"github.com/scbrown/tapestry/internal/events"
 )
 
 type monthlyData struct {
@@ -912,8 +913,14 @@ func (s *Server) handleBriefing(w http.ResponseWriter, r *http.Request) {
 
 // ── Agents ──────────────────────────────────────────────────
 
+type agentRow struct {
+	dolt.AgentStats
+	LastActive    time.Time
+	TotalHandoffs int
+}
+
 type agentsData struct {
-	Agents []dolt.AgentStats
+	Agents []agentRow
 }
 
 func (s *Server) handleAgents(w http.ResponseWriter, r *http.Request) {
@@ -950,7 +957,7 @@ func (s *Server) handleAgents(w http.ResponseWriter, r *http.Request) {
 	}
 	wgAgents.Wait()
 
-	agentMap := make(map[string]*dolt.AgentStats)
+	agentMap := make(map[string]*agentRow)
 	for _, agents := range agentResults {
 		for _, a := range agents {
 			if a.Name == "(unowned)" || a.Name == "" {
@@ -965,7 +972,23 @@ func (s *Server) handleAgents(w http.ResponseWriter, r *http.Request) {
 			} else {
 				merged := a
 				merged.Name = key
-				agentMap[key] = &merged
+				agentMap[key] = &agentRow{AgentStats: merged}
+			}
+		}
+	}
+
+	// Enrich with handoff data
+	if s.workspacePath != "" {
+		allEvents, err := events.ReadWorkspace(s.workspacePath)
+		if err == nil {
+			chains := events.BuildHandoffChains(allEvents)
+			summary := events.ChainSummary(chains)
+			for _, cs := range summary {
+				key := shortActorName(cs.Actor)
+				if row, ok := agentMap[key]; ok {
+					row.LastActive = cs.LastHandoff
+					row.TotalHandoffs = cs.TotalHandoffs
+				}
 			}
 		}
 	}
@@ -974,7 +997,10 @@ func (s *Server) handleAgents(w http.ResponseWriter, r *http.Request) {
 		data.Agents = append(data.Agents, *a)
 	}
 	sort.Slice(data.Agents, func(i, j int) bool {
-		return data.Agents[i].InProgress > data.Agents[j].InProgress
+		if data.Agents[i].InProgress != data.Agents[j].InProgress {
+			return data.Agents[i].InProgress > data.Agents[j].InProgress
+		}
+		return data.Agents[i].LastActive.After(data.Agents[j].LastActive)
 	})
 
 	s.render(w, r, "agents", data)

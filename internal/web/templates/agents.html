@@ -14,6 +14,12 @@
         <span class="agent-stat"><strong>{{.Open}}</strong> open</span>
         <span class="agent-stat"><strong>{{.InProgress}}</strong> active</span>
       </div>
+      {{if not .LastActive.IsZero}}
+      <div class="agent-meta-row">
+        <span class="text-dim">last active {{timeAgo .LastActive}}</span>
+        {{if gt .TotalHandoffs 0}}<span class="text-dim">&middot; {{.TotalHandoffs}} handoffs</span>{{end}}
+      </div>
+      {{end}}
     </a>
     {{end}}
   </div>
