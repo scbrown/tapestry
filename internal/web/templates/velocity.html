@@ -1,0 +1,74 @@
+{{define "title"}}Velocity{{end}}
+{{define "content"}}
+<div class="velocity-page" hx-get="/velocity" hx-trigger="every 120s" hx-select=".velocity-page" hx-swap="outerHTML">
+  <h1>Velocity <time class="text-dim">{{.GeneratedAt.Format "Jan 02, 2006 15:04"}}</time></h1>
+
+  <div class="velocity-summary">
+    <div class="stat">
+      <span class="stat-value accent">{{printf "%.1f" .AvgCreate}}</span>
+      <span class="stat-label">created/day</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value accent">{{printf "%.1f" .AvgClose}}</span>
+      <span class="stat-label">closed/day</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value">{{.TotalCreate}}</span>
+      <span class="stat-label">created (14d)</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value">{{.TotalClose}}</span>
+      <span class="stat-label">closed (14d)</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value {{if gt .NetChange 0}}net-growing{{else if lt .NetChange 0}}net-shrinking{{end}}">
+        {{if gt .NetChange 0}}+{{end}}{{.NetChange}}
+      </span>
+      <span class="stat-label">net change</span>
+    </div>
+  </div>
+
+  <section class="velocity-chart-section">
+    <h2>Daily Throughput (14 days)</h2>
+    <div class="velocity-chart">
+      {{range .Days}}
+      <div class="velocity-day">
+        <div class="velocity-bars">
+          <div class="velocity-bar velocity-bar-created" style="height: {{if $.MaxCount}}{{printf "%.0f" (divf (mulf (itof .Created) 100.0) (itof $.MaxCount))}}%{{else}}0%{{end}}" title="{{.Created}} created"></div>
+          <div class="velocity-bar velocity-bar-closed" style="height: {{if $.MaxCount}}{{printf "%.0f" (divf (mulf (itof .Closed) 100.0) (itof $.MaxCount))}}%{{else}}0%{{end}}" title="{{.Closed}} closed"></div>
+        </div>
+        <span class="velocity-date">{{.Date.Format "Jan 2"}}</span>
+      </div>
+      {{end}}
+    </div>
+    <div class="velocity-legend">
+      <span class="velocity-legend-item"><span class="velocity-swatch velocity-swatch-created"></span> Created</span>
+      <span class="velocity-legend-item"><span class="velocity-swatch velocity-swatch-closed"></span> Closed</span>
+    </div>
+  </section>
+
+  {{if .Agents}}
+  <section class="velocity-agents">
+    <h2>Agent Throughput (14 days)</h2>
+    <table class="briefing-table">
+      <thead>
+        <tr><th>Agent</th><th>Created</th><th>Closed</th><th>Net</th></tr>
+      </thead>
+      <tbody>
+        {{range .Agents}}
+        <tr>
+          <td><a href="/agent/{{.Name}}">{{shortActor .Name}}</a></td>
+          <td>{{.Created}}</td>
+          <td>{{.Closed}}</td>
+          <td class="{{if gt .Net 0}}net-growing{{else if lt .Net 0}}net-shrinking{{end}}">
+            {{if gt .Net 0}}+{{end}}{{.Net}}
+          </td>
+        </tr>
+        {{end}}
+      </tbody>
+    </table>
+  </section>
+  {{end}}
+
+</div>
+{{end}}

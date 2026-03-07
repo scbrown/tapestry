@@ -763,6 +763,50 @@ func TestHandoffsPage_NoWorkspace(t *testing.T) {
 	}
 }
 
+func TestVelocityPage_NilDataSource(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/velocity", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /velocity status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Velocity") {
+		t.Error("expected 'Velocity' heading")
+	}
+}
+
+func TestVelocityPage_WithData(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		created:   5,
+		closed:    3,
+		issues: []dolt.Issue{
+			{ID: "aegis-v1", Title: "Closed work", Status: "closed", Assignee: "aegis/crew/arnold", Owner: "aegis/crew/arnold", CreatedAt: time.Now(), UpdatedAt: time.Now()},
+		},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/velocity", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /velocity status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	checks := []string{"Velocity", "created/day", "closed/day", "Daily Throughput"}
+	for _, check := range checks {
+		if !strings.Contains(body, check) {
+			t.Errorf("body missing %q", check)
+		}
+	}
+}
+
 func TestSearch_WithResults(t *testing.T) {
 	ds := &mockDataSource{
 		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},

@@ -206,6 +206,18 @@ var funcMap = template.FuncMap{
 	"payloadString": func(e events.Event, key string) string {
 		return events.PayloadString(e, key)
 	},
+	"itof": func(i int) float64 {
+		return float64(i)
+	},
+	"mulf": func(a, b float64) float64 {
+		return a * b
+	},
+	"divf": func(a, b float64) float64 {
+		if b == 0 {
+			return 0
+		}
+		return a / b
+	},
 }
 
 // Option configures the server.
@@ -317,6 +329,10 @@ func (s *Server) parseTemplates() {
 			template.New("").Funcs(funcMap).ParseFS(templateFS,
 				"templates/layout.html", "templates/handoffs.html"),
 		),
+		"velocity": template.Must(
+			template.New("").Funcs(funcMap).ParseFS(templateFS,
+				"templates/layout.html", "templates/velocity.html"),
+		),
 	}
 }
 
@@ -388,6 +404,8 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		s.handleEvents(w, r)
 	case len(segments) == 1 && segments[0] == "handoffs":
 		s.handleHandoffs(w, r)
+	case len(segments) == 1 && segments[0] == "velocity":
+		s.handleVelocity(w, r)
 	case len(segments) == 1 && segments[0] == "homelab":
 		s.handleHomelab(w, r)
 	case len(segments) == 1 && segments[0] == "designs":
