@@ -1249,6 +1249,46 @@ func TestBeadComment_EmptyBody(t *testing.T) {
 	}
 }
 
+func TestStalePage_NilDataSource(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/stale", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /stale status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Stale Work") {
+		t.Error("expected 'Stale Work' heading")
+	}
+}
+
+func TestStalePage_WithData(t *testing.T) {
+	staleTime := time.Now().Add(-10 * 24 * time.Hour) // 10 days ago
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issues: []dolt.Issue{
+			{ID: "aegis-s1", Title: "Stuck task", Status: "in_progress", Priority: 1, Assignee: "aegis/crew/arnold", UpdatedAt: staleTime},
+		},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/stale?days=3", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /stale status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "aegis-s1") {
+		t.Error("expected stale issue ID in output")
+	}
+}
+
 func TestLabelsPage_NilDataSource(t *testing.T) {
 	srv := New(nil)
 	req := httptest.NewRequest("GET", "/labels", nil)

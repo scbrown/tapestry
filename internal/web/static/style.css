@@ -1223,3 +1223,7 @@ tr.silenced { opacity: 0.5; }
 .label-tag.active { background: var(--purple); border-color: var(--purple); color: #fff; }
 .label-count { font-size: 0.75rem; color: var(--text-muted); }
 .label-tag.active .label-count { color: rgba(255,255,255,0.7); }
+
+/* ── Stale Work ──────────────────────────────────────── */
+.text-error { color: var(--red, #ff5555); }
+.text-warn { color: var(--orange, #ffb86c); }
