@@ -10,7 +10,7 @@
 </head>
 <body>
     <header>
-        <nav>
+        <nav hx-boost="true" hx-target="#content" hx-swap="innerHTML" hx-push-url="true">
             <a href="/" class="logo">Tapestry</a>
             <span class="tagline">archivist dashboard</span>
             <a href="/command-center">cmd</a>
@@ -23,6 +23,7 @@
             <a href="/homelab">homelab</a>
             <a href="/theme-parks">parks</a>
             <a href="/designs">designs</a>
+            <a href="/epics">epics</a>
             <a href="/commits">commits</a>
             <a href="/beads">beads</a>
         </nav>
