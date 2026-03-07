@@ -29,6 +29,9 @@ type mockDataSource struct {
 	depEdges        []dolt.DepEdge
 	priorityCounts  []dolt.PriorityStatusCount
 	assigneeCounts  []dolt.AssigneeStatusCount
+	achievementDefs []dolt.AchievementDef
+	achievementUnlocks []dolt.AchievementUnlock
+	labels          []string
 	err             error
 }
 
@@ -85,11 +88,11 @@ func (m *mockDataSource) AgentActivity(_ context.Context, _ string) ([]dolt.Agen
 }
 
 func (m *mockDataSource) Decisions(_ context.Context, _ string) ([]dolt.Issue, error) {
-	return nil, m.err
+	return m.issues, m.err
 }
 
 func (m *mockDataSource) LabelsForIssue(_ context.Context, _, _ string) ([]string, error) {
-	return nil, m.err
+	return m.labels, m.err
 }
 
 func (m *mockDataSource) MetadataForIssue(_ context.Context, _, _ string) (*dolt.IssueMetadata, error) {
@@ -108,11 +111,11 @@ func (m *mockDataSource) ChildIssues(_ context.Context, _, _ string) ([]dolt.Iss
 }
 
 func (m *mockDataSource) AchievementDefs(_ context.Context, _ string) ([]dolt.AchievementDef, error) {
-	return nil, m.err
+	return m.achievementDefs, m.err
 }
 
 func (m *mockDataSource) AchievementUnlocks(_ context.Context, _ string) ([]dolt.AchievementUnlock, error) {
-	return nil, m.err
+	return m.achievementUnlocks, m.err
 }
 
 func (m *mockDataSource) Epics(_ context.Context, _ string) ([]dolt.Issue, error) {
@@ -1912,5 +1915,222 @@ func TestHeatmapPage_WithData(t *testing.T) {
 	body := w.Body.String()
 	if !strings.Contains(body, "Activity") {
 		t.Error("expected 'Activity' in heatmap page")
+	}
+}
+
+func TestAchievementsPage_NilDataSource(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/achievements", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /achievements status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Achievements") {
+		t.Error("expected 'Achievements' heading")
+	}
+}
+
+func TestAchievementsPage_WithData(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "aegis"}},
+		achievementDefs: []dolt.AchievementDef{
+			{ID: "first-commit", Name: "First Commit", Description: "Push your first commit", Icon: "git-commit", Category: "development"},
+			{ID: "infra-hero", Name: "Infrastructure Hero", Description: "Deploy 10 containers", Icon: "server", Category: "infrastructure"},
+		},
+		achievementUnlocks: []dolt.AchievementUnlock{
+			{ID: "first-commit", UnlockedAt: time.Now().Add(-24 * time.Hour), UnlockedBy: "aegis/crew/arnold", Note: "Shipped it!"},
+		},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/achievements", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /achievements status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "First Commit") {
+		t.Error("expected 'First Commit' achievement (unlocked)")
+	}
+	// Locked achievements show "???" not the name
+	if !strings.Contains(body, "???") {
+		t.Error("expected locked achievement placeholder")
+	}
+}
+
+func TestAchievementsPage_CategoryFilter(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "aegis"}},
+		achievementDefs: []dolt.AchievementDef{
+			{ID: "a1", Name: "Dev Achievement", Category: "development"},
+			{ID: "a2", Name: "Ops Achievement", Category: "operations"},
+		},
+		achievementUnlocks: []dolt.AchievementUnlock{
+			{ID: "a1", UnlockedAt: time.Now(), UnlockedBy: "test"},
+			{ID: "a2", UnlockedAt: time.Now(), UnlockedBy: "test"},
+		},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/achievements?category=development", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /achievements?category status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Dev Achievement") {
+		t.Error("expected 'Dev Achievement' in filtered results")
+	}
+	// Ops Achievement should be filtered out
+	if strings.Contains(body, "Ops Achievement") {
+		t.Error("ops achievement should be filtered out by category=development")
+	}
+}
+
+func TestDecisionsPage_NilDataSource(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/decisions", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /decisions status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Decisions") {
+		t.Error("expected 'Decisions' heading")
+	}
+}
+
+func TestDecisionsPage_WithData(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issues: []dolt.Issue{
+			{ID: "d1", Title: "Choose database backend", Type: "decision", Status: "open", Priority: 1, UpdatedAt: time.Now(),
+				Description: "Options:\nA: PostgreSQL [RECOMMENDED]\nB: SQLite\nC: MySQL"},
+		},
+		labels: []string{"decision:pending", "decision:requester:aegis/crew/arnold"},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/decisions", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /decisions status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Choose database backend") {
+		t.Error("expected decision title in page")
+	}
+}
+
+func TestDecisionsPage_FilterByState(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issues: []dolt.Issue{
+			{ID: "d1", Title: "Pending decision", Type: "decision", Status: "open", Priority: 2, UpdatedAt: time.Now()},
+		},
+		labels: []string{"decision:pending"},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/decisions?filter=pending", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /decisions?filter status = %d, want %d", w.Code, http.StatusOK)
+	}
+}
+
+func TestEpicsPage_WithData(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issues: []dolt.Issue{
+			{ID: "e1", Title: "Bucket epic", Type: "epic", Status: "open", Priority: 1, UpdatedAt: time.Now()},
+			{ID: "e1.1", Title: "Child task 1", Status: "closed", Priority: 2, UpdatedAt: time.Now()},
+			{ID: "e1.2", Title: "Child task 2", Status: "open", Priority: 2, UpdatedAt: time.Now()},
+		},
+		deps: []dolt.Dependency{
+			{FromID: "e1.1", ToID: "e1", Type: "child_of"},
+			{FromID: "e1.2", ToID: "e1", Type: "child_of"},
+		},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/epics", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /epics status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Bucket epic") {
+		t.Error("expected epic title in page")
+	}
+}
+
+func TestDesignsPage_NilDataSource(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/designs", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /designs status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Design") {
+		t.Error("expected 'Design' in heading")
+	}
+}
+
+func TestHomelabPage_NilPrometheus(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/homelab", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /homelab status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Homelab") {
+		t.Error("expected 'Homelab' heading")
+	}
+}
+
+func TestThemeParksPage_NilDataSource(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/theme-parks", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /theme-parks status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Theme Park") {
+		t.Error("expected 'Theme Park' in heading")
 	}
 }
