@@ -1828,3 +1828,51 @@ func TestSLAPage_WithBreachedBeads(t *testing.T) {
 		t.Error("closed beads should be excluded from SLA tracking")
 	}
 }
+
+func TestKanbanPage_NilDataSource(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/kanban", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /kanban status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Kanban") {
+		t.Error("expected 'Kanban' heading")
+	}
+}
+
+func TestKanbanPage_WithData(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issues: []dolt.Issue{
+			{ID: "k1", Title: "Open task", Status: "open", Priority: 1, UpdatedAt: time.Now()},
+			{ID: "k2", Title: "WIP task", Status: "in_progress", Priority: 2, Assignee: "aegis/crew/arnold", UpdatedAt: time.Now()},
+			{ID: "k3", Title: "Blocked task", Status: "blocked", Priority: 0, UpdatedAt: time.Now()},
+			{ID: "k4", Title: "Done task", Status: "closed", Priority: 3, UpdatedAt: time.Now()},
+		},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/kanban", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /kanban status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Open task") {
+		t.Error("expected open task on kanban")
+	}
+	if !strings.Contains(body, "WIP task") {
+		t.Error("expected in_progress task on kanban")
+	}
+	if strings.Contains(body, "Done task") {
+		t.Error("closed tasks should not appear on kanban")
+	}
+}

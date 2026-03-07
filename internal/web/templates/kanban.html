@@ -1,0 +1,40 @@
+{{define "title"}}Kanban{{end}}
+
+{{define "content"}}
+<div class="kanban-view">
+  <h1>Kanban Board</h1>
+
+  {{if .Err}}
+  <div class="error">{{.Err}}</div>
+  {{else}}
+
+  <div class="results-meta">{{.Total}} active beads</div>
+
+  <div class="kanban-board">
+    {{range .Columns}}
+    <div class="kanban-column">
+      <div class="kanban-column-header">
+        <span class="badge {{statusClass .Status}}">{{.Status}}</span>
+        <span class="kanban-count">{{len .Cards}}</span>
+      </div>
+      <div class="kanban-cards">
+        {{range .Cards}}
+        <a href="/bead/{{.ID}}" class="kanban-card priority-border-{{.Priority}}">
+          <div class="kanban-card-id">{{.ID}}</div>
+          <div class="kanban-card-title">{{.Title}}</div>
+          <div class="kanban-card-meta">
+            <span class="priority-label {{lower (priorityLabel .Priority)}}">{{priorityLabel .Priority}}</span>
+            {{if .Assignee}}<span class="kanban-assignee" title="{{.Assignee}}">{{shortActor .Assignee}}</span>{{end}}
+          </div>
+        </a>
+        {{else}}
+        <div class="kanban-empty">No beads</div>
+        {{end}}
+      </div>
+    </div>
+    {{end}}
+  </div>
+
+  {{end}}
+</div>
+{{end}}
