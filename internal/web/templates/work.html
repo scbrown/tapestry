@@ -13,6 +13,10 @@
            class="mode-btn{{if eq .Mode "priority"}} active{{end}}"
            hx-get="/work?mode=priority{{if .ShowClosed}}&closed=1{{end}}"
            hx-target="#content" hx-push-url="true">By Priority</a>
+        <a href="/work?mode=agent{{if .ShowClosed}}&closed=1{{end}}"
+           class="mode-btn{{if eq .Mode "agent"}} active{{end}}"
+           hx-get="/work?mode=agent{{if .ShowClosed}}&closed=1{{end}}"
+           hx-target="#content" hx-push-url="true">By Agent</a>
       </div>
       <label class="closed-toggle">
         <input type="checkbox" {{if .ShowClosed}}checked{{end}}
@@ -25,7 +29,38 @@
 
   <div class="work-count">{{.TotalCount}} items</div>
 
-  {{if eq .Mode "repo"}}
+  {{if eq .Mode "agent"}}
+    {{range .Agents}}
+    <section class="work-section">
+      <details{{if gt .Stats.InProgress 0}} open{{end}}>
+        <summary class="work-section-header">
+          <h2 class="work-section-title">{{.Name}}</h2>
+          <div class="work-section-stats">
+            {{if gt .Stats.InProgress 0}}<span class="ws-stat active">{{.Stats.InProgress}} active</span>{{end}}
+            {{if gt .Stats.Open 0}}<span class="ws-stat open">{{.Stats.Open}} open</span>{{end}}
+            {{if gt .Stats.Closed 0}}<span class="ws-stat closed">{{.Stats.Closed}} closed</span>{{end}}
+            <span class="ws-stat total">{{.Stats.Total}} total</span>
+          </div>
+        </summary>
+        <div class="work-section-body">
+          {{range .Issues}}
+          <a href="/bead/{{.ID}}" class="child-item standalone">
+            <span class="work-priority p{{.Priority}}">P{{.Priority}}</span>
+            {{statusBadge .Status}}
+            <span class="child-title">{{.Title}}</span>
+            <span class="child-meta">
+              <span class="work-id">{{.ID}}</span>
+              <span class="work-rig-label">{{rigName .Rig}}</span>
+              <span class="work-age">{{timeAgo .UpdatedAt}}</span>
+            </span>
+          </a>
+          {{end}}
+        </div>
+      </details>
+    </section>
+    {{end}}
+
+  {{else if eq .Mode "repo"}}
     {{range .Repos}}
     <section class="work-section">
       <details{{if .Expanded}} open{{end}}>

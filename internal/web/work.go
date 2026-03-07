@@ -43,12 +43,19 @@ type prioritySection struct {
 	Tasks    []dolt.Issue
 }
 
+type agentSection struct {
+	Name   string
+	Stats  repoStats
+	Issues []dolt.Issue
+}
+
 type workData struct {
 	Mode       string
 	ShowClosed bool
 	TotalCount int
 	Repos      []repoSection
 	Priorities []prioritySection
+	Agents     []agentSection
 }
 
 func (s *Server) handleWork(w http.ResponseWriter, r *http.Request) {
@@ -219,6 +226,57 @@ func (s *Server) handleWork(w http.ResponseWriter, r *http.Request) {
 		sort.Slice(data.Repos, func(i, j int) bool {
 			return data.Repos[i].Stats.InProgress > data.Repos[j].Stats.InProgress
 		})
+	} else if mode == "agent" {
+		// Agent mode — group by assignee
+		aMap := make(map[string]*agentSection)
+		for _, r := range results {
+			for _, et := range r.epics {
+				agent := shortActorName(et.Epic.Assignee)
+				if agent == "" {
+					agent = shortActorName(et.Epic.Owner)
+				}
+				if agent == "" {
+					agent = "(unassigned)"
+				}
+				as := getOrCreateAgent(aMap, agent)
+				countIssueStats(&as.Stats, et.Epic)
+				for _, c := range et.Children {
+					a2 := shortActorName(c.Assignee)
+					if a2 == "" {
+						a2 = agent
+					}
+					as2 := getOrCreateAgent(aMap, a2)
+					as2.Issues = append(as2.Issues, c)
+					countIssueStats(&as2.Stats, c)
+				}
+				as.Issues = append(as.Issues, et.Epic)
+			}
+			for _, t := range r.tasks {
+				agent := shortActorName(t.Assignee)
+				if agent == "" {
+					agent = shortActorName(t.Owner)
+				}
+				if agent == "" {
+					agent = "(unassigned)"
+				}
+				as := getOrCreateAgent(aMap, agent)
+				as.Issues = append(as.Issues, t)
+				countIssueStats(&as.Stats, t)
+			}
+		}
+		for _, as := range aMap {
+			as.Stats.Total = as.Stats.Open + as.Stats.InProgress + as.Stats.Closed
+			sort.Slice(as.Issues, func(i, j int) bool {
+				if as.Issues[i].Priority != as.Issues[j].Priority {
+					return as.Issues[i].Priority < as.Issues[j].Priority
+				}
+				return as.Issues[i].UpdatedAt.After(as.Issues[j].UpdatedAt)
+			})
+			data.Agents = append(data.Agents, *as)
+		}
+		sort.Slice(data.Agents, func(i, j int) bool {
+			return data.Agents[i].Stats.InProgress > data.Agents[j].Stats.InProgress
+		})
 	} else {
 		// Priority mode
 		pMap := make(map[int]*prioritySection)
@@ -249,6 +307,9 @@ func (s *Server) handleWork(w http.ResponseWriter, r *http.Request) {
 	}
 	for _, p := range data.Priorities {
 		data.TotalCount += p.Count
+	}
+	for _, a := range data.Agents {
+		data.TotalCount += a.Stats.Total
 	}
 
 	s.render(w, r, "work", data)
@@ -351,6 +412,15 @@ func countIssueStats(s *repoStats, iss dolt.Issue) {
 	case "closed":
 		s.Closed++
 	}
+}
+
+func getOrCreateAgent(m map[string]*agentSection, name string) *agentSection {
+	if as, ok := m[name]; ok {
+		return as
+	}
+	as := &agentSection{Name: name}
+	m[name] = as
+	return as
 }
 
 func getOrCreatePriority(m map[int]*prioritySection, p int) *prioritySection {

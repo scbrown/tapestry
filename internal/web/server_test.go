@@ -551,6 +551,37 @@ func TestWorkPage_PriorityMode(t *testing.T) {
 	}
 }
 
+func TestWorkPage_AgentMode(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issues: []dolt.Issue{
+			{ID: "aegis-a1", Title: "Arnold task", Status: "in_progress", Priority: 1, Type: "task", Assignee: "aegis/crew/arnold", UpdatedAt: time.Now()},
+			{ID: "aegis-a2", Title: "Grant task", Status: "open", Priority: 2, Type: "task", Assignee: "aegis/crew/grant", UpdatedAt: time.Now()},
+			{ID: "aegis-a3", Title: "Unowned task", Status: "open", Priority: 2, Type: "task", UpdatedAt: time.Now()},
+		},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/work?mode=agent", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /work?mode=agent status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "arnold") {
+		t.Errorf("body missing agent 'arnold'")
+	}
+	if !strings.Contains(body, "Arnold task") {
+		t.Errorf("body missing Arnold task")
+	}
+	if !strings.Contains(body, "By Agent") {
+		t.Errorf("body missing agent mode toggle")
+	}
+}
+
 func TestCommandCenter_NilDataSource(t *testing.T) {
 	srv := New(nil)
 	req := httptest.NewRequest("GET", "/command-center", nil)
