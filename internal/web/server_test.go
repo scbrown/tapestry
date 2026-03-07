@@ -1013,3 +1013,54 @@ func TestBeadPage_EpicWithChildren(t *testing.T) {
 		}
 	}
 }
+
+func TestParseDescriptionMetadata(t *testing.T) {
+	tests := []struct {
+		name      string
+		input     string
+		wantKeys  []string
+		wantClean string
+	}{
+		{
+			name:      "no metadata",
+			input:     "Just a plain description.",
+			wantKeys:  nil,
+			wantClean: "",
+		},
+		{
+			name:      "metadata prefix",
+			input:     "attached_molecule: aegis-wisp-123\ndispatched_by: aegis/crew/maldoon\n\nThe actual description here.",
+			wantKeys:  []string{"attached_molecule", "dispatched_by"},
+			wantClean: "The actual description here.",
+		},
+		{
+			name:      "metadata only",
+			input:     "attached_at: 2026-03-07T13:37:50Z",
+			wantKeys:  []string{"attached_at"},
+			wantClean: "",
+		},
+		{
+			name:      "empty",
+			input:     "",
+			wantKeys:  nil,
+			wantClean: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			info, clean := parseDescriptionMetadata(tt.input)
+			if tt.wantKeys == nil && info != nil {
+				t.Errorf("expected nil info, got %v", info)
+			}
+			for _, key := range tt.wantKeys {
+				if _, ok := info[key]; !ok {
+					t.Errorf("missing key %q in info", key)
+				}
+			}
+			if tt.wantClean != "" && clean != tt.wantClean {
+				t.Errorf("clean = %q, want %q", clean, tt.wantClean)
+			}
+		})
+	}
+}
