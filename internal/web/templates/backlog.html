@@ -1,0 +1,83 @@
+{{define "title"}}Backlog{{end}}
+{{define "content"}}
+<div class="backlog-page" hx-get="/backlog" hx-trigger="every 120s" hx-select=".backlog-page" hx-swap="outerHTML">
+  <h1>Backlog Health <time class="text-dim">{{.GeneratedAt.Format "Jan 02, 2006 15:04"}}</time></h1>
+
+  {{if eq .TotalOpen 0}}
+  <p class="empty">No open beads in the backlog.</p>
+  {{else}}
+
+  <div class="backlog-stats">
+    <div class="stat">
+      <span class="stat-value">{{.TotalOpen}}</span>
+      <span class="stat-label">Open beads</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value">{{.MedianAge}}d</span>
+      <span class="stat-label">Median age</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value">{{printf "%.0f" .AvgAge}}d</span>
+      <span class="stat-label">Mean age</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value warn">{{.P90Age}}d</span>
+      <span class="stat-label">P90 age</span>
+    </div>
+  </div>
+
+  <div class="backlog-grid">
+
+    <section class="backlog-card">
+      <h2>Age Distribution</h2>
+      <div class="backlog-histogram">
+        {{range .Buckets}}
+        <div class="backlog-bar-group">
+          <div class="backlog-bar-wrapper">
+            <div class="backlog-bar" style="height:{{if $.MaxBucket}}{{printf "%.0f" (divf (mulf (itof .Count) 100.0) (itof $.MaxBucket))}}%{{else}}0%{{end}}" title="{{.Count}} beads">
+              {{if gt .Count 0}}<span class="backlog-bar-count">{{.Count}}</span>{{end}}
+            </div>
+          </div>
+          <span class="backlog-bar-label">{{.Label}}</span>
+        </div>
+        {{end}}
+      </div>
+    </section>
+
+    <section class="backlog-card">
+      <h2>Age by Priority</h2>
+      <table class="briefing-table">
+        <thead>
+          <tr><th>Priority</th><th>Count</th><th>Avg Age</th></tr>
+        </thead>
+        <tbody>
+          {{range .ByPriority}}
+          <tr>
+            <td><span class="priority-badge p{{.Priority}}">P{{.Priority}}</span></td>
+            <td>{{.Count}}</td>
+            <td>{{printf "%.0f" .AvgAge}}d</td>
+          </tr>
+          {{end}}
+        </tbody>
+      </table>
+    </section>
+
+    <section class="backlog-card backlog-oldest">
+      <h2>Oldest Open Beads</h2>
+      <ul class="briefing-list">
+        {{range .Oldest}}
+        <li>
+          <a href="/bead/{{.Issue.ID}}">{{.Issue.ID}}</a>
+          <span class="priority-badge p{{.Issue.Priority}}">P{{.Issue.Priority}}</span>
+          <span class="badge status-{{.Issue.Status}}">{{.Issue.Status}}</span>
+          {{.Issue.Title}}
+          <span class="stale-age">{{.AgeDays}}d</span>
+        </li>
+        {{end}}
+      </ul>
+    </section>
+
+  </div>
+  {{end}}
+</div>
+{{end}}

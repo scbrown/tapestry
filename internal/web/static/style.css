@@ -1311,5 +1311,19 @@ tr.silenced { opacity: 0.5; }
 .heatmap-cell-empty { background: transparent; border-color: transparent; }
 .heatmap-legend { display: flex; align-items: center; gap: 3px; margin-top: 0.5rem; }
 
+/* ── Backlog Page ──────────────────────────────────── */
+.backlog-page h1 { margin-bottom: 1rem; }
+.backlog-stats { display: flex; gap: 2rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
+.backlog-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+.backlog-card { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 1rem; }
+.backlog-card h2 { margin-top: 0; font-size: 1rem; margin-bottom: 0.75rem; }
+.backlog-oldest { grid-column: 1 / -1; }
+.backlog-histogram { display: flex; align-items: flex-end; gap: 0.5rem; height: 150px; padding-top: 0.5rem; }
+.backlog-bar-group { flex: 1; display: flex; flex-direction: column; align-items: center; height: 100%; }
+.backlog-bar-wrapper { flex: 1; width: 100%; display: flex; align-items: flex-end; justify-content: center; }
+.backlog-bar { width: 80%; min-width: 20px; background: var(--purple); border-radius: 3px 3px 0 0; position: relative; transition: height 0.3s; display: flex; align-items: flex-start; justify-content: center; }
+.backlog-bar-count { font-size: 0.7rem; color: var(--fg); padding-top: 2px; }
+.backlog-bar-label { font-size: 0.7rem; color: var(--text-muted); margin-top: 0.25rem; white-space: nowrap; }
+
 /* ── Nav Separators ──────────────────────────────────── */
 .nav-sep { color: var(--border); font-size: 0.75rem; opacity: 0.5; user-select: none; }

@@ -2119,6 +2119,56 @@ func TestHomelabPage_NilPrometheus(t *testing.T) {
 	}
 }
 
+func TestBacklogPage_NilDataSource(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/backlog", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /backlog status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Backlog") {
+		t.Error("expected 'Backlog' heading")
+	}
+}
+
+func TestBacklogPage_WithData(t *testing.T) {
+	now := time.Now()
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issues: []dolt.Issue{
+			{ID: "b1", Title: "Fresh task", Status: "open", Priority: 1, CreatedAt: now.Add(-2 * time.Hour), UpdatedAt: now},
+			{ID: "b2", Title: "Week old task", Status: "in_progress", Priority: 2, CreatedAt: now.Add(-7 * 24 * time.Hour), UpdatedAt: now},
+			{ID: "b3", Title: "Old task", Status: "open", Priority: 3, CreatedAt: now.Add(-45 * 24 * time.Hour), UpdatedAt: now},
+			{ID: "b4", Title: "Closed task", Status: "closed", Priority: 1, CreatedAt: now.Add(-10 * 24 * time.Hour), UpdatedAt: now},
+		},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/backlog", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /backlog status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Fresh task") {
+		t.Error("expected 'Fresh task' in backlog")
+	}
+	if !strings.Contains(body, "Old task") {
+		t.Error("expected 'Old task' in backlog")
+	}
+	// Closed tasks should not appear
+	if strings.Contains(body, "Closed task") {
+		t.Error("closed tasks should not appear in backlog")
+	}
+}
+
 func TestThemeParksPage_NilDataSource(t *testing.T) {
 	srv := New(nil)
 	req := httptest.NewRequest("GET", "/theme-parks", nil)
