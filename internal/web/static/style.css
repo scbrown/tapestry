@@ -140,6 +140,8 @@ main {
 .status-open { background: rgba(139, 233, 253, 0.15); color: #8be9fd; }
 .status-closed { background: rgba(80, 250, 123, 0.15); color: #50fa7b; }
 .status-progress { background: rgba(241, 250, 140, 0.15); color: #f1fa8c; }
+.status-blocked { background: rgba(255, 85, 85, 0.15); color: #ff5555; }
+.status-deferred { background: rgba(189, 147, 249, 0.15); color: #bd93f9; }
 .status-other { background: rgba(98, 114, 164, 0.2); color: #f8f8f2; }
 
 /* Tables */

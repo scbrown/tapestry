@@ -111,23 +111,21 @@ var funcMap = template.FuncMap{
 			return "status-open"
 		case "closed", "completed":
 			return "status-closed"
-		case "in_progress":
+		case "in_progress", "hooked":
 			return "status-progress"
+		case "blocked":
+			return "status-blocked"
+		case "deferred":
+			return "status-deferred"
 		default:
 			return "status-other"
 		}
 	},
 	"priorityLabel": func(p int) string {
-		switch p {
-		case 1:
-			return "P1"
-		case 2:
-			return "P2"
-		case 3:
-			return "P3"
-		default:
-			return "—"
+		if p >= 0 && p <= 4 {
+			return fmt.Sprintf("P%d", p)
 		}
+		return "—"
 	},
 	"statusBadge": func(s string) template.HTML {
 		cls := "status-other"
@@ -136,10 +134,12 @@ var funcMap = template.FuncMap{
 			cls = "status-open"
 		case "closed", "completed":
 			cls = "status-closed"
-		case "in_progress":
+		case "in_progress", "hooked":
 			cls = "status-progress"
-		case "hooked":
-			cls = "status-progress"
+		case "blocked":
+			cls = "status-blocked"
+		case "deferred":
+			cls = "status-deferred"
 		}
 		return template.HTML(fmt.Sprintf(`<span class="badge %s">%s</span>`, cls, template.HTMLEscapeString(s)))
 	},
