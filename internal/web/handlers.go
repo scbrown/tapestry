@@ -696,6 +696,7 @@ type briefingData struct {
 	BlockedItems    []briefingBlockedItem
 	RecentlyClosed  []dolt.Issue
 	AgentStats      []dolt.AgentStats
+	StaleWork       []dolt.Issue
 	HLA             hlaStatus
 	FreshAttention  time.Time
 	FreshInFlight   time.Time
@@ -743,6 +744,7 @@ func (s *Server) handleBriefing(w http.ResponseWriter, r *http.Request) {
 		inFlight        []dolt.Issue
 		blockedItems    []briefingBlockedItem
 		recentlyClosed  []dolt.Issue
+		staleWork       []dolt.Issue
 		agents          []dolt.AgentStats
 	}
 
@@ -782,6 +784,7 @@ func (s *Server) handleBriefing(w http.ResponseWriter, r *http.Request) {
 				results[i] = r
 				return
 			}
+			staleThreshold := now.AddDate(0, 0, -7)
 			for _, iss := range issues {
 				if iss.Status == "closed" || isNoise(iss.ID, iss.Title) {
 					continue
@@ -791,6 +794,10 @@ func (s *Server) handleBriefing(w http.ResponseWriter, r *http.Request) {
 				}
 				if (iss.Status == "in_progress" || iss.Status == "hooked") && iss.Priority <= 1 {
 					r.inFlight = append(r.inFlight, iss)
+				}
+				if iss.Priority <= 2 && iss.UpdatedAt.Before(staleThreshold) &&
+					(iss.Status == "open" || iss.Status == "in_progress") {
+					r.staleWork = append(r.staleWork, iss)
 				}
 			}
 
@@ -845,6 +852,7 @@ func (s *Server) handleBriefing(w http.ResponseWriter, r *http.Request) {
 		data.InFlight = append(data.InFlight, r.inFlight...)
 		data.BlockedItems = append(data.BlockedItems, r.blockedItems...)
 		data.RecentlyClosed = append(data.RecentlyClosed, r.recentlyClosed...)
+		data.StaleWork = append(data.StaleWork, r.staleWork...)
 		for _, a := range r.agents {
 			if existing, ok := agentMap[a.Name]; ok {
 				existing.Owned += a.Owned
@@ -906,6 +914,14 @@ func (s *Server) handleBriefing(w http.ResponseWriter, r *http.Request) {
 		if iss.UpdatedAt.After(data.FreshClosed) {
 			data.FreshClosed = iss.UpdatedAt
 		}
+	}
+
+	// Sort stale by oldest update first (most stale at top)
+	sort.Slice(data.StaleWork, func(i, j int) bool {
+		return data.StaleWork[i].UpdatedAt.Before(data.StaleWork[j].UpdatedAt)
+	})
+	if len(data.StaleWork) > 10 {
+		data.StaleWork = data.StaleWork[:10]
 	}
 
 	s.render(w, r, "briefing", data)

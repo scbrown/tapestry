@@ -114,6 +114,24 @@
       {{end}}
     </section>
 
+    {{/* ── Stale Work ── */}}
+    {{if .StaleWork}}
+    <section class="briefing-card">
+      <h2>Stale Work <span class="text-dim">(7+ days idle)</span></h2>
+      <ul class="briefing-list">
+        {{range .StaleWork}}
+        <li class="stale-item">
+          <a href="/bead/{{.ID}}">{{.ID}}</a>
+          <span class="priority-badge p{{.Priority}}">P{{.Priority}}</span>
+          {{.Title}}
+          <span class="stale-age">{{daysAgo .UpdatedAt}}d idle</span>
+          {{if .Assignee}}<span class="text-dim">{{shortActor .Assignee}}</span>{{end}}
+        </li>
+        {{end}}
+      </ul>
+    </section>
+    {{end}}
+
     {{/* ── Human Alignment ── */}}
     <section class="briefing-card">
       <h2>Human Alignment</h2>
