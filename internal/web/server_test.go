@@ -585,6 +585,152 @@ func TestCommandCenter_WithData(t *testing.T) {
 	}
 }
 
+func TestStatusPage_NilDataSource(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/status", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /status status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Executive Status") {
+		t.Error("expected 'Executive Status' heading")
+	}
+}
+
+func TestBriefingPage_NilDataSource(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/briefing", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /briefing status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Briefing") {
+		t.Error("expected 'Briefing' heading")
+	}
+}
+
+func TestBriefingPage_WithData(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		counts:    map[string]int{"open": 5, "in_progress": 2, "closed": 10},
+		created:   3,
+		closed:    1,
+		issues: []dolt.Issue{
+			{ID: "aegis-b1", Title: "Human task", Status: "open", Priority: 1, Owner: "stiwi", UpdatedAt: time.Now()},
+			{ID: "aegis-b2", Title: "Active work", Status: "in_progress", Priority: 1, Assignee: "aegis/crew/arnold", UpdatedAt: time.Now()},
+		},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/briefing", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /briefing status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Human task") {
+		t.Errorf("body missing needs-attention item")
+	}
+	if !strings.Contains(body, "Active work") {
+		t.Errorf("body missing in-flight item")
+	}
+}
+
+func TestAgentsPage_NilDataSource(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/agents", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /agents status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Agents") {
+		t.Error("expected 'Agents' heading")
+	}
+}
+
+func TestEpicsPage_NilDataSource(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/epics", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /epics status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Epics") {
+		t.Error("expected 'Epics' heading")
+	}
+}
+
+func TestHealthz(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/healthz", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /healthz status = %d, want %d", w.Code, http.StatusOK)
+	}
+	if w.Body.String() != "ok" {
+		t.Errorf("expected body 'ok', got %q", w.Body.String())
+	}
+}
+
+func TestMethodNotAllowed(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("DELETE", "/status", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusMethodNotAllowed {
+		t.Fatalf("DELETE /status status = %d, want %d", w.Code, http.StatusMethodNotAllowed)
+	}
+}
+
+func TestBeadLookup_CrossDB(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issue: &dolt.Issue{
+			ID:     "aegis-lookup1",
+			Title:  "Found via lookup",
+			Status: "open",
+		},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/bead/aegis-lookup1", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /bead/aegis-lookup1 status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Found via lookup") {
+		t.Error("expected bead title in lookup result")
+	}
+}
+
 func TestSearch_WithResults(t *testing.T) {
 	ds := &mockDataSource{
 		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
