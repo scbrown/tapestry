@@ -1014,6 +1014,52 @@ func TestBeadPage_EpicWithChildren(t *testing.T) {
 	}
 }
 
+func TestBeadStatusUpdate(t *testing.T) {
+	ds := &mockDataSource{
+		issue: &dolt.Issue{
+			ID:     "aegis-200",
+			Title:  "Test bead",
+			Status: "open",
+		},
+	}
+
+	srv := New(ds)
+
+	// POST to update status
+	req := httptest.NewRequest("POST", "/bead/beads_aegis/aegis-200/status", strings.NewReader("status=closed"))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
+	}
+
+	body := w.Body.String()
+	if !strings.Contains(body, "closed") {
+		t.Errorf("response missing 'closed' status")
+	}
+	if !strings.Contains(body, "Reopen") {
+		t.Errorf("response missing 'Reopen' button for closed bead")
+	}
+}
+
+func TestBeadStatusUpdate_InvalidStatus(t *testing.T) {
+	ds := &mockDataSource{}
+	srv := New(ds)
+
+	req := httptest.NewRequest("POST", "/bead/beads_aegis/aegis-200/status", strings.NewReader("status=invalid"))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("status = %d, want %d", w.Code, http.StatusBadRequest)
+	}
+}
+
 func TestParseDescriptionMetadata(t *testing.T) {
 	tests := []struct {
 		name      string

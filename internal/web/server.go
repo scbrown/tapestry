@@ -348,7 +348,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Allow POST for design comments
+	// Allow POST for design comments and bead actions
 	segments := strings.Split(strings.TrimPrefix(path, "/"), "/")
 	if r.Method == http.MethodPost && len(segments) == 3 && segments[0] == "designs" {
 		switch segments[2] {
@@ -359,6 +359,12 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		default:
 			http.NotFound(w, r)
 		}
+		return
+	}
+
+	// POST /bead/{db}/{id}/status — update bead status via HTMX
+	if r.Method == http.MethodPost && len(segments) == 4 && segments[0] == "bead" && segments[3] == "status" {
+		s.handleBeadStatusUpdate(w, r, segments[1], segments[2])
 		return
 	}
 

@@ -27,6 +27,21 @@
         <span>Updated: {{formatDate .Issue.UpdatedAt}}</span>
     </div>
 
+    <div class="bead-actions" id="bead-actions">
+        {{if eq .Issue.Status "open"}}
+        <button hx-post="/bead/{{.Database}}/{{.Issue.ID}}/status" hx-vals='{"status":"closed"}' hx-target="#bead-actions" hx-swap="outerHTML" class="btn btn-sm btn-close">Close</button>
+        <button hx-post="/bead/{{.Database}}/{{.Issue.ID}}/status" hx-vals='{"status":"in_progress"}' hx-target="#bead-actions" hx-swap="outerHTML" class="btn btn-sm btn-progress">Start</button>
+        {{else if eq .Issue.Status "in_progress"}}
+        <button hx-post="/bead/{{.Database}}/{{.Issue.ID}}/status" hx-vals='{"status":"closed"}' hx-target="#bead-actions" hx-swap="outerHTML" class="btn btn-sm btn-close">Close</button>
+        {{else if eq .Issue.Status "closed"}}
+        <button hx-post="/bead/{{.Database}}/{{.Issue.ID}}/status" hx-vals='{"status":"open"}' hx-target="#bead-actions" hx-swap="outerHTML" class="btn btn-sm btn-reopen">Reopen</button>
+        {{else if eq .Issue.Status "blocked"}}
+        <button hx-post="/bead/{{.Database}}/{{.Issue.ID}}/status" hx-vals='{"status":"open"}' hx-target="#bead-actions" hx-swap="outerHTML" class="btn btn-sm btn-reopen">Unblock</button>
+        {{else if eq .Issue.Status "deferred"}}
+        <button hx-post="/bead/{{.Database}}/{{.Issue.ID}}/status" hx-vals='{"status":"open"}' hx-target="#bead-actions" hx-swap="outerHTML" class="btn btn-sm btn-reopen">Reactivate</button>
+        {{end}}
+    </div>
+
     {{if .Metadata}}{{if .Metadata.Lineage}}
     <section class="bead-lineage">
         <h2>Lineage</h2>

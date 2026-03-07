@@ -345,6 +345,38 @@ main {
     white-space: nowrap;
 }
 
+/* Bead actions */
+.bead-actions {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.btn {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 0.375rem 0.75rem;
+    font-size: 0.8125rem;
+    cursor: pointer;
+    background: var(--surface);
+    color: var(--fg);
+    transition: background 0.15s, border-color 0.15s;
+}
+
+.btn:hover { background: var(--bg); }
+
+.btn-sm { padding: 0.25rem 0.5rem; font-size: 0.75rem; }
+
+.btn-close { border-color: var(--green); color: var(--green); }
+.btn-close:hover { background: var(--green); color: var(--bg); }
+
+.btn-reopen { border-color: var(--cyan); color: var(--cyan); }
+.btn-reopen:hover { background: var(--cyan); color: var(--bg); }
+
+.btn-progress { border-color: var(--orange); color: var(--orange); }
+.btn-progress:hover { background: var(--orange); color: var(--bg); }
+
 .description-text,
 .comment-body {
     font-family: inherit;

@@ -1075,6 +1075,61 @@ func isNoise(id, title string) bool {
 	return isMolecule(title) || isWisp(id, title)
 }
 
+// handleBeadStatusUpdate handles POST /bead/{db}/{id}/status to update a bead's status.
+// Returns an HTMX partial with the updated status badge and action buttons.
+func (s *Server) handleBeadStatusUpdate(w http.ResponseWriter, r *http.Request, database, id string) {
+	if s.ds == nil {
+		http.Error(w, "no database", http.StatusServiceUnavailable)
+		return
+	}
+
+	newStatus := r.FormValue("status")
+	validStatuses := map[string]bool{
+		"open": true, "in_progress": true, "closed": true, "blocked": true, "deferred": true,
+	}
+	if !validStatuses[newStatus] {
+		http.Error(w, "invalid status", http.StatusBadRequest)
+		return
+	}
+
+	if err := s.ds.UpdateStatus(r.Context(), database, id, newStatus); err != nil {
+		log.Printf("bead status update: %v", err)
+		http.Error(w, "update failed", http.StatusInternalServerError)
+		return
+	}
+
+	// Return updated action bar as HTMX partial
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	fmt.Fprintf(w, `<div class="bead-actions" id="bead-actions">
+		<span class="badge %s">%s</span>`, statusClassName(newStatus), newStatus)
+	switch newStatus {
+	case "open", "in_progress", "blocked", "deferred":
+		fmt.Fprintf(w, `
+		<button hx-post="/bead/%s/%s/status" hx-vals='{"status":"closed"}' hx-target="#bead-actions" hx-swap="outerHTML" class="btn btn-sm btn-close">Close</button>`, database, id)
+	case "closed":
+		fmt.Fprintf(w, `
+		<button hx-post="/bead/%s/%s/status" hx-vals='{"status":"open"}' hx-target="#bead-actions" hx-swap="outerHTML" class="btn btn-sm btn-reopen">Reopen</button>`, database, id)
+	}
+	fmt.Fprint(w, `</div>`)
+}
+
+func statusClassName(s string) string {
+	switch s {
+	case "open":
+		return "status-open"
+	case "closed", "completed":
+		return "status-closed"
+	case "in_progress", "hooked":
+		return "status-progress"
+	case "blocked":
+		return "status-blocked"
+	case "deferred":
+		return "status-deferred"
+	default:
+		return ""
+	}
+}
+
 // parseDescriptionMetadata extracts key: value lines from the start of a
 // description (used by beads for attached_molecule, dispatched_by, etc.)
 // and returns them as a map plus the remaining description text.
