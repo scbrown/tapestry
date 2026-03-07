@@ -6,6 +6,7 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/scbrown/tapestry/internal/dolt"
@@ -46,6 +47,12 @@ type decisionsData struct {
 
 func (s *Server) handleDecisions(w http.ResponseWriter, r *http.Request) {
 	filter := r.URL.Query().Get("filter")
+
+	if s.ds == nil {
+		s.render(w, r, "decisions", decisionsData{})
+		return
+	}
+
 	ctx := r.Context()
 
 	dbs, err := s.databases(ctx)
@@ -55,24 +62,42 @@ func (s *Server) handleDecisions(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var allDecisions []DecisionView
+	type decDBResult struct {
+		decisions []DecisionView
+	}
 
-	for _, db := range dbs {
-		issues, err := s.ds.Decisions(ctx, db.Name)
-		if err != nil {
-			log.Printf("decisions %s: %v", db.Name, err)
-			continue
-		}
+	results := make([]decDBResult, len(dbs))
+	var wg sync.WaitGroup
+	for i, db := range dbs {
+		wg.Add(1)
+		go func(i int, dbName string) {
+			defer wg.Done()
+			var r decDBResult
 
-		for _, iss := range issues {
-			labels, err := s.ds.LabelsForIssue(ctx, db.Name, iss.ID)
+			issues, err := s.ds.Decisions(ctx, dbName)
 			if err != nil {
-				log.Printf("labels %s/%s: %v", db.Name, iss.ID, err)
+				log.Printf("decisions %s: %v", dbName, err)
+				results[i] = r
+				return
 			}
 
-			dv := parseDecisionView(iss, db.Name, labels)
-			allDecisions = append(allDecisions, dv)
-		}
+			for _, iss := range issues {
+				labels, err := s.ds.LabelsForIssue(ctx, dbName, iss.ID)
+				if err != nil {
+					log.Printf("labels %s/%s: %v", dbName, iss.ID, err)
+				}
+
+				dv := parseDecisionView(iss, dbName, labels)
+				r.decisions = append(r.decisions, dv)
+			}
+			results[i] = r
+		}(i, db.Name)
+	}
+	wg.Wait()
+
+	var allDecisions []DecisionView
+	for _, r := range results {
+		allDecisions = append(allDecisions, r.decisions...)
 	}
 
 	// Sort by deadline (most urgent first), then by updated_at
