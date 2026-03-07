@@ -1,0 +1,66 @@
+{{define "title"}}Heatmap{{end}}
+
+{{define "content"}}
+<div class="heatmap-view">
+  <h1>Activity Heatmap</h1>
+
+  {{if .Err}}
+  <div class="error">{{.Err}}</div>
+  {{else}}
+
+  <div class="sla-summary">
+    <div class="stat">
+      <span class="stat-value accent">{{.Total}}</span>
+      <span class="stat-label">actions ({{.NumDays}}d)</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value">{{printf "%.1f" .AvgDay}}</span>
+      <span class="stat-label">avg/day</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value">{{.MaxDay}}</span>
+      <span class="stat-label">peak day</span>
+    </div>
+  </div>
+
+  {{if .Weeks}}
+  <div class="heatmap-grid-wrap">
+    <div class="heatmap-day-labels">
+      <div class="heatmap-day-label"></div>
+      <div class="heatmap-day-label">Mon</div>
+      <div class="heatmap-day-label"></div>
+      <div class="heatmap-day-label">Wed</div>
+      <div class="heatmap-day-label"></div>
+      <div class="heatmap-day-label">Fri</div>
+      <div class="heatmap-day-label"></div>
+    </div>
+    <div class="heatmap-grid">
+      {{range .Weeks}}
+      <div class="heatmap-week">
+        {{range .Days}}
+        {{if .}}
+        <div class="heatmap-cell" style="background: rgba(80, 250, 123, {{if $.MaxDay}}{{divf (itof .Total) (itof $.MaxDay)}}{{else}}0{{end}});" title="{{.Date.Format "Jan 2"}}: {{.Created}} created, {{.Closed}} closed"></div>
+        {{else}}
+        <div class="heatmap-cell heatmap-cell-empty"></div>
+        {{end}}
+        {{end}}
+      </div>
+      {{end}}
+    </div>
+  </div>
+  <div class="heatmap-legend">
+    <span class="text-dim">Less</span>
+    <div class="heatmap-cell" style="background: rgba(80, 250, 123, 0.0);"></div>
+    <div class="heatmap-cell" style="background: rgba(80, 250, 123, 0.25);"></div>
+    <div class="heatmap-cell" style="background: rgba(80, 250, 123, 0.5);"></div>
+    <div class="heatmap-cell" style="background: rgba(80, 250, 123, 0.75);"></div>
+    <div class="heatmap-cell" style="background: rgba(80, 250, 123, 1.0);"></div>
+    <span class="text-dim">More</span>
+  </div>
+  {{else}}
+  <p class="empty">No activity data.</p>
+  {{end}}
+
+  {{end}}
+</div>
+{{end}}

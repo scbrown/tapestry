@@ -1301,5 +1301,15 @@ tr.silenced { opacity: 0.5; }
 .kanban-assignee { color: var(--text-muted); }
 .kanban-empty { color: var(--text-muted); text-align: center; padding: 1rem; font-size: 0.85rem; }
 
+/* ── Heatmap Page ──────────────────────────────────── */
+.heatmap-grid-wrap { display: flex; gap: 0.25rem; margin: 1.5rem 0; }
+.heatmap-day-labels { display: flex; flex-direction: column; gap: 2px; padding-top: 0; }
+.heatmap-day-label { width: 2rem; height: 14px; font-size: 0.65rem; color: var(--text-muted); line-height: 14px; }
+.heatmap-grid { display: flex; gap: 2px; overflow-x: auto; }
+.heatmap-week { display: flex; flex-direction: column; gap: 2px; }
+.heatmap-cell { width: 14px; height: 14px; border-radius: 2px; border: 1px solid rgba(255,255,255,0.05); }
+.heatmap-cell-empty { background: transparent; border-color: transparent; }
+.heatmap-legend { display: flex; align-items: center; gap: 3px; margin-top: 0.5rem; }
+
 /* ── Nav Separators ──────────────────────────────────── */
 .nav-sep { color: var(--border); font-size: 0.75rem; opacity: 0.5; user-select: none; }

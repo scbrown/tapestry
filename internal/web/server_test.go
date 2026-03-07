@@ -1876,3 +1876,41 @@ func TestKanbanPage_WithData(t *testing.T) {
 		t.Error("closed tasks should not appear on kanban")
 	}
 }
+
+func TestHeatmapPage_NilDataSource(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/heatmap", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /heatmap status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Heatmap") {
+		t.Error("expected 'Heatmap' heading")
+	}
+}
+
+func TestHeatmapPage_WithData(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		created:   5,
+		closed:    3,
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/heatmap", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /heatmap status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Activity") {
+		t.Error("expected 'Activity' in heatmap page")
+	}
+}
