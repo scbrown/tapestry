@@ -203,7 +203,8 @@ func (s *Server) handleBead(w http.ResponseWriter, r *http.Request, database, id
 		return
 	}
 
-	ctx := r.Context()
+	ctx, cancel := context.WithTimeout(r.Context(), 15*time.Second)
+	defer cancel()
 
 	issue, err := s.ds.IssueByID(ctx, database, id)
 	if err != nil {
@@ -256,7 +257,7 @@ func (s *Server) handleBead(w http.ResponseWriter, r *http.Request, database, id
 	}
 
 	if s.forgejo != nil {
-		commitCtx, commitCancel := context.WithTimeout(ctx, 5*time.Second)
+		commitCtx, commitCancel := context.WithTimeout(ctx, 2*time.Second)
 		data.Commits = s.forgejo.searchCommitsForBead(commitCtx, id)
 		commitCancel()
 	}
@@ -281,7 +282,28 @@ func (s *Server) handleBeadLookup(w http.ResponseWriter, r *http.Request, id str
 		return
 	}
 
+	// Try to match the bead ID prefix to a database name for fast lookup.
+	// e.g. "aegis-abc" → try "beads_aegis" first, "hq-abc" → try "beads_gt" first.
+	prefix := id
+	if idx := strings.IndexByte(id, '-'); idx > 0 {
+		prefix = id[:idx]
+	}
+	guessDB := "beads_" + prefix
+	if prefix == "hq" {
+		guessDB = "beads_gt"
+	}
+
+	// Reorder: put the guessed database first to avoid scanning all databases.
+	ordered := make([]dolt.DatabaseInfo, 0, len(dbs))
 	for _, db := range dbs {
+		if db.Name == guessDB {
+			ordered = append([]dolt.DatabaseInfo{db}, ordered...)
+		} else {
+			ordered = append(ordered, db)
+		}
+	}
+
+	for _, db := range ordered {
 		issue, err := s.ds.IssueByID(ctx, db.Name, id)
 		if err != nil {
 			continue
