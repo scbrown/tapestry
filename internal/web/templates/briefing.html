@@ -76,6 +76,26 @@
       {{end}}
     </section>
 
+    {{/* ── Blocked Work ── */}}
+    {{if .BlockedItems}}
+    <section class="briefing-card">
+      <h2>Blocked Work <span class="text-dim">({{len .BlockedItems}})</span></h2>
+      <ul class="briefing-list">
+        {{range .BlockedItems}}
+        <li class="blocked-item">
+          <a href="/bead/{{.Issue.ID}}">{{.Issue.ID}}</a>
+          <span class="priority-badge p{{.Issue.Priority}}">P{{.Issue.Priority}}</span>
+          {{.Issue.Title}}
+          <span class="blocked-reason">
+            blocked by <a href="/bead/{{.BlockerID}}">{{.BlockerID}}</a>
+            <span class="text-dim">({{.BlockerDesc}}{{if .Owner}} — {{shortActor .Owner}}{{end}})</span>
+          </span>
+        </li>
+        {{end}}
+      </ul>
+    </section>
+    {{end}}
+
     {{/* ── Recently Closed ── */}}
     <section class="briefing-card">
       <h2>Recently Closed {{if not .FreshClosed.IsZero}}<time class="text-dim freshness">{{timeAgo .FreshClosed}}</time>{{end}}</h2>

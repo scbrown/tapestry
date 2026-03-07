@@ -831,3 +831,8 @@ tr.silenced { opacity: 0.5; }
     text-decoration: none;
 }
 .bead-link:hover { background: rgba(139,233,253,0.2); text-decoration: none; }
+
+/* ── Briefing Blocked Items ──────────────────────────────── */
+.blocked-item { display: flex; flex-wrap: wrap; gap: 0.25rem; align-items: baseline; }
+.blocked-reason { font-size: 0.8rem; color: var(--danger); margin-left: 0.25rem; }
+.blocked-reason a { color: var(--orange); }

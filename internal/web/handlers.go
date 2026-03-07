@@ -669,6 +669,13 @@ type hlaStatus struct {
 	TrackerBead   string
 }
 
+type briefingBlockedItem struct {
+	Issue       dolt.Issue
+	BlockerID   string
+	BlockerDesc string
+	Owner       string
+}
+
 type briefingData struct {
 	GeneratedAt     time.Time
 	OpenCount       int
@@ -679,6 +686,7 @@ type briefingData struct {
 	CreatedToday    int
 	NeedsAttention  []dolt.Issue
 	InFlight        []dolt.Issue
+	BlockedItems    []briefingBlockedItem
 	RecentlyClosed  []dolt.Issue
 	AgentStats      []dolt.AgentStats
 	HLA             hlaStatus
@@ -726,6 +734,7 @@ func (s *Server) handleBriefing(w http.ResponseWriter, r *http.Request) {
 		closedToday     int
 		needsAttention  []dolt.Issue
 		inFlight        []dolt.Issue
+		blockedItems    []briefingBlockedItem
 		recentlyClosed  []dolt.Issue
 		agents          []dolt.AgentStats
 	}
@@ -778,6 +787,26 @@ func (s *Server) handleBriefing(w http.ResponseWriter, r *http.Request) {
 				}
 			}
 
+			// Blocked items (P1/P2 non-closed items with unresolved blockers)
+			blocked, err := s.ds.BlockedIssues(ctx, dbName)
+			if err == nil {
+				for _, bi := range blocked {
+					if isNoise(bi.Issue.ID, bi.Issue.Title) || bi.Issue.Priority > 2 {
+						continue
+					}
+					owner := bi.Blocker.Assignee
+					if owner == "" {
+						owner = bi.Blocker.Owner
+					}
+					r.blockedItems = append(r.blockedItems, briefingBlockedItem{
+						Issue:       bi.Issue,
+						BlockerID:   bi.Blocker.ID,
+						BlockerDesc: bi.Blocker.Title,
+						Owner:       owner,
+					})
+				}
+			}
+
 			recent, err := s.ds.Issues(ctx, dbName, dolt.IssueFilter{
 				Status:       "closed",
 				UpdatedAfter: yesterday,
@@ -807,6 +836,7 @@ func (s *Server) handleBriefing(w http.ResponseWriter, r *http.Request) {
 		data.ClosedToday += r.closedToday
 		data.NeedsAttention = append(data.NeedsAttention, r.needsAttention...)
 		data.InFlight = append(data.InFlight, r.inFlight...)
+		data.BlockedItems = append(data.BlockedItems, r.blockedItems...)
 		data.RecentlyClosed = append(data.RecentlyClosed, r.recentlyClosed...)
 		for _, a := range r.agents {
 			if existing, ok := agentMap[a.Name]; ok {
@@ -838,6 +868,13 @@ func (s *Server) handleBriefing(w http.ResponseWriter, r *http.Request) {
 		if iss.UpdatedAt.After(data.FreshAttention) {
 			data.FreshAttention = iss.UpdatedAt
 		}
+	}
+
+	sort.Slice(data.BlockedItems, func(i, j int) bool {
+		return data.BlockedItems[i].Issue.Priority < data.BlockedItems[j].Issue.Priority
+	})
+	if len(data.BlockedItems) > 15 {
+		data.BlockedItems = data.BlockedItems[:15]
 	}
 
 	sort.Slice(data.InFlight, func(i, j int) bool {
