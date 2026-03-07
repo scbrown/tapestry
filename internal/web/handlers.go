@@ -256,7 +256,9 @@ func (s *Server) handleBead(w http.ResponseWriter, r *http.Request, database, id
 	}
 
 	if s.forgejo != nil {
-		data.Commits = s.forgejo.searchCommitsForBead(ctx, id)
+		commitCtx, commitCancel := context.WithTimeout(ctx, 5*time.Second)
+		data.Commits = s.forgejo.searchCommitsForBead(commitCtx, id)
+		commitCancel()
 	}
 
 	s.render(w, r, "bead", data)
