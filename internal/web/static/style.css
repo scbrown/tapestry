@@ -1265,5 +1265,22 @@ tr.silenced { opacity: 0.5; }
 }
 .completion-fill { height: 100%; background: var(--success); transition: width 0.3s; }
 
+/* ── Matrix Page ────────────────────────────────────── */
+.matrix-table td.matrix-cell { text-align: center; font-weight: bold; }
+.matrix-table td.matrix-empty { color: var(--text-muted); font-weight: normal; }
+.matrix-legend { margin-top: 1rem; display: flex; align-items: center; gap: 0.5rem; }
+.matrix-legend .legend-label { color: var(--text-muted); }
+.matrix-scale-low { padding: 0.25rem 1rem; background: rgba(189, 147, 249, 0.1); border-radius: 3px; font-size: 0.75rem; }
+.matrix-scale-high { padding: 0.25rem 1rem; background: rgba(189, 147, 249, 1.0); border-radius: 3px; font-size: 0.75rem; color: var(--bg); }
+
+/* ── SLA Page ──────────────────────────────────────── */
+.sla-summary { display: flex; gap: 2rem; margin: 1.5rem 0; }
+.sla-targets { margin-bottom: 1.5rem; }
+.text-red { color: var(--danger); }
+.text-yellow { color: var(--warning); }
+.sla-bar-track { display: inline-block; width: 6rem; height: 0.75rem; background: var(--surface); border-radius: var(--radius); overflow: hidden; vertical-align: middle; margin-right: 0.5rem; }
+.sla-bar-fill { height: 100%; transition: width 0.3s; }
+.sla-bar-fill.sla-warning { background: var(--warning); }
+
 /* ── Nav Separators ──────────────────────────────────── */
 .nav-sep { color: var(--border); font-size: 0.75rem; opacity: 0.5; user-select: none; }
