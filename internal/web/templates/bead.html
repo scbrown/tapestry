@@ -17,9 +17,9 @@
         <span class="badge {{statusClass .Issue.Status}}">{{.Issue.Status}}</span>
         <span class="badge priority">{{priorityLabel .Issue.Priority}}</span>
         {{if .Issue.Type}}<span class="badge type">{{.Issue.Type}}</span>{{end}}
-        {{if .Issue.Owner}}<span class="meta-item">Owner: {{.Issue.Owner}}</span>{{end}}
-        {{if .Issue.Assignee}}<span class="meta-item">Assignee: {{.Issue.Assignee}}</span>{{end}}
-        {{/* Labels field not yet on Issue struct */}}
+        {{if .Issue.Owner}}<span class="meta-item">Owner: <a href="/agent/{{.Issue.Owner}}">{{shortActor .Issue.Owner}}</a></span>{{end}}
+        {{if .Issue.Assignee}}<span class="meta-item">Assignee: <a href="/agent/{{.Issue.Assignee}}">{{shortActor .Issue.Assignee}}</a></span>{{end}}
+        {{range .Labels}}<span class="badge label">{{.}}</span>{{end}}
     </div>
 
     <div class="bead-dates">
@@ -56,11 +56,9 @@
             {{range .Deps}}
             <li>
                 <span class="dep-type">{{.Type}}</span>
-                <a href="/bead/{{$.Database}}/{{.FromID}}"
-                   hx-get="/bead/{{$.Database}}/{{.FromID}}" hx-target="#content" hx-push-url="true">{{.FromID}}</a>
+                <a href="/bead/{{.FromID}}" hx-get="/bead/{{.FromID}}" hx-target="#content" hx-push-url="true">{{.FromID}}</a>
                 &rarr;
-                <a href="/bead/{{$.Database}}/{{.ToID}}"
-                   hx-get="/bead/{{$.Database}}/{{.ToID}}" hx-target="#content" hx-push-url="true">{{.ToID}}</a>
+                <a href="/bead/{{.ToID}}" hx-get="/bead/{{.ToID}}" hx-target="#content" hx-push-url="true">{{.ToID}}</a>
             </li>
             {{end}}
         </ul>

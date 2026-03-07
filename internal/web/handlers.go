@@ -44,6 +44,7 @@ type dbSummary struct {
 type beadData struct {
 	Database string
 	Issue    *dolt.Issue
+	Labels   []string
 	Comments []dolt.Comment
 	Deps     []dolt.Dependency
 	Commits  []beadCommit
@@ -207,6 +208,11 @@ func (s *Server) handleBead(w http.ResponseWriter, r *http.Request, database, id
 		return
 	}
 	data.Issue = issue
+
+	labels, err := s.ds.LabelsForIssue(ctx, database, id)
+	if err == nil {
+		data.Labels = labels
+	}
 
 	comments, err := s.ds.Comments(ctx, database, id)
 	if err == nil {

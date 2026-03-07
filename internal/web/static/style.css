@@ -908,3 +908,6 @@ tr.silenced { opacity: 0.5; }
   50% { opacity: 0.5; }
 }
 .pulse { animation: pulse 2s ease-in-out infinite; }
+
+/* ── Label badges ────────────────────────────────────── */
+.badge.label { background: var(--comment); color: var(--fg); font-size: 0.75rem; padding: 0.15rem 0.5rem; border-radius: 10px; }
