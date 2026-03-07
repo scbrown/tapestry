@@ -398,15 +398,29 @@ func (s *Server) handleSearch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	for _, db := range dbs {
-		results, err := s.ds.SearchIssues(ctx, db.Name, q, 20)
-		if err != nil {
-			continue
-		}
-		for i := range results {
-			results[i].Rig = db.Name
-		}
-		data.Issues = append(data.Issues, results...)
+	type searchResult struct {
+		issues []dolt.Issue
+	}
+	results := make([]searchResult, len(dbs))
+	var wg sync.WaitGroup
+	for i, db := range dbs {
+		wg.Add(1)
+		go func(i int, dbName string) {
+			defer wg.Done()
+			issues, err := s.ds.SearchIssues(ctx, dbName, q, 20)
+			if err != nil {
+				return
+			}
+			for j := range issues {
+				issues[j].Rig = dbName
+			}
+			results[i] = searchResult{issues: issues}
+		}(i, db.Name)
+	}
+	wg.Wait()
+
+	for _, r := range results {
+		data.Issues = append(data.Issues, r.issues...)
 	}
 
 	s.render(w, r, "search", data)
