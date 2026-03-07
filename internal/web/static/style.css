@@ -229,7 +229,8 @@ main {
 .bead-deps,
 .bead-lineage,
 .bead-timeline,
-.bead-children {
+.bead-children,
+.bead-dispatch {
     margin-bottom: 1.5rem;
 }
 
@@ -238,7 +239,8 @@ main {
 .bead-deps h2,
 .bead-lineage h2,
 .bead-timeline h2,
-.bead-children h2 {
+.bead-children h2,
+.bead-dispatch h2 {
     font-size: 1.125rem;
     margin-bottom: 0.75rem;
 }
@@ -1050,6 +1052,10 @@ tr.silenced { opacity: 0.5; }
 .nav-search-input { background: var(--bg); border: 1px solid var(--border); border-radius: 4px; color: var(--fg); padding: 0.25rem 0.5rem; font-size: 0.85rem; width: 140px; transition: width 0.2s; }
 .nav-search-input:focus { width: 200px; outline: none; border-color: var(--purple); }
 .nav-search-input::placeholder { color: var(--text-muted); }
+.nav-search-indicator { font-size: 0.75rem; color: var(--text-muted); }
+.htmx-indicator { display: none; }
+.htmx-request .htmx-indicator { display: inline; }
+.htmx-request.htmx-indicator { display: inline; }
 
 /* ── Label badges ────────────────────────────────────── */
 .badge.label { background: var(--comment); color: var(--fg); font-size: 0.75rem; padding: 0.15rem 0.5rem; border-radius: 10px; }

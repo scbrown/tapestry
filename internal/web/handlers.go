@@ -52,6 +52,8 @@ type beadData struct {
 	Metadata      *dolt.IssueMetadata
 	StatusHistory []dolt.StatusTransition
 	Children      []dolt.Issue
+	DispatchInfo  map[string]string // parsed key-value metadata from description prefix
+	CleanDesc     string            // description with metadata prefix stripped
 	Err           string
 }
 
@@ -212,6 +214,7 @@ func (s *Server) handleBead(w http.ResponseWriter, r *http.Request, database, id
 		return
 	}
 	data.Issue = issue
+	data.DispatchInfo, data.CleanDesc = parseDescriptionMetadata(issue.Description)
 
 	labels, err := s.ds.LabelsForIssue(ctx, database, id)
 	if err == nil {
@@ -1070,6 +1073,39 @@ func isWisp(id, title string) bool {
 
 func isNoise(id, title string) bool {
 	return isMolecule(title) || isWisp(id, title)
+}
+
+// parseDescriptionMetadata extracts key: value lines from the start of a
+// description (used by beads for attached_molecule, dispatched_by, etc.)
+// and returns them as a map plus the remaining description text.
+func parseDescriptionMetadata(desc string) (map[string]string, string) {
+	if desc == "" {
+		return nil, ""
+	}
+	lines := strings.Split(desc, "\n")
+	info := make(map[string]string)
+	bodyStart := 0
+	for i, line := range lines {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			bodyStart = i + 1
+			continue
+		}
+		idx := strings.Index(line, ": ")
+		if idx > 0 && idx < 30 && !strings.Contains(line[:idx], " ") {
+			key := line[:idx]
+			info[key] = line[idx+2:]
+			bodyStart = i + 1
+		} else {
+			bodyStart = i
+			break
+		}
+	}
+	if len(info) == 0 {
+		return nil, desc
+	}
+	remaining := strings.TrimSpace(strings.Join(lines[bodyStart:], "\n"))
+	return info, remaining
 }
 
 func isHumanOwner(owner string) bool {

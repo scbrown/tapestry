@@ -83,7 +83,26 @@
     </section>
     {{end}}
 
-    {{if .Issue.Description}}
+    {{if .DispatchInfo}}
+    <section class="bead-dispatch">
+        <h2>Dispatch</h2>
+        <div class="lineage-chain">
+            {{range $k, $v := .DispatchInfo}}
+            <div class="lineage-step">
+                <span class="lineage-label">{{$k}}</span>
+                <span class="lineage-value">{{$v}}</span>
+            </div>
+            {{end}}
+        </div>
+    </section>
+    {{end}}
+
+    {{if .CleanDesc}}
+    <section class="bead-description">
+        <h2>Description</h2>
+        <pre class="description-text">{{.CleanDesc}}</pre>
+    </section>
+    {{else if .Issue.Description}}
     <section class="bead-description">
         <h2>Description</h2>
         <pre class="description-text">{{.Issue.Description}}</pre>
