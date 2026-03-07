@@ -8,6 +8,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/scbrown/tapestry/internal/dolt"
@@ -127,41 +128,56 @@ func (s *Server) handleMonthly(w http.ResponseWriter, r *http.Request, yearStr, 
 		return
 	}
 
-	for _, db := range dbs {
-		summary := dbSummary{Name: db.Name}
+	summaries := make([]dbSummary, len(dbs))
+	activities := make([]map[string]int, len(dbs))
+	var wg sync.WaitGroup
+	for i, db := range dbs {
+		wg.Add(1)
+		go func(i int, dbName string) {
+			defer wg.Done()
+			summary := dbSummary{Name: dbName}
 
-		counts, err := s.ds.CountByStatus(ctx, db.Name)
-		if err != nil {
-			summary.Err = err.Error()
-			data.Databases = append(data.Databases, summary)
-			continue
-		}
-		summary.Counts = counts
-		for _, v := range counts {
-			summary.Total += v
-		}
-
-		created, err := s.ds.CountCreatedInRange(ctx, db.Name, from, to)
-		if err == nil {
-			summary.Created = created
-		}
-
-		closed, err := s.ds.CountClosedInRange(ctx, db.Name, from, to)
-		if err == nil {
-			summary.Closed = closed
-		}
-
-		data.Databases = append(data.Databases, summary)
-		data.TotalOpen += counts["open"]
-		data.TotalClosed += counts["closed"] + counts["completed"]
-		data.TotalCreated += summary.Created
-		data.TotalClosedMonth += summary.Closed
-
-		activity, err := s.ds.AgentActivityInRange(ctx, db.Name, from, to)
-		if err == nil {
-			for agent, count := range activity {
-				data.Agents[agent] += count
+			counts, err := s.ds.CountByStatus(ctx, dbName)
+			if err != nil {
+				summary.Err = err.Error()
+				summaries[i] = summary
+				return
 			}
+			summary.Counts = counts
+			for _, v := range counts {
+				summary.Total += v
+			}
+
+			created, err := s.ds.CountCreatedInRange(ctx, dbName, from, to)
+			if err == nil {
+				summary.Created = created
+			}
+
+			closed, err := s.ds.CountClosedInRange(ctx, dbName, from, to)
+			if err == nil {
+				summary.Closed = closed
+			}
+
+			summaries[i] = summary
+
+			activity, err := s.ds.AgentActivityInRange(ctx, dbName, from, to)
+			if err == nil {
+				activities[i] = activity
+			}
+		}(i, db.Name)
+	}
+	wg.Wait()
+
+	for i := range summaries {
+		data.Databases = append(data.Databases, summaries[i])
+		if summaries[i].Counts != nil {
+			data.TotalOpen += summaries[i].Counts["open"]
+			data.TotalClosed += summaries[i].Counts["closed"] + summaries[i].Counts["completed"]
+		}
+		data.TotalCreated += summaries[i].Created
+		data.TotalClosedMonth += summaries[i].Closed
+		for agent, count := range activities[i] {
+			data.Agents[agent] += count
 		}
 	}
 
@@ -283,28 +299,52 @@ func (s *Server) handleBeadList(w http.ResponseWriter, r *http.Request) {
 		filter.Assignee = data.Assignee
 	}
 
-	rigSet := make(map[string]bool)
-	assigneeSet := make(map[string]bool)
-
+	// Filter databases by rig if specified
+	var targetDBs []dolt.DatabaseInfo
 	for _, db := range dbs {
 		if data.Rig != "" && db.Name != data.Rig {
 			continue
 		}
+		targetDBs = append(targetDBs, db)
+	}
 
-		issues, err := s.ds.Issues(ctx, db.Name, filter)
-		if err != nil {
-			log.Printf("beads list: query %s: %v", db.Name, err)
-			continue
-		}
+	type beadListResult struct {
+		issues    []dolt.Issue
+		rigName   string
+		assignees []string
+	}
 
-		for i := range issues {
-			issues[i].Rig = db.Name
-		}
-		data.Issues = append(data.Issues, issues...)
+	beadResults := make([]beadListResult, len(targetDBs))
+	var wg sync.WaitGroup
+	for i, db := range targetDBs {
+		wg.Add(1)
+		go func(i int, dbName string) {
+			defer wg.Done()
+			r := beadListResult{rigName: dbName}
 
-		rigSet[db.Name] = true
-		assignees, _ := s.ds.DistinctAssignees(ctx, db.Name)
-		for _, a := range assignees {
+			issues, err := s.ds.Issues(ctx, dbName, filter)
+			if err != nil {
+				log.Printf("beads list: query %s: %v", dbName, err)
+				beadResults[i] = r
+				return
+			}
+
+			for j := range issues {
+				issues[j].Rig = dbName
+			}
+			r.issues = issues
+			r.assignees, _ = s.ds.DistinctAssignees(ctx, dbName)
+			beadResults[i] = r
+		}(i, db.Name)
+	}
+	wg.Wait()
+
+	rigSet := make(map[string]bool)
+	assigneeSet := make(map[string]bool)
+	for _, r := range beadResults {
+		data.Issues = append(data.Issues, r.issues...)
+		rigSet[r.rigName] = true
+		for _, a := range r.assignees {
 			assigneeSet[a] = true
 		}
 	}
@@ -421,127 +461,154 @@ func (s *Server) handleStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	for _, db := range dbs {
-		// 1. Active Initiatives: P0/P1 in_progress or open
-		for _, status := range []string{"in_progress", "open"} {
-			issues, err := s.ds.Issues(ctx, db.Name, dolt.IssueFilter{
-				Status:   status,
-				Priority: 1,
-				Limit:    30,
-			})
-			if err != nil {
-				log.Printf("status: active %s %s: %v", status, db.Name, err)
-				continue
-			}
-			for _, iss := range issues {
-				if isNoise(iss.ID, iss.Title) {
-					continue
-				}
-				if status == "in_progress" || (status == "open" && iss.Priority <= 1) {
-					data.ActiveWork = append(data.ActiveWork, iss)
-				}
-			}
-		}
+	type statusDBResult struct {
+		activeWork      []dolt.Issue
+		keeperPipeline  []keeperGroup
+		blockedWork     []blockedRow
+		recentClosed    []dolt.Issue
+		actionItems     []actionItem
+	}
 
-		// 2. Keeper Pipeline: group by assignee
-		inFlight, err := s.ds.Issues(ctx, db.Name, dolt.IssueFilter{Limit: 200})
-		if err != nil {
-			log.Printf("status: pipeline %s: %v", db.Name, err)
-		} else {
-			keeperMap := make(map[string]*keeperGroup)
-			for _, iss := range inFlight {
-				if iss.Status == "closed" || isNoise(iss.ID, iss.Title) {
-					continue
-				}
-				agent := iss.Assignee
-				if agent == "" {
-					agent = iss.Owner
-				}
-				if agent == "" {
-					continue
-				}
-				kg, ok := keeperMap[agent]
-				if !ok {
-					kg = &keeperGroup{Name: agent}
-					keeperMap[agent] = kg
-				}
-				switch iss.Status {
-				case "open":
-					kg.Open++
-				case "in_progress", "hooked":
-					kg.InProgress++
-				}
-			}
-			for _, kg := range keeperMap {
-				data.KeeperPipeline = append(data.KeeperPipeline, *kg)
-			}
-		}
+	statusResults := make([]statusDBResult, len(dbs))
+	var wg sync.WaitGroup
+	for i, db := range dbs {
+		wg.Add(1)
+		go func(i int, dbName string) {
+			defer wg.Done()
+			var r statusDBResult
 
-		// 3. Blocked Work
-		blocked, err := s.ds.BlockedIssues(ctx, db.Name)
-		if err != nil {
-			log.Printf("status: blocked %s: %v", db.Name, err)
-		} else {
-			for _, bi := range blocked {
-				if isNoise(bi.Issue.ID, bi.Issue.Title) || isNoise(bi.Blocker.ID, bi.Blocker.Title) {
-					continue
-				}
-				owner := bi.Blocker.Assignee
-				if owner == "" {
-					owner = bi.Blocker.Owner
-				}
-				data.BlockedWork = append(data.BlockedWork, blockedRow{
-					Issue:        bi.Issue,
-					Blocker:      bi.Blocker,
-					BlockerOwner: owner,
-					IsHuman:      isHumanOwner(owner),
+			// 1. Active Initiatives: P0/P1 in_progress or open
+			for _, status := range []string{"in_progress", "open"} {
+				issues, err := s.ds.Issues(ctx, dbName, dolt.IssueFilter{
+					Status:   status,
+					Priority: 1,
+					Limit:    30,
 				})
-			}
-		}
-
-		// 4. Recent Completions (last 24h)
-		recent, err := s.ds.Issues(ctx, db.Name, dolt.IssueFilter{
-			Status:       "closed",
-			UpdatedAfter: yesterday,
-			Limit:        20,
-		})
-		if err != nil {
-			log.Printf("status: recent %s: %v", db.Name, err)
-		} else {
-			for _, iss := range recent {
-				if !isNoise(iss.ID, iss.Title) {
-					data.RecentClosed = append(data.RecentClosed, iss)
-				}
-			}
-		}
-
-		// 5. Action Items: beads owned by or assigned to human
-		humanIssues, err := s.ds.Issues(ctx, db.Name, dolt.IssueFilter{Limit: 100})
-		if err != nil {
-			log.Printf("status: action items %s: %v", db.Name, err)
-		} else {
-			for _, iss := range humanIssues {
-				if iss.Status == "closed" || isNoise(iss.ID, iss.Title) {
+				if err != nil {
+					log.Printf("status: active %s %s: %v", status, dbName, err)
 					continue
 				}
-				reason := ""
-				waitingFor := ""
-				if isHumanOwner(iss.Owner) {
-					reason = "Human-owned issue"
-					waitingFor = iss.Owner
-				} else if isHumanOwner(iss.Assignee) {
-					reason = "Assigned to human"
-					waitingFor = iss.Assignee
+				for _, iss := range issues {
+					if isNoise(iss.ID, iss.Title) {
+						continue
+					}
+					if status == "in_progress" || (status == "open" && iss.Priority <= 1) {
+						r.activeWork = append(r.activeWork, iss)
+					}
 				}
-				if reason != "" {
-					data.ActionItems = append(data.ActionItems, actionItem{
-						Issue:      iss,
-						Reason:     reason,
-						WaitingFor: waitingFor,
+			}
+
+			// 2. Keeper Pipeline: group by assignee
+			inFlight, err := s.ds.Issues(ctx, dbName, dolt.IssueFilter{Limit: 200})
+			if err != nil {
+				log.Printf("status: pipeline %s: %v", dbName, err)
+			} else {
+				keeperMap := make(map[string]*keeperGroup)
+				for _, iss := range inFlight {
+					if iss.Status == "closed" || isNoise(iss.ID, iss.Title) {
+						continue
+					}
+					agent := iss.Assignee
+					if agent == "" {
+						agent = iss.Owner
+					}
+					if agent == "" {
+						continue
+					}
+					kg, ok := keeperMap[agent]
+					if !ok {
+						kg = &keeperGroup{Name: agent}
+						keeperMap[agent] = kg
+					}
+					switch iss.Status {
+					case "open":
+						kg.Open++
+					case "in_progress", "hooked":
+						kg.InProgress++
+					}
+				}
+				for _, kg := range keeperMap {
+					r.keeperPipeline = append(r.keeperPipeline, *kg)
+				}
+			}
+
+			// 3. Blocked Work
+			blocked, err := s.ds.BlockedIssues(ctx, dbName)
+			if err != nil {
+				log.Printf("status: blocked %s: %v", dbName, err)
+			} else {
+				for _, bi := range blocked {
+					if isNoise(bi.Issue.ID, bi.Issue.Title) || isNoise(bi.Blocker.ID, bi.Blocker.Title) {
+						continue
+					}
+					owner := bi.Blocker.Assignee
+					if owner == "" {
+						owner = bi.Blocker.Owner
+					}
+					r.blockedWork = append(r.blockedWork, blockedRow{
+						Issue:        bi.Issue,
+						Blocker:      bi.Blocker,
+						BlockerOwner: owner,
+						IsHuman:      isHumanOwner(owner),
 					})
 				}
 			}
-		}
+
+			// 4. Recent Completions (last 24h)
+			recent, err := s.ds.Issues(ctx, dbName, dolt.IssueFilter{
+				Status:       "closed",
+				UpdatedAfter: yesterday,
+				Limit:        20,
+			})
+			if err != nil {
+				log.Printf("status: recent %s: %v", dbName, err)
+			} else {
+				for _, iss := range recent {
+					if !isNoise(iss.ID, iss.Title) {
+						r.recentClosed = append(r.recentClosed, iss)
+					}
+				}
+			}
+
+			// 5. Action Items: beads owned by or assigned to human
+			humanIssues, err := s.ds.Issues(ctx, dbName, dolt.IssueFilter{Limit: 100})
+			if err != nil {
+				log.Printf("status: action items %s: %v", dbName, err)
+			} else {
+				for _, iss := range humanIssues {
+					if iss.Status == "closed" || isNoise(iss.ID, iss.Title) {
+						continue
+					}
+					reason := ""
+					waitingFor := ""
+					if isHumanOwner(iss.Owner) {
+						reason = "Human-owned issue"
+						waitingFor = iss.Owner
+					} else if isHumanOwner(iss.Assignee) {
+						reason = "Assigned to human"
+						waitingFor = iss.Assignee
+					}
+					if reason != "" {
+						r.actionItems = append(r.actionItems, actionItem{
+							Issue:      iss,
+							Reason:     reason,
+							WaitingFor: waitingFor,
+						})
+					}
+				}
+			}
+
+			statusResults[i] = r
+		}(i, db.Name)
+	}
+	wg.Wait()
+
+	for _, r := range statusResults {
+		data.ActiveWork = append(data.ActiveWork, r.activeWork...)
+		data.KeeperPipeline = append(data.KeeperPipeline, r.keeperPipeline...)
+		data.BlockedWork = append(data.BlockedWork, r.blockedWork...)
+		data.RecentClosed = append(data.RecentClosed, r.recentClosed...)
+		data.ActionItems = append(data.ActionItems, r.actionItems...)
 	}
 
 	// Sort active work by priority then updated
@@ -631,75 +698,106 @@ func (s *Server) handleBriefing(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	type briefingDBResult struct {
+		openCount       int
+		inProgressCount int
+		closedCount     int
+		totalBeads      int
+		createdToday    int
+		closedToday     int
+		needsAttention  []dolt.Issue
+		inFlight        []dolt.Issue
+		recentlyClosed  []dolt.Issue
+		agents          []dolt.AgentStats
+	}
+
+	results := make([]briefingDBResult, len(dbs))
+	var wg sync.WaitGroup
+	for i, db := range dbs {
+		wg.Add(1)
+		go func(i int, dbName string) {
+			defer wg.Done()
+			var r briefingDBResult
+
+			counts, err := s.ds.CountByStatus(ctx, dbName)
+			if err != nil {
+				log.Printf("briefing: counts %s: %v", dbName, err)
+				results[i] = r
+				return
+			}
+			r.openCount = counts["open"]
+			r.inProgressCount = counts["in_progress"] + counts["hooked"]
+			r.closedCount = counts["closed"] + counts["completed"]
+			for _, v := range counts {
+				r.totalBeads += v
+			}
+
+			created, err := s.ds.CountCreatedInRange(ctx, dbName, todayStart, todayEnd)
+			if err == nil {
+				r.createdToday = created
+			}
+			closed, err := s.ds.CountClosedInRange(ctx, dbName, todayStart, todayEnd)
+			if err == nil {
+				r.closedToday = closed
+			}
+
+			issues, err := s.ds.Issues(ctx, dbName, dolt.IssueFilter{Limit: 100})
+			if err != nil {
+				log.Printf("briefing: issues %s: %v", dbName, err)
+				results[i] = r
+				return
+			}
+			for _, iss := range issues {
+				if iss.Status == "closed" || isNoise(iss.ID, iss.Title) {
+					continue
+				}
+				if isHumanOwner(iss.Owner) || isHumanOwner(iss.Assignee) {
+					r.needsAttention = append(r.needsAttention, iss)
+				}
+				if (iss.Status == "in_progress" || iss.Status == "hooked") && iss.Priority <= 1 {
+					r.inFlight = append(r.inFlight, iss)
+				}
+			}
+
+			recent, err := s.ds.Issues(ctx, dbName, dolt.IssueFilter{
+				Status:       "closed",
+				UpdatedAfter: yesterday,
+				Limit:        20,
+			})
+			if err == nil {
+				for _, iss := range recent {
+					if !isNoise(iss.ID, iss.Title) {
+						r.recentlyClosed = append(r.recentlyClosed, iss)
+					}
+				}
+			}
+
+			r.agents, _ = s.ds.AgentActivity(ctx, dbName)
+			results[i] = r
+		}(i, db.Name)
+	}
+	wg.Wait()
+
 	agentMap := make(map[string]*dolt.AgentStats)
-
-	for _, db := range dbs {
-		counts, err := s.ds.CountByStatus(ctx, db.Name)
-		if err != nil {
-			log.Printf("briefing: counts %s: %v", db.Name, err)
-			continue
-		}
-		data.OpenCount += counts["open"]
-		data.InProgressCount += counts["in_progress"] + counts["hooked"]
-		data.ClosedCount += counts["closed"] + counts["completed"]
-		for _, v := range counts {
-			data.TotalBeads += v
-		}
-
-		created, err := s.ds.CountCreatedInRange(ctx, db.Name, todayStart, todayEnd)
-		if err == nil {
-			data.CreatedToday += created
-		}
-		closed, err := s.ds.CountClosedInRange(ctx, db.Name, todayStart, todayEnd)
-		if err == nil {
-			data.ClosedToday += closed
-		}
-
-		// Needs attention: human-owned P0/P1 open beads
-		issues, err := s.ds.Issues(ctx, db.Name, dolt.IssueFilter{Limit: 100})
-		if err != nil {
-			log.Printf("briefing: issues %s: %v", db.Name, err)
-			continue
-		}
-		for _, iss := range issues {
-			if iss.Status == "closed" || isNoise(iss.ID, iss.Title) {
-				continue
-			}
-			if isHumanOwner(iss.Owner) || isHumanOwner(iss.Assignee) {
-				data.NeedsAttention = append(data.NeedsAttention, iss)
-			}
-			if (iss.Status == "in_progress" || iss.Status == "hooked") && iss.Priority <= 1 {
-				data.InFlight = append(data.InFlight, iss)
-			}
-		}
-
-		// Recently closed (24h)
-		recent, err := s.ds.Issues(ctx, db.Name, dolt.IssueFilter{
-			Status:       "closed",
-			UpdatedAfter: yesterday,
-			Limit:        20,
-		})
-		if err == nil {
-			for _, iss := range recent {
-				if !isNoise(iss.ID, iss.Title) {
-					data.RecentlyClosed = append(data.RecentlyClosed, iss)
-				}
-			}
-		}
-
-		// Agent stats
-		agents, err := s.ds.AgentActivity(ctx, db.Name)
-		if err == nil {
-			for _, a := range agents {
-				if existing, ok := agentMap[a.Name]; ok {
-					existing.Owned += a.Owned
-					existing.Closed += a.Closed
-					existing.Open += a.Open
-					existing.InProgress += a.InProgress
-				} else {
-					copy := a
-					agentMap[a.Name] = &copy
-				}
+	for _, r := range results {
+		data.OpenCount += r.openCount
+		data.InProgressCount += r.inProgressCount
+		data.ClosedCount += r.closedCount
+		data.TotalBeads += r.totalBeads
+		data.CreatedToday += r.createdToday
+		data.ClosedToday += r.closedToday
+		data.NeedsAttention = append(data.NeedsAttention, r.needsAttention...)
+		data.InFlight = append(data.InFlight, r.inFlight...)
+		data.RecentlyClosed = append(data.RecentlyClosed, r.recentlyClosed...)
+		for _, a := range r.agents {
+			if existing, ok := agentMap[a.Name]; ok {
+				existing.Owned += a.Owned
+				existing.Closed += a.Closed
+				existing.Open += a.Open
+				existing.InProgress += a.InProgress
+			} else {
+				cp := a
+				agentMap[a.Name] = &cp
 			}
 		}
 	}
@@ -774,18 +872,28 @@ func (s *Server) handleAgents(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	agentResults := make([][]dolt.AgentStats, len(dbs))
+	var wgAgents sync.WaitGroup
+	for i, db := range dbs {
+		wgAgents.Add(1)
+		go func(i int, dbName string) {
+			defer wgAgents.Done()
+			agents, err := s.ds.AgentActivity(ctx, dbName)
+			if err != nil {
+				log.Printf("agents: activity %s: %v", dbName, err)
+				return
+			}
+			agentResults[i] = agents
+		}(i, db.Name)
+	}
+	wgAgents.Wait()
+
 	agentMap := make(map[string]*dolt.AgentStats)
-	for _, db := range dbs {
-		agents, err := s.ds.AgentActivity(ctx, db.Name)
-		if err != nil {
-			log.Printf("agents: activity %s: %v", db.Name, err)
-			continue
-		}
+	for _, agents := range agentResults {
 		for _, a := range agents {
 			if a.Name == "(unowned)" || a.Name == "" {
 				continue
 			}
-			// Merge by short name to combine duplicate identities
 			key := shortActorName(a.Name)
 			if existing, ok := agentMap[key]; ok {
 				existing.Owned += a.Owned
