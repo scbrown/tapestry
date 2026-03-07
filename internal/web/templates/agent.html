@@ -8,7 +8,32 @@
     <div class="stat-card"><div class="stat-value">{{.Stats.Owned}}</div><div class="stat-label">Owned</div></div>
     <div class="stat-card"><div class="stat-value">{{.Stats.Closed}}</div><div class="stat-label">Closed</div></div>
     <div class="stat-card"><div class="stat-value">{{.Stats.InProgress}}</div><div class="stat-label">Active</div></div>
+    {{if .HandoffStats}}
+    <div class="stat-card"><div class="stat-value">{{.HandoffStats.TotalHandoffs}}</div><div class="stat-label">Handoffs</div></div>
+    <div class="stat-card"><div class="stat-value">{{fmtDuration .HandoffStats.AvgSessionTime}}</div><div class="stat-label">Avg Session</div></div>
+    <div class="stat-card"><div class="stat-value">{{timeAgo .HandoffStats.LastHandoff}}</div><div class="stat-label">Last Handoff</div></div>
+    {{end}}
   </div>
+
+  {{if .RecentHandoffs}}
+  <section>
+    <h2>Recent Handoffs</h2>
+    <div class="table-wrap">
+    <table class="bead-table">
+      <thead><tr><th>Time</th><th>Session</th><th>Subject</th></tr></thead>
+      <tbody>
+        {{range .RecentHandoffs}}
+        <tr>
+          <td>{{formatDateTime .Timestamp}}</td>
+          <td>{{if gt .SessionDuration 0}}{{fmtDuration .SessionDuration}}{{else}}—{{end}}</td>
+          <td class="text-dim">{{.Subject}}</td>
+        </tr>
+        {{end}}
+      </tbody>
+    </table>
+    </div>
+  </section>
+  {{end}}
 
   {{if .Issues}}
   <section>

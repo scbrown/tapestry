@@ -10,12 +10,15 @@ import (
 	"time"
 
 	"github.com/scbrown/tapestry/internal/dolt"
+	"github.com/scbrown/tapestry/internal/events"
 )
 
 type agentDetailData struct {
-	Name   string
-	Stats  dolt.AgentStats
-	Issues []dolt.Issue
+	Name          string
+	Stats         dolt.AgentStats
+	Issues        []dolt.Issue
+	HandoffStats  *events.ChainStats
+	RecentHandoffs []events.HandoffEvent
 }
 
 func (s *Server) handleAgentDetail(w http.ResponseWriter, r *http.Request, name string) {
@@ -158,5 +161,30 @@ func (s *Server) handleAgentDetail(w http.ResponseWriter, r *http.Request, name 
 	})
 
 	data.Stats.Name = name
+
+	// Enrich with handoff data from events
+	if s.workspacePath != "" {
+		allEvents, err := events.ReadWorkspace(s.workspacePath)
+		if err == nil {
+			chains := events.BuildHandoffChains(allEvents)
+			for _, chain := range chains {
+				if strings.Contains(chain.Actor, name) || (len(name) > 0 && strings.HasSuffix(chain.Actor, "/"+name)) {
+					summary := events.ChainSummary([]events.HandoffChain{chain})
+					if len(summary) > 0 {
+						data.HandoffStats = &summary[0]
+					}
+					// Show last 10 handoffs
+					end := len(chain.Handoffs)
+					start := end - 10
+					if start < 0 {
+						start = 0
+					}
+					data.RecentHandoffs = chain.Handoffs[start:end]
+					break
+				}
+			}
+		}
+	}
+
 	s.render(w, r, "agent", data)
 }
