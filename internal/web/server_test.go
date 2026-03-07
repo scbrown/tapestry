@@ -24,6 +24,7 @@ type mockDataSource struct {
 	metadata      *dolt.IssueMetadata
 	statusHistory []dolt.StatusTransition
 	children      []dolt.Issue
+	blockedIssues []dolt.BlockedIssue
 	err           error
 }
 
@@ -72,7 +73,7 @@ func (m *mockDataSource) DistinctAssignees(_ context.Context, _ string) ([]strin
 }
 
 func (m *mockDataSource) BlockedIssues(_ context.Context, _ string) ([]dolt.BlockedIssue, error) {
-	return nil, m.err
+	return m.blockedIssues, m.err
 }
 
 func (m *mockDataSource) AgentActivity(_ context.Context, _ string) ([]dolt.AgentStats, error) {
@@ -1236,5 +1237,53 @@ func TestBeadComment_EmptyBody(t *testing.T) {
 
 	if w.Code != http.StatusBadRequest {
 		t.Fatalf("POST empty comment status = %d, want %d", w.Code, http.StatusBadRequest)
+	}
+}
+
+func TestBlockedPage_NilDataSource(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/blocked", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /blocked status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Blocked") {
+		t.Error("expected 'Blocked' heading")
+	}
+}
+
+func TestBlockedPage_WithData(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		blockedIssues: []dolt.BlockedIssue{
+			{
+				Issue:   dolt.Issue{ID: "aegis-b1", Title: "Needs auth", Status: "open", Priority: 1, Assignee: "aegis/crew/arnold", UpdatedAt: time.Now()},
+				Blocker: dolt.Issue{ID: "aegis-b2", Title: "Auth module", Status: "in_progress", Owner: "aegis/crew/grant"},
+			},
+		},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/blocked", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /blocked status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "aegis-b1") {
+		t.Error("expected blocked issue ID in output")
+	}
+	if !strings.Contains(body, "aegis-b2") {
+		t.Error("expected blocker ID in output")
+	}
+	if !strings.Contains(body, "Top Blockers") {
+		t.Error("expected 'Top Blockers' section")
 	}
 }

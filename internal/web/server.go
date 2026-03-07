@@ -356,6 +356,10 @@ func (s *Server) parseTemplates() {
 			template.New("").Funcs(funcMap).ParseFS(templateFS,
 				"templates/layout.html", "templates/executive.html"),
 		),
+		"blocked": template.Must(
+			template.New("").Funcs(funcMap).ParseFS(templateFS,
+				"templates/layout.html", "templates/blocked.html"),
+		),
 	}
 }
 
@@ -443,6 +447,8 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		s.handleVelocity(w, r)
 	case len(segments) == 1 && segments[0] == "executive":
 		s.handleExecutive(w, r)
+	case len(segments) == 1 && segments[0] == "blocked":
+		s.handleBlocked(w, r)
 	case len(segments) == 1 && segments[0] == "homelab":
 		s.handleHomelab(w, r)
 	case len(segments) == 1 && segments[0] == "designs":

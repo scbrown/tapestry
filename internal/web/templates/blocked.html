@@ -1,0 +1,81 @@
+{{define "title"}}Blocked{{end}}
+
+{{define "content"}}
+<div class="blocked-view">
+  <h1>Blocked Beads</h1>
+
+  {{if .Err}}
+  <div class="error">{{.Err}}</div>
+  {{else}}
+
+  <div class="results-meta">{{.Total}} blocked dependencies across all rigs</div>
+
+  {{if .ByBlocker}}
+  <h2>Top Blockers</h2>
+  <div class="table-wrap">
+  <table class="bead-table">
+    <thead>
+      <tr>
+        <th>Rig</th>
+        <th>Blocker</th>
+        <th>Title</th>
+        <th>Status</th>
+        <th>Owner</th>
+        <th>Blocking</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{range .ByBlocker}}
+      <tr>
+        <td><span class="rig-label">{{rigName .Rig}}</span></td>
+        <td><a href="/bead/{{.Blocker.ID}}">{{.Blocker.ID}}</a></td>
+        <td>{{.Blocker.Title}}</td>
+        <td>{{statusBadge .Blocker.Status}}</td>
+        <td title="{{.Blocker.Owner}}">{{shortActor .Blocker.Owner}}</td>
+        <td><strong>{{.Count}}</strong> beads</td>
+      </tr>
+      {{end}}
+    </tbody>
+  </table>
+  </div>
+  {{end}}
+
+  {{if .Entries}}
+  <h2>All Blocked Dependencies</h2>
+  <div class="table-wrap">
+  <table class="bead-table">
+    <thead>
+      <tr>
+        <th>Rig</th>
+        <th>Blocked</th>
+        <th>Title</th>
+        <th>Pri</th>
+        <th>Assignee</th>
+        <th>Blocked By</th>
+        <th>Blocker Title</th>
+        <th>Blocker Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{range .Entries}}
+      <tr>
+        <td><span class="rig-label">{{rigName .Rig}}</span></td>
+        <td><a href="/bead/{{.Issue.ID}}">{{.Issue.ID}}</a></td>
+        <td>{{.Issue.Title}}</td>
+        <td>{{priorityLabel .Issue.Priority}}</td>
+        <td title="{{.Issue.Assignee}}">{{shortActor .Issue.Assignee}}</td>
+        <td><a href="/bead/{{.Blocker.ID}}">{{.Blocker.ID}}</a></td>
+        <td>{{.Blocker.Title}}</td>
+        <td>{{statusBadge .Blocker.Status}}</td>
+      </tr>
+      {{end}}
+    </tbody>
+  </table>
+  </div>
+  {{else}}
+  <p class="empty">No blocked beads. Everything is flowing.</p>
+  {{end}}
+
+  {{end}}
+</div>
+{{end}}
