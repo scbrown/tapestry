@@ -9,6 +9,7 @@ import (
 	"html/template"
 	"log"
 	"net/http"
+	"os"
 	"regexp"
 	"sort"
 	"strings"
@@ -66,10 +67,27 @@ const designsRepo = "stiwi/aegis"
 const designsPath = "docs/designs"
 
 func newForgejoClient() *forgejoClient {
+	token := os.Getenv("FORGEJO_API_TOKEN")
+	transport := http.DefaultTransport
+	if token != "" {
+		transport = &tokenTransport{token: token, base: http.DefaultTransport}
+	}
 	return &forgejoClient{
 		baseURL: "http://git.svc",
-		http:    &http.Client{Timeout: 5 * time.Second},
+		http:    &http.Client{Timeout: 5 * time.Second, Transport: transport},
 	}
+}
+
+// tokenTransport injects an Authorization header into every request.
+type tokenTransport struct {
+	token string
+	base  http.RoundTripper
+}
+
+func (t *tokenTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	req = req.Clone(req.Context())
+	req.Header.Set("Authorization", "token "+t.token)
+	return t.base.RoundTrip(req)
 }
 
 type forgejoFile struct {
