@@ -1,0 +1,68 @@
+{{define "title"}}Dependencies{{end}}
+
+{{define "content"}}
+<div class="deps-view">
+  <h1>Dependency Graph</h1>
+
+  {{if .Err}}
+  <div class="error">{{.Err}}</div>
+  {{else}}
+
+  <div class="results-meta">
+    {{.Total}} edges across {{.Stats.UniqueIDs}} beads
+    {{if .Stats.DependsOn}}&middot; {{.Stats.DependsOn}} depends_on{{end}}
+    {{if .Stats.ChildOf}}&middot; {{.Stats.ChildOf}} child_of{{end}}
+    {{if .Stats.Other}}&middot; {{.Stats.Other}} other{{end}}
+  </div>
+
+  <div class="dep-filters">
+    <a href="/deps" class="badge {{if not .Filter}}filter-active{{end}}">all</a>
+    <a href="/deps?type=depends_on" class="badge {{if eq .Filter "depends_on"}}filter-active{{end}}">depends_on</a>
+    <a href="/deps?type=child_of" class="badge {{if eq .Filter "child_of"}}filter-active{{end}}">child_of</a>
+  </div>
+
+  {{range .ByType}}
+  <h2>{{.Type}} <span class="count-badge">{{len .Entries}}</span></h2>
+  <div class="table-wrap">
+  <table class="bead-table">
+    <thead>
+      <tr>
+        <th>Rig</th>
+        <th>From</th>
+        <th>Title</th>
+        <th>Status</th>
+        <th>Pri</th>
+        <th class="dep-arrow">&rarr;</th>
+        <th>To</th>
+        <th>Title</th>
+        <th>Status</th>
+        <th>Pri</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{range .Entries}}
+      <tr>
+        <td><span class="rig-label">{{rigName .Rig}}</span></td>
+        <td><a href="/bead/{{.From.ID}}">{{.From.ID}}</a></td>
+        <td class="title-cell">{{.From.Title}}</td>
+        <td>{{statusBadge .From.Status}}</td>
+        <td>{{priorityLabel .From.Priority}}</td>
+        <td class="dep-arrow">&rarr;</td>
+        <td><a href="/bead/{{.To.ID}}">{{.To.ID}}</a></td>
+        <td class="title-cell">{{.To.Title}}</td>
+        <td>{{statusBadge .To.Status}}</td>
+        <td>{{priorityLabel .To.Priority}}</td>
+      </tr>
+      {{end}}
+    </tbody>
+  </table>
+  </div>
+  {{end}}
+
+  {{if not .ByType}}
+  <p class="empty">No dependencies found.</p>
+  {{end}}
+
+  {{end}}
+</div>
+{{end}}

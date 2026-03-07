@@ -26,6 +26,7 @@ type mockDataSource struct {
 	children      []dolt.Issue
 	blockedIssues []dolt.BlockedIssue
 	labelCounts   []dolt.LabelCount
+	depEdges      []dolt.DepEdge
 	err           error
 }
 
@@ -154,6 +155,10 @@ func (m *mockDataSource) DistinctLabels(_ context.Context, _ string) ([]dolt.Lab
 
 func (m *mockDataSource) IssuesByLabel(_ context.Context, _, _ string) ([]dolt.Issue, error) {
 	return m.issues, m.err
+}
+
+func (m *mockDataSource) AllDependenciesWithIssues(_ context.Context, _ string) ([]dolt.DepEdge, error) {
+	return m.depEdges, m.err
 }
 
 func TestIndexRendersMonthly(t *testing.T) {
@@ -1437,5 +1442,97 @@ func TestBlockedPage_WithData(t *testing.T) {
 	}
 	if !strings.Contains(body, "Top Blockers") {
 		t.Error("expected 'Top Blockers' section")
+	}
+}
+
+func TestDepsPage_NilDataSource(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/deps", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /deps status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Dependency") {
+		t.Error("expected 'Dependency' heading")
+	}
+}
+
+func TestDepsPage_WithData(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		depEdges: []dolt.DepEdge{
+			{
+				From: dolt.Issue{ID: "aegis-a1", Title: "Feature A", Status: "open", Priority: 1, UpdatedAt: time.Now()},
+				To:   dolt.Issue{ID: "aegis-a2", Title: "Prereq B", Status: "in_progress", Priority: 1, UpdatedAt: time.Now()},
+				Type: "depends_on",
+			},
+			{
+				From: dolt.Issue{ID: "aegis-c1", Title: "Sub-task", Status: "open", Priority: 2, UpdatedAt: time.Now()},
+				To:   dolt.Issue{ID: "aegis-e1", Title: "Epic", Status: "open", Priority: 1, UpdatedAt: time.Now()},
+				Type: "child_of",
+			},
+		},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/deps", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /deps status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "aegis-a1") {
+		t.Error("expected from issue ID")
+	}
+	if !strings.Contains(body, "aegis-a2") {
+		t.Error("expected to issue ID")
+	}
+	if !strings.Contains(body, "depends_on") {
+		t.Error("expected depends_on type group")
+	}
+	if !strings.Contains(body, "child_of") {
+		t.Error("expected child_of type group")
+	}
+}
+
+func TestDepsPage_FilterByType(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		depEdges: []dolt.DepEdge{
+			{
+				From: dolt.Issue{ID: "aegis-d1", Title: "Dep", Status: "open", Priority: 1, UpdatedAt: time.Now()},
+				To:   dolt.Issue{ID: "aegis-d2", Title: "Prereq", Status: "closed", Priority: 1, UpdatedAt: time.Now()},
+				Type: "depends_on",
+			},
+			{
+				From: dolt.Issue{ID: "aegis-ch1", Title: "Child", Status: "open", Priority: 2, UpdatedAt: time.Now()},
+				To:   dolt.Issue{ID: "aegis-ep1", Title: "Parent", Status: "open", Priority: 1, UpdatedAt: time.Now()},
+				Type: "child_of",
+			},
+		},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/deps?type=child_of", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /deps?type=child_of status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "aegis-ch1") {
+		t.Error("expected child_of entry")
+	}
+	if strings.Contains(body, "aegis-d1") {
+		t.Error("depends_on entry should be filtered out")
 	}
 }

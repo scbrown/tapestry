@@ -55,6 +55,7 @@ type DataSource interface {
 	TripPlans(ctx context.Context, database string) ([]dolt.TripPlan, error)
 	DistinctLabels(ctx context.Context, database string) ([]dolt.LabelCount, error)
 	IssuesByLabel(ctx context.Context, database, label string) ([]dolt.Issue, error)
+	AllDependenciesWithIssues(ctx context.Context, database string) ([]dolt.DepEdge, error)
 }
 
 // Server serves the Tapestry web dashboard.
@@ -374,6 +375,10 @@ func (s *Server) parseTemplates() {
 			template.New("").Funcs(funcMap).ParseFS(templateFS,
 				"templates/layout.html", "templates/closed.html"),
 		),
+		"deps": template.Must(
+			template.New("").Funcs(funcMap).ParseFS(templateFS,
+				"templates/layout.html", "templates/deps.html"),
+		),
 	}
 }
 
@@ -469,6 +474,8 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		s.handleStale(w, r)
 	case len(segments) == 1 && segments[0] == "closed":
 		s.handleClosed(w, r)
+	case len(segments) == 1 && segments[0] == "deps":
+		s.handleDeps(w, r)
 	case len(segments) == 1 && segments[0] == "homelab":
 		s.handleHomelab(w, r)
 	case len(segments) == 1 && segments[0] == "designs":

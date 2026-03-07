@@ -121,6 +121,13 @@ type BlockedIssue struct {
 	Blocker Issue
 }
 
+// DepEdge represents a dependency edge with issue details for both sides.
+type DepEdge struct {
+	From Issue
+	To   Issue
+	Type string // "depends_on", "child_of", etc.
+}
+
 // AchievementDef describes an achievement that can be unlocked.
 type AchievementDef struct {
 	ID          string

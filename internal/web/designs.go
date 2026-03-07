@@ -54,6 +54,7 @@ type designViewData struct {
 
 type forgejoClient struct {
 	baseURL string
+	http    *http.Client
 
 	mu      sync.Mutex
 	cache   []designEntry
@@ -67,6 +68,7 @@ const designsPath = "docs/designs"
 func newForgejoClient() *forgejoClient {
 	return &forgejoClient{
 		baseURL: "http://git.svc",
+		http:    &http.Client{Timeout: 5 * time.Second},
 	}
 }
 
@@ -93,7 +95,7 @@ func (f *forgejoClient) listDesigns(ctx context.Context) ([]designEntry, error) 
 		return nil, err
 	}
 
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := f.http.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("forgejo API: %w", err)
 	}
@@ -149,7 +151,7 @@ func (f *forgejoClient) getDesign(ctx context.Context, name string) (string, err
 		return "", err
 	}
 
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := f.http.Do(req)
 	if err != nil {
 		return "", fmt.Errorf("forgejo API: %w", err)
 	}
@@ -430,7 +432,7 @@ func sendNtfy(topic, title, msg, tags, priority string) {
 	req.Header.Set("Title", title)
 	req.Header.Set("Tags", tags)
 	req.Header.Set("Priority", priority)
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := (&http.Client{Timeout: 5 * time.Second}).Do(req)
 	if err != nil {
 		log.Printf("designs: ntfy send to %s: %v", topic, err)
 		return
@@ -553,7 +555,7 @@ func (f *forgejoClient) searchCommitsForBead(ctx context.Context, beadID string)
 			if err != nil {
 				return
 			}
-			resp, err := http.DefaultClient.Do(req)
+			resp, err := f.http.Do(req)
 			if err != nil {
 				return
 			}
