@@ -557,7 +557,13 @@ func buildIssueQuery(f IssueFilter, asOf string) (string, []any) {
 		b.WriteString("issues")
 	}
 
-	conditions := []string{"issue_type IN ('task','bug','epic')"}
+	var conditions []string
+	if f.Type != "" {
+		conditions = append(conditions, "issue_type = ?")
+		args = append(args, f.Type)
+	} else {
+		conditions = append(conditions, "issue_type IN ('task','bug','epic','feature','decision')")
+	}
 	if f.Status != "" {
 		conditions = append(conditions, "status = ?")
 		args = append(args, f.Status)
@@ -565,10 +571,6 @@ func buildIssueQuery(f IssueFilter, asOf string) (string, []any) {
 	if f.Priority != 0 {
 		conditions = append(conditions, "priority = ?")
 		args = append(args, f.Priority)
-	}
-	if f.Type != "" {
-		conditions = append(conditions, "issue_type = ?")
-		args = append(args, f.Type)
 	}
 	if f.Assignee != "" {
 		conditions = append(conditions, "assignee = ?")
