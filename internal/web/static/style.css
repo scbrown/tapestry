@@ -1119,3 +1119,83 @@ tr.silenced { opacity: 0.5; }
 
 /* ── Agent meta ────────────────────────────────────── */
 .agent-meta-row { display: flex; gap: 0.5rem; font-size: 0.8rem; margin-top: 0.25rem; }
+
+/* ── Executive ────────────────────────────────────── */
+.exec { max-width: 1200px; margin: 0 auto; padding: 1.5rem; }
+.exec-header { display: flex; align-items: baseline; gap: 1rem; margin-bottom: 1.5rem; }
+.exec-header h1 { font-size: 1.5rem; }
+
+.exec-kpi-row { display: flex; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
+.exec-kpi { background: var(--surface); border-radius: var(--radius); padding: 0.75rem 1.25rem; display: flex; flex-direction: column; align-items: center; flex: 1; min-width: 100px; }
+.exec-kpi-value { font-size: 1.8rem; font-weight: 700; line-height: 1.2; }
+.exec-kpi-value.accent { color: var(--success); }
+.exec-kpi-value.warn { color: var(--orange); }
+.exec-kpi-value.dim { color: var(--text-muted); }
+.exec-kpi-label { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+
+.exec-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+.exec-card { background: var(--surface); border-radius: var(--radius); padding: 1rem; }
+.exec-card h2 { font-size: 1rem; margin-bottom: 0.75rem; color: var(--text); }
+.exec-empty { color: var(--text-muted); font-size: 0.85rem; }
+
+/* Throughput chart */
+.exec-chart { grid-column: 1 / -1; }
+.exec-week-summary { display: flex; gap: 1.5rem; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.75rem; }
+.exec-week-summary .accent { color: var(--success); }
+.exec-week-summary .warn { color: var(--orange); }
+.exec-bars { display: flex; gap: 0.5rem; align-items: flex-end; height: 120px; }
+.exec-bar-group { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; height: 100%; }
+.exec-bar-pair { display: flex; gap: 2px; align-items: flex-end; flex: 1; width: 100%; }
+.exec-bar { flex: 1; min-height: 0; border-radius: 2px 2px 0 0; transition: height 0.3s; }
+.exec-bar.created { background: var(--info); opacity: 0.8; }
+.exec-bar.closed { background: var(--success); opacity: 0.8; }
+.exec-bar:hover { opacity: 1; }
+.exec-bar-label { font-size: 0.7rem; color: var(--text-muted); }
+.exec-bar-legend { display: flex; gap: 1.5rem; margin-top: 0.5rem; }
+.legend-item { display: flex; align-items: center; gap: 0.3rem; font-size: 0.8rem; color: var(--text-muted); }
+.legend-swatch { display: inline-block; width: 10px; height: 10px; border-radius: 2px; }
+.legend-swatch.created { background: var(--info); }
+.legend-swatch.closed { background: var(--success); }
+
+/* Priority distribution */
+.exec-priority-list { display: flex; flex-direction: column; gap: 0.4rem; }
+.exec-priority-row { display: flex; align-items: center; gap: 0.5rem; }
+.exec-priority-bar-bg { flex: 1; height: 18px; background: rgba(255,255,255,0.05); border-radius: 3px; overflow: hidden; }
+.exec-priority-bar-fill { height: 100%; border-radius: 3px; transition: width 0.3s; }
+.exec-priority-bar-fill.p0 { background: var(--danger); }
+.exec-priority-bar-fill.p1 { background: var(--orange); }
+.exec-priority-bar-fill.p2 { background: var(--warning); }
+.exec-priority-bar-fill.p3 { background: var(--info); }
+.exec-priority-bar-fill.p4 { background: var(--text-muted); }
+.exec-priority-count { min-width: 2rem; text-align: right; font-size: 0.85rem; font-weight: 600; }
+
+/* Blockers */
+.exec-blocker-list { display: flex; flex-direction: column; gap: 0.5rem; }
+.exec-blocker-item { font-size: 0.85rem; line-height: 1.4; }
+.exec-blocker-title { display: block; }
+.exec-blocker-by { display: block; font-size: 0.75rem; color: var(--text-muted); }
+
+/* Epics */
+.exec-epic-list { display: flex; flex-direction: column; gap: 0.5rem; }
+.exec-epic-row { display: block; text-decoration: none; color: var(--text); }
+.exec-epic-row:hover { color: var(--link); text-decoration: none; }
+.exec-epic-header { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem; }
+.exec-epic-title { font-size: 0.85rem; }
+.exec-epic-bar-row { display: flex; align-items: center; gap: 0.5rem; }
+.exec-epic-pct { font-size: 0.8rem; font-weight: 600; min-width: 2.5rem; text-align: right; }
+.exec-epic-count { font-size: 0.75rem; }
+
+/* Agent leaderboard */
+.exec-agent-list { display: flex; flex-direction: column; gap: 0.35rem; }
+.exec-agent-row { display: flex; align-items: center; gap: 0.5rem; }
+.exec-agent-name { min-width: 6rem; font-size: 0.85rem; }
+.exec-agent-bar-bg { flex: 1; height: 16px; background: rgba(255,255,255,0.05); border-radius: 3px; overflow: hidden; }
+.exec-agent-bar-fill { height: 100%; background: var(--purple); border-radius: 3px; transition: width 0.3s; }
+.exec-agent-count { min-width: 2rem; text-align: right; font-size: 0.85rem; font-weight: 600; }
+
+@media (max-width: 768px) {
+  .exec-grid { grid-template-columns: 1fr; }
+  .exec-kpi-row { gap: 0.5rem; }
+  .exec-kpi { padding: 0.5rem; }
+  .exec-kpi-value { font-size: 1.3rem; }
+}

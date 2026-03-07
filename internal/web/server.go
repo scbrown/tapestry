@@ -221,6 +221,22 @@ var funcMap = template.FuncMap{
 		}
 		return a / b
 	},
+	"sub": func(a, b int) int {
+		return a - b
+	},
+	"barHeight": func(val, max int) int {
+		if max == 0 {
+			return 0
+		}
+		h := val * 100 / max
+		if h == 0 && val > 0 {
+			return 2
+		}
+		return h
+	},
+	"lower": func(s string) string {
+		return strings.ToLower(s)
+	},
 }
 
 // Option configures the server.
@@ -336,6 +352,10 @@ func (s *Server) parseTemplates() {
 			template.New("").Funcs(funcMap).ParseFS(templateFS,
 				"templates/layout.html", "templates/velocity.html"),
 		),
+		"executive": template.Must(
+			template.New("").Funcs(funcMap).ParseFS(templateFS,
+				"templates/layout.html", "templates/executive.html"),
+		),
 	}
 }
 
@@ -415,6 +435,8 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		s.handleHandoffs(w, r)
 	case len(segments) == 1 && segments[0] == "velocity":
 		s.handleVelocity(w, r)
+	case len(segments) == 1 && segments[0] == "executive":
+		s.handleExecutive(w, r)
 	case len(segments) == 1 && segments[0] == "homelab":
 		s.handleHomelab(w, r)
 	case len(segments) == 1 && segments[0] == "designs":

@@ -1110,3 +1110,56 @@ func TestParseDescriptionMetadata(t *testing.T) {
 		})
 	}
 }
+
+func TestExecutivePage_NilDataSource(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/executive", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /executive status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Executive Status") {
+		t.Error("expected 'Executive Status' heading")
+	}
+}
+
+func TestExecutivePage_WithData(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		counts:    map[string]int{"open": 10, "in_progress": 3, "blocked": 2, "closed": 50},
+		created:   5,
+		closed:    8,
+		issues: []dolt.Issue{
+			{ID: "aegis-e1", Title: "P0 critical", Status: "open", Priority: 0, Owner: "stiwi", UpdatedAt: time.Now()},
+			{ID: "aegis-e2", Title: "P1 work", Status: "in_progress", Priority: 1, Assignee: "aegis/crew/arnold", UpdatedAt: time.Now()},
+			{ID: "aegis-e3", Title: "P2 task", Status: "open", Priority: 2, UpdatedAt: time.Now()},
+		},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/executive", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /executive status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Executive Status") {
+		t.Error("expected 'Executive Status' heading")
+	}
+	if !strings.Contains(body, "7-Day Throughput") {
+		t.Error("expected throughput chart section")
+	}
+	if !strings.Contains(body, "Priority Distribution") {
+		t.Error("expected priority distribution section")
+	}
+	if !strings.Contains(body, "Agent Leaderboard") {
+		t.Error("expected agent leaderboard section")
+	}
+}
