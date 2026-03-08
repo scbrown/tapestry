@@ -2516,3 +2516,59 @@ func TestRigsPage_HTMXPartial(t *testing.T) {
 		t.Error("expected rigs content in partial response")
 	}
 }
+
+func TestBurndownPage_NilDataSource(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/burndown", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /burndown status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Burndown") {
+		t.Error("expected 'Burndown' heading")
+	}
+}
+
+func TestBurndownPage_WithData(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		counts:    map[string]int{"open": 5, "closed": 10},
+		created:   3,
+		closed:    2,
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/burndown", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /burndown status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Daily Detail") {
+		t.Error("expected 'Daily Detail' table")
+	}
+}
+
+func TestBurndownPage_HTMXPartial(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/burndown", nil)
+	req.Header.Set("HX-Request", "true")
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("HTMX GET /burndown status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if strings.Contains(body, "<!DOCTYPE html>") {
+		t.Error("HTMX burndown should return partial, not full page")
+	}
+}

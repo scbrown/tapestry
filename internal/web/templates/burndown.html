@@ -1,0 +1,71 @@
+{{define "title"}}Burndown{{end}}
+{{define "content"}}
+<div class="burndown-page" hx-get="/burndown" hx-trigger="every 120s" hx-select=".burndown-page" hx-swap="outerHTML">
+  <h1>Burndown <time class="text-dim">{{.GeneratedAt.Format "Jan 02, 2006 15:04"}}</time></h1>
+
+  <div class="stat-grid" style="margin-bottom:1.5rem">
+    <div class="stat">
+      <span class="stat-value accent">{{.Period}}</span>
+      <span class="stat-label">Days</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value {{if gt .Delta 0}}text-warn{{else if lt .Delta 0}}text-ok{{end}}">
+        {{if gt .Delta 0}}+{{end}}{{.Delta}}
+      </span>
+      <span class="stat-label">Net change</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value">{{.MaxOpen}}</span>
+      <span class="stat-label">Peak open</span>
+    </div>
+  </div>
+
+  {{if .Days}}
+  <section>
+    <h2>Open Bead Count ({{.Period}}-day)</h2>
+    <div class="exec-bars" style="min-height:120px">
+      {{range .Days}}
+      <div class="exec-bar-group">
+        <div class="exec-bar-pair">
+          <div class="exec-bar created" style="height:{{barHeight .Open $.MaxOpen}}%" title="{{.Open}} open on {{.Date.Format "Jan 02"}}"></div>
+        </div>
+        <span class="exec-bar-label">{{.Date.Format "02"}}</span>
+      </div>
+      {{end}}
+    </div>
+  </section>
+
+  <section style="margin-top:1.5rem">
+    <h2>Daily Detail</h2>
+    <div class="table-wrap">
+    <table class="bead-table">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Created</th>
+          <th>Closed</th>
+          <th>Net</th>
+          <th>Open</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{range .Days}}
+        <tr>
+          <td>{{.Date.Format "Mon Jan 02"}}</td>
+          <td>{{.Created}}</td>
+          <td>{{.Closed}}</td>
+          <td class="{{if gt .Created .Closed}}text-warn{{else if lt .Created .Closed}}text-ok{{end}}">
+            {{if gt .Created .Closed}}+{{end}}{{sub .Created .Closed}}
+          </td>
+          <td><strong>{{.Open}}</strong></td>
+        </tr>
+        {{end}}
+      </tbody>
+    </table>
+    </div>
+  </section>
+  {{else}}
+  <p class="empty">No data available.</p>
+  {{end}}
+</div>
+{{end}}
