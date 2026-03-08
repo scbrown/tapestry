@@ -1,0 +1,135 @@
+{{define "title"}}Recap{{end}}
+{{define "content"}}
+<div class="recap-page">
+  <h1>Daily Recap</h1>
+
+  <div class="recap-nav">
+    <a href="/recap?date={{.PrevDate}}" hx-get="/recap?date={{.PrevDate}}" hx-target="#content" hx-push-url="true" class="btn btn-sm">&larr; Previous</a>
+    <span class="recap-date">{{.DateLabel}}</span>
+    {{if not .IsToday}}
+    <a href="/recap?date={{.NextDate}}" hx-get="/recap?date={{.NextDate}}" hx-target="#content" hx-push-url="true" class="btn btn-sm">Next &rarr;</a>
+    {{else}}
+    <span class="btn btn-sm btn-disabled">Today</span>
+    {{end}}
+  </div>
+
+  <div class="stat-grid" style="margin-bottom:1.5rem">
+    <div class="stat">
+      <span class="stat-value accent">{{.TotalCreated}}</span>
+      <span class="stat-label">Created</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value accent">{{.TotalClosed}}</span>
+      <span class="stat-label">Closed</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value">{{.TotalActive}}</span>
+      <span class="stat-label">Touched (active)</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value {{if gt .NetChange 0}}text-warn{{else if lt .NetChange 0}}text-ok{{end}}">
+        {{if gt .NetChange 0}}+{{end}}{{.NetChange}}
+      </span>
+      <span class="stat-label">Net change</span>
+    </div>
+  </div>
+
+  {{/* ── Closed ── */}}
+  <section class="recap-section">
+    <h2>Closed <span class="text-dim">({{.TotalClosed}})</span></h2>
+    {{if .ClosedItems}}
+    <table class="data-table">
+      <thead><tr><th>ID</th><th>P</th><th>Title</th><th>Agent</th><th>Rig</th></tr></thead>
+      <tbody>
+        {{range .ClosedItems}}
+        <tr>
+          <td><a href="/bead/{{.Issue.ID}}">{{.Issue.ID}}</a></td>
+          <td><span class="priority-badge p{{.Issue.Priority}}">P{{.Issue.Priority}}</span></td>
+          <td>{{.Issue.Title}}</td>
+          <td class="text-dim">{{shortActor .Issue.Assignee}}</td>
+          <td class="text-dim">{{.Rig}}</td>
+        </tr>
+        {{end}}
+      </tbody>
+    </table>
+    {{else}}
+    <p class="empty">Nothing closed on this day.</p>
+    {{end}}
+  </section>
+
+  {{/* ── Created ── */}}
+  <section class="recap-section">
+    <h2>Created <span class="text-dim">({{.TotalCreated}})</span></h2>
+    {{if .CreatedItems}}
+    <table class="data-table">
+      <thead><tr><th>ID</th><th>P</th><th>Title</th><th>Status</th><th>Owner</th><th>Rig</th></tr></thead>
+      <tbody>
+        {{range .CreatedItems}}
+        <tr>
+          <td><a href="/bead/{{.Issue.ID}}">{{.Issue.ID}}</a></td>
+          <td><span class="priority-badge p{{.Issue.Priority}}">P{{.Issue.Priority}}</span></td>
+          <td>{{.Issue.Title}}</td>
+          <td>{{statusBadge .Issue.Status}}</td>
+          <td class="text-dim">{{shortActor .Issue.Owner}}</td>
+          <td class="text-dim">{{.Rig}}</td>
+        </tr>
+        {{end}}
+      </tbody>
+    </table>
+    {{else}}
+    <p class="empty">Nothing created on this day.</p>
+    {{end}}
+  </section>
+
+  {{/* ── Active (In Progress) ── */}}
+  {{if .ActiveItems}}
+  <section class="recap-section">
+    <h2>Active Work <span class="text-dim">({{.TotalActive}})</span></h2>
+    <table class="data-table">
+      <thead><tr><th>ID</th><th>P</th><th>Title</th><th>Agent</th><th>Rig</th></tr></thead>
+      <tbody>
+        {{range .ActiveItems}}
+        <tr>
+          <td><a href="/bead/{{.Issue.ID}}">{{.Issue.ID}}</a></td>
+          <td><span class="priority-badge p{{.Issue.Priority}}">P{{.Issue.Priority}}</span></td>
+          <td>{{.Issue.Title}}</td>
+          <td class="text-dim">{{shortActor .Issue.Assignee}}</td>
+          <td class="text-dim">{{.Rig}}</td>
+        </tr>
+        {{end}}
+      </tbody>
+    </table>
+  </section>
+  {{end}}
+
+  {{/* ── Agent Summary ── */}}
+  {{if or (gt (len .ClosedByAgent) 0) (gt (len .CreatedByAgent) 0)}}
+  <section class="recap-section">
+    <h2>Agent Summary</h2>
+    <div class="recap-agents">
+      {{if gt (len .ClosedByAgent) 0}}
+      <div>
+        <h3>Closed by</h3>
+        <ul class="briefing-list">
+          {{range $agent, $count := .ClosedByAgent}}
+          <li><span class="text-dim">{{shortActor $agent}}</span> <strong>{{$count}}</strong></li>
+          {{end}}
+        </ul>
+      </div>
+      {{end}}
+      {{if gt (len .CreatedByAgent) 0}}
+      <div>
+        <h3>Created by</h3>
+        <ul class="briefing-list">
+          {{range $agent, $count := .CreatedByAgent}}
+          <li><span class="text-dim">{{shortActor $agent}}</span> <strong>{{$count}}</strong></li>
+          {{end}}
+        </ul>
+      </div>
+      {{end}}
+    </div>
+  </section>
+  {{end}}
+
+</div>
+{{end}}

@@ -2277,3 +2277,91 @@ func TestSearchPage_HTMXPartial(t *testing.T) {
 		t.Error("expected search result in response")
 	}
 }
+
+func TestRecapPage_NilDataSource(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/recap", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /recap status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Daily Recap") {
+		t.Error("expected 'Daily Recap' heading")
+	}
+}
+
+func TestRecapPage_WithData(t *testing.T) {
+	now := time.Now()
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issues: []dolt.Issue{
+			{ID: "r1", Title: "Created today", Status: "open", Priority: 1, Owner: "aegis/crew/alice", CreatedAt: now.Add(-1 * time.Hour), UpdatedAt: now},
+			{ID: "r2", Title: "Closed today", Status: "closed", Priority: 2, Assignee: "aegis/crew/bob", CreatedAt: now.Add(-24 * time.Hour), UpdatedAt: now},
+			{ID: "r3", Title: "Active work", Status: "in_progress", Priority: 1, Assignee: "aegis/crew/alice", CreatedAt: now.Add(-48 * time.Hour), UpdatedAt: now},
+			{ID: "r4", Title: "Old item", Status: "open", Priority: 3, CreatedAt: now.Add(-72 * time.Hour), UpdatedAt: now.Add(-72 * time.Hour)},
+		},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/recap", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /recap status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Created today") {
+		t.Error("expected 'Created today' issue")
+	}
+	if !strings.Contains(body, "Closed today") {
+		t.Error("expected 'Closed today' issue")
+	}
+	if !strings.Contains(body, "Active work") {
+		t.Error("expected 'Active work' issue")
+	}
+}
+
+func TestRecapPage_DateParam(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/recap?date=2026-03-01", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /recap?date status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "March 1, 2026") {
+		t.Error("expected date label for March 1, 2026")
+	}
+	if !strings.Contains(body, "Next") {
+		t.Error("expected Next link for non-today date")
+	}
+}
+
+func TestRecapPage_HTMXPartial(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/recap", nil)
+	req.Header.Set("HX-Request", "true")
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("HTMX GET /recap status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if strings.Contains(body, "<!DOCTYPE html>") {
+		t.Error("HTMX recap should return partial, not full page")
+	}
+	if !strings.Contains(body, "Daily Recap") {
+		t.Error("expected recap content in partial response")
+	}
+}
