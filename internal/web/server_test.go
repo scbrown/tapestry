@@ -2184,3 +2184,96 @@ func TestThemeParksPage_NilDataSource(t *testing.T) {
 		t.Error("expected 'Theme Park' in heading")
 	}
 }
+
+func TestHTMXPartialResponse(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/briefing", nil)
+	req.Header.Set("HX-Request", "true")
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("HTMX GET /briefing status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	// HTMX partial should NOT include full HTML wrapper
+	if strings.Contains(body, "<!DOCTYPE html>") {
+		t.Error("HTMX response should not contain DOCTYPE (should be partial)")
+	}
+	if !strings.Contains(body, "Briefing") {
+		t.Error("HTMX response should contain page content")
+	}
+}
+
+func TestFullPageResponse(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/briefing", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("full GET /briefing status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	// Full page should include layout wrapper
+	if !strings.Contains(body, "<!DOCTYPE html>") {
+		t.Error("full page response should contain DOCTYPE")
+	}
+	if !strings.Contains(body, "Tapestry") {
+		t.Error("full page should contain 'Tapestry' in layout")
+	}
+}
+
+func TestNotFound(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/nonexistent-page", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusNotFound {
+		t.Fatalf("GET /nonexistent-page status = %d, want %d", w.Code, http.StatusNotFound)
+	}
+}
+
+func TestBeadStatusUpdate_MethodNotAllowed(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/bead/aegis/test-123/status", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	// GET on a POST-only endpoint should 404 or method not allowed
+	if w.Code == http.StatusOK {
+		t.Error("GET on POST endpoint should not return 200")
+	}
+}
+
+func TestSearchPage_HTMXPartial(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issues: []dolt.Issue{
+			{ID: "s1", Title: "Search result", Status: "open", Priority: 2, UpdatedAt: time.Now()},
+		},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/search?q=search", nil)
+	req.Header.Set("HX-Request", "true")
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("HTMX GET /search status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if strings.Contains(body, "<!DOCTYPE html>") {
+		t.Error("HTMX search should return partial, not full page")
+	}
+	if !strings.Contains(body, "Search result") {
+		t.Error("expected search result in response")
+	}
+}
