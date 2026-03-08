@@ -1,14 +1,17 @@
 {{define "title"}}Epics{{end}}
 {{define "content"}}
 <div class="epics-page">
-  <h1>Epics</h1>
+  <h1>Epics <span class="text-dim">({{len .Epics}})</span></h1>
   {{if .Epics}}
+  <div style="margin-bottom:0.5rem">
+    <label><input type="checkbox" id="show-closed-epics" onchange="toggleClosedEpics()"> Show closed</label>
+  </div>
   <div class="table-wrap">
   <table class="bead-table">
     <thead><tr><th>ID</th><th>Title</th><th>Priority</th><th>Status</th><th>Progress</th><th>Rig</th></tr></thead>
     <tbody>
       {{range .Epics}}
-      <tr>
+      <tr{{if eq .Epic.Status "closed"}} class="epic-closed" style="display:none"{{end}}{{if eq .Epic.Status "tombstone"}} class="epic-closed" style="display:none"{{end}}>
         <td><a href="/bead/{{.Epic.ID}}">{{.Epic.ID}}</a></td>
         <td>{{.Epic.Title}}</td>
         <td><span class="work-priority p{{.Epic.Priority}}">{{priorityLabel .Epic.Priority}}</span></td>
@@ -25,6 +28,14 @@
     </tbody>
   </table>
   </div>
+  <script>
+  function toggleClosedEpics() {
+    var show = document.getElementById('show-closed-epics').checked;
+    document.querySelectorAll('.epic-closed').forEach(function(el) {
+      el.style.display = show ? '' : 'none';
+    });
+  }
+  </script>
   {{else}}
   <p class="empty">No epics found.</p>
   {{end}}

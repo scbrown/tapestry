@@ -369,6 +369,12 @@ func (s *Server) handleEpics(w http.ResponseWriter, r *http.Request) {
 				issueMap[iss.ID] = iss
 			}
 
+			// Also include closed issues for accurate progress calculation
+			closedIssues, _ := s.ds.Issues(ctx, dbName, dolt.IssueFilter{Status: "closed", Limit: 500})
+			for _, iss := range closedIssues {
+				issueMap[iss.ID] = iss
+			}
+
 			for _, epic := range epics {
 				if isNoise(epic.ID, epic.Title) {
 					continue

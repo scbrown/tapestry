@@ -16,11 +16,18 @@ type closedEntry struct {
 	Rig   string
 }
 
-type closedData struct {
+type closedDay struct {
+	Date    string
 	Entries []closedEntry
-	Total   int
-	Days    int
-	Err     string
+	Count   int
+}
+
+type closedData struct {
+	Entries  []closedEntry
+	ByDay    []closedDay
+	Total    int
+	Days     int
+	Err      string
 }
 
 func (s *Server) handleClosed(w http.ResponseWriter, r *http.Request) {
@@ -83,8 +90,30 @@ func (s *Server) handleClosed(w http.ResponseWriter, r *http.Request) {
 		return all[i].Issue.UpdatedAt.After(all[j].Issue.UpdatedAt)
 	})
 
+	// Group by day
+	dayMap := map[string][]closedEntry{}
+	var dayOrder []string
+	for _, e := range all {
+		key := e.Issue.UpdatedAt.Format("2006-01-02")
+		if _, exists := dayMap[key]; !exists {
+			dayOrder = append(dayOrder, key)
+		}
+		dayMap[key] = append(dayMap[key], e)
+	}
+	var byDay []closedDay
+	for _, key := range dayOrder {
+		entries := dayMap[key]
+		t, _ := time.Parse("2006-01-02", key)
+		byDay = append(byDay, closedDay{
+			Date:    t.Format("Mon, Jan 2"),
+			Entries: entries,
+			Count:   len(entries),
+		})
+	}
+
 	s.render(w, r, "closed", closedData{
 		Entries: all,
+		ByDay:   byDay,
 		Total:   len(all),
 		Days:    days,
 	})
