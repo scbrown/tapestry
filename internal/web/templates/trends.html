@@ -1,0 +1,92 @@
+{{define "title"}}Trends{{end}}
+{{define "content"}}
+<div class="trends-page" hx-get="/trends" hx-trigger="every 120s" hx-select=".trends-page" hx-swap="outerHTML">
+  <h1>Trends <time class="text-dim">{{.GeneratedAt.Format "Jan 02, 2006 15:04"}}</time></h1>
+
+  <div class="stat-grid" style="margin-bottom:1.5rem">
+    <div class="stat">
+      <span class="stat-value accent">{{printf "%.1f" .AvgCreated}}</span>
+      <span class="stat-label">Avg created/wk</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value accent">{{printf "%.1f" .AvgClosed}}</span>
+      <span class="stat-label">Avg closed/wk</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value">{{.TotalCreated}}</span>
+      <span class="stat-label">Total created (8w)</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value">{{.TotalClosed}}</span>
+      <span class="stat-label">Total closed (8w)</span>
+    </div>
+    {{if .Trend}}
+    <div class="stat">
+      <span class="stat-value {{if eq .Trend "improving"}}text-ok{{else if eq .Trend "growing"}}text-warn{{end}}">{{.Trend}}</span>
+      <span class="stat-label">Backlog trend</span>
+    </div>
+    {{end}}
+  </div>
+
+  {{if .Weeks}}
+  <section>
+    <h2>Weekly Created vs Closed (8 weeks)</h2>
+    <div class="exec-bars" style="min-height:140px">
+      {{range .Weeks}}
+      <div class="exec-bar-group">
+        <div class="exec-bar-pair">
+          <div class="exec-bar created" style="height:{{barHeight .Created $.MaxCreated}}%" title="{{.Created}} created (wk of {{.Start.Format "Jan 02"}})"></div>
+          <div class="exec-bar closed" style="height:{{barHeight .Closed $.MaxClosed}}%" title="{{.Closed}} closed (wk of {{.Start.Format "Jan 02"}})"></div>
+        </div>
+        <span class="exec-bar-label">{{.Start.Format "Jan 02"}}</span>
+      </div>
+      {{end}}
+    </div>
+    <div class="exec-bar-legend">
+      <span class="legend-item"><span class="legend-swatch created"></span> Created</span>
+      <span class="legend-item"><span class="legend-swatch closed"></span> Closed</span>
+    </div>
+  </section>
+
+  <section style="margin-top:1.5rem">
+    <h2>Weekly Detail</h2>
+    <div class="table-wrap">
+    <table class="bead-table">
+      <thead>
+        <tr>
+          <th>Week of</th>
+          <th>Created</th>
+          <th>Closed</th>
+          <th>Net</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{range .Weeks}}
+        <tr>
+          <td>{{.Start.Format "Jan 02"}} — {{.End.Format "Jan 02"}}</td>
+          <td>{{.Created}}</td>
+          <td>{{.Closed}}</td>
+          <td class="{{if gt .Net 0}}text-warn{{else if lt .Net 0}}text-ok{{end}}">
+            {{if gt .Net 0}}+{{end}}{{.Net}}
+          </td>
+        </tr>
+        {{end}}
+      </tbody>
+      <tfoot>
+        <tr>
+          <td><strong>Total</strong></td>
+          <td><strong>{{.TotalCreated}}</strong></td>
+          <td><strong>{{.TotalClosed}}</strong></td>
+          <td class="{{if gt .TotalCreated .TotalClosed}}text-warn{{else if lt .TotalCreated .TotalClosed}}text-ok{{end}}">
+            <strong>{{if gt .TotalCreated .TotalClosed}}+{{end}}{{sub .TotalCreated .TotalClosed}}</strong>
+          </td>
+        </tr>
+      </tfoot>
+    </table>
+    </div>
+  </section>
+  {{else}}
+  <p class="empty">No data available.</p>
+  {{end}}
+</div>
+{{end}}

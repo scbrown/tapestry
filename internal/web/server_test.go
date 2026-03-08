@@ -2572,3 +2572,59 @@ func TestBurndownPage_HTMXPartial(t *testing.T) {
 		t.Error("HTMX burndown should return partial, not full page")
 	}
 }
+
+func TestTrendsPage_NilDataSource(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/trends", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /trends status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Trends") {
+		t.Error("expected 'Trends' heading")
+	}
+}
+
+func TestTrendsPage_WithData(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		counts:    map[string]int{"open": 5, "closed": 10},
+		created:   3,
+		closed:    2,
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/trends", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /trends status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Weekly Detail") {
+		t.Error("expected 'Weekly Detail' table")
+	}
+}
+
+func TestTrendsPage_HTMXPartial(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/trends", nil)
+	req.Header.Set("HX-Request", "true")
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("HTMX GET /trends status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if strings.Contains(body, "<!DOCTYPE html>") {
+		t.Error("HTMX trends should return partial, not full page")
+	}
+}
