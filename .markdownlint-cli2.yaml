@@ -8,6 +8,7 @@ config:
   MD041: false          # First line heading not required
   MD040: true           # Fenced code blocks must specify language
   MD004: { style: "dash" }  # List marker style: dash
+  MD029: false  # Ordered list prefix — disabled (code blocks break list continuity)
   MD060: false
 
 globs:
