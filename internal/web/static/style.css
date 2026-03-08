@@ -1329,5 +1329,20 @@ tr.silenced { opacity: 0.5; }
 .backlog-bar-count { font-size: 0.7rem; color: var(--fg); padding-top: 2px; }
 .backlog-bar-label { font-size: 0.7rem; color: var(--text-muted); margin-top: 0.25rem; white-space: nowrap; }
 
+/* ── Recap ──────────────────────────────────────────── */
+.recap-page h1 { margin-bottom: 0.5rem; }
+.recap-nav { display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem; }
+.recap-date { font-size: 1.1rem; font-weight: 500; }
+.recap-section { margin-bottom: 2rem; }
+.recap-section h2 { margin-bottom: 0.75rem; }
+.recap-agents { display: flex; gap: 2rem; flex-wrap: wrap; }
+.recap-agents h3 { margin-bottom: 0.5rem; font-size: 0.9rem; color: var(--text-muted); }
+.btn { display: inline-block; padding: 0.25rem 0.75rem; background: var(--card-bg); border: 1px solid var(--border); border-radius: 4px; color: var(--fg); text-decoration: none; font-size: 0.85rem; }
+.btn:hover { border-color: var(--purple); }
+.btn-sm { font-size: 0.8rem; padding: 0.2rem 0.5rem; }
+.btn-disabled { opacity: 0.4; cursor: default; pointer-events: none; }
+.text-warn { color: var(--orange); }
+.text-ok { color: var(--green); }
+
 /* ── Nav Separators ──────────────────────────────────── */
 .nav-sep { color: var(--border); font-size: 0.75rem; opacity: 0.5; user-select: none; }
