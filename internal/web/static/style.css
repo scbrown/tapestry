@@ -1363,3 +1363,38 @@ tr.silenced { opacity: 0.5; }
 /* ── Nav Active + Separators ─────────────────────────── */
 .nav-active { color: var(--purple) !important; border-bottom: 2px solid var(--purple); padding-bottom: 2px; }
 .nav-sep { color: var(--border); font-size: 0.75rem; opacity: 0.5; user-select: none; }
+
+/* ── Quick-Nav Command Palette (Cmd+K) ──────────────── */
+.quicknav-overlay {
+    position: fixed; inset: 0; z-index: 9999;
+    background: rgba(0,0,0,0.6); display: flex;
+    align-items: flex-start; justify-content: center;
+    padding-top: 15vh;
+}
+.quicknav-modal {
+    background: var(--bg); border: 1px solid var(--surface);
+    border-radius: var(--radius); width: 500px; max-width: 90vw;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.5); overflow: hidden;
+}
+.quicknav-input {
+    width: 100%; padding: 0.75rem 1rem; border: none;
+    background: var(--bg); color: var(--text);
+    font-size: 1rem; outline: none;
+    border-bottom: 1px solid var(--surface);
+    font-family: inherit;
+}
+.quicknav-input::placeholder { color: var(--text-muted); }
+.quicknav-results {
+    list-style: none; max-height: 400px; overflow-y: auto;
+}
+.quicknav-item {
+    display: flex; align-items: center; gap: 0.75rem;
+    padding: 0.5rem 1rem; cursor: pointer;
+    transition: background 0.1s;
+}
+.quicknav-item:hover, .quicknav-item.selected {
+    background: var(--surface);
+}
+.qn-name { font-weight: 600; min-width: 100px; }
+.qn-desc { color: var(--text-muted); font-size: 0.85rem; flex: 1; }
+.qn-path { color: var(--text-muted); font-size: 0.75rem; opacity: 0.6; }

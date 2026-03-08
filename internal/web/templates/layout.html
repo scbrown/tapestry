@@ -59,12 +59,22 @@
     <main id="content">
         {{template "content" .}}
     </main>
+    <div id="quicknav" class="quicknav-overlay" style="display:none">
+      <div class="quicknav-modal">
+        <input type="text" id="quicknav-input" class="quicknav-input" placeholder="Go to page..." autocomplete="off">
+        <ul id="quicknav-results" class="quicknav-results"></ul>
+      </div>
+    </div>
     <script>
     document.addEventListener('keydown', function(e) {
         if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
         if (e.key === '/') {
             e.preventDefault();
             document.querySelector('.nav-search-input').focus();
+        }
+        if (e.key === 'k' && (e.metaKey || e.ctrlKey)) {
+            e.preventDefault();
+            toggleQuickNav();
         }
     });
     document.querySelector('.nav-search-input').addEventListener('keydown', function(e) {
@@ -83,6 +93,110 @@
     }
     highlightNav();
     document.body.addEventListener('htmx:pushedIntoHistory', highlightNav);
+
+    // Quick-nav (Cmd+K) command palette
+    var PAGES = [
+      {name:'Home', path:'/', desc:'Monthly overview'},
+      {name:'Executive', path:'/executive', desc:'KPIs, throughput, leaderboard'},
+      {name:'Command Center', path:'/command-center', desc:'Fleet dashboard'},
+      {name:'Briefing', path:'/briefing', desc:'Status overview, attention items'},
+      {name:'Work', path:'/work', desc:'Work by repo, priority, agent'},
+      {name:'Kanban', path:'/kanban', desc:'Column board view'},
+      {name:'Beads', path:'/beads', desc:'Full bead list with filters'},
+      {name:'Epics', path:'/epics', desc:'Epic progress overview'},
+      {name:'Blocked', path:'/blocked', desc:'Dependency bottlenecks'},
+      {name:'Dependencies', path:'/deps', desc:'Full dependency graph'},
+      {name:'Labels', path:'/labels', desc:'Label cloud and filter'},
+      {name:'Recap', path:'/recap', desc:'Daily activity digest'},
+      {name:'Activity', path:'/activity', desc:'Recent updates by time'},
+      {name:'Agents', path:'/agents', desc:'Agent activity stats'},
+      {name:'Owners', path:'/owners', desc:'Workload by owner'},
+      {name:'Handoffs', path:'/handoffs', desc:'Session handoff history'},
+      {name:'Velocity', path:'/velocity', desc:'Throughput dashboard'},
+      {name:'Forecast', path:'/forecast', desc:'Backlog clearance prediction'},
+      {name:'Scope', path:'/scope', desc:'Cumulative flow diagram'},
+      {name:'Rigs', path:'/rigs', desc:'Per-rig status breakdown'},
+      {name:'Burndown', path:'/burndown', desc:'Open bead count trend'},
+      {name:'Trends', path:'/trends', desc:'Weekly trend analysis'},
+      {name:'Heatmap', path:'/heatmap', desc:'Activity calendar'},
+      {name:'Commits', path:'/commits', desc:'Git commit feed'},
+      {name:'Priorities', path:'/priorities', desc:'P0-P4 distribution'},
+      {name:'Types', path:'/types', desc:'Epic/task/bug breakdown'},
+      {name:'Matrix', path:'/matrix', desc:'Assignee x status heatmap'},
+      {name:'Status', path:'/status', desc:'System status overview'},
+      {name:'SLA', path:'/sla', desc:'Priority-based SLA tracker'},
+      {name:'Stale', path:'/stale', desc:'Stale work detector'},
+      {name:'Backlog', path:'/backlog', desc:'Age distribution'},
+      {name:'Closed', path:'/closed', desc:'Recently completed'},
+      {name:'Homelab', path:'/homelab', desc:'Prometheus + Alertmanager'},
+      {name:'Designs', path:'/designs', desc:'Design documents'},
+      {name:'Decisions', path:'/decisions', desc:'Decision log'},
+      {name:'Achievements', path:'/achievements', desc:'Unlocked achievements'},
+      {name:'Theme Parks', path:'/theme-parks', desc:'Trip planning'},
+      {name:'Search', path:'/search', desc:'Search all beads'},
+    ];
+    var qnSelected = 0;
+
+    function toggleQuickNav() {
+      var el = document.getElementById('quicknav');
+      if (el.style.display === 'none') {
+        el.style.display = 'flex';
+        var input = document.getElementById('quicknav-input');
+        input.value = '';
+        qnSelected = 0;
+        filterQuickNav('');
+        input.focus();
+      } else {
+        el.style.display = 'none';
+      }
+    }
+
+    function filterQuickNav(q) {
+      var results = document.getElementById('quicknav-results');
+      var lower = q.toLowerCase();
+      var matches = PAGES.filter(function(p) {
+        return p.name.toLowerCase().indexOf(lower) !== -1 ||
+               p.desc.toLowerCase().indexOf(lower) !== -1 ||
+               p.path.toLowerCase().indexOf(lower) !== -1;
+      });
+      if (qnSelected >= matches.length) qnSelected = 0;
+      results.innerHTML = matches.map(function(p, i) {
+        return '<li class="quicknav-item' + (i === qnSelected ? ' selected' : '') +
+          '" data-path="' + p.path + '">' +
+          '<span class="qn-name">' + p.name + '</span>' +
+          '<span class="qn-desc">' + p.desc + '</span>' +
+          '<span class="qn-path">' + p.path + '</span></li>';
+      }).join('');
+    }
+
+    document.getElementById('quicknav-input').addEventListener('input', function() {
+      qnSelected = 0;
+      filterQuickNav(this.value);
+    });
+
+    document.getElementById('quicknav-input').addEventListener('keydown', function(e) {
+      var items = document.querySelectorAll('.quicknav-item');
+      if (e.key === 'Escape') { toggleQuickNav(); return; }
+      if (e.key === 'ArrowDown') { e.preventDefault(); qnSelected = Math.min(qnSelected+1, items.length-1); filterQuickNav(this.value); return; }
+      if (e.key === 'ArrowUp') { e.preventDefault(); qnSelected = Math.max(qnSelected-1, 0); filterQuickNav(this.value); return; }
+      if (e.key === 'Enter' && items.length > 0) {
+        e.preventDefault();
+        var path = items[qnSelected].getAttribute('data-path');
+        toggleQuickNav();
+        htmx.ajax('GET', path, {target:'#content', swap:'innerHTML', pushUrl:path});
+        return;
+      }
+    });
+
+    document.getElementById('quicknav').addEventListener('click', function(e) {
+      if (e.target === this) toggleQuickNav();
+      var item = e.target.closest('.quicknav-item');
+      if (item) {
+        var path = item.getAttribute('data-path');
+        toggleQuickNav();
+        htmx.ajax('GET', path, {target:'#content', swap:'innerHTML', pushUrl:path});
+      }
+    });
     </script>
 </body>
 </html>
