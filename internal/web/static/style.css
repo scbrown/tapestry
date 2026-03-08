@@ -1311,6 +1311,10 @@ tr.silenced { opacity: 0.5; }
 .heatmap-cell-empty { background: transparent; border-color: transparent; }
 .heatmap-legend { display: flex; align-items: center; gap: 3px; margin-top: 0.5rem; }
 
+/* ── Closed Page (grouped by day) ──────────────────── */
+.closed-day-group { margin-bottom: 1.5rem; }
+.closed-day-header { font-size: 1rem; font-weight: 600; margin-bottom: 0.5rem; border-bottom: 1px solid var(--border); padding-bottom: 0.25rem; }
+
 /* ── Backlog Page ──────────────────────────────────── */
 .backlog-page h1 { margin-bottom: 1rem; }
 .backlog-stats { display: flex; gap: 2rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
