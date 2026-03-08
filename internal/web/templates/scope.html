@@ -1,0 +1,74 @@
+{{define "title"}}Scope{{end}}
+{{define "content"}}
+<div class="scope-page" hx-get="/scope" hx-trigger="every 120s" hx-select=".scope-page" hx-swap="outerHTML">
+  <h1>Scope Tracker <time class="text-dim">{{.GeneratedAt.Format "Jan 02, 2006 15:04"}}</time></h1>
+
+  <div class="stat-grid" style="margin-bottom:1.5rem">
+    <div class="stat">
+      <span class="stat-value accent">{{.TotalCreated}}</span>
+      <span class="stat-label">Created ({{.Period}}d)</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value accent">{{.TotalClosed}}</span>
+      <span class="stat-label">Closed ({{.Period}}d)</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value {{if gt .NetChange 0}}text-warn{{else if lt .NetChange 0}}text-ok{{end}}">
+        {{if gt .NetChange 0}}+{{end}}{{.NetChange}}
+      </span>
+      <span class="stat-label">Net change</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value {{if gt .BacklogDelta 0}}text-warn{{else if lt .BacklogDelta 0}}text-ok{{end}}">
+        {{if gt .BacklogDelta 0}}+{{end}}{{.BacklogDelta}}
+      </span>
+      <span class="stat-label">Backlog delta</span>
+    </div>
+  </div>
+
+  {{if .Days}}
+  <section>
+    <h2>Cumulative Flow ({{.Period}} days)</h2>
+    <div class="scope-chart">
+      {{range .Days}}
+      <div class="scope-day">
+        <div class="scope-bars">
+          <div class="velocity-bar velocity-bar-created" style="height: {{if $.MaxBacklog}}{{printf "%.0f" (divf (mulf (itof .CumCreated) 100.0) (itof $.MaxBacklog))}}%{{else}}0%{{end}}" title="{{.CumCreated}} total created"></div>
+          <div class="velocity-bar velocity-bar-closed" style="height: {{if $.MaxBacklog}}{{printf "%.0f" (divf (mulf (itof .CumClosed) 100.0) (itof $.MaxBacklog))}}%{{else}}0%{{end}}" title="{{.CumClosed}} total closed"></div>
+        </div>
+        <span class="scope-date">{{.Date.Format "Jan 2"}}</span>
+      </div>
+      {{end}}
+    </div>
+    <div class="velocity-legend">
+      <span class="velocity-legend-item"><span class="velocity-swatch velocity-swatch-created"></span> Cumulative Created</span>
+      <span class="velocity-legend-item"><span class="velocity-swatch velocity-swatch-closed"></span> Cumulative Closed</span>
+    </div>
+    <p class="text-dim" style="margin-top:0.5rem;font-size:0.85rem">The gap between lines represents the net backlog growth over the period. Converging lines = backlog shrinking.</p>
+  </section>
+
+  <section style="margin-top:2rem">
+    <h2>Daily Detail</h2>
+    <div class="table-wrap">
+    <table class="data-table">
+      <thead><tr><th>Date</th><th>Created</th><th>Closed</th><th>Net</th><th>Running Backlog</th></tr></thead>
+      <tbody>
+        {{range .Days}}
+        <tr>
+          <td>{{.Date.Format "Jan 2"}}</td>
+          <td>{{.Created}}</td>
+          <td>{{.Closed}}</td>
+          <td class="{{if gt (sub .Created .Closed) 0}}text-warn{{else if lt (sub .Created .Closed) 0}}text-ok{{end}}">
+            {{if gt (sub .Created .Closed) 0}}+{{end}}{{sub .Created .Closed}}
+          </td>
+          <td>{{.BacklogSize}}</td>
+        </tr>
+        {{end}}
+      </tbody>
+    </table>
+    </div>
+  </section>
+  {{end}}
+
+</div>
+{{end}}

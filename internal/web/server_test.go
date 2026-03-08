@@ -2414,3 +2414,45 @@ func TestRecapPage_HTMXPartial(t *testing.T) {
 		t.Error("expected recap content in partial response")
 	}
 }
+
+func TestScopePage_NilDataSource(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/scope", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /scope status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Scope Tracker") {
+		t.Error("expected 'Scope Tracker' heading")
+	}
+}
+
+func TestScopePage_WithData(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		counts:    map[string]int{"open": 5, "closed": 10},
+		created:   3,
+		closed:    2,
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/scope", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /scope status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Cumulative Flow") {
+		t.Error("expected 'Cumulative Flow' section")
+	}
+	if !strings.Contains(body, "Daily Detail") {
+		t.Error("expected 'Daily Detail' table")
+	}
+}
