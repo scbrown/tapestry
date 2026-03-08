@@ -53,6 +53,18 @@
     <main id="content">
         {{template "content" .}}
     </main>
+    <script>
+    document.addEventListener('keydown', function(e) {
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
+        if (e.key === '/') {
+            e.preventDefault();
+            document.querySelector('.nav-search-input').focus();
+        }
+    });
+    document.querySelector('.nav-search-input').addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') { this.blur(); this.value = ''; }
+    });
+    </script>
 </body>
 </html>
 {{end}}
