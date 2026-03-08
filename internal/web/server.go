@@ -421,6 +421,10 @@ func (s *Server) parseTemplates() {
 			template.New("").Funcs(funcMap).ParseFS(templateFS,
 				"templates/layout.html", "templates/recap.html"),
 		),
+		"forecast": template.Must(
+			template.New("").Funcs(funcMap).ParseFS(templateFS,
+				"templates/layout.html", "templates/forecast.html"),
+		),
 	}
 }
 
@@ -536,6 +540,8 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		s.handleBacklog(w, r)
 	case len(segments) == 1 && segments[0] == "recap":
 		s.handleRecap(w, r)
+	case len(segments) == 1 && segments[0] == "forecast":
+		s.handleForecast(w, r)
 	case len(segments) == 1 && segments[0] == "heatmap":
 		s.handleHeatmap(w, r)
 	case len(segments) == 1 && segments[0] == "homelab":

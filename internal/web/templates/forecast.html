@@ -1,0 +1,104 @@
+{{define "title"}}Forecast{{end}}
+{{define "content"}}
+<div class="forecast-page" hx-get="/forecast" hx-trigger="every 120s" hx-select=".forecast-page" hx-swap="outerHTML">
+  <h1>Forecast <time class="text-dim">{{.GeneratedAt.Format "Jan 02, 2006 15:04"}}</time></h1>
+
+  {{/* ── Current State ── */}}
+  <div class="stat-grid" style="margin-bottom:1.5rem">
+    <div class="stat">
+      <span class="stat-value accent">{{.BacklogSize}}</span>
+      <span class="stat-label">Backlog</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value">{{.OpenCount}}</span>
+      <span class="stat-label">Open</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value">{{.ActiveCount}}</span>
+      <span class="stat-label">Active</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value">{{.BlockedCount}}</span>
+      <span class="stat-label">Blocked</span>
+    </div>
+  </div>
+
+  {{/* ── Velocity ── */}}
+  <section class="forecast-section">
+    <h2>7-Day Velocity</h2>
+    <div class="stat-grid">
+      <div class="stat">
+        <span class="stat-value">{{printf "%.1f" .AvgCreated}}</span>
+        <span class="stat-label">created/day</span>
+      </div>
+      <div class="stat">
+        <span class="stat-value">{{printf "%.1f" .AvgClosed}}</span>
+        <span class="stat-label">closed/day</span>
+      </div>
+      <div class="stat">
+        <span class="stat-value {{if gt .NetRate 0.0}}text-warn{{else if lt .NetRate 0.0}}text-ok{{end}}">
+          {{if gt .NetRate 0.0}}+{{end}}{{printf "%.1f" .NetRate}}
+        </span>
+        <span class="stat-label">net/day</span>
+      </div>
+      {{if ge .DaysToClear 0}}
+      <div class="stat">
+        <span class="stat-value accent">{{.DaysToClear}}</span>
+        <span class="stat-label">days to clear</span>
+      </div>
+      {{end}}
+    </div>
+  </section>
+
+  {{/* ── Forecast ── */}}
+  <section class="forecast-section">
+    <div class="forecast-verdict {{if .BacklogGrowing}}forecast-warn{{else}}forecast-ok{{end}}">
+      {{if .BacklogGrowing}}
+        <span class="forecast-icon">&#9650;</span>
+      {{else}}
+        <span class="forecast-icon">&#9660;</span>
+      {{end}}
+      {{.ForecastLabel}}
+    </div>
+  </section>
+
+  {{/* ── Weekly Trend ── */}}
+  {{if .Weeks}}
+  <section class="forecast-section">
+    <h2>Weekly Trend (4 weeks)</h2>
+    <div class="velocity-chart">
+      {{range .Weeks}}
+      <div class="velocity-day">
+        <div class="velocity-bars">
+          <div class="velocity-bar velocity-bar-created" style="height: {{if $.MaxWeek}}{{printf "%.0f" (divf (mulf (itof .Created) 100.0) (itof $.MaxWeek))}}%{{else}}0%{{end}}" title="{{.Created}} created"></div>
+          <div class="velocity-bar velocity-bar-closed" style="height: {{if $.MaxWeek}}{{printf "%.0f" (divf (mulf (itof .Closed) 100.0) (itof $.MaxWeek))}}%{{else}}0%{{end}}" title="{{.Closed}} closed"></div>
+        </div>
+        <span class="velocity-date">{{.Label}}</span>
+      </div>
+      {{end}}
+    </div>
+    <div class="velocity-legend">
+      <span class="velocity-legend-item"><span class="velocity-swatch velocity-swatch-created"></span> Created</span>
+      <span class="velocity-legend-item"><span class="velocity-swatch velocity-swatch-closed"></span> Closed</span>
+    </div>
+
+    <table class="data-table" style="margin-top:1rem">
+      <thead><tr><th>Week</th><th>Created</th><th>Closed</th><th>Net</th></tr></thead>
+      <tbody>
+        {{range .Weeks}}
+        <tr>
+          <td>{{.Label}}</td>
+          <td>{{.Created}}</td>
+          <td>{{.Closed}}</td>
+          <td class="{{if gt .Net 0}}text-warn{{else if lt .Net 0}}text-ok{{end}}">
+            {{if gt .Net 0}}+{{end}}{{.Net}}
+          </td>
+        </tr>
+        {{end}}
+      </tbody>
+    </table>
+  </section>
+  {{end}}
+
+</div>
+{{end}}

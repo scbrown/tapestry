@@ -2346,6 +2346,55 @@ func TestRecapPage_DateParam(t *testing.T) {
 	}
 }
 
+func TestForecastPage_NilDataSource(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/forecast", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /forecast status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Forecast") {
+		t.Error("expected 'Forecast' heading")
+	}
+	if !strings.Contains(body, "No data source") {
+		t.Error("expected 'No data source' label")
+	}
+}
+
+func TestForecastPage_WithData(t *testing.T) {
+	now := time.Now()
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issues: []dolt.Issue{
+			{ID: "f1", Title: "Open task", Status: "open", Priority: 1, CreatedAt: now.Add(-2 * time.Hour), UpdatedAt: now},
+			{ID: "f2", Title: "Active task", Status: "in_progress", Priority: 2, CreatedAt: now.Add(-24 * time.Hour), UpdatedAt: now},
+			{ID: "f3", Title: "Blocked task", Status: "blocked", Priority: 1, CreatedAt: now.Add(-48 * time.Hour), UpdatedAt: now},
+		},
+		counts: map[string]int{"open": 5, "in_progress": 3, "blocked": 2, "closed": 20},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/forecast", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /forecast status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Backlog") {
+		t.Error("expected 'Backlog' in forecast")
+	}
+	if !strings.Contains(body, "Weekly Trend") {
+		t.Error("expected 'Weekly Trend' section")
+	}
+}
+
 func TestRecapPage_HTMXPartial(t *testing.T) {
 	srv := New(nil)
 	req := httptest.NewRequest("GET", "/recap", nil)

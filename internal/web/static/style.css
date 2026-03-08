@@ -1344,5 +1344,14 @@ tr.silenced { opacity: 0.5; }
 .text-warn { color: var(--orange); }
 .text-ok { color: var(--green); }
 
+/* ── Forecast ───────────────────────────────────────── */
+.forecast-page h1 { margin-bottom: 1rem; }
+.forecast-section { margin-bottom: 2rem; }
+.forecast-section h2 { margin-bottom: 0.75rem; }
+.forecast-verdict { padding: 1rem 1.5rem; border-radius: 8px; font-size: 1.1rem; border: 1px solid var(--border); }
+.forecast-ok { background: rgba(80,250,123,0.08); border-color: var(--green); }
+.forecast-warn { background: rgba(255,184,108,0.08); border-color: var(--orange); }
+.forecast-icon { font-size: 1.2rem; margin-right: 0.5rem; }
+
 /* ── Nav Separators ──────────────────────────────────── */
 .nav-sep { color: var(--border); font-size: 0.75rem; opacity: 0.5; user-select: none; }
