@@ -2456,3 +2456,63 @@ func TestScopePage_WithData(t *testing.T) {
 		t.Error("expected 'Daily Detail' table")
 	}
 }
+
+func TestRigsPage_NilDataSource(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/rigs", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /rigs status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Rigs") {
+		t.Error("expected 'Rigs' heading")
+	}
+}
+
+func TestRigsPage_WithData(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		counts:    map[string]int{"open": 10, "in_progress": 5, "blocked": 3, "closed": 50, "deferred": 2},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/rigs", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /rigs status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "beads_aegis") {
+		t.Error("expected rig name 'beads_aegis' in output")
+	}
+	if !strings.Contains(body, "70") {
+		t.Error("expected total count 70 in output")
+	}
+}
+
+func TestRigsPage_HTMXPartial(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/rigs", nil)
+	req.Header.Set("HX-Request", "true")
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("HTMX GET /rigs status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if strings.Contains(body, "<!DOCTYPE html>") {
+		t.Error("HTMX rigs should return partial, not full page")
+	}
+	if !strings.Contains(body, "Rigs") {
+		t.Error("expected rigs content in partial response")
+	}
+}

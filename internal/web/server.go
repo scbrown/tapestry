@@ -429,6 +429,10 @@ func (s *Server) parseTemplates() {
 			template.New("").Funcs(funcMap).ParseFS(templateFS,
 				"templates/layout.html", "templates/scope.html"),
 		),
+		"rigs": template.Must(
+			template.New("").Funcs(funcMap).ParseFS(templateFS,
+				"templates/layout.html", "templates/rigs.html"),
+		),
 	}
 }
 
@@ -548,6 +552,8 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		s.handleForecast(w, r)
 	case len(segments) == 1 && segments[0] == "scope":
 		s.handleScope(w, r)
+	case len(segments) == 1 && segments[0] == "rigs":
+		s.handleRigs(w, r)
 	case len(segments) == 1 && segments[0] == "heatmap":
 		s.handleHeatmap(w, r)
 	case len(segments) == 1 && segments[0] == "homelab":

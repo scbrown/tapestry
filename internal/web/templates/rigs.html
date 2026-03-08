@@ -1,0 +1,79 @@
+{{define "title"}}Rigs{{end}}
+
+{{define "content"}}
+<div class="rigs-view" hx-get="/rigs" hx-trigger="every 120s" hx-select=".rigs-view" hx-swap="outerHTML">
+  <h1>Rigs <time class="text-dim">{{.GeneratedAt.Format "Jan 02, 2006 15:04"}}</time></h1>
+
+  {{if .Err}}
+  <div class="error">{{.Err}}</div>
+  {{else}}
+
+  <div class="results-meta">{{.GrandTotal}} beads across {{len .Rows}} rigs</div>
+
+  {{if .Rows}}
+  <div class="priority-bars">
+    {{range .Rows}}
+    <div class="priority-bar-row">
+      <span class="priority-label"><a href="/beads?rig={{.Name}}">{{.Name}}</a></span>
+      <div class="priority-bar-track">
+        {{if .Closed}}<div class="bar-segment status-closed" style="width: {{mulf (divf (itof .Closed) (itof $.GrandTotal)) 100.0}}%" title="{{.Closed}} closed"></div>{{end}}
+        {{if .Progress}}<div class="bar-segment status-progress" style="width: {{mulf (divf (itof .Progress) (itof $.GrandTotal)) 100.0}}%" title="{{.Progress}} in progress"></div>{{end}}
+        {{if .Open}}<div class="bar-segment status-open" style="width: {{mulf (divf (itof .Open) (itof $.GrandTotal)) 100.0}}%" title="{{.Open}} open"></div>{{end}}
+        {{if .Blocked}}<div class="bar-segment status-blocked" style="width: {{mulf (divf (itof .Blocked) (itof $.GrandTotal)) 100.0}}%" title="{{.Blocked}} blocked"></div>{{end}}
+        {{if .Deferred}}<div class="bar-segment status-deferred" style="width: {{mulf (divf (itof .Deferred) (itof $.GrandTotal)) 100.0}}%" title="{{.Deferred}} deferred"></div>{{end}}
+      </div>
+      <span class="priority-count">{{.Total}}</span>
+    </div>
+    {{end}}
+  </div>
+
+  <div class="priority-legend">
+    <span class="legend-item"><span class="badge status-closed">closed</span></span>
+    <span class="legend-item"><span class="badge status-progress">in_progress</span></span>
+    <span class="legend-item"><span class="badge status-open">open</span></span>
+    <span class="legend-item"><span class="badge status-blocked">blocked</span></span>
+    <span class="legend-item"><span class="badge status-deferred">deferred</span></span>
+  </div>
+
+  <div class="table-wrap">
+  <table class="bead-table">
+    <thead>
+      <tr>
+        <th>Rig</th>
+        <th>Total</th>
+        <th>Open</th>
+        <th>Active</th>
+        <th>Blocked</th>
+        <th>Closed</th>
+        <th>Deferred</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{range .Rows}}
+      <tr>
+        <td><strong><a href="/beads?rig={{.Name}}">{{.Name}}</a></strong></td>
+        <td><strong>{{.Total}}</strong></td>
+        <td>{{if .Open}}{{.Open}}{{else}}&mdash;{{end}}</td>
+        <td>{{if .Progress}}{{.Progress}}{{else}}&mdash;{{end}}</td>
+        <td>{{if .Blocked}}<span class="text-warn">{{.Blocked}}</span>{{else}}&mdash;{{end}}</td>
+        <td>{{if .Closed}}{{.Closed}}{{else}}&mdash;{{end}}</td>
+        <td>{{if .Deferred}}{{.Deferred}}{{else}}&mdash;{{end}}</td>
+      </tr>
+      {{end}}
+    </tbody>
+    <tfoot>
+      <tr>
+        <td><strong>Total</strong></td>
+        <td><strong>{{.GrandTotal}}</strong></td>
+        <td colspan="5"></td>
+      </tr>
+    </tfoot>
+  </table>
+  </div>
+  {{else}}
+  <p class="empty">No rigs found.</p>
+  {{end}}
+
+  {{end}}
+</div>
+{{end}}
