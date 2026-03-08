@@ -1353,5 +1353,6 @@ tr.silenced { opacity: 0.5; }
 .forecast-warn { background: rgba(255,184,108,0.08); border-color: var(--orange); }
 .forecast-icon { font-size: 1.2rem; margin-right: 0.5rem; }
 
-/* ── Nav Separators ──────────────────────────────────── */
+/* ── Nav Active + Separators ─────────────────────────── */
+.nav-active { color: var(--purple) !important; border-bottom: 2px solid var(--purple); padding-bottom: 2px; }
 .nav-sep { color: var(--border); font-size: 0.75rem; opacity: 0.5; user-select: none; }

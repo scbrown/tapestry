@@ -66,6 +66,19 @@
     document.querySelector('.nav-search-input').addEventListener('keydown', function(e) {
         if (e.key === 'Escape') { this.blur(); this.value = ''; }
     });
+    function highlightNav() {
+        var path = location.pathname;
+        document.querySelectorAll('nav a:not(.logo)').forEach(function(a) {
+            var href = a.getAttribute('href');
+            if (href && href !== '/' && path.startsWith(href)) {
+                a.classList.add('nav-active');
+            } else {
+                a.classList.remove('nav-active');
+            }
+        });
+    }
+    highlightNav();
+    document.body.addEventListener('htmx:pushedIntoHistory', highlightNav);
     </script>
 </body>
 </html>
