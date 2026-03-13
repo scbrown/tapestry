@@ -26,6 +26,7 @@ type execBlocker struct {
 	Issue       dolt.Issue
 	BlockerID   string
 	BlockerDesc string
+	BlockerRig  string
 	Owner       string
 }
 
@@ -178,10 +179,12 @@ func (s *Server) handleExecutive(w http.ResponseWriter, r *http.Request) {
 					if owner == "" {
 						owner = bi.Blocker.Owner
 					}
+					bi.Issue.Rig = dbName
 					r.blockers = append(r.blockers, execBlocker{
 						Issue:       bi.Issue,
 						BlockerID:   bi.Blocker.ID,
 						BlockerDesc: bi.Blocker.Title,
+						BlockerRig:  dbName,
 						Owner:       owner,
 					})
 				}

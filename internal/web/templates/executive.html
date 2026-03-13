@@ -86,11 +86,11 @@
       <div class="exec-blocker-list">
         {{range .Blockers}}
         <div class="exec-blocker-item">
-          <a href="/bead/{{.Issue.ID}}">{{.Issue.ID}}</a>
+          <a href="/bead/{{lower .Issue.Rig}}/{{.Issue.ID}}" hx-boost="true">{{.Issue.ID}}</a>
           <span class="priority-badge p{{.Issue.Priority}}">P{{.Issue.Priority}}</span>
           <span class="exec-blocker-title">{{.Issue.Title}}</span>
           <span class="exec-blocker-by">
-            blocked by <a href="/bead/{{.BlockerID}}">{{.BlockerID}}</a>
+            blocked by <a href="/bead/{{lower .BlockerRig}}/{{.BlockerID}}" hx-boost="true">{{.BlockerID}}</a>
             {{if .Owner}}<span class="text-dim">({{shortActor .Owner}})</span>{{end}}
           </span>
         </div>

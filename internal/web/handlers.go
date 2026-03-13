@@ -612,6 +612,7 @@ func (s *Server) handleStatus(w http.ResponseWriter, r *http.Request) {
 					if isNoise(iss.ID, iss.Title) {
 						continue
 					}
+					iss.Rig = dbName
 					if status == "in_progress" || (status == "open" && iss.Priority <= 1) {
 						r.activeWork = append(r.activeWork, iss)
 					}
@@ -665,6 +666,8 @@ func (s *Server) handleStatus(w http.ResponseWriter, r *http.Request) {
 					if owner == "" {
 						owner = bi.Blocker.Owner
 					}
+					bi.Issue.Rig = dbName
+					bi.Blocker.Rig = dbName
 					r.blockedWork = append(r.blockedWork, blockedRow{
 						Issue:        bi.Issue,
 						Blocker:      bi.Blocker,
@@ -685,6 +688,7 @@ func (s *Server) handleStatus(w http.ResponseWriter, r *http.Request) {
 			} else {
 				for _, iss := range recent {
 					if !isNoise(iss.ID, iss.Title) {
+						iss.Rig = dbName
 						r.recentClosed = append(r.recentClosed, iss)
 					}
 				}
@@ -709,6 +713,7 @@ func (s *Server) handleStatus(w http.ResponseWriter, r *http.Request) {
 						waitingFor = iss.Assignee
 					}
 					if reason != "" {
+						iss.Rig = dbName
 						r.actionItems = append(r.actionItems, actionItem{
 							Issue:      iss,
 							Reason:     reason,

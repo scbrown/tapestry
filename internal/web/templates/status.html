@@ -17,7 +17,7 @@
       {{if .ActiveWork}}
       <div class="status-work-list">
         {{range .ActiveWork}}
-        <a href="/bead/{{if .Rig}}{{.Rig}}/{{end}}{{.ID}}" class="work-item">
+        <a href="/bead/{{lower .Rig}}/{{.ID}}" class="work-item">
           <span class="work-priority {{priorityClass .Priority}}">P{{.Priority}}</span>
           {{statusBadge .Status}}
           <span class="work-title">{{.Title}}</span>
@@ -62,11 +62,11 @@
         {{range .BlockedWork}}
         <div class="blocked-item{{if .IsHuman}} blocked-human{{end}}">
           <div class="blocked-issue">
-            <a href="/bead/{{.Issue.ID}}">{{.Issue.ID}}</a>
+            <a href="/bead/{{lower .Issue.Rig}}/{{.Issue.ID}}" hx-boost="true">{{.Issue.ID}}</a>
             <span class="work-title">{{.Issue.Title}}</span>
           </div>
           <div class="blocked-by">
-            blocked by <a href="/bead/{{.Blocker.ID}}">{{.Blocker.ID}}</a>
+            blocked by <a href="/bead/{{lower .Blocker.Rig}}/{{.Blocker.ID}}" hx-boost="true">{{.Blocker.ID}}</a>
             <span class="text-dim">{{.Blocker.Title}}</span>
             {{if .BlockerOwner}}
             <span class="blocker-owner{{if .IsHuman}} human-owner{{end}}">{{shortActor .BlockerOwner}}</span>
@@ -86,7 +86,7 @@
       {{if .RecentClosed}}
       <div class="status-work-list">
         {{range .RecentClosed}}
-        <a href="/bead/{{if .Rig}}{{.Rig}}/{{end}}{{.ID}}" class="work-item">
+        <a href="/bead/{{lower .Rig}}/{{.ID}}" class="work-item">
           <span class="activity-check">&#10003;</span>
           <span class="work-title">{{.Title}}</span>
           <span class="work-meta">
@@ -110,7 +110,7 @@
         <div class="action-item{{if gt (daysAgo .Issue.UpdatedAt) 2}} action-overdue{{end}}">
           <div class="action-issue">
             <span class="work-priority {{priorityClass .Issue.Priority}}">P{{.Issue.Priority}}</span>
-            <a href="/bead/{{.Issue.ID}}">{{.Issue.ID}}</a>
+            <a href="/bead/{{lower .Issue.Rig}}/{{.Issue.ID}}" hx-boost="true">{{.Issue.ID}}</a>
             <span class="work-title">{{.Issue.Title}}</span>
           </div>
           <div class="action-detail">
