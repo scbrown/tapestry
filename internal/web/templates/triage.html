@@ -45,6 +45,10 @@
           <td class="text-dim">{{rigName .Rig}}</td>
           <td class="triage-actions">
             <div class="triage-btn-group">
+              <select class="triage-assign" hx-post="/bead/{{lower .Rig}}/{{.Issue.ID}}/assign" hx-target="closest tr" hx-swap="outerHTML" name="assignee">
+                <option value="">assign...</option>
+                {{range $.Assignees}}<option value="{{.}}">{{shortActor .}}</option>{{end}}
+              </select>
               <button class="btn btn-xs" hx-post="/bead/{{lower .Rig}}/{{.Issue.ID}}/status" hx-vals='{"status":"closed"}' hx-swap="outerHTML" hx-target="closest tr" hx-confirm="Close {{.Issue.ID}}?">close</button>
               <button class="btn btn-xs" hx-post="/bead/{{lower .Rig}}/{{.Issue.ID}}/status" hx-vals='{"status":"deferred"}' hx-swap="outerHTML" hx-target="closest tr" hx-confirm="Defer {{.Issue.ID}}?">defer</button>
             </div>
