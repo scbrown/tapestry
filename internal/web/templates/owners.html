@@ -1,7 +1,7 @@
 {{define "title"}}Owners{{end}}
 
 {{define "content"}}
-<div class="owners-view">
+<div class="owners-view" hx-get="/owners" hx-trigger="every 120s" hx-select=".owners-view" hx-swap="outerHTML">
   <h1>Workload by Owner</h1>
 
   {{if .Err}}

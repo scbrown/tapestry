@@ -1,7 +1,7 @@
 {{define "title"}}Types{{end}}
 
 {{define "content"}}
-<div class="types-view">
+<div class="types-view" hx-get="/types" hx-trigger="every 120s" hx-select=".types-view" hx-swap="outerHTML">
   <h1>Beads by Type</h1>
 
   {{if .Err}}

@@ -1,7 +1,7 @@
 {{define "title"}}Priorities{{end}}
 
 {{define "content"}}
-<div class="priorities-view">
+<div class="priorities-view" hx-get="/priorities" hx-trigger="every 120s" hx-select=".priorities-view" hx-swap="outerHTML">
   <h1>Priority Distribution</h1>
 
   {{if .Err}}

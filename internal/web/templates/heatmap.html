@@ -1,7 +1,7 @@
 {{define "title"}}Heatmap{{end}}
 
 {{define "content"}}
-<div class="heatmap-view">
+<div class="heatmap-view" hx-get="/heatmap" hx-trigger="every 120s" hx-select=".heatmap-view" hx-swap="outerHTML">
   <h1>Activity Heatmap</h1>
 
   {{if .Err}}

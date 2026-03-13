@@ -1,7 +1,7 @@
 {{define "title"}}Activity{{end}}
 
 {{define "content"}}
-<div class="activity-view">
+<div class="activity-view" hx-get="/activity" hx-trigger="every 60s" hx-select=".activity-view" hx-swap="outerHTML">
   <h1>Recent Activity</h1>
 
   {{if .Err}}

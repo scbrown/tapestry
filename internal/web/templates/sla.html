@@ -1,7 +1,7 @@
 {{define "title"}}SLA{{end}}
 
 {{define "content"}}
-<div class="sla-view">
+<div class="sla-view" hx-get="/sla" hx-trigger="every 120s" hx-select=".sla-view" hx-swap="outerHTML">
   <h1>SLA Tracker</h1>
 
   {{if .Err}}

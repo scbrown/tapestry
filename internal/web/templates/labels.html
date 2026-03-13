@@ -1,7 +1,7 @@
 {{define "title"}}Labels{{end}}
 
 {{define "content"}}
-<div class="labels-view">
+<div class="labels-view" hx-get="/labels" hx-trigger="every 120s" hx-select=".labels-view" hx-swap="outerHTML">
   <h1>Labels</h1>
 
   {{if .Err}}

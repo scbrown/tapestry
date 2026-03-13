@@ -1,6 +1,6 @@
 {{define "title"}}Commits{{end}}
 {{define "content"}}
-<div class="commits-page">
+<div class="commits-page" hx-get="/commits" hx-trigger="every 120s" hx-select=".commits-page" hx-swap="outerHTML">
   <h1>Commits <span class="text-dim">({{.TotalCommits}} total, {{.LinkedCount}} linked to beads)</span></h1>
 
   {{if .RecentLinked}}

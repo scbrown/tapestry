@@ -1,6 +1,6 @@
 {{define "title"}}Work{{end}}
 {{define "content"}}
-<div class="work-page">
+<div class="work-page" hx-get="/work" hx-trigger="every 120s" hx-select=".work-page" hx-swap="outerHTML">
   <div class="work-header">
     <h1>Work</h1>
     <div class="work-controls">

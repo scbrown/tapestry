@@ -1,7 +1,7 @@
 {{define "title"}}Matrix{{end}}
 
 {{define "content"}}
-<div class="matrix-view">
+<div class="matrix-view" hx-get="/matrix" hx-trigger="every 120s" hx-select=".matrix-view" hx-swap="outerHTML">
   <h1>Assignee / Status Matrix</h1>
 
   {{if .Err}}

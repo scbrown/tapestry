@@ -1,6 +1,6 @@
 {{define "title"}}Agents{{end}}
 {{define "content"}}
-<div class="agents-page">
+<div class="agents-page" hx-get="/agents" hx-trigger="every 60s" hx-select=".agents-page" hx-swap="outerHTML">
   <h1>Agents</h1>
   {{if .Agents}}
   <div class="agent-grid">

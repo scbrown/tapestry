@@ -1,6 +1,6 @@
 {{define "title"}}Epics{{end}}
 {{define "content"}}
-<div class="epics-page">
+<div class="epics-page" hx-get="/epics" hx-trigger="every 120s" hx-select=".epics-page" hx-swap="outerHTML">
   <h1>Epics <span class="text-dim">({{len .Epics}})</span></h1>
   {{if .Epics}}
   <div style="margin-bottom:0.5rem">
