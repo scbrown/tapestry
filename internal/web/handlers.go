@@ -1309,6 +1309,39 @@ func (s *Server) handleBeadAssigneeUpdate(w http.ResponseWriter, r *http.Request
 	}
 }
 
+func (s *Server) handleBeadLabelAdd(w http.ResponseWriter, r *http.Request, database, id string) {
+	if s.ds == nil {
+		http.Error(w, "no database", http.StatusServiceUnavailable)
+		return
+	}
+
+	label := strings.TrimSpace(r.FormValue("label"))
+	if label == "" {
+		http.Error(w, "label required", http.StatusBadRequest)
+		return
+	}
+	// Sanitize: alphanumeric, dashes, underscores only, max 50 chars
+	if len(label) > 50 {
+		label = label[:50]
+	}
+	for _, c := range label {
+		if !((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '-' || c == '_') {
+			http.Error(w, "label must be alphanumeric with dashes/underscores", http.StatusBadRequest)
+			return
+		}
+	}
+
+	if err := s.ds.AddLabel(r.Context(), database, id, label); err != nil {
+		log.Printf("bead label add: %v", err)
+		http.Error(w, "failed to add label", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	fmt.Fprintf(w, `<a href="/labels?label=%s" class="badge label">%s</a> `,
+		template.HTMLEscapeString(label), template.HTMLEscapeString(label))
+}
+
 func statusClassName(s string) string {
 	switch s {
 	case "open":

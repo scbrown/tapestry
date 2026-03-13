@@ -1411,3 +1411,6 @@ tr.silenced { opacity: 0.5; }
 .bead-priority-inline { display: inline-flex; align-items: center; gap: 0.5rem; }
 .bead-priority-inline .priority-edit { opacity: 0; transition: opacity 0.15s; }
 .bead-priority-inline:hover .priority-edit { opacity: 1; }
+.label-add-form { display: inline-flex; align-items: center; gap: 3px; margin-left: 0.25rem; }
+.label-input { width: 8rem; padding: 0.1rem 0.3rem; font-size: 0.75rem; background: var(--card-bg); border: 1px solid var(--border); border-radius: 4px; color: var(--fg); }
+.label-input:focus { border-color: var(--purple); outline: none; }

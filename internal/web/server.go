@@ -537,6 +537,12 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// POST /bead/{db}/{id}/label — add label via HTMX
+	if r.Method == http.MethodPost && len(segments) == 4 && segments[0] == "bead" && segments[3] == "label" {
+		s.handleBeadLabelAdd(w, r, segments[1], segments[2])
+		return
+	}
+
 	if r.Method != http.MethodGet {
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 		return
