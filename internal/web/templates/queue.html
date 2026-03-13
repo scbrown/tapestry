@@ -31,18 +31,25 @@
         <th>Title</th>
         <th>Age</th>
         <th>Assignee</th>
+        <th>Actions</th>
       </tr>
     </thead>
     <tbody>
       {{range $i, $item := .Items}}
       <tr>
         <td class="text-dim">{{add1 $i}}</td>
-        <td><a href="/bead/{{$item.Issue.ID}}">{{$item.Issue.ID}}</a></td>
-        <td><span class="priority-badge p{{$item.Issue.Priority}}">P{{$item.Issue.Priority}}</span></td>
+        <td><a href="/bead/{{lower $item.Rig}}/{{$item.Issue.ID}}" hx-boost="true">{{$item.Issue.ID}}</a></td>
+        <td id="pri-{{$item.Issue.ID}}"><span class="priority-badge p{{$item.Issue.Priority}}">P{{$item.Issue.Priority}}</span></td>
         <td>{{if $item.Issue.Type}}<span class="badge">{{$item.Issue.Type}}</span>{{else}}—{{end}}</td>
         <td>{{$item.Issue.Title}}</td>
         <td>{{$item.AgeDays}}d</td>
         <td>{{if $item.Issue.Assignee}}<a href="/agent/{{$item.Issue.Assignee}}">{{shortActor $item.Issue.Assignee}}</a>{{else}}<em>unassigned</em>{{end}}</td>
+        <td class="triage-actions">
+          <div class="triage-btn-group">
+            <button class="btn btn-xs" hx-post="/bead/{{lower $item.Rig}}/{{$item.Issue.ID}}/status" hx-vals='{"status":"closed"}' hx-swap="outerHTML" hx-target="closest tr" hx-confirm="Close {{$item.Issue.ID}}?">close</button>
+            <button class="btn btn-xs" hx-post="/bead/{{lower $item.Rig}}/{{$item.Issue.ID}}/status" hx-vals='{"status":"deferred"}' hx-swap="outerHTML" hx-target="closest tr" hx-confirm="Defer {{$item.Issue.ID}}?">defer</button>
+          </div>
+        </td>
       </tr>
       {{end}}
     </tbody>

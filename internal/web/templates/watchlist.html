@@ -24,17 +24,22 @@
     <div class="table-wrap">
     <table class="bead-table">
       <thead>
-        <tr><th>ID</th><th>Status</th><th>Title</th><th>Age</th><th>Idle</th><th>Assignee</th></tr>
+        <tr><th>ID</th><th>Status</th><th>Title</th><th>Age</th><th>Idle</th><th>Assignee</th><th>Actions</th></tr>
       </thead>
       <tbody>
         {{range .P0}}
         <tr>
-          <td><a href="/bead/{{.Issue.ID}}">{{.Issue.ID}}</a></td>
+          <td><a href="/bead/{{lower .Rig}}/{{.Issue.ID}}" hx-boost="true">{{.Issue.ID}}</a></td>
           <td><span class="badge {{statusClass .Issue.Status}}">{{.Issue.Status}}</span></td>
           <td>{{.Issue.Title}}</td>
           <td>{{.AgeDays}}d</td>
           <td{{if gt .IdleH 24}} class="warn"{{end}}>{{.IdleH}}h</td>
           <td>{{if .Issue.Assignee}}<a href="/agent/{{.Issue.Assignee}}">{{shortActor .Issue.Assignee}}</a>{{else}}<em>unassigned</em>{{end}}</td>
+          <td class="triage-actions">
+            <div class="triage-btn-group">
+              <button class="btn btn-xs" hx-post="/bead/{{lower .Rig}}/{{.Issue.ID}}/status" hx-vals='{"status":"closed"}' hx-swap="outerHTML" hx-target="closest tr" hx-confirm="Close {{.Issue.ID}}?">close</button>
+            </div>
+          </td>
         </tr>
         {{end}}
       </tbody>
@@ -49,17 +54,23 @@
     <div class="table-wrap">
     <table class="bead-table">
       <thead>
-        <tr><th>ID</th><th>Status</th><th>Title</th><th>Age</th><th>Idle</th><th>Assignee</th></tr>
+        <tr><th>ID</th><th>Status</th><th>Title</th><th>Age</th><th>Idle</th><th>Assignee</th><th>Actions</th></tr>
       </thead>
       <tbody>
         {{range .P1}}
         <tr>
-          <td><a href="/bead/{{.Issue.ID}}">{{.Issue.ID}}</a></td>
+          <td><a href="/bead/{{lower .Rig}}/{{.Issue.ID}}" hx-boost="true">{{.Issue.ID}}</a></td>
           <td><span class="badge {{statusClass .Issue.Status}}">{{.Issue.Status}}</span></td>
           <td>{{.Issue.Title}}</td>
           <td>{{.AgeDays}}d</td>
           <td{{if gt .IdleH 48}} class="warn"{{end}}>{{.IdleH}}h</td>
           <td>{{if .Issue.Assignee}}<a href="/agent/{{.Issue.Assignee}}">{{shortActor .Issue.Assignee}}</a>{{else}}<em>unassigned</em>{{end}}</td>
+          <td class="triage-actions">
+            <div class="triage-btn-group">
+              <button class="btn btn-xs" hx-post="/bead/{{lower .Rig}}/{{.Issue.ID}}/status" hx-vals='{"status":"closed"}' hx-swap="outerHTML" hx-target="closest tr" hx-confirm="Close {{.Issue.ID}}?">close</button>
+              <button class="btn btn-xs" hx-post="/bead/{{lower .Rig}}/{{.Issue.ID}}/status" hx-vals='{"status":"deferred"}' hx-swap="outerHTML" hx-target="closest tr" hx-confirm="Defer {{.Issue.ID}}?">defer</button>
+            </div>
+          </td>
         </tr>
         {{end}}
       </tbody>

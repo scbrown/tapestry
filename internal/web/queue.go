@@ -12,6 +12,7 @@ import (
 
 type queueItem struct {
 	Issue   dolt.Issue
+	Rig     string
 	AgeDays int
 	Score   float64 // higher = more urgent
 }
@@ -75,7 +76,8 @@ func (s *Server) handleQueue(w http.ResponseWriter, r *http.Request) {
 	wg.Wait()
 
 	now := time.Now()
-	for _, r := range results {
+	for idx, r := range results {
+		rig := dbs[idx].Name
 		for _, iss := range r.issues {
 			// Only include open beads that aren't blocked
 			if iss.Status != "open" {
@@ -98,6 +100,7 @@ func (s *Server) handleQueue(w http.ResponseWriter, r *http.Request) {
 
 			data.Items = append(data.Items, queueItem{
 				Issue:   iss,
+				Rig:     rig,
 				AgeDays: ageDays,
 				Score:   score,
 			})

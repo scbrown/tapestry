@@ -12,6 +12,7 @@ import (
 
 type watchlistItem struct {
 	Issue   dolt.Issue
+	Rig     string
 	AgeDays int
 	IdleH   int // hours since last update
 }
@@ -60,7 +61,8 @@ func (s *Server) handleWatchlist(w http.ResponseWriter, r *http.Request) {
 	wg.Wait()
 
 	now := time.Now()
-	for _, r := range results {
+	for idx, r := range results {
+		rig := dbs[idx].Name
 		for _, iss := range r.issues {
 			if iss.Status == "closed" || iss.Status == "deferred" {
 				continue
@@ -78,7 +80,7 @@ func (s *Server) handleWatchlist(w http.ResponseWriter, r *http.Request) {
 				idleH = 0
 			}
 
-			item := watchlistItem{Issue: iss, AgeDays: ageDays, IdleH: idleH}
+			item := watchlistItem{Issue: iss, Rig: rig, AgeDays: ageDays, IdleH: idleH}
 			if iss.Priority == 0 {
 				data.P0 = append(data.P0, item)
 			} else {
