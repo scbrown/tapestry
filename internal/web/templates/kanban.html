@@ -19,14 +19,26 @@
       </div>
       <div class="kanban-cards">
         {{range .Cards}}
-        <a href="/bead/{{lower .Rig}}/{{.ID}}" class="kanban-card priority-border-{{.Priority}}" hx-boost="true">
-          <div class="kanban-card-id">{{.ID}}</div>
-          <div class="kanban-card-title">{{.Title}}</div>
-          <div class="kanban-card-meta">
-            <span class="priority-label {{lower (priorityLabel .Priority)}}">{{priorityLabel .Priority}}</span>
-            {{if .Assignee}}<span class="kanban-assignee" title="{{.Assignee}}">{{shortActor .Assignee}}</span>{{end}}
+        <div class="kanban-card priority-border-{{.Priority}}">
+          <a href="/bead/{{lower .Rig}}/{{.ID}}" class="kanban-card-link" hx-boost="true">
+            <div class="kanban-card-id">{{.ID}}</div>
+            <div class="kanban-card-title">{{.Title}}</div>
+            <div class="kanban-card-meta">
+              <span class="priority-label {{lower (priorityLabel .Priority)}}">{{priorityLabel .Priority}}</span>
+              {{if .Assignee}}<span class="kanban-assignee" title="{{.Assignee}}">{{shortActor .Assignee}}</span>{{end}}
+            </div>
+          </a>
+          <div class="kanban-card-actions">
+            {{if eq .Status "open"}}
+            <button class="btn btn-xs" hx-post="/bead/{{lower .Rig}}/{{.ID}}/status" hx-vals='{"status":"in_progress"}' hx-swap="outerHTML" hx-target="closest .kanban-card" title="Start">&#9654;</button>
+            <button class="btn btn-xs" hx-post="/bead/{{lower .Rig}}/{{.ID}}/status" hx-vals='{"status":"closed"}' hx-swap="outerHTML" hx-target="closest .kanban-card" title="Close">&times;</button>
+            {{else if eq .Status "in_progress"}}
+            <button class="btn btn-xs" hx-post="/bead/{{lower .Rig}}/{{.ID}}/status" hx-vals='{"status":"closed"}' hx-swap="outerHTML" hx-target="closest .kanban-card" title="Close">&times;</button>
+            {{else if eq .Status "blocked"}}
+            <button class="btn btn-xs" hx-post="/bead/{{lower .Rig}}/{{.ID}}/status" hx-vals='{"status":"open"}' hx-swap="outerHTML" hx-target="closest .kanban-card" title="Unblock">&#8635;</button>
+            {{end}}
           </div>
-        </a>
+        </div>
         {{else}}
         <div class="kanban-empty">No beads</div>
         {{end}}

@@ -13,6 +13,7 @@ type kanbanCard struct {
 	ID       string
 	Title    string
 	Priority int
+	Status   string
 	Assignee string
 	Rig      string
 	Type     string
@@ -87,6 +88,7 @@ func (s *Server) handleKanban(w http.ResponseWriter, r *http.Request) {
 				ID:       iss.ID,
 				Title:    iss.Title,
 				Priority: iss.Priority,
+				Status:   iss.Status,
 				Assignee: iss.Assignee,
 				Rig:      iss.Rig,
 				Type:     iss.Type,
