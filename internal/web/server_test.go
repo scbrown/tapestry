@@ -3251,3 +3251,65 @@ func TestInventoryPage_HTMX(t *testing.T) {
 		t.Error("HTMX inventory should return partial, not full page")
 	}
 }
+
+func TestResponseTimePage_NilDataSource(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/response-time", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /response-time status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Response Time") {
+		t.Error("expected 'Response Time' heading")
+	}
+}
+
+func TestResponseTimePage_WithData(t *testing.T) {
+	now := time.Now()
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issues: []dolt.Issue{
+			{ID: "rt1", Title: "Quick pickup", Status: "in_progress", Priority: 1, CreatedAt: now.Add(-2 * time.Hour), UpdatedAt: now.Add(-1 * time.Hour)},
+			{ID: "rt2", Title: "Slow pickup", Status: "closed", Priority: 2, CreatedAt: now.Add(-48 * time.Hour), UpdatedAt: now.Add(-24 * time.Hour)},
+			{ID: "rt3", Title: "Still open", Status: "open", Priority: 3, CreatedAt: now.Add(-72 * time.Hour), UpdatedAt: now},
+		},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/response-time", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /response-time status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Median Response") {
+		t.Error("expected 'Median Response' stat")
+	}
+	if !strings.Contains(body, "Still Open") {
+		t.Error("expected 'Still Open' stat")
+	}
+}
+
+func TestResponseTimePage_HTMX(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/response-time", nil)
+	req.Header.Set("HX-Request", "true")
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("HTMX GET /response-time status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if strings.Contains(body, "<!DOCTYPE html>") {
+		t.Error("HTMX response-time should return partial, not full page")
+	}
+}
