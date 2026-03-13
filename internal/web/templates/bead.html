@@ -11,7 +11,15 @@
         &rsaquo; <a href="/bead/{{.Database}}/{{.Issue.ID}}">{{.Issue.ID}}</a>
     </nav>
 
-    <h1>{{.Issue.Title}}</h1>
+    <h1 id="bead-title">
+        <span class="bead-title-text">{{.Issue.Title}}</span>
+        <button class="btn btn-xs bead-title-edit" onclick="this.parentElement.querySelector('.bead-title-form').style.display='inline-flex'; this.parentElement.querySelector('.bead-title-text').style.display='none'; this.style.display='none'; this.parentElement.querySelector('.bead-title-form input').focus();">edit</button>
+        <form class="bead-title-form" style="display:none" hx-post="/bead/{{.Database}}/{{.Issue.ID}}/title" hx-target="#bead-title" hx-swap="innerHTML">
+            <input type="text" name="title" value="{{.Issue.Title}}" class="bead-title-input">
+            <button type="submit" class="btn btn-xs">save</button>
+            <button type="button" class="btn btn-xs" onclick="this.parentElement.style.display='none'; this.parentElement.parentElement.querySelector('.bead-title-text').style.display=''; this.parentElement.parentElement.querySelector('.bead-title-edit').style.display='';">cancel</button>
+        </form>
+    </h1>
 
     <div class="bead-meta">
         <span class="badge {{statusClass .Issue.Status}}">{{.Issue.Status}}</span>

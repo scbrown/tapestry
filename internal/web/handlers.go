@@ -1359,6 +1359,40 @@ func (s *Server) handleBeadLabelAdd(w http.ResponseWriter, r *http.Request, data
 		template.HTMLEscapeString(label), template.HTMLEscapeString(label))
 }
 
+func (s *Server) handleBeadTitleUpdate(w http.ResponseWriter, r *http.Request, database, id string) {
+	if s.ds == nil {
+		http.Error(w, "no database", http.StatusServiceUnavailable)
+		return
+	}
+
+	title := strings.TrimSpace(r.FormValue("title"))
+	if title == "" {
+		http.Error(w, "title required", http.StatusBadRequest)
+		return
+	}
+	if len(title) > 500 {
+		title = title[:500]
+	}
+
+	if err := s.ds.UpdateTitle(r.Context(), database, id, title); err != nil {
+		log.Printf("bead title update: %v", err)
+		http.Error(w, "update failed", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.Header().Set("HX-Trigger", `{"showToast":"Title updated"}`)
+	fmt.Fprintf(w, `<span class="bead-title-text">%s</span>
+<button class="btn btn-xs bead-title-edit" onclick="this.parentElement.querySelector('.bead-title-form').style.display='inline-flex'; this.parentElement.querySelector('.bead-title-text').style.display='none'; this.style.display='none'; this.parentElement.querySelector('.bead-title-form input').focus();">edit</button>
+<form class="bead-title-form" style="display:none" hx-post="/bead/%s/%s/title" hx-target="#bead-title" hx-swap="innerHTML">
+  <input type="text" name="title" value="%s" class="bead-title-input">
+  <button type="submit" class="btn btn-xs">save</button>
+  <button type="button" class="btn btn-xs" onclick="this.parentElement.style.display='none'; this.parentElement.parentElement.querySelector('.bead-title-text').style.display=''; this.parentElement.parentElement.querySelector('.bead-title-edit').style.display='';">cancel</button>
+</form>`,
+		template.HTMLEscapeString(title), database, template.HTMLEscapeString(id),
+		template.HTMLEscapeString(title))
+}
+
 // handleBatchStatus handles POST /batch/status to update multiple beads at once.
 // Expects form fields: ids[] (format: "db/id"), status.
 func (s *Server) handleBatchStatus(w http.ResponseWriter, r *http.Request) {

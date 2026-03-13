@@ -141,6 +141,9 @@ func (m *mockDataSource) UpdatePriority(_ context.Context, _, _ string, _ int) e
 func (m *mockDataSource) UpdateAssignee(_ context.Context, _, _, _ string) error {
 	return m.err
 }
+func (m *mockDataSource) UpdateTitle(_ context.Context, _, _, _ string) error {
+	return m.err
+}
 
 func (m *mockDataSource) AddLabel(_ context.Context, _, _, _ string) error {
 	return m.err
@@ -1240,6 +1243,41 @@ func TestBeadLabelAdd_InvalidChars(t *testing.T) {
 	srv := New(ds)
 
 	req := httptest.NewRequest("POST", "/bead/beads_aegis/aegis-200/label", strings.NewReader("label=bad+label"))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("status = %d, want %d", w.Code, http.StatusBadRequest)
+	}
+}
+
+func TestBeadTitleUpdate(t *testing.T) {
+	ds := &mockDataSource{}
+	srv := New(ds)
+
+	req := httptest.NewRequest("POST", "/bead/beads_aegis/aegis-200/title", strings.NewReader("title=New+Title"))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
+	}
+	if !strings.Contains(w.Body.String(), "New Title") {
+		t.Errorf("response missing updated title, got: %s", w.Body.String())
+	}
+	trigger := w.Header().Get("HX-Trigger")
+	if !strings.Contains(trigger, "showToast") {
+		t.Errorf("missing HX-Trigger header, got: %s", trigger)
+	}
+}
+
+func TestBeadTitleUpdate_Empty(t *testing.T) {
+	ds := &mockDataSource{}
+	srv := New(ds)
+
+	req := httptest.NewRequest("POST", "/bead/beads_aegis/aegis-200/title", strings.NewReader("title="))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	w := httptest.NewRecorder()
 	srv.ServeHTTP(w, req)

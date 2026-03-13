@@ -50,6 +50,7 @@ type DataSource interface {
 	UpdateStatus(ctx context.Context, database, issueID, status string) error
 	UpdatePriority(ctx context.Context, database, issueID string, priority int) error
 	UpdateAssignee(ctx context.Context, database, issueID, assignee string) error
+	UpdateTitle(ctx context.Context, database, issueID, title string) error
 	AddLabel(ctx context.Context, database, issueID, label string) error
 	ThemeParks(ctx context.Context, database string) ([]dolt.ThemePark, error)
 	Rides(ctx context.Context, database, parkID string) ([]dolt.Ride, error)
@@ -540,6 +541,12 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// POST /bead/{db}/{id}/label — add label via HTMX
 	if r.Method == http.MethodPost && len(segments) == 4 && segments[0] == "bead" && segments[3] == "label" {
 		s.handleBeadLabelAdd(w, r, segments[1], segments[2])
+		return
+	}
+
+	// POST /bead/{db}/{id}/title — update title via HTMX
+	if r.Method == http.MethodPost && len(segments) == 4 && segments[0] == "bead" && segments[3] == "title" {
+		s.handleBeadTitleUpdate(w, r, segments[1], segments[2])
 		return
 	}
 
