@@ -695,6 +695,40 @@ func (c *Client) AllChildDependencies(ctx context.Context, database string) ([]D
 	return deps, rows.Err()
 }
 
+// DependenciesWithIssues returns dependency edges for a single issue with full issue details.
+func (c *Client) DependenciesWithIssues(ctx context.Context, database, issueID string) ([]DepEdge, error) {
+	query := `SELECT d.issue_id, i1.title, i1.status, i1.priority, i1.issue_type,
+		COALESCE(i1.owner,''), COALESCE(i1.assignee,''), i1.created_at, i1.updated_at,
+		d.depends_on_id, i2.title, i2.status, i2.priority, i2.issue_type,
+		COALESCE(i2.owner,''), COALESCE(i2.assignee,''), i2.created_at, i2.updated_at,
+		d.type
+		FROM dependencies d
+		JOIN issues i1 ON i1.id = d.issue_id
+		JOIN issues i2 ON i2.id = d.depends_on_id
+		WHERE d.issue_id = ? OR d.depends_on_id = ?`
+	rows, err := c.queryDB(ctx, database, query, issueID, issueID)
+	if err != nil {
+		return nil, fmt.Errorf("dolt: deps with issues: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+
+	var edges []DepEdge
+	for rows.Next() {
+		var e DepEdge
+		if err := rows.Scan(
+			&e.From.ID, &e.From.Title, &e.From.Status, &e.From.Priority, &e.From.Type,
+			&e.From.Owner, &e.From.Assignee, &e.From.CreatedAt, &e.From.UpdatedAt,
+			&e.To.ID, &e.To.Title, &e.To.Status, &e.To.Priority, &e.To.Type,
+			&e.To.Owner, &e.To.Assignee, &e.To.CreatedAt, &e.To.UpdatedAt,
+			&e.Type,
+		); err != nil {
+			return nil, fmt.Errorf("dolt: scan dep edge: %w", err)
+		}
+		edges = append(edges, e)
+	}
+	return edges, rows.Err()
+}
+
 // AllDependenciesWithIssues returns all dependency edges with issue details for both sides.
 func (c *Client) AllDependenciesWithIssues(ctx context.Context, database string) ([]DepEdge, error) {
 	query := `SELECT d.issue_id, i1.title, i1.status, i1.priority, i1.issue_type,

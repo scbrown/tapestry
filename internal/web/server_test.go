@@ -176,6 +176,10 @@ func (m *mockDataSource) IssuesByLabel(_ context.Context, _, _ string) ([]dolt.I
 	return m.issues, m.err
 }
 
+func (m *mockDataSource) DependenciesWithIssues(_ context.Context, _, _ string) ([]dolt.DepEdge, error) {
+	return m.depEdges, m.err
+}
+
 func (m *mockDataSource) AllDependenciesWithIssues(_ context.Context, _ string) ([]dolt.DepEdge, error) {
 	return m.depEdges, m.err
 }
@@ -322,8 +326,8 @@ func TestBeadPage_Found(t *testing.T) {
 		comments: []dolt.Comment{
 			{ID: 1, IssueID: "aegis-001", Author: "nux", Body: "Working on it."},
 		},
-		deps: []dolt.Dependency{
-			{FromID: "aegis-001", ToID: "aegis-002", Type: "blocks"},
+		depEdges: []dolt.DepEdge{
+			{From: dolt.Issue{ID: "aegis-001", Title: "Fix the widget"}, To: dolt.Issue{ID: "aegis-002", Title: "Related issue"}, Type: "blocks"},
 		},
 	}
 

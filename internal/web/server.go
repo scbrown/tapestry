@@ -59,6 +59,7 @@ type DataSource interface {
 	TripPlans(ctx context.Context, database string) ([]dolt.TripPlan, error)
 	DistinctLabels(ctx context.Context, database string) ([]dolt.LabelCount, error)
 	IssuesByLabel(ctx context.Context, database, label string) ([]dolt.Issue, error)
+	DependenciesWithIssues(ctx context.Context, database, issueID string) ([]dolt.DepEdge, error)
 	AllDependenciesWithIssues(ctx context.Context, database string) ([]dolt.DepEdge, error)
 	CountByPriorityStatus(ctx context.Context, database string) ([]dolt.PriorityStatusCount, error)
 	CountByAssigneeStatus(ctx context.Context, database string) ([]dolt.AssigneeStatusCount, error)

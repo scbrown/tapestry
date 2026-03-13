@@ -48,7 +48,7 @@ type beadData struct {
 	Issue         *dolt.Issue
 	Labels        []string
 	Comments      []dolt.Comment
-	Deps          []dolt.Dependency
+	Deps          []dolt.DepEdge
 	Commits       []beadCommit
 	Metadata      *dolt.IssueMetadata
 	StatusHistory []dolt.StatusTransition
@@ -230,9 +230,9 @@ func (s *Server) handleBead(w http.ResponseWriter, r *http.Request, database, id
 		data.Comments = comments
 	}
 
-	deps, err := s.ds.Dependencies(ctx, database, id)
+	depEdges, err := s.ds.DependenciesWithIssues(ctx, database, id)
 	if err == nil {
-		data.Deps = deps
+		data.Deps = depEdges
 	}
 
 	meta, err := s.ds.MetadataForIssue(ctx, database, id)

@@ -196,17 +196,26 @@
 
     {{if .Deps}}
     <section class="bead-deps">
-        <h2>Dependencies</h2>
-        <ul class="deps-list">
+        <h2>Dependencies ({{len .Deps}})</h2>
+        <div class="table-wrap">
+        <table class="bead-table">
+            <thead><tr><th>Type</th><th>From</th><th>Title</th><th>Status</th><th></th><th>To</th><th>Title</th><th>Status</th></tr></thead>
+            <tbody>
             {{range .Deps}}
-            <li>
-                <span class="dep-type">{{.Type}}</span>
-                <a href="/bead/{{.FromID}}" hx-get="/bead/{{.FromID}}" hx-target="#content" hx-push-url="true">{{.FromID}}</a>
-                &rarr;
-                <a href="/bead/{{.ToID}}" hx-get="/bead/{{.ToID}}" hx-target="#content" hx-push-url="true">{{.ToID}}</a>
-            </li>
+            <tr>
+                <td><span class="dep-type">{{.Type}}</span></td>
+                <td><a href="/bead/{{$.Database}}/{{.From.ID}}" hx-get="/bead/{{$.Database}}/{{.From.ID}}" hx-target="#content" hx-push-url="true">{{.From.ID}}</a></td>
+                <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{.From.Title}}</td>
+                <td>{{statusBadge .From.Status}}</td>
+                <td class="dep-arrow">&rarr;</td>
+                <td><a href="/bead/{{$.Database}}/{{.To.ID}}" hx-get="/bead/{{$.Database}}/{{.To.ID}}" hx-target="#content" hx-push-url="true">{{.To.ID}}</a></td>
+                <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{.To.Title}}</td>
+                <td>{{statusBadge .To.Status}}</td>
+            </tr>
             {{end}}
-        </ul>
+            </tbody>
+        </table>
+        </div>
     </section>
     {{end}}
 
