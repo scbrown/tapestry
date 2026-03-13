@@ -1,6 +1,6 @@
 {{define "title"}}Events{{end}}
 {{define "content"}}
-<div class="events-page">
+<div class="events-page" hx-get="{{if or .TypeFilter .ActorFilter}}/events?{{if .TypeFilter}}type={{.TypeFilter}}{{end}}{{if and .TypeFilter .ActorFilter}}&{{end}}{{if .ActorFilter}}actor={{.ActorFilter}}{{end}}{{else}}/events{{end}}" hx-trigger="every 30s" hx-select=".events-page" hx-swap="outerHTML">
   <h1>Events <span class="text-dim">({{.Total}} total)</span></h1>
 
   <div class="filters">
