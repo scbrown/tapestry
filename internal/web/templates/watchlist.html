@@ -1,0 +1,72 @@
+{{define "title"}}Watchlist{{end}}
+{{define "content"}}
+<div class="backlog-page" hx-get="/watchlist" hx-trigger="every 30s" hx-select=".backlog-page" hx-swap="outerHTML">
+  <h1>Watchlist <time class="text-dim">{{.GeneratedAt.Format "Jan 02, 2006 15:04"}}</time></h1>
+
+  <div class="backlog-stats">
+    <div class="stat">
+      <span class="stat-value{{if gt .TotalP0 0}} warn{{end}}"><span class="priority-badge p0">P0</span> {{.TotalP0}}</span>
+      <span class="stat-label">Critical</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value"><span class="priority-badge p1">P1</span> {{.TotalP1}}</span>
+      <span class="stat-label">High</span>
+    </div>
+  </div>
+
+  {{if and (eq .TotalP0 0) (eq .TotalP1 0)}}
+  <p class="empty">No active P0 or P1 beads. All clear.</p>
+  {{end}}
+
+  {{if gt .TotalP0 0}}
+  <section class="backlog-card" style="border-left: 3px solid #ff5555;">
+    <h2><span class="priority-badge p0">P0</span> Critical ({{.TotalP0}})</h2>
+    <div class="table-wrap">
+    <table class="bead-table">
+      <thead>
+        <tr><th>ID</th><th>Status</th><th>Title</th><th>Age</th><th>Idle</th><th>Assignee</th></tr>
+      </thead>
+      <tbody>
+        {{range .P0}}
+        <tr>
+          <td><a href="/bead/{{.Issue.ID}}">{{.Issue.ID}}</a></td>
+          <td><span class="badge {{statusClass .Issue.Status}}">{{.Issue.Status}}</span></td>
+          <td>{{.Issue.Title}}</td>
+          <td>{{.AgeDays}}d</td>
+          <td{{if gt .IdleH 24}} class="warn"{{end}}>{{.IdleH}}h</td>
+          <td>{{if .Issue.Assignee}}<a href="/agent/{{.Issue.Assignee}}">{{shortActor .Issue.Assignee}}</a>{{else}}<em>unassigned</em>{{end}}</td>
+        </tr>
+        {{end}}
+      </tbody>
+    </table>
+    </div>
+  </section>
+  {{end}}
+
+  {{if gt .TotalP1 0}}
+  <section class="backlog-card" style="border-left: 3px solid #ffb86c;">
+    <h2><span class="priority-badge p1">P1</span> High ({{.TotalP1}})</h2>
+    <div class="table-wrap">
+    <table class="bead-table">
+      <thead>
+        <tr><th>ID</th><th>Status</th><th>Title</th><th>Age</th><th>Idle</th><th>Assignee</th></tr>
+      </thead>
+      <tbody>
+        {{range .P1}}
+        <tr>
+          <td><a href="/bead/{{.Issue.ID}}">{{.Issue.ID}}</a></td>
+          <td><span class="badge {{statusClass .Issue.Status}}">{{.Issue.Status}}</span></td>
+          <td>{{.Issue.Title}}</td>
+          <td>{{.AgeDays}}d</td>
+          <td{{if gt .IdleH 48}} class="warn"{{end}}>{{.IdleH}}h</td>
+          <td>{{if .Issue.Assignee}}<a href="/agent/{{.Issue.Assignee}}">{{shortActor .Issue.Assignee}}</a>{{else}}<em>unassigned</em>{{end}}</td>
+        </tr>
+        {{end}}
+      </tbody>
+    </table>
+    </div>
+  </section>
+  {{end}}
+
+</div>
+{{end}}

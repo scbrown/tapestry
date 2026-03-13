@@ -456,6 +456,10 @@ func (s *Server) parseTemplates() {
 			template.New("").Funcs(funcMap).ParseFS(templateFS,
 				"templates/layout.html", "templates/duplicates.html"),
 		),
+		"watchlist": template.Must(
+			template.New("").Funcs(funcMap).ParseFS(templateFS,
+				"templates/layout.html", "templates/watchlist.html"),
+		),
 	}
 }
 
@@ -587,6 +591,8 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		s.handleQueue(w, r)
 	case len(segments) == 1 && segments[0] == "duplicates":
 		s.handleDuplicates(w, r)
+	case len(segments) == 1 && segments[0] == "watchlist":
+		s.handleWatchlist(w, r)
 	case len(segments) == 1 && segments[0] == "heatmap":
 		s.handleHeatmap(w, r)
 	case len(segments) == 1 && segments[0] == "homelab":

@@ -2903,3 +2903,79 @@ func TestDuplicatesPage_NoDuplicates(t *testing.T) {
 		t.Error("expected 'No duplicate beads' message")
 	}
 }
+
+func TestWatchlistPage_NilDataSource(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/watchlist", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /watchlist status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Watchlist") {
+		t.Error("expected 'Watchlist' heading")
+	}
+}
+
+func TestWatchlistPage_WithP0P1(t *testing.T) {
+	now := time.Now()
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issues: []dolt.Issue{
+			{ID: "w1", Title: "Server down!", Status: "open", Priority: 0, CreatedAt: now.Add(-1 * time.Hour), UpdatedAt: now},
+			{ID: "w2", Title: "High prio bug", Status: "in_progress", Priority: 1, CreatedAt: now.Add(-24 * time.Hour), UpdatedAt: now.Add(-2 * time.Hour)},
+			{ID: "w3", Title: "Normal task", Status: "open", Priority: 2, CreatedAt: now, UpdatedAt: now},
+			{ID: "w4", Title: "Closed P0", Status: "closed", Priority: 0, CreatedAt: now, UpdatedAt: now},
+		},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/watchlist", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /watchlist status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Server down!") {
+		t.Error("expected P0 'Server down!' in watchlist")
+	}
+	if !strings.Contains(body, "High prio bug") {
+		t.Error("expected P1 'High prio bug' in watchlist")
+	}
+	if strings.Contains(body, "Normal task") {
+		t.Error("P2 tasks should not appear in watchlist")
+	}
+	if strings.Contains(body, "Closed P0") {
+		t.Error("closed P0 should not appear in watchlist")
+	}
+}
+
+func TestWatchlistPage_AllClear(t *testing.T) {
+	now := time.Now()
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issues: []dolt.Issue{
+			{ID: "w1", Title: "Low prio", Status: "open", Priority: 3, CreatedAt: now, UpdatedAt: now},
+		},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/watchlist", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /watchlist status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "All clear") {
+		t.Error("expected 'All clear' message when no P0/P1 beads")
+	}
+}
