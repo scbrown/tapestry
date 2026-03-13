@@ -58,6 +58,7 @@ type DataSource interface {
 	AllDependenciesWithIssues(ctx context.Context, database string) ([]dolt.DepEdge, error)
 	CountByPriorityStatus(ctx context.Context, database string) ([]dolt.PriorityStatusCount, error)
 	CountByAssigneeStatus(ctx context.Context, database string) ([]dolt.AssigneeStatusCount, error)
+	RecentComments(ctx context.Context, database string, limit int) ([]dolt.Comment, error)
 }
 
 // Server serves the Tapestry web dashboard.
@@ -464,6 +465,14 @@ func (s *Server) parseTemplates() {
 			template.New("").Funcs(funcMap).ParseFS(templateFS,
 				"templates/layout.html", "templates/flow-rate.html"),
 		),
+		"comments": template.Must(
+			template.New("").Funcs(funcMap).ParseFS(templateFS,
+				"templates/layout.html", "templates/comments.html"),
+		),
+		"triage": template.Must(
+			template.New("").Funcs(funcMap).ParseFS(templateFS,
+				"templates/layout.html", "templates/triage.html"),
+		),
 	}
 }
 
@@ -599,6 +608,10 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		s.handleWatchlist(w, r)
 	case len(segments) == 1 && segments[0] == "flow-rate":
 		s.handleFlowRate(w, r)
+	case len(segments) == 1 && segments[0] == "comments":
+		s.handleComments(w, r)
+	case len(segments) == 1 && segments[0] == "triage":
+		s.handleTriage(w, r)
 	case len(segments) == 1 && segments[0] == "heatmap":
 		s.handleHeatmap(w, r)
 	case len(segments) == 1 && segments[0] == "homelab":

@@ -1,0 +1,90 @@
+{{define "title"}}Triage{{end}}
+{{define "content"}}
+<div class="backlog-page" hx-get="/triage" hx-trigger="every 120s" hx-select=".backlog-page" hx-swap="outerHTML">
+  <h1>Triage Queue <time class="text-dim">{{.GeneratedAt.Format "Jan 02, 2006 15:04"}}</time></h1>
+
+  <div class="backlog-stats">
+    <div class="stat">
+      <span class="stat-value{{if gt .Untriaged 0}} warn{{end}}">{{.Untriaged}}</span>
+      <span class="stat-label">Need Triage</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value">{{.UnassignedN}}</span>
+      <span class="stat-label">Unassigned</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value">{{.NoPriorityN}}</span>
+      <span class="stat-label">No Priority</span>
+    </div>
+  </div>
+
+  {{if .Unassigned}}
+  <section class="backlog-card">
+    <h2>Unassigned (no owner or assignee)</h2>
+    <div class="table-wrap">
+    <table class="bead-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Title</th>
+          <th>Priority</th>
+          <th>Type</th>
+          <th>Age</th>
+          <th>Rig</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{range .Unassigned}}
+        <tr>
+          <td><a href="/bead/{{lower .Rig}}/{{.Issue.ID}}" hx-boost="true">{{.Issue.ID}}</a></td>
+          <td>{{.Issue.Title}}</td>
+          <td><span class="badge {{priorityClass .Issue.Priority}}">{{priorityLabel .Issue.Priority}}</span></td>
+          <td>{{.Issue.Type}}</td>
+          <td class="text-dim">{{.Age}}d</td>
+          <td class="text-dim">{{rigName .Rig}}</td>
+        </tr>
+        {{end}}
+      </tbody>
+    </table>
+    </div>
+  </section>
+  {{end}}
+
+  {{if .NoPriority}}
+  <section class="backlog-card">
+    <h2>No Priority Set</h2>
+    <div class="table-wrap">
+    <table class="bead-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Title</th>
+          <th>Owner</th>
+          <th>Type</th>
+          <th>Age</th>
+          <th>Rig</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{range .NoPriority}}
+        <tr>
+          <td><a href="/bead/{{lower .Rig}}/{{.Issue.ID}}" hx-boost="true">{{.Issue.ID}}</a></td>
+          <td>{{.Issue.Title}}</td>
+          <td>{{shortActor .Issue.Owner}}</td>
+          <td>{{.Issue.Type}}</td>
+          <td class="text-dim">{{.Age}}d</td>
+          <td class="text-dim">{{rigName .Rig}}</td>
+        </tr>
+        {{end}}
+      </tbody>
+    </table>
+    </div>
+  </section>
+  {{end}}
+
+  {{if and (not .Unassigned) (not .NoPriority)}}
+  <p class="text-dim">All open beads are assigned and prioritized.</p>
+  {{end}}
+
+</div>
+{{end}}

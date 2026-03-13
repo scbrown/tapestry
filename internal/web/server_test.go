@@ -174,6 +174,10 @@ func (m *mockDataSource) CountByAssigneeStatus(_ context.Context, _ string) ([]d
 	return m.assigneeCounts, m.err
 }
 
+func (m *mockDataSource) RecentComments(_ context.Context, _ string, _ int) ([]dolt.Comment, error) {
+	return nil, m.err
+}
+
 func TestIndexRendersMonthly(t *testing.T) {
 	srv := New(nil)
 	req := httptest.NewRequest("GET", "/", nil)
@@ -3042,5 +3046,143 @@ func TestFlowRatePage_HTMX(t *testing.T) {
 	body := w.Body.String()
 	if strings.Contains(body, "<!DOCTYPE html>") {
 		t.Error("HTMX flow-rate should return partial, not full page")
+	}
+}
+
+func TestCommentsPage_NilDataSource(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/comments", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /comments status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Recent Comments") {
+		t.Error("expected 'Recent Comments' heading")
+	}
+}
+
+func TestCommentsPage_WithData(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/comments", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /comments status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Comments") {
+		t.Error("expected comments content")
+	}
+}
+
+func TestCommentsPage_HTMX(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/comments", nil)
+	req.Header.Set("HX-Request", "true")
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("HTMX GET /comments status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if strings.Contains(body, "<!DOCTYPE html>") {
+		t.Error("HTMX comments should return partial, not full page")
+	}
+}
+
+func TestTriagePage_NilDataSource(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/triage", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /triage status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Triage Queue") {
+		t.Error("expected 'Triage Queue' heading")
+	}
+}
+
+func TestTriagePage_WithData(t *testing.T) {
+	now := time.Now()
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issues: []dolt.Issue{
+			{ID: "t1", Title: "Unassigned bug", Status: "open", Priority: 2, Type: "bug", CreatedAt: now.Add(-72 * time.Hour), UpdatedAt: now},
+			{ID: "t2", Title: "Has owner", Status: "open", Priority: 1, Type: "task", Owner: "aegis/crew/arnold", CreatedAt: now, UpdatedAt: now},
+		},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/triage", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /triage status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Unassigned") {
+		t.Error("expected 'Unassigned' section")
+	}
+	if !strings.Contains(body, "t1") {
+		t.Error("expected unassigned bead t1")
+	}
+}
+
+func TestTriagePage_HTMX(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/triage", nil)
+	req.Header.Set("HX-Request", "true")
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("HTMX GET /triage status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if strings.Contains(body, "<!DOCTYPE html>") {
+		t.Error("HTMX triage should return partial, not full page")
+	}
+}
+
+func TestTriagePage_AllAssigned(t *testing.T) {
+	now := time.Now()
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issues: []dolt.Issue{
+			{ID: "a1", Title: "Assigned", Status: "open", Priority: 1, Owner: "someone", CreatedAt: now, UpdatedAt: now},
+		},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/triage", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /triage status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "All open beads are assigned and prioritized") {
+		t.Error("expected empty state message")
 	}
 }

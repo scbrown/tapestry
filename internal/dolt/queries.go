@@ -880,6 +880,30 @@ func (c *Client) TripPlans(ctx context.Context, database string) ([]TripPlan, er
 	return plans, rows.Err()
 }
 
+// RecentComments returns the most recent comments across all issues in a database.
+func (c *Client) RecentComments(ctx context.Context, database string, limit int) ([]Comment, error) {
+	if limit <= 0 {
+		limit = 50
+	}
+	query := "SELECT id, issue_id, author, text, created_at " +
+		"FROM comments ORDER BY created_at DESC LIMIT ?"
+	rows, err := c.queryDB(ctx, database, query, limit)
+	if err != nil {
+		return nil, fmt.Errorf("dolt: recent comments: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+
+	var comments []Comment
+	for rows.Next() {
+		var cm Comment
+		if err := rows.Scan(&cm.ID, &cm.IssueID, &cm.Author, &cm.Body, &cm.CreatedAt); err != nil {
+			return nil, fmt.Errorf("dolt: scan recent comment: %w", err)
+		}
+		comments = append(comments, cm)
+	}
+	return comments, rows.Err()
+}
+
 // scanIssue scans a single issue row from the given scanner.
 func scanIssue(s interface{ Scan(...any) error }, iss *Issue) error {
 	return s.Scan(

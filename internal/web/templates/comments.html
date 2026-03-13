@@ -1,0 +1,43 @@
+{{define "title"}}Comments{{end}}
+{{define "content"}}
+<div class="backlog-page" hx-get="/comments" hx-trigger="every 60s" hx-select=".backlog-page" hx-swap="outerHTML">
+  <h1>Recent Comments <time class="text-dim">{{.GeneratedAt.Format "Jan 02, 2006 15:04"}}</time></h1>
+
+  <div class="backlog-stats">
+    <div class="stat">
+      <span class="stat-value">{{.Total}}</span>
+      <span class="stat-label">Comments</span>
+    </div>
+  </div>
+
+  {{if .Comments}}
+  <section class="backlog-card">
+    <div class="table-wrap">
+    <table class="bead-table">
+      <thead>
+        <tr>
+          <th>When</th>
+          <th>Author</th>
+          <th>Bead</th>
+          <th>Comment</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{range .Comments}}
+        <tr>
+          <td class="text-dim" style="white-space:nowrap;">{{timeAgo .Created}}</td>
+          <td style="white-space:nowrap;">{{shortActor .Author}}</td>
+          <td><a href="/bead/{{lower .Rig}}/{{.IssueID}}" hx-boost="true">{{.IssueID}}</a></td>
+          <td style="max-width:500px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{.Body}}</td>
+        </tr>
+        {{end}}
+      </tbody>
+    </table>
+    </div>
+  </section>
+  {{else}}
+  <p class="text-dim">No recent comments.</p>
+  {{end}}
+
+</div>
+{{end}}
