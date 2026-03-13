@@ -31,6 +31,7 @@
           <th>Type</th>
           <th>Age</th>
           <th>Rig</th>
+          <th>Actions</th>
         </tr>
       </thead>
       <tbody>
@@ -38,10 +39,16 @@
         <tr>
           <td><a href="/bead/{{lower .Rig}}/{{.Issue.ID}}" hx-boost="true">{{.Issue.ID}}</a></td>
           <td>{{.Issue.Title}}</td>
-          <td><span class="badge {{priorityClass .Issue.Priority}}">{{priorityLabel .Issue.Priority}}</span></td>
+          <td id="pri-{{.Issue.ID}}"><span class="badge {{priorityClass .Issue.Priority}}">{{priorityLabel .Issue.Priority}}</span></td>
           <td>{{.Issue.Type}}</td>
           <td class="text-dim">{{.Age}}d</td>
           <td class="text-dim">{{rigName .Rig}}</td>
+          <td class="triage-actions">
+            <div class="triage-btn-group">
+              <button class="btn btn-xs" hx-post="/bead/{{lower .Rig}}/{{.Issue.ID}}/status" hx-vals='{"status":"closed"}' hx-swap="outerHTML" hx-target="closest tr" hx-confirm="Close {{.Issue.ID}}?">close</button>
+              <button class="btn btn-xs" hx-post="/bead/{{lower .Rig}}/{{.Issue.ID}}/status" hx-vals='{"status":"deferred"}' hx-swap="outerHTML" hx-target="closest tr" hx-confirm="Defer {{.Issue.ID}}?">defer</button>
+            </div>
+          </td>
         </tr>
         {{end}}
       </tbody>
@@ -63,6 +70,7 @@
           <th>Type</th>
           <th>Age</th>
           <th>Rig</th>
+          <th>Set Priority</th>
         </tr>
       </thead>
       <tbody>
@@ -74,6 +82,15 @@
           <td>{{.Issue.Type}}</td>
           <td class="text-dim">{{.Age}}d</td>
           <td class="text-dim">{{rigName .Rig}}</td>
+          <td class="triage-actions" id="pri-{{.Issue.ID}}">
+            <div class="triage-btn-group">
+              <button class="btn btn-xs priority-p0" hx-post="/bead/{{lower .Rig}}/{{.Issue.ID}}/priority" hx-vals='{"priority":"0"}' hx-target="#pri-{{.Issue.ID}}" hx-swap="innerHTML">P0</button>
+              <button class="btn btn-xs priority-p1" hx-post="/bead/{{lower .Rig}}/{{.Issue.ID}}/priority" hx-vals='{"priority":"1"}' hx-target="#pri-{{.Issue.ID}}" hx-swap="innerHTML">P1</button>
+              <button class="btn btn-xs priority-p2" hx-post="/bead/{{lower .Rig}}/{{.Issue.ID}}/priority" hx-vals='{"priority":"2"}' hx-target="#pri-{{.Issue.ID}}" hx-swap="innerHTML">P2</button>
+              <button class="btn btn-xs priority-p3" hx-post="/bead/{{lower .Rig}}/{{.Issue.ID}}/priority" hx-vals='{"priority":"3"}' hx-target="#pri-{{.Issue.ID}}" hx-swap="innerHTML">P3</button>
+              <button class="btn btn-xs priority-p4" hx-post="/bead/{{lower .Rig}}/{{.Issue.ID}}/priority" hx-vals='{"priority":"4"}' hx-target="#pri-{{.Issue.ID}}" hx-swap="innerHTML">P4</button>
+            </div>
+          </td>
         </tr>
         {{end}}
       </tbody>

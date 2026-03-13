@@ -1243,6 +1243,72 @@ func (s *Server) handleBeadComment(w http.ResponseWriter, r *http.Request, datab
 	)
 }
 
+func (s *Server) handleBeadPriorityUpdate(w http.ResponseWriter, r *http.Request, database, id string) {
+	if s.ds == nil {
+		http.Error(w, "no database", http.StatusServiceUnavailable)
+		return
+	}
+
+	pStr := r.FormValue("priority")
+	priority := -1
+	switch pStr {
+	case "0":
+		priority = 0
+	case "1":
+		priority = 1
+	case "2":
+		priority = 2
+	case "3":
+		priority = 3
+	case "4":
+		priority = 4
+	default:
+		http.Error(w, "invalid priority (0-4)", http.StatusBadRequest)
+		return
+	}
+
+	if err := s.ds.UpdatePriority(r.Context(), database, id, priority); err != nil {
+		log.Printf("bead priority update: %v", err)
+		http.Error(w, "update failed", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	fmt.Fprintf(w, `<span class="priority-badge p%d">P%d</span>`, priority, priority)
+}
+
+func (s *Server) handleBeadAssigneeUpdate(w http.ResponseWriter, r *http.Request, database, id string) {
+	if s.ds == nil {
+		http.Error(w, "no database", http.StatusServiceUnavailable)
+		return
+	}
+
+	assignee := strings.TrimSpace(r.FormValue("assignee"))
+	if len(assignee) > 200 {
+		http.Error(w, "assignee too long", http.StatusBadRequest)
+		return
+	}
+
+	if err := s.ds.UpdateAssignee(r.Context(), database, id, assignee); err != nil {
+		log.Printf("bead assignee update: %v", err)
+		http.Error(w, "update failed", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	if assignee == "" {
+		fmt.Fprint(w, `<span class="text-dim">unassigned</span>`)
+	} else {
+		short := assignee
+		if idx := strings.Index(short, "@"); idx > 0 {
+			short = short[:idx]
+		} else if parts := strings.Split(short, "/"); len(parts) > 1 {
+			short = parts[len(parts)-1]
+		}
+		fmt.Fprintf(w, `<span>%s</span>`, template.HTMLEscapeString(short))
+	}
+}
+
 func statusClassName(s string) string {
 	switch s {
 	case "open":

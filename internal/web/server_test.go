@@ -134,6 +134,14 @@ func (m *mockDataSource) UpdateStatus(_ context.Context, _, _, _ string) error {
 	return m.err
 }
 
+func (m *mockDataSource) UpdatePriority(_ context.Context, _, _ string, _ int) error {
+	return m.err
+}
+
+func (m *mockDataSource) UpdateAssignee(_ context.Context, _, _, _ string) error {
+	return m.err
+}
+
 func (m *mockDataSource) AddLabel(_ context.Context, _, _, _ string) error {
 	return m.err
 }
@@ -1120,6 +1128,76 @@ func TestBeadStatusUpdate_InvalidStatus(t *testing.T) {
 
 	if w.Code != http.StatusBadRequest {
 		t.Errorf("status = %d, want %d", w.Code, http.StatusBadRequest)
+	}
+}
+
+func TestBeadPriorityUpdate(t *testing.T) {
+	ds := &mockDataSource{}
+	srv := New(ds)
+
+	req := httptest.NewRequest("POST", "/bead/beads_aegis/aegis-200/priority", strings.NewReader("priority=1"))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "P1") {
+		t.Errorf("response missing 'P1' badge, got: %s", body)
+	}
+	if !strings.Contains(body, "priority-badge") {
+		t.Errorf("response missing priority-badge class, got: %s", body)
+	}
+}
+
+func TestBeadPriorityUpdate_Invalid(t *testing.T) {
+	ds := &mockDataSource{}
+	srv := New(ds)
+
+	req := httptest.NewRequest("POST", "/bead/beads_aegis/aegis-200/priority", strings.NewReader("priority=9"))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("status = %d, want %d", w.Code, http.StatusBadRequest)
+	}
+}
+
+func TestBeadAssigneeUpdate(t *testing.T) {
+	ds := &mockDataSource{}
+	srv := New(ds)
+
+	req := httptest.NewRequest("POST", "/bead/beads_aegis/aegis-200/assign", strings.NewReader("assignee=aegis/crew/arnold"))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "arnold") {
+		t.Errorf("response missing short actor name 'arnold', got: %s", body)
+	}
+}
+
+func TestBeadAssigneeUpdate_Empty(t *testing.T) {
+	ds := &mockDataSource{}
+	srv := New(ds)
+
+	req := httptest.NewRequest("POST", "/bead/beads_aegis/aegis-200/assign", strings.NewReader("assignee="))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
+	}
+	if !strings.Contains(w.Body.String(), "unassigned") {
+		t.Errorf("response missing 'unassigned', got: %s", w.Body.String())
 	}
 }
 

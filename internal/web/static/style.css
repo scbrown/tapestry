@@ -1398,3 +1398,13 @@ tr.silenced { opacity: 0.5; }
 .qn-name { font-weight: 600; min-width: 100px; }
 .qn-desc { color: var(--text-muted); font-size: 0.85rem; flex: 1; }
 .qn-path { color: var(--text-muted); font-size: 0.75rem; opacity: 0.6; }
+
+/* ── Triage Actions ────────────────────────────────── */
+.btn-xs { font-size: 0.7rem; padding: 0.1rem 0.35rem; }
+.triage-actions { white-space: nowrap; }
+.triage-btn-group { display: inline-flex; gap: 3px; }
+.triage-btn-group .btn-xs.priority-p0 { border-color: var(--red); color: var(--red); }
+.triage-btn-group .btn-xs.priority-p1 { border-color: var(--orange); color: var(--orange); }
+.triage-btn-group .btn-xs.priority-p2 { border-color: var(--yellow); color: var(--yellow); }
+.triage-btn-group .btn-xs.priority-p3 { border-color: var(--cyan); color: var(--cyan); }
+.triage-btn-group .btn-xs.priority-p4 { border-color: var(--comment); color: var(--comment); }

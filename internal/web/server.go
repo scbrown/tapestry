@@ -48,6 +48,8 @@ type DataSource interface {
 	AllChildDependencies(ctx context.Context, database string) ([]dolt.Dependency, error)
 	AddComment(ctx context.Context, database, issueID, author, body string) error
 	UpdateStatus(ctx context.Context, database, issueID, status string) error
+	UpdatePriority(ctx context.Context, database, issueID string, priority int) error
+	UpdateAssignee(ctx context.Context, database, issueID, assignee string) error
 	AddLabel(ctx context.Context, database, issueID, label string) error
 	ThemeParks(ctx context.Context, database string) ([]dolt.ThemePark, error)
 	Rides(ctx context.Context, database, parkID string) ([]dolt.Ride, error)
@@ -520,6 +522,18 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// POST /bead/{db}/{id}/comment — add comment via HTMX
 	if r.Method == http.MethodPost && len(segments) == 4 && segments[0] == "bead" && segments[3] == "comment" {
 		s.handleBeadComment(w, r, segments[1], segments[2])
+		return
+	}
+
+	// POST /bead/{db}/{id}/priority — set priority via HTMX
+	if r.Method == http.MethodPost && len(segments) == 4 && segments[0] == "bead" && segments[3] == "priority" {
+		s.handleBeadPriorityUpdate(w, r, segments[1], segments[2])
+		return
+	}
+
+	// POST /bead/{db}/{id}/assign — set assignee via HTMX
+	if r.Method == http.MethodPost && len(segments) == 4 && segments[0] == "bead" && segments[3] == "assign" {
+		s.handleBeadAssigneeUpdate(w, r, segments[1], segments[2])
 		return
 	}
 
