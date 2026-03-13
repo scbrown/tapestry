@@ -1434,3 +1434,9 @@ h1:hover .bead-title-edit { opacity: 1; }
 .toast { background: var(--surface); color: var(--text); padding: 0.5rem 1rem; border-radius: var(--radius); border-left: 3px solid var(--success); font-size: 0.85rem; opacity: 0; transform: translateX(20px); transition: opacity 0.25s, transform 0.25s; pointer-events: auto; box-shadow: 0 4px 12px rgba(0,0,0,0.4); max-width: 320px; }
 .toast.toast-show { opacity: 1; transform: translateX(0); }
 .toast.toast-error { border-left-color: var(--danger); }
+
+/* Keyboard navigation */
+.bead-table tbody tr.kb-selected { background: var(--surface); outline: 2px solid var(--purple); outline-offset: -2px; }
+.kb-help-list { display: grid; grid-template-columns: auto 1fr; gap: 0.25rem 1rem; }
+.kb-help-list dt { font-family: monospace; color: var(--purple); font-weight: bold; }
+.kb-help-list dd { color: var(--text); }

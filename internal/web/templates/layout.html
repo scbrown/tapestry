@@ -77,6 +77,20 @@
       </div>
     </div>
     <script>
+    // Keyboard navigation — j/k moves between table rows, Enter opens the bead link
+    var kbSelectedRow = -1;
+    function kbSelectRow(idx) {
+        var rows = document.querySelectorAll('#content .bead-table tbody tr');
+        if (!rows.length) return;
+        rows.forEach(function(r) { r.classList.remove('kb-selected'); });
+        if (idx < 0) idx = 0;
+        if (idx >= rows.length) idx = rows.length - 1;
+        kbSelectedRow = idx;
+        rows[idx].classList.add('kb-selected');
+        rows[idx].scrollIntoView({block:'nearest'});
+    }
+    document.body.addEventListener('htmx:afterSwap', function() { kbSelectedRow = -1; });
+
     document.addEventListener('keydown', function(e) {
         if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
         if (e.key === '/') {
@@ -86,6 +100,38 @@
         if (e.key === 'k' && (e.metaKey || e.ctrlKey)) {
             e.preventDefault();
             toggleQuickNav();
+        }
+        // j/k row navigation
+        var rows = document.querySelectorAll('#content .bead-table tbody tr');
+        if (rows.length > 0) {
+            if (e.key === 'j') { e.preventDefault(); kbSelectRow(kbSelectedRow + 1); return; }
+            if (e.key === 'k' && !e.metaKey && !e.ctrlKey) { e.preventDefault(); kbSelectRow(kbSelectedRow - 1); return; }
+            if (e.key === 'Enter' && kbSelectedRow >= 0) {
+                var link = rows[kbSelectedRow].querySelector('a[href*="/bead/"]');
+                if (link) { e.preventDefault(); link.click(); }
+                return;
+            }
+        }
+        // ? for keyboard shortcut help
+        if (e.key === '?') {
+            e.preventDefault();
+            var existing = document.getElementById('kb-help');
+            if (existing) { existing.remove(); return; }
+            var help = document.createElement('div');
+            help.id = 'kb-help';
+            help.className = 'quicknav-overlay';
+            help.style.display = 'flex';
+            help.innerHTML = '<div class="quicknav-modal" style="max-width:400px">' +
+              '<h2 style="margin:0 0 0.5rem">Keyboard Shortcuts</h2>' +
+              '<dl class="kb-help-list">' +
+              '<dt>/</dt><dd>Focus search</dd>' +
+              '<dt>Ctrl+K</dt><dd>Quick nav palette</dd>' +
+              '<dt>j / k</dt><dd>Navigate table rows</dd>' +
+              '<dt>Enter</dt><dd>Open selected bead</dd>' +
+              '<dt>?</dt><dd>Toggle this help</dd>' +
+              '</dl></div>';
+            help.addEventListener('click', function(ev) { if (ev.target === help) help.remove(); });
+            document.body.appendChild(help);
         }
     });
     document.querySelector('.nav-search-input').addEventListener('keydown', function(e) {
