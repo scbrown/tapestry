@@ -1201,6 +1201,54 @@ func TestBeadAssigneeUpdate_Empty(t *testing.T) {
 	}
 }
 
+func TestBeadLabelAdd(t *testing.T) {
+	ds := &mockDataSource{}
+	srv := New(ds)
+
+	req := httptest.NewRequest("POST", "/bead/beads_aegis/aegis-200/label", strings.NewReader("label=improvement"))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
+	}
+	if !strings.Contains(w.Body.String(), "improvement") {
+		t.Errorf("response missing label text, got: %s", w.Body.String())
+	}
+	if !strings.Contains(w.Body.String(), "/labels?label=improvement") {
+		t.Errorf("response missing label link, got: %s", w.Body.String())
+	}
+}
+
+func TestBeadLabelAdd_Empty(t *testing.T) {
+	ds := &mockDataSource{}
+	srv := New(ds)
+
+	req := httptest.NewRequest("POST", "/bead/beads_aegis/aegis-200/label", strings.NewReader("label="))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("status = %d, want %d", w.Code, http.StatusBadRequest)
+	}
+}
+
+func TestBeadLabelAdd_InvalidChars(t *testing.T) {
+	ds := &mockDataSource{}
+	srv := New(ds)
+
+	req := httptest.NewRequest("POST", "/bead/beads_aegis/aegis-200/label", strings.NewReader("label=bad+label"))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("status = %d, want %d", w.Code, http.StatusBadRequest)
+	}
+}
+
 func TestParseDescriptionMetadata(t *testing.T) {
 	tests := []struct {
 		name      string
