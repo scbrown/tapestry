@@ -1408,3 +1408,6 @@ tr.silenced { opacity: 0.5; }
 .triage-btn-group .btn-xs.priority-p2 { border-color: var(--yellow); color: var(--yellow); }
 .triage-btn-group .btn-xs.priority-p3 { border-color: var(--cyan); color: var(--cyan); }
 .triage-btn-group .btn-xs.priority-p4 { border-color: var(--comment); color: var(--comment); }
+.bead-priority-inline { display: inline-flex; align-items: center; gap: 0.5rem; }
+.bead-priority-inline .priority-edit { opacity: 0; transition: opacity 0.15s; }
+.bead-priority-inline:hover .priority-edit { opacity: 1; }

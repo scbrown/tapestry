@@ -15,7 +15,16 @@
 
     <div class="bead-meta">
         <span class="badge {{statusClass .Issue.Status}}">{{.Issue.Status}}</span>
-        <span class="badge priority">{{priorityLabel .Issue.Priority}}</span>
+        <span class="bead-priority-inline" id="bead-priority">
+            <span class="badge priority">{{priorityLabel .Issue.Priority}}</span>
+            <span class="priority-edit triage-btn-group">
+                <button class="btn btn-xs priority-p0" hx-post="/bead/{{.Database}}/{{.Issue.ID}}/priority" hx-vals='{"priority":"0"}' hx-target="#bead-priority" hx-swap="innerHTML">P0</button>
+                <button class="btn btn-xs priority-p1" hx-post="/bead/{{.Database}}/{{.Issue.ID}}/priority" hx-vals='{"priority":"1"}' hx-target="#bead-priority" hx-swap="innerHTML">P1</button>
+                <button class="btn btn-xs priority-p2" hx-post="/bead/{{.Database}}/{{.Issue.ID}}/priority" hx-vals='{"priority":"2"}' hx-target="#bead-priority" hx-swap="innerHTML">P2</button>
+                <button class="btn btn-xs priority-p3" hx-post="/bead/{{.Database}}/{{.Issue.ID}}/priority" hx-vals='{"priority":"3"}' hx-target="#bead-priority" hx-swap="innerHTML">P3</button>
+                <button class="btn btn-xs priority-p4" hx-post="/bead/{{.Database}}/{{.Issue.ID}}/priority" hx-vals='{"priority":"4"}' hx-target="#bead-priority" hx-swap="innerHTML">P4</button>
+            </span>
+        </span>
         {{if .Issue.Type}}<span class="badge type">{{.Issue.Type}}</span>{{end}}
         {{if .Issue.Owner}}<span class="meta-item">Owner: <a href="/agent/{{.Issue.Owner}}">{{shortActor .Issue.Owner}}</a></span>{{end}}
         {{if .Issue.Assignee}}<span class="meta-item">Assignee: <a href="/agent/{{.Issue.Assignee}}">{{shortActor .Issue.Assignee}}</a></span>{{end}}
