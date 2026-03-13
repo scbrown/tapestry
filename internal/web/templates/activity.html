@@ -31,6 +31,7 @@
         <th>Status</th>
         <th>Pri</th>
         <th>Assignee</th>
+        <th>Actions</th>
       </tr>
     </thead>
     <tbody>
@@ -43,6 +44,16 @@
         <td>{{statusBadge .Issue.Status}}</td>
         <td>{{priorityLabel .Issue.Priority}}</td>
         <td title="{{.Issue.Assignee}}">{{shortActor .Issue.Assignee}}</td>
+        <td class="actions-cell">
+          {{if eq .Issue.Status "open"}}
+          <button class="btn btn-xs" hx-post="/bead/{{lower .Rig}}/{{.Issue.ID}}/status" hx-vals='{"status":"closed"}' hx-swap="outerHTML" hx-target="closest tr" hx-confirm="Close {{.Issue.ID}}?">close</button>
+          <button class="btn btn-xs" hx-post="/bead/{{lower .Rig}}/{{.Issue.ID}}/status" hx-vals='{"status":"deferred"}' hx-swap="outerHTML" hx-target="closest tr" hx-confirm="Defer {{.Issue.ID}}?">defer</button>
+          {{else if eq .Issue.Status "in_progress"}}
+          <button class="btn btn-xs" hx-post="/bead/{{lower .Rig}}/{{.Issue.ID}}/status" hx-vals='{"status":"closed"}' hx-swap="outerHTML" hx-target="closest tr" hx-confirm="Close {{.Issue.ID}}?">close</button>
+          {{else if eq .Issue.Status "closed"}}
+          <button class="btn btn-xs" hx-post="/bead/{{lower .Rig}}/{{.Issue.ID}}/status" hx-vals='{"status":"open"}' hx-swap="outerHTML" hx-target="closest tr" hx-confirm="Reopen {{.Issue.ID}}?">reopen</button>
+          {{end}}
+        </td>
       </tr>
       {{end}}
     </tbody>
