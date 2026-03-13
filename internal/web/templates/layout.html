@@ -69,6 +69,7 @@
     <main id="content">
         {{template "content" .}}
     </main>
+    <div id="toast-container"></div>
     <div id="quicknav" class="quicknav-overlay" style="display:none">
       <div class="quicknav-modal">
         <input type="text" id="quicknav-input" class="quicknav-input" placeholder="Go to page..." autocomplete="off">
@@ -103,6 +104,34 @@
     }
     highlightNav();
     document.body.addEventListener('htmx:pushedIntoHistory', highlightNav);
+
+    // Toast notification system — listens for showToast events from HX-Trigger headers
+    document.body.addEventListener('showToast', function(e) {
+      var msg = e.detail.value || e.detail;
+      var container = document.getElementById('toast-container');
+      var toast = document.createElement('div');
+      toast.className = 'toast';
+      toast.textContent = msg;
+      container.appendChild(toast);
+      setTimeout(function() { toast.classList.add('toast-show'); }, 10);
+      setTimeout(function() {
+        toast.classList.remove('toast-show');
+        setTimeout(function() { toast.remove(); }, 300);
+      }, 3000);
+    });
+    // Show error toast on HTMX request failure
+    document.body.addEventListener('htmx:responseError', function(e) {
+      var container = document.getElementById('toast-container');
+      var toast = document.createElement('div');
+      toast.className = 'toast toast-error';
+      toast.textContent = 'Action failed';
+      container.appendChild(toast);
+      setTimeout(function() { toast.classList.add('toast-show'); }, 10);
+      setTimeout(function() {
+        toast.classList.remove('toast-show');
+        setTimeout(function() { toast.remove(); }, 300);
+      }, 3000);
+    });
 
     // Quick-nav (Cmd+K) command palette
     var PAGES = [

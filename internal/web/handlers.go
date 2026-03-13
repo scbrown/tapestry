@@ -1184,6 +1184,7 @@ func (s *Server) handleBeadStatusUpdate(w http.ResponseWriter, r *http.Request, 
 
 	// Return updated action bar as HTMX partial
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.Header().Set("HX-Trigger", fmt.Sprintf(`{"showToast":"Bead %s"}`, newStatus))
 	fmt.Fprintf(w, `<div class="bead-actions" id="bead-actions">
 		<span class="badge %s">%s</span>`, statusClassName(newStatus), newStatus)
 	switch newStatus {
@@ -1274,6 +1275,7 @@ func (s *Server) handleBeadPriorityUpdate(w http.ResponseWriter, r *http.Request
 	}
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.Header().Set("HX-Trigger", fmt.Sprintf(`{"showToast":"Priority set to P%d"}`, priority))
 	fmt.Fprintf(w, `<span class="priority-badge p%d">P%d</span>`, priority, priority)
 }
 
@@ -1296,6 +1298,9 @@ func (s *Server) handleBeadAssigneeUpdate(w http.ResponseWriter, r *http.Request
 	}
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	if assignee != "" {
+		w.Header().Set("HX-Trigger", fmt.Sprintf(`{"showToast":"Assigned to %s"}`, template.HTMLEscapeString(assignee)))
+	}
 	if assignee == "" {
 		fmt.Fprint(w, `<span class="text-dim">unassigned</span>`)
 	} else {
@@ -1338,6 +1343,7 @@ func (s *Server) handleBeadLabelAdd(w http.ResponseWriter, r *http.Request, data
 	}
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.Header().Set("HX-Trigger", fmt.Sprintf(`{"showToast":"Label '%s' added"}`, template.HTMLEscapeString(label)))
 	fmt.Fprintf(w, `<a href="/labels?label=%s" class="badge label">%s</a> `,
 		template.HTMLEscapeString(label), template.HTMLEscapeString(label))
 }

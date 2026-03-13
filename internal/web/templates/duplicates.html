@@ -21,17 +21,39 @@
   {{range .Groups}}
   <section class="backlog-card" style="margin-bottom: 1rem;">
     <h2><span class="badge">{{.Count}}x</span> {{.Key}}</h2>
-    <ul class="briefing-list">
-      {{range .Issues}}
-      <li>
-        <a href="/bead/{{.ID}}">{{.ID}}</a>
-        <span class="priority-badge p{{.Priority}}">P{{.Priority}}</span>
-        <span class="badge {{statusClass .Status}}">{{.Status}}</span>
-        {{.Title}}
-        <span class="text-dim">{{formatDate .CreatedAt}}</span>
-      </li>
-      {{end}}
-    </ul>
+    <div class="table-wrap">
+    <table class="bead-table">
+      <thead>
+        <tr>
+          <th>Rig</th>
+          <th>ID</th>
+          <th>Pri</th>
+          <th>Status</th>
+          <th>Title</th>
+          <th>Created</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{range .Issues}}
+        <tr>
+          <td><span class="rig-label">{{rigName .Rig}}</span></td>
+          <td><a href="/bead/{{lower .Rig}}/{{.ID}}" hx-boost="true">{{.ID}}</a></td>
+          <td><span class="priority-badge p{{.Priority}}">P{{.Priority}}</span></td>
+          <td><span class="badge {{statusClass .Status}}">{{.Status}}</span></td>
+          <td>{{.Title}}</td>
+          <td class="text-dim">{{formatDate .CreatedAt}}</td>
+          <td class="triage-actions">
+            <div class="triage-btn-group">
+              <button class="btn btn-xs" hx-post="/bead/{{lower .Rig}}/{{.ID}}/status" hx-vals='{"status":"closed"}' hx-swap="outerHTML" hx-target="closest tr" hx-confirm="Close duplicate {{.ID}}?">close</button>
+              <button class="btn btn-xs" hx-post="/bead/{{lower .Rig}}/{{.ID}}/status" hx-vals='{"status":"deferred"}' hx-swap="outerHTML" hx-target="closest tr" hx-confirm="Defer {{.ID}}?">defer</button>
+            </div>
+          </td>
+        </tr>
+        {{end}}
+      </tbody>
+    </table>
+    </div>
   </section>
   {{end}}
 

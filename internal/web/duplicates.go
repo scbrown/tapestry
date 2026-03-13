@@ -74,11 +74,12 @@ func (s *Server) handleDuplicates(w http.ResponseWriter, r *http.Request) {
 
 	// Group open/in_progress issues by normalized title
 	groups := map[string][]dolt.Issue{}
-	for _, r := range results {
+	for i, r := range results {
 		for _, iss := range r.issues {
 			if iss.Status == "closed" || iss.Status == "deferred" {
 				continue
 			}
+			iss.Rig = dbs[i].Name
 			key := normalizeTitle(iss.Title)
 			groups[key] = append(groups[key], iss)
 		}
