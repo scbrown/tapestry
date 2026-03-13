@@ -1,0 +1,135 @@
+{{define "title"}}Cycle Time{{end}}
+{{define "content"}}
+<div class="backlog-page" hx-get="/cycle-time" hx-trigger="every 120s" hx-select=".backlog-page" hx-swap="outerHTML">
+  <h1>Cycle Time Analytics <time class="text-dim">{{.GeneratedAt.Format "Jan 02, 2006 15:04"}}</time></h1>
+
+  {{if eq .TotalClosed 0}}
+  <p class="empty">No closed beads to analyze.</p>
+  {{else}}
+
+  <div class="backlog-stats">
+    <div class="stat">
+      <span class="stat-value">{{.TotalClosed}}</span>
+      <span class="stat-label">Closed beads</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value">{{printf "%.1f" .MedianDays}}d</span>
+      <span class="stat-label">Median cycle</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value">{{printf "%.1f" .AvgDays}}d</span>
+      <span class="stat-label">Mean cycle</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value warn">{{printf "%.1f" .P90Days}}d</span>
+      <span class="stat-label">P90 cycle</span>
+    </div>
+  </div>
+
+  <div class="backlog-grid">
+
+    <section class="backlog-card">
+      <h2>Cycle Time Distribution</h2>
+      <div class="backlog-histogram">
+        {{range .Buckets}}
+        <div class="backlog-bar-group">
+          <div class="backlog-bar-wrapper">
+            <div class="backlog-bar" style="height:{{if $.MaxBucket}}{{printf "%.0f" (divf (mulf (itof .Count) 100.0) (itof $.MaxBucket))}}%{{else}}0%{{end}}" title="{{.Count}} beads ({{printf "%.0f" .Pct}}%)">
+              {{if gt .Count 0}}<span class="backlog-bar-count">{{.Count}}</span>{{end}}
+            </div>
+          </div>
+          <span class="backlog-bar-label">{{.Label}}</span>
+        </div>
+        {{end}}
+      </div>
+    </section>
+
+    <section class="backlog-card">
+      <h2>By Priority</h2>
+      <table class="briefing-table">
+        <thead>
+          <tr><th>Priority</th><th>Count</th><th>Median</th><th>Mean</th><th>P90</th></tr>
+        </thead>
+        <tbody>
+          {{range .ByPriority}}
+          <tr>
+            <td><span class="priority-badge p{{.Priority}}">P{{.Priority}}</span></td>
+            <td>{{.Count}}</td>
+            <td>{{printf "%.1f" .MedianDays}}d</td>
+            <td>{{printf "%.1f" .AvgDays}}d</td>
+            <td>{{printf "%.1f" .P90Days}}d</td>
+          </tr>
+          {{end}}
+        </tbody>
+      </table>
+    </section>
+
+    <section class="backlog-card">
+      <h2>By Type</h2>
+      <table class="briefing-table">
+        <thead>
+          <tr><th>Type</th><th>Count</th><th>Median</th><th>Mean</th></tr>
+        </thead>
+        <tbody>
+          {{range .ByType}}
+          <tr>
+            <td><span class="badge">{{.Type}}</span></td>
+            <td>{{.Count}}</td>
+            <td>{{printf "%.1f" .MedianDays}}d</td>
+            <td>{{printf "%.1f" .AvgDays}}d</td>
+          </tr>
+          {{end}}
+        </tbody>
+      </table>
+    </section>
+
+    <section class="backlog-card">
+      <h2>Weekly Trend (Median Cycle Time)</h2>
+      <table class="briefing-table">
+        <thead>
+          <tr><th>Week of</th><th>Closed</th><th>Median</th></tr>
+        </thead>
+        <tbody>
+          {{range .Weekly}}
+          <tr>
+            <td>{{.WeekLabel}}</td>
+            <td>{{.Count}}</td>
+            <td>{{if gt .Count 0}}{{printf "%.1f" .MedianDays}}d{{else}}—{{end}}</td>
+          </tr>
+          {{end}}
+        </tbody>
+      </table>
+    </section>
+
+    <section class="backlog-card">
+      <h2>Fastest Completions</h2>
+      <ul class="briefing-list">
+        {{range .Fastest}}
+        <li>
+          <a href="/bead/{{.Issue.ID}}">{{.Issue.ID}}</a>
+          <span class="priority-badge p{{.Issue.Priority}}">P{{.Issue.Priority}}</span>
+          {{.Issue.Title}}
+          <span class="stale-age">{{printf "%.1f" .CycleDays}}d</span>
+        </li>
+        {{end}}
+      </ul>
+    </section>
+
+    <section class="backlog-card">
+      <h2>Slowest Completions</h2>
+      <ul class="briefing-list">
+        {{range .Slowest}}
+        <li>
+          <a href="/bead/{{.Issue.ID}}">{{.Issue.ID}}</a>
+          <span class="priority-badge p{{.Issue.Priority}}">P{{.Issue.Priority}}</span>
+          {{.Issue.Title}}
+          <span class="stale-age warn">{{printf "%.1f" .CycleDays}}d</span>
+        </li>
+        {{end}}
+      </ul>
+    </section>
+
+  </div>
+  {{end}}
+</div>
+{{end}}

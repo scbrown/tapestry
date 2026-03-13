@@ -2628,3 +2628,110 @@ func TestTrendsPage_HTMXPartial(t *testing.T) {
 		t.Error("HTMX trends should return partial, not full page")
 	}
 }
+
+func TestCycleTimePage_NilDataSource(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/cycle-time", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /cycle-time status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Cycle Time") {
+		t.Error("expected 'Cycle Time' heading")
+	}
+}
+
+func TestCycleTimePage_WithData(t *testing.T) {
+	now := time.Now()
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issues: []dolt.Issue{
+			{ID: "ct1", Title: "Quick fix", Status: "closed", Priority: 0, Type: "bug", CreatedAt: now.Add(-2 * time.Hour), UpdatedAt: now},
+			{ID: "ct2", Title: "Medium task", Status: "closed", Priority: 1, Type: "task", CreatedAt: now.Add(-3 * 24 * time.Hour), UpdatedAt: now},
+			{ID: "ct3", Title: "Long epic", Status: "closed", Priority: 2, Type: "epic", CreatedAt: now.Add(-14 * 24 * time.Hour), UpdatedAt: now},
+			{ID: "ct4", Title: "Still open", Status: "open", Priority: 1, Type: "task", CreatedAt: now.Add(-5 * 24 * time.Hour), UpdatedAt: now},
+		},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/cycle-time", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /cycle-time status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Cycle Time Analytics") {
+		t.Error("expected 'Cycle Time Analytics' heading")
+	}
+	if !strings.Contains(body, "Closed beads") {
+		t.Error("expected 'Closed beads' stat")
+	}
+	if !strings.Contains(body, "Median cycle") {
+		t.Error("expected 'Median cycle' stat")
+	}
+	if !strings.Contains(body, "By Priority") {
+		t.Error("expected 'By Priority' section")
+	}
+	if !strings.Contains(body, "By Type") {
+		t.Error("expected 'By Type' section")
+	}
+	if !strings.Contains(body, "Quick fix") {
+		t.Error("expected fastest completion 'Quick fix'")
+	}
+	if !strings.Contains(body, "Long epic") {
+		t.Error("expected slowest completion 'Long epic'")
+	}
+}
+
+func TestCycleTimePage_HTMX(t *testing.T) {
+	now := time.Now()
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issues: []dolt.Issue{
+			{ID: "ct1", Title: "Done", Status: "closed", Priority: 1, CreatedAt: now.Add(-24 * time.Hour), UpdatedAt: now},
+		},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/cycle-time", nil)
+	req.Header.Set("HX-Request", "true")
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("HTMX GET /cycle-time status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if strings.Contains(body, "<!DOCTYPE html>") {
+		t.Error("HTMX cycle-time should return partial, not full page")
+	}
+}
+
+func TestCycleTimePage_NoClosedBeads(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issues:    []dolt.Issue{},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/cycle-time", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /cycle-time status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "No closed beads") {
+		t.Error("expected 'No closed beads' message when no closed issues")
+	}
+}

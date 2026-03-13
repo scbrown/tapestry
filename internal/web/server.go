@@ -441,6 +441,10 @@ func (s *Server) parseTemplates() {
 			template.New("").Funcs(funcMap).ParseFS(templateFS,
 				"templates/layout.html", "templates/trends.html"),
 		),
+		"cycle-time": template.Must(
+			template.New("").Funcs(funcMap).ParseFS(templateFS,
+				"templates/layout.html", "templates/cycle-time.html"),
+		),
 	}
 }
 
@@ -566,6 +570,8 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		s.handleBurndown(w, r)
 	case len(segments) == 1 && segments[0] == "trends":
 		s.handleTrends(w, r)
+	case len(segments) == 1 && segments[0] == "cycle-time":
+		s.handleCycleTime(w, r)
 	case len(segments) == 1 && segments[0] == "heatmap":
 		s.handleHeatmap(w, r)
 	case len(segments) == 1 && segments[0] == "homelab":
