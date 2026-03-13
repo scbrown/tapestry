@@ -43,7 +43,7 @@
       <tbody>
         {{range .ClosedItems}}
         <tr>
-          <td><a href="/bead/{{.Issue.ID}}">{{.Issue.ID}}</a></td>
+          <td><a href="/bead/{{lower .Rig}}/{{.Issue.ID}}" hx-boost="true">{{.Issue.ID}}</a></td>
           <td><span class="priority-badge p{{.Issue.Priority}}">P{{.Issue.Priority}}</span></td>
           <td>{{.Issue.Title}}</td>
           <td class="text-dim">{{shortActor .Issue.Assignee}}</td>
@@ -66,7 +66,7 @@
       <tbody>
         {{range .CreatedItems}}
         <tr>
-          <td><a href="/bead/{{.Issue.ID}}">{{.Issue.ID}}</a></td>
+          <td><a href="/bead/{{lower .Rig}}/{{.Issue.ID}}" hx-boost="true">{{.Issue.ID}}</a></td>
           <td><span class="priority-badge p{{.Issue.Priority}}">P{{.Issue.Priority}}</span></td>
           <td>{{.Issue.Title}}</td>
           <td>{{statusBadge .Issue.Status}}</td>
@@ -90,7 +90,7 @@
       <tbody>
         {{range .ActiveItems}}
         <tr>
-          <td><a href="/bead/{{.Issue.ID}}">{{.Issue.ID}}</a></td>
+          <td><a href="/bead/{{lower .Rig}}/{{.Issue.ID}}" hx-boost="true">{{.Issue.ID}}</a></td>
           <td><span class="priority-badge p{{.Issue.Priority}}">P{{.Issue.Priority}}</span></td>
           <td>{{.Issue.Title}}</td>
           <td class="text-dim">{{shortActor .Issue.Assignee}}</td>

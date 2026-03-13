@@ -44,7 +44,7 @@
         </summary>
         <div class="work-section-body">
           {{range .Issues}}
-          <a href="/bead/{{.ID}}" class="child-item standalone">
+          <a href="/bead/{{lower .Rig}}/{{.ID}}" class="child-item standalone">
             <span class="work-priority p{{.Priority}}">P{{.Priority}}</span>
             {{statusBadge .Status}}
             <span class="child-title">{{.Title}}</span>
@@ -78,7 +78,7 @@
           {{range .Epics}}
           <div class="epic-tree">
             <div class="epic-tree-header">
-              <a href="/bead/{{.Epic.ID}}" class="epic-tree-link">
+              <a href="/bead/{{lower .Rig}}/{{.Epic.ID}}" class="epic-tree-link">
                 <span class="tree-icon">&#9654;</span>
                 <span class="work-priority p{{.Epic.Priority}}">P{{.Epic.Priority}}</span>
                 {{statusBadge .Epic.Status}}
@@ -96,7 +96,7 @@
             {{if .Children}}
             <div class="epic-children">
               {{range .Children}}
-              <a href="/bead/{{.ID}}" class="child-item">
+              <a href="/bead/{{lower .Rig}}/{{.ID}}" class="child-item">
                 <span class="child-indent"></span>
                 <span class="work-priority p{{.Priority}}">P{{.Priority}}</span>
                 {{statusBadge .Status}}
@@ -117,7 +117,7 @@
           <div class="standalone-tasks">
             {{if .Epics}}<h3 class="standalone-label">Standalone Tasks</h3>{{end}}
             {{range .Tasks}}
-            <a href="/bead/{{.ID}}" class="child-item standalone">
+            <a href="/bead/{{lower .Rig}}/{{.ID}}" class="child-item standalone">
               <span class="work-priority p{{.Priority}}">P{{.Priority}}</span>
               {{statusBadge .Status}}
               <span class="child-title">{{.Title}}</span>
@@ -150,7 +150,7 @@
           {{range .Epics}}
           <div class="epic-tree">
             <div class="epic-tree-header">
-              <a href="/bead/{{.Epic.ID}}" class="epic-tree-link">
+              <a href="/bead/{{lower .Rig}}/{{.Epic.ID}}" class="epic-tree-link">
                 <span class="tree-icon">&#9654;</span>
                 {{statusBadge .Epic.Status}}
                 <span class="epic-tree-title">{{.Epic.Title}}</span>
@@ -168,7 +168,7 @@
             {{if .Children}}
             <div class="epic-children">
               {{range .Children}}
-              <a href="/bead/{{.ID}}" class="child-item">
+              <a href="/bead/{{lower .Rig}}/{{.ID}}" class="child-item">
                 <span class="child-indent"></span>
                 {{statusBadge .Status}}
                 <span class="child-title">{{.Title}}</span>
@@ -185,7 +185,7 @@
           {{end}}
 
           {{range .Tasks}}
-          <a href="/bead/{{.ID}}" class="child-item standalone">
+          <a href="/bead/{{lower .Rig}}/{{.ID}}" class="child-item standalone">
             {{statusBadge .Status}}
             <span class="child-title">{{.Title}}</span>
             <span class="child-meta">

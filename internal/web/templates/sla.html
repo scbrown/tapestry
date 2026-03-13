@@ -50,7 +50,7 @@
       <tbody>
         {{range .Breached}}
         <tr>
-          <td><a href="/bead/{{.Issue.ID}}">{{.Issue.ID}}</a></td>
+          <td><a href="/bead/{{lower .Issue.Rig}}/{{.Issue.ID}}" hx-boost="true">{{.Issue.ID}}</a></td>
           <td>{{.Issue.Title}}</td>
           <td>{{priorityLabel .Issue.Priority}}</td>
           <td>{{statusBadge .Issue.Status}}</td>
@@ -83,7 +83,7 @@
       <tbody>
         {{range .AtRisk}}
         <tr>
-          <td><a href="/bead/{{.Issue.ID}}">{{.Issue.ID}}</a></td>
+          <td><a href="/bead/{{lower .Issue.Rig}}/{{.Issue.ID}}" hx-boost="true">{{.Issue.ID}}</a></td>
           <td>{{.Issue.Title}}</td>
           <td>{{priorityLabel .Issue.Priority}}</td>
           <td>{{statusBadge .Issue.Status}}</td>

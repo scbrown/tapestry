@@ -44,7 +44,7 @@
       <tbody>
         {{range .Issues}}
         <tr>
-          <td><a href="/bead/{{.ID}}">{{.ID}}</a></td>
+          <td><a href="/bead/{{lower .Rig}}/{{.ID}}" hx-boost="true">{{.ID}}</a></td>
           <td>{{.Title}}</td>
           <td><span class="work-priority p{{.Priority}}">{{priorityLabel .Priority}}</span></td>
           <td>{{.Type}}</td>

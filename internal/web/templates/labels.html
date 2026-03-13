@@ -41,7 +41,7 @@
       {{range .Issues}}
       <tr>
         <td><span class="rig-label">{{rigName .Rig}}</span></td>
-        <td><a href="/bead/{{.Issue.ID}}">{{.Issue.ID}}</a></td>
+        <td><a href="/bead/{{lower .Rig}}/{{.Issue.ID}}" hx-boost="true">{{.Issue.ID}}</a></td>
         <td>{{.Issue.Title}}</td>
         <td>{{priorityLabel .Issue.Priority}}</td>
         <td>{{.Issue.Type}}</td>

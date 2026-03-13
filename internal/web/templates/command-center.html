@@ -38,7 +38,7 @@
       {{if .CriticalWork}}
       <div class="cc-work-list">
         {{range .CriticalWork}}
-        <a href="/bead/{{.ID}}" class="work-item">
+        <a href="/bead/{{lower .Rig}}/{{.ID}}" class="work-item">
           <span class="work-priority p{{.Priority}}">P{{.Priority}}</span>
           {{statusBadge .Status}}
           <span class="work-title">{{.Title}}</span>
@@ -66,7 +66,7 @@
             <span class="agent-work-count">{{len .Issues}} tasks</span>
           </div>
           {{range .Issues}}
-          <a href="/bead/{{.ID}}" class="agent-work-item">
+          <a href="/bead/{{lower .Rig}}/{{.ID}}" class="agent-work-item">
             <span class="work-priority p{{.Priority}}">P{{.Priority}}</span>
             <span class="work-title">{{.Title}}</span>
             <span class="work-id">{{.ID}}</span>
@@ -113,7 +113,7 @@
         <div class="activity-col">
           <h3 class="activity-subhead">Completed</h3>
           {{range .RecentClosed}}
-          <a href="/bead/{{.ID}}" class="activity-item closed">
+          <a href="/bead/{{lower .Rig}}/{{.ID}}" class="activity-item closed">
             <span class="activity-check">&#10003;</span>
             <span class="activity-title">{{.Title}}</span>
             <span class="activity-time">{{timeAgo .UpdatedAt}}</span>

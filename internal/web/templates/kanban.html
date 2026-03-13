@@ -19,7 +19,7 @@
       </div>
       <div class="kanban-cards">
         {{range .Cards}}
-        <a href="/bead/{{.ID}}" class="kanban-card priority-border-{{.Priority}}">
+        <a href="/bead/{{lower .Rig}}/{{.ID}}" class="kanban-card priority-border-{{.Priority}}" hx-boost="true">
           <div class="kanban-card-id">{{.ID}}</div>
           <div class="kanban-card-title">{{.Title}}</div>
           <div class="kanban-card-meta">

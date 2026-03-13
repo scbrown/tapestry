@@ -38,7 +38,7 @@
       <tr>
         <td title="{{formatDateTime .Issue.UpdatedAt}}">{{timeAgo .Issue.UpdatedAt}}</td>
         <td><span class="rig-label">{{rigName .Rig}}</span></td>
-        <td><a href="/bead/{{.Issue.ID}}">{{.Issue.ID}}</a></td>
+        <td><a href="/bead/{{lower .Rig}}/{{.Issue.ID}}" hx-boost="true">{{.Issue.ID}}</a></td>
         <td class="title-cell">{{.Issue.Title}}</td>
         <td>{{statusBadge .Issue.Status}}</td>
         <td>{{priorityLabel .Issue.Priority}}</td>
