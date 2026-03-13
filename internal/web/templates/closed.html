@@ -38,18 +38,22 @@
           <th>Type</th>
           <th>Assignee</th>
           <th>Closed</th>
+          <th></th>
         </tr>
       </thead>
       <tbody>
         {{range .Entries}}
         <tr>
           <td><span class="rig-label">{{rigName .Rig}}</span></td>
-          <td><a href="/bead/{{.Issue.ID}}">{{.Issue.ID}}</a></td>
+          <td><a href="/bead/{{lower .Rig}}/{{.Issue.ID}}" hx-boost="true">{{.Issue.ID}}</a></td>
           <td>{{.Issue.Title}}</td>
           <td>{{priorityLabel .Issue.Priority}}</td>
           <td>{{.Issue.Type}}</td>
           <td title="{{.Issue.Assignee}}">{{shortActor .Issue.Assignee}}</td>
           <td>{{timeAgo .Issue.UpdatedAt}}</td>
+          <td class="triage-actions">
+            <button class="btn btn-xs" hx-post="/bead/{{lower .Rig}}/{{.Issue.ID}}/status" hx-vals='{"status":"open"}' hx-swap="outerHTML" hx-target="closest tr" hx-confirm="Reopen {{.Issue.ID}}?">reopen</button>
+          </td>
         </tr>
         {{end}}
       </tbody>

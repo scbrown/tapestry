@@ -36,19 +36,26 @@
         <th>Assignee</th>
         <th>Days Stale</th>
         <th>Last Updated</th>
+        <th>Actions</th>
       </tr>
     </thead>
     <tbody>
       {{range .Entries}}
       <tr>
         <td><span class="rig-label">{{rigName .Rig}}</span></td>
-        <td><a href="/bead/{{.Issue.ID}}">{{.Issue.ID}}</a></td>
+        <td><a href="/bead/{{lower .Rig}}/{{.Issue.ID}}" hx-boost="true">{{.Issue.ID}}</a></td>
         <td>{{.Issue.Title}}</td>
         <td>{{priorityLabel .Issue.Priority}}</td>
         <td>{{statusBadge .Issue.Status}}</td>
         <td title="{{.Issue.Assignee}}">{{shortActor .Issue.Assignee}}</td>
         <td><strong class="{{if gt .DaysStale 7}}text-error{{else if gt .DaysStale 3}}text-warn{{end}}">{{.DaysStale}}d</strong></td>
         <td>{{timeAgo .Issue.UpdatedAt}}</td>
+        <td class="triage-actions">
+          <div class="triage-btn-group">
+            <button class="btn btn-xs" hx-post="/bead/{{lower .Rig}}/{{.Issue.ID}}/status" hx-vals='{"status":"closed"}' hx-swap="outerHTML" hx-target="closest tr" hx-confirm="Close {{.Issue.ID}}?">close</button>
+            <button class="btn btn-xs" hx-post="/bead/{{lower .Rig}}/{{.Issue.ID}}/status" hx-vals='{"status":"deferred"}' hx-swap="outerHTML" hx-target="closest tr" hx-confirm="Defer {{.Issue.ID}}?">defer</button>
+          </div>
+        </td>
       </tr>
       {{end}}
     </tbody>
