@@ -1,7 +1,7 @@
 {{define "title"}}Blocked{{end}}
 
 {{define "content"}}
-<div class="blocked-view">
+<div class="blocked-view" hx-get="/blocked" hx-trigger="every 60s" hx-select=".blocked-view" hx-swap="outerHTML">
   <h1>Blocked Beads</h1>
 
   {{if .Err}}

@@ -1,7 +1,7 @@
 {{define "title"}}Stale Work{{end}}
 
 {{define "content"}}
-<div class="stale-view">
+<div class="stale-view" hx-get="/stale" hx-trigger="every 120s" hx-select=".stale-view" hx-swap="outerHTML">
   <h1>Stale Work</h1>
 
   {{if .Err}}

@@ -1,7 +1,7 @@
 {{define "title"}}Kanban{{end}}
 
 {{define "content"}}
-<div class="kanban-view">
+<div class="kanban-view" hx-get="/kanban" hx-trigger="every 60s" hx-select=".kanban-view" hx-swap="outerHTML">
   <h1>Kanban Board</h1>
 
   {{if .Err}}

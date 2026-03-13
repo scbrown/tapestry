@@ -1,7 +1,7 @@
 {{define "title"}}Recently Closed{{end}}
 
 {{define "content"}}
-<div class="closed-view">
+<div class="closed-view" hx-get="/closed" hx-trigger="every 120s" hx-select=".closed-view" hx-swap="outerHTML">
   <h1>Recently Closed</h1>
 
   {{if .Err}}
