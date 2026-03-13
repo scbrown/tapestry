@@ -1438,6 +1438,11 @@ h1:hover .bead-title-edit { opacity: 1; }
 .toast.toast-show { opacity: 1; transform: translateX(0); }
 .toast.toast-error { border-left-color: var(--danger); }
 
+/* Batch operations bar */
+.batch-bar { display: flex; align-items: center; gap: 0.5rem; padding: 0.4rem 0.75rem; background: var(--surface); border-radius: var(--radius); margin-bottom: 0.5rem; }
+.batch-count { font-size: 0.85rem; color: var(--purple); font-weight: bold; }
+.batch-cb { cursor: pointer; }
+
 /* Keyboard navigation */
 .bead-table tbody tr.kb-selected { background: var(--surface); outline: 2px solid var(--purple); outline-offset: -2px; }
 .kb-help-list { display: grid; grid-template-columns: auto 1fr; gap: 0.25rem 1rem; }

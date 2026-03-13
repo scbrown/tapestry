@@ -21,10 +21,16 @@
   {{if .Unassigned}}
   <section class="backlog-card">
     <h2>Unassigned (no owner or assignee)</h2>
+    <div class="batch-bar" id="batch-bar-unassigned" style="display:none">
+      <span class="batch-count">0 selected</span>
+      <button class="btn btn-xs" onclick="batchAction('unassigned','closed')">close selected</button>
+      <button class="btn btn-xs" onclick="batchAction('unassigned','deferred')">defer selected</button>
+    </div>
     <div class="table-wrap">
     <table class="bead-table">
       <thead>
         <tr>
+          <th><input type="checkbox" onchange="toggleAll(this,'unassigned')"></th>
           <th>ID</th>
           <th>Title</th>
           <th>Priority</th>
@@ -34,9 +40,10 @@
           <th>Actions</th>
         </tr>
       </thead>
-      <tbody>
+      <tbody id="tbody-unassigned">
         {{range .Unassigned}}
         <tr>
+          <td><input type="checkbox" class="batch-cb" data-section="unassigned" data-id="{{.Issue.ID}}" data-rig="{{lower .Rig}}" onchange="updateBatchBar('unassigned')"></td>
           <td><a href="/bead/{{lower .Rig}}/{{.Issue.ID}}" hx-boost="true">{{.Issue.ID}}</a></td>
           <td>{{.Issue.Title}}</td>
           <td id="pri-{{.Issue.ID}}"><span class="badge {{priorityClass .Issue.Priority}}">{{priorityLabel .Issue.Priority}}</span></td>
@@ -107,5 +114,34 @@
   <p class="text-dim">All open beads are assigned and prioritized.</p>
   {{end}}
 
+  <script>
+  function toggleAll(master, section) {
+    document.querySelectorAll('.batch-cb[data-section="'+section+'"]').forEach(function(cb) { cb.checked = master.checked; });
+    updateBatchBar(section);
+  }
+  function updateBatchBar(section) {
+    var checked = document.querySelectorAll('.batch-cb[data-section="'+section+'"]:checked');
+    var bar = document.getElementById('batch-bar-'+section);
+    if (bar) {
+      bar.style.display = checked.length > 0 ? 'flex' : 'none';
+      bar.querySelector('.batch-count').textContent = checked.length + ' selected';
+    }
+  }
+  function batchAction(section, status) {
+    var checked = document.querySelectorAll('.batch-cb[data-section="'+section+'"]:checked');
+    if (!checked.length) return;
+    if (!confirm(status.charAt(0).toUpperCase()+status.slice(1)+' '+checked.length+' beads?')) return;
+    var form = new FormData();
+    form.append('status', status);
+    checked.forEach(function(cb) {
+      form.append('ids[]', cb.getAttribute('data-rig')+'/'+cb.getAttribute('data-id'));
+    });
+    fetch('/batch/status', {method:'POST', body:form}).then(function() {
+      checked.forEach(function(cb) { cb.closest('tr').remove(); });
+      updateBatchBar(section);
+      document.body.dispatchEvent(new CustomEvent('showToast', {detail: checked.length+' beads '+status}));
+    });
+  }
+  </script>
 </div>
 {{end}}
