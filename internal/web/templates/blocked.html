@@ -22,17 +22,21 @@
         <th>Status</th>
         <th>Owner</th>
         <th>Blocking</th>
+        <th></th>
       </tr>
     </thead>
     <tbody>
       {{range .ByBlocker}}
       <tr>
         <td><span class="rig-label">{{rigName .Rig}}</span></td>
-        <td><a href="/bead/{{.Blocker.ID}}">{{.Blocker.ID}}</a></td>
+        <td><a href="/bead/{{lower .Rig}}/{{.Blocker.ID}}" hx-boost="true">{{.Blocker.ID}}</a></td>
         <td>{{.Blocker.Title}}</td>
         <td>{{statusBadge .Blocker.Status}}</td>
         <td title="{{.Blocker.Owner}}">{{shortActor .Blocker.Owner}}</td>
         <td><strong>{{.Count}}</strong> beads</td>
+        <td class="triage-actions">
+          <button class="btn btn-xs" hx-post="/bead/{{lower .Rig}}/{{.Blocker.ID}}/status" hx-vals='{"status":"closed"}' hx-swap="outerHTML" hx-target="closest tr" hx-confirm="Close blocker {{.Blocker.ID}}? This will unblock {{.Count}} beads.">resolve</button>
+        </td>
       </tr>
       {{end}}
     </tbody>
@@ -60,11 +64,11 @@
       {{range .Entries}}
       <tr>
         <td><span class="rig-label">{{rigName .Rig}}</span></td>
-        <td><a href="/bead/{{.Issue.ID}}">{{.Issue.ID}}</a></td>
+        <td><a href="/bead/{{lower .Rig}}/{{.Issue.ID}}" hx-boost="true">{{.Issue.ID}}</a></td>
         <td>{{.Issue.Title}}</td>
         <td>{{priorityLabel .Issue.Priority}}</td>
         <td title="{{.Issue.Assignee}}">{{shortActor .Issue.Assignee}}</td>
-        <td><a href="/bead/{{.Blocker.ID}}">{{.Blocker.ID}}</a></td>
+        <td><a href="/bead/{{lower .Rig}}/{{.Blocker.ID}}" hx-boost="true">{{.Blocker.ID}}</a></td>
         <td>{{.Blocker.Title}}</td>
         <td>{{statusBadge .Blocker.Status}}</td>
       </tr>
