@@ -1,0 +1,40 @@
+{{define "title"}}Duplicates{{end}}
+{{define "content"}}
+<div class="backlog-page" hx-get="/duplicates" hx-trigger="every 120s" hx-select=".backlog-page" hx-swap="outerHTML">
+  <h1>Duplicate Detection <time class="text-dim">{{.GeneratedAt.Format "Jan 02, 2006 15:04"}}</time></h1>
+
+  {{if eq .TotalGroups 0}}
+  <p class="empty">No duplicate beads detected.</p>
+  {{else}}
+
+  <div class="backlog-stats">
+    <div class="stat">
+      <span class="stat-value warn">{{.TotalGroups}}</span>
+      <span class="stat-label">Duplicate groups</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value">{{.TotalDups}}</span>
+      <span class="stat-label">Total duplicate beads</span>
+    </div>
+  </div>
+
+  {{range .Groups}}
+  <section class="backlog-card" style="margin-bottom: 1rem;">
+    <h2><span class="badge">{{.Count}}x</span> {{.Key}}</h2>
+    <ul class="briefing-list">
+      {{range .Issues}}
+      <li>
+        <a href="/bead/{{.ID}}">{{.ID}}</a>
+        <span class="priority-badge p{{.Priority}}">P{{.Priority}}</span>
+        <span class="badge {{statusClass .Status}}">{{.Status}}</span>
+        {{.Title}}
+        <span class="text-dim">{{formatDate .CreatedAt}}</span>
+      </li>
+      {{end}}
+    </ul>
+  </section>
+  {{end}}
+
+  {{end}}
+</div>
+{{end}}

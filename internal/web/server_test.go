@@ -2832,3 +2832,74 @@ func TestQueuePage_HTMX(t *testing.T) {
 		t.Error("HTMX queue should return partial, not full page")
 	}
 }
+
+func TestDuplicatesPage_NilDataSource(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/duplicates", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /duplicates status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Duplicate Detection") {
+		t.Error("expected 'Duplicate Detection' heading")
+	}
+}
+
+func TestDuplicatesPage_WithDuplicates(t *testing.T) {
+	now := time.Now()
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issues: []dolt.Issue{
+			{ID: "d1", Title: "[AUTO] ServiceDown: bobbin is down", Status: "open", Priority: 0, CreatedAt: now.Add(-2 * time.Hour), UpdatedAt: now},
+			{ID: "d2", Title: "[AUTO] ServiceDown: bobbin is down on luvu", Status: "open", Priority: 0, CreatedAt: now.Add(-1 * time.Hour), UpdatedAt: now},
+			{ID: "d3", Title: "[AUTO] ServiceDown: bobbin crashed", Status: "open", Priority: 0, CreatedAt: now, UpdatedAt: now},
+			{ID: "d4", Title: "Unique bead", Status: "open", Priority: 2, CreatedAt: now, UpdatedAt: now},
+		},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/duplicates", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /duplicates status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Duplicate groups") {
+		t.Error("expected 'Duplicate groups' stat")
+	}
+	if !strings.Contains(body, "servicedown") {
+		t.Error("expected duplicate group key 'servicedown'")
+	}
+}
+
+func TestDuplicatesPage_NoDuplicates(t *testing.T) {
+	now := time.Now()
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issues: []dolt.Issue{
+			{ID: "u1", Title: "Unique one", Status: "open", Priority: 1, CreatedAt: now, UpdatedAt: now},
+			{ID: "u2", Title: "Another unique", Status: "open", Priority: 2, CreatedAt: now, UpdatedAt: now},
+		},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/duplicates", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /duplicates status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "No duplicate beads") {
+		t.Error("expected 'No duplicate beads' message")
+	}
+}
