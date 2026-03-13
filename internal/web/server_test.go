@@ -3313,3 +3313,65 @@ func TestResponseTimePage_HTMX(t *testing.T) {
 		t.Error("HTMX response-time should return partial, not full page")
 	}
 }
+
+func TestContributorsPage_NilDataSource(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/contributors", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /contributors status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Contributors") {
+		t.Error("expected 'Contributors' heading")
+	}
+}
+
+func TestContributorsPage_WithData(t *testing.T) {
+	now := time.Now()
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issues: []dolt.Issue{
+			{ID: "c1", Title: "Bug", Status: "closed", Priority: 1, Owner: "aegis/crew/arnold", CreatedAt: now, UpdatedAt: now},
+			{ID: "c2", Title: "Task", Status: "open", Priority: 2, Owner: "aegis/crew/arnold", CreatedAt: now, UpdatedAt: now},
+			{ID: "c3", Title: "Epic", Status: "closed", Priority: 1, Owner: "aegis/crew/grant", CreatedAt: now, UpdatedAt: now},
+		},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/contributors", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /contributors status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "arnold") {
+		t.Error("expected 'arnold' contributor")
+	}
+	if !strings.Contains(body, "Close Rate") {
+		t.Error("expected 'Close Rate' column")
+	}
+}
+
+func TestContributorsPage_HTMX(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/contributors", nil)
+	req.Header.Set("HX-Request", "true")
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("HTMX GET /contributors status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if strings.Contains(body, "<!DOCTYPE html>") {
+		t.Error("HTMX contributors should return partial, not full page")
+	}
+}

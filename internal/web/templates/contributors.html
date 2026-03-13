@@ -1,0 +1,54 @@
+{{define "title"}}Contributors{{end}}
+{{define "content"}}
+<div class="backlog-page" hx-get="/contributors" hx-trigger="every 120s" hx-select=".backlog-page" hx-swap="outerHTML">
+  <h1>Contributors <time class="text-dim">{{.GeneratedAt.Format "Jan 02, 2006 15:04"}}</time></h1>
+
+  <div class="backlog-stats">
+    <div class="stat">
+      <span class="stat-value accent">{{.Total}}</span>
+      <span class="stat-label">Contributors</span>
+    </div>
+  </div>
+
+  {{if .Contributors}}
+  <section class="backlog-card">
+    <div class="table-wrap">
+    <table class="bead-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Contributor</th>
+          <th>Total</th>
+          <th>Closed</th>
+          <th>Open</th>
+          <th>Active</th>
+          <th>Close Rate</th>
+          <th>Last Active</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{range $i, $c := .Contributors}}
+        <tr>
+          <td class="text-dim">{{add1 $i}}</td>
+          <td><a href="/agent/{{$c.Name}}" hx-boost="true">{{shortActor $c.Name}}</a></td>
+          <td><strong>{{$c.Owned}}</strong></td>
+          <td>{{$c.Closed}}</td>
+          <td>{{$c.Open}}</td>
+          <td>{{$c.InProgress}}</td>
+          <td>
+            {{$c.CloseRate}}%
+            <span style="display:inline-block;background:var(--green);height:8px;width:{{$c.CloseRate}}%;max-width:100px;vertical-align:middle;"></span>
+          </td>
+          <td class="text-dim">{{timeAgo $c.LastActive}}</td>
+        </tr>
+        {{end}}
+      </tbody>
+    </table>
+    </div>
+  </section>
+  {{else}}
+  <p class="text-dim">No contributor data available.</p>
+  {{end}}
+
+</div>
+{{end}}
