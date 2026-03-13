@@ -35,7 +35,13 @@
         </span>
         {{if .Issue.Type}}<span class="badge type">{{.Issue.Type}}</span>{{end}}
         {{if .Issue.Owner}}<span class="meta-item">Owner: <a href="/agent/{{.Issue.Owner}}">{{shortActor .Issue.Owner}}</a></span>{{end}}
-        {{if .Issue.Assignee}}<span class="meta-item">Assignee: <a href="/agent/{{.Issue.Assignee}}">{{shortActor .Issue.Assignee}}</a></span>{{end}}
+        <span class="meta-item" id="bead-assignee">Assignee:
+            {{if .Issue.Assignee}}<a href="/agent/{{.Issue.Assignee}}">{{shortActor .Issue.Assignee}}</a>{{else}}<span class="text-dim">unassigned</span>{{end}}
+            <select class="triage-assign" hx-post="/bead/{{.Database}}/{{.Issue.ID}}/assign" hx-target="#bead-assignee" hx-swap="outerHTML" name="assignee">
+                <option value="">reassign...</option>
+                {{range .Assignees}}<option value="{{.}}"{{if eq . $.Issue.Assignee}} selected{{end}}>{{shortActor .}}</option>{{end}}
+            </select>
+        </span>
         <span id="bead-labels">{{range .Labels}}<a href="/labels?label={{.}}" class="badge label">{{.}}</a> {{end}}</span>
         <form class="label-add-form" hx-post="/bead/{{.Database}}/{{.Issue.ID}}/label" hx-target="#bead-labels" hx-swap="beforeend" hx-on::after-request="this.reset()">
             <input type="text" name="label" placeholder="add label" class="label-input" maxlength="50" pattern="[a-zA-Z0-9_-]+">

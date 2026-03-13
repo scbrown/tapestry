@@ -53,6 +53,7 @@ type beadData struct {
 	Metadata      *dolt.IssueMetadata
 	StatusHistory []dolt.StatusTransition
 	Children      []dolt.Issue
+	Assignees     []string          // known assignees for reassign dropdown
 	DispatchInfo  map[string]string // parsed key-value metadata from description prefix
 	CleanDesc     string            // description with metadata prefix stripped
 	Err           string
@@ -261,6 +262,9 @@ func (s *Server) handleBead(w http.ResponseWriter, r *http.Request, database, id
 		data.Commits = s.forgejo.searchCommitsForBead(commitCtx, id)
 		commitCancel()
 	}
+
+	assignees, _ := s.ds.DistinctAssignees(ctx, database)
+	data.Assignees = assignees
 
 	s.render(w, r, "bead", data)
 }
