@@ -774,6 +774,7 @@ type briefingBlockedItem struct {
 	Issue       dolt.Issue
 	BlockerID   string
 	BlockerDesc string
+	BlockerRig  string
 	Owner       string
 }
 
@@ -881,6 +882,9 @@ func (s *Server) handleBriefing(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 			staleThreshold := now.AddDate(0, 0, -7)
+			for j := range issues {
+				issues[j].Rig = dbName
+			}
 			for _, iss := range issues {
 				if iss.Status == "closed" || isNoise(iss.ID, iss.Title) {
 					continue
@@ -915,6 +919,7 @@ func (s *Server) handleBriefing(w http.ResponseWriter, r *http.Request) {
 						Issue:       bi.Issue,
 						BlockerID:   bi.Blocker.ID,
 						BlockerDesc: bi.Blocker.Title,
+						BlockerRig:  dbName,
 						Owner:       owner,
 					})
 				}
@@ -928,6 +933,7 @@ func (s *Server) handleBriefing(w http.ResponseWriter, r *http.Request) {
 			if err == nil {
 				for _, iss := range recent {
 					if !isNoise(iss.ID, iss.Title) {
+						iss.Rig = dbName
 						r.recentlyClosed = append(r.recentlyClosed, iss)
 					}
 				}

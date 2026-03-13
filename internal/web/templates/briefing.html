@@ -45,7 +45,7 @@
       <ul class="briefing-list">
         {{range .NeedsAttention}}
         <li>
-          <a href="/bead/{{.ID}}">{{.ID}}</a>
+          <a href="/bead/{{lower .Rig}}/{{.ID}}" hx-boost="true">{{.ID}}</a>
           <span class="priority-badge p{{.Priority}}">P{{.Priority}}</span>
           {{.Title}}
           {{if .Assignee}}<span class="text-dim">{{shortActor .Assignee}}</span>{{end}}
@@ -64,7 +64,7 @@
       <ul class="briefing-list">
         {{range .InFlight}}
         <li>
-          <a href="/bead/{{.ID}}">{{.ID}}</a>
+          <a href="/bead/{{lower .Rig}}/{{.ID}}" hx-boost="true">{{.ID}}</a>
           <span class="priority-badge p{{.Priority}}">P{{.Priority}}</span>
           {{.Title}}
           {{if .Assignee}}<span class="text-dim">{{shortActor .Assignee}}</span>{{end}}
@@ -84,7 +84,7 @@
       <ul class="briefing-list">
         {{range .UnclaimedQueue}}
         <li class="unclaimed-item">
-          <a href="/bead/{{.ID}}">{{.ID}}</a>
+          <a href="/bead/{{lower .Rig}}/{{.ID}}" hx-boost="true">{{.ID}}</a>
           <span class="priority-badge p{{.Priority}}">P{{.Priority}}</span>
           {{.Title}}
           <time class="text-dim freshness">{{timeAgo .CreatedAt}}</time>
@@ -101,11 +101,11 @@
       <ul class="briefing-list">
         {{range .BlockedItems}}
         <li class="blocked-item">
-          <a href="/bead/{{.Issue.ID}}">{{.Issue.ID}}</a>
+          <a href="/bead/{{lower .Issue.Rig}}/{{.Issue.ID}}" hx-boost="true">{{.Issue.ID}}</a>
           <span class="priority-badge p{{.Issue.Priority}}">P{{.Issue.Priority}}</span>
           {{.Issue.Title}}
           <span class="blocked-reason">
-            blocked by <a href="/bead/{{.BlockerID}}">{{.BlockerID}}</a>
+            blocked by <a href="/bead/{{lower .BlockerRig}}/{{.BlockerID}}" hx-boost="true">{{.BlockerID}}</a>
             <span class="text-dim">({{.BlockerDesc}}{{if .Owner}} — {{shortActor .Owner}}{{end}})</span>
           </span>
         </li>
@@ -121,7 +121,7 @@
       <ul class="briefing-list">
         {{range .RecentlyClosed}}
         <li>
-          <a href="/bead/{{.ID}}">{{.ID}}</a>
+          <a href="/bead/{{lower .Rig}}/{{.ID}}" hx-boost="true">{{.ID}}</a>
           {{.Title}}
           <time class="text-dim">{{.UpdatedAt.Format "Jan 02 15:04"}}</time>
         </li>
@@ -139,7 +139,7 @@
       <ul class="briefing-list">
         {{range .StaleWork}}
         <li class="stale-item">
-          <a href="/bead/{{.ID}}">{{.ID}}</a>
+          <a href="/bead/{{lower .Rig}}/{{.ID}}" hx-boost="true">{{.ID}}</a>
           <span class="priority-badge p{{.Priority}}">P{{.Priority}}</span>
           {{.Title}}
           <span class="stale-age">{{daysAgo .UpdatedAt}}d idle</span>
