@@ -64,17 +64,39 @@
 
     <section class="backlog-card backlog-oldest">
       <h2>Oldest Open Beads</h2>
-      <ul class="briefing-list">
-        {{range .Oldest}}
-        <li>
-          <a href="/bead/{{.Issue.ID}}">{{.Issue.ID}}</a>
-          <span class="priority-badge p{{.Issue.Priority}}">P{{.Issue.Priority}}</span>
-          <span class="badge status-{{.Issue.Status}}">{{.Issue.Status}}</span>
-          {{.Issue.Title}}
-          <span class="stale-age">{{.AgeDays}}d</span>
-        </li>
-        {{end}}
-      </ul>
+      <div class="table-wrap">
+      <table class="bead-table">
+        <thead>
+          <tr>
+            <th>Rig</th>
+            <th>ID</th>
+            <th>Pri</th>
+            <th>Status</th>
+            <th>Title</th>
+            <th>Age</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {{range .Oldest}}
+          <tr>
+            <td><span class="rig-label">{{rigName .Issue.Rig}}</span></td>
+            <td><a href="/bead/{{lower .Issue.Rig}}/{{.Issue.ID}}" hx-boost="true">{{.Issue.ID}}</a></td>
+            <td><span class="priority-badge p{{.Issue.Priority}}">P{{.Issue.Priority}}</span></td>
+            <td>{{statusBadge .Issue.Status}}</td>
+            <td>{{.Issue.Title}}</td>
+            <td class="stale-age">{{.AgeDays}}d</td>
+            <td class="triage-actions">
+              <div class="triage-btn-group">
+                <button class="btn btn-xs" hx-post="/bead/{{lower .Issue.Rig}}/{{.Issue.ID}}/status" hx-vals='{"status":"closed"}' hx-swap="outerHTML" hx-target="closest tr" hx-confirm="Close {{.Issue.ID}}?">close</button>
+                <button class="btn btn-xs" hx-post="/bead/{{lower .Issue.Rig}}/{{.Issue.ID}}/status" hx-vals='{"status":"deferred"}' hx-swap="outerHTML" hx-target="closest tr" hx-confirm="Defer {{.Issue.ID}}?">defer</button>
+              </div>
+            </td>
+          </tr>
+          {{end}}
+        </tbody>
+      </table>
+      </div>
     </section>
 
   </div>

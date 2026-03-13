@@ -77,11 +77,12 @@ func (s *Server) handleBacklog(w http.ResponseWriter, r *http.Request) {
 
 	now := time.Now()
 	var openIssues []backlogItem
-	for _, r := range results {
+	for i, r := range results {
 		for _, iss := range r.issues {
 			if iss.Status == "closed" || iss.Status == "deferred" {
 				continue
 			}
+			iss.Rig = dbs[i].Name
 			age := int(now.Sub(iss.CreatedAt).Hours() / 24)
 			if age < 0 {
 				age = 0
