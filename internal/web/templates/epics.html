@@ -8,7 +8,7 @@
   </div>
   <div class="table-wrap">
   <table class="bead-table">
-    <thead><tr><th>ID</th><th>Title</th><th>Priority</th><th>Status</th><th>Progress</th><th>Rig</th></tr></thead>
+    <thead><tr><th>ID</th><th>Title</th><th>Priority</th><th>Status</th><th>Progress</th><th>Rig</th><th>Actions</th></tr></thead>
     <tbody>
       {{range .Epics}}
       <tr{{if eq .Epic.Status "closed"}} class="epic-closed" style="display:none"{{end}}{{if eq .Epic.Status "tombstone"}} class="epic-closed" style="display:none"{{end}}>
@@ -23,6 +23,16 @@
           {{else}}<span class="text-dim">-</span>{{end}}
         </td>
         <td>{{rigName .Rig}}</td>
+        <td class="actions-cell">
+          {{if eq .Epic.Status "open"}}
+          <button class="btn btn-xs" hx-post="/bead/{{lower .Rig}}/{{.Epic.ID}}/status" hx-vals='{"status":"closed"}' hx-swap="outerHTML" hx-target="closest tr" hx-confirm="Close {{.Epic.ID}}?">close</button>
+          <button class="btn btn-xs" hx-post="/bead/{{lower .Rig}}/{{.Epic.ID}}/status" hx-vals='{"status":"deferred"}' hx-swap="outerHTML" hx-target="closest tr" hx-confirm="Defer {{.Epic.ID}}?">defer</button>
+          {{else if eq .Epic.Status "in_progress"}}
+          <button class="btn btn-xs" hx-post="/bead/{{lower .Rig}}/{{.Epic.ID}}/status" hx-vals='{"status":"closed"}' hx-swap="outerHTML" hx-target="closest tr" hx-confirm="Close {{.Epic.ID}}?">close</button>
+          {{else if eq .Epic.Status "closed"}}
+          <button class="btn btn-xs" hx-post="/bead/{{lower .Rig}}/{{.Epic.ID}}/status" hx-vals='{"status":"open"}' hx-swap="outerHTML" hx-target="closest tr" hx-confirm="Reopen {{.Epic.ID}}?">reopen</button>
+          {{end}}
+        </td>
       </tr>
       {{end}}
     </tbody>

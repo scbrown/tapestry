@@ -13,6 +13,19 @@
     </div>
   </div>
 
+  {{if .Database}}
+  <div class="bead-actions" id="bead-actions">
+    {{if eq .Issue.Status "open"}}
+    <button hx-post="/bead/{{.Database}}/{{.Issue.ID}}/status" hx-vals='{"status":"closed"}' hx-target="#bead-actions" hx-swap="outerHTML" class="btn btn-sm btn-close">Close</button>
+    <button hx-post="/bead/{{.Database}}/{{.Issue.ID}}/status" hx-vals='{"status":"in_progress"}' hx-target="#bead-actions" hx-swap="outerHTML" class="btn btn-sm btn-progress">Start</button>
+    {{else if eq .Issue.Status "in_progress"}}
+    <button hx-post="/bead/{{.Database}}/{{.Issue.ID}}/status" hx-vals='{"status":"closed"}' hx-target="#bead-actions" hx-swap="outerHTML" class="btn btn-sm btn-close">Close</button>
+    {{else if eq .Issue.Status "closed"}}
+    <button hx-post="/bead/{{.Database}}/{{.Issue.ID}}/status" hx-vals='{"status":"open"}' hx-target="#bead-actions" hx-swap="outerHTML" class="btn btn-sm btn-reopen">Reopen</button>
+    {{end}}
+  </div>
+  {{end}}
+
   {{if .Issue.Description}}
   <div class="description"><p>{{.Issue.Description}}</p></div>
   {{end}}
@@ -37,7 +50,7 @@
     <h2>Children ({{len .Children}})</h2>
     <div class="table-wrap">
     <table class="bead-table">
-      <thead><tr><th>ID</th><th>Title</th><th>Priority</th><th>Type</th><th>Status</th><th>Assignee</th><th>Updated</th></tr></thead>
+      <thead><tr><th>ID</th><th>Title</th><th>Priority</th><th>Type</th><th>Status</th><th>Assignee</th><th>Updated</th><th>Actions</th></tr></thead>
       <tbody>
         {{range .Children}}
         <tr>
@@ -48,6 +61,15 @@
           <td>{{statusBadge .Status}}</td>
           <td>{{if .Assignee}}<a href="/agent/{{.Assignee}}">{{shortActor .Assignee}}</a>{{end}}</td>
           <td>{{timeAgo .UpdatedAt}}</td>
+          <td class="actions-cell">
+            {{if eq .Status "open"}}
+            <button class="btn btn-xs" hx-post="/bead/{{$.Database}}/{{.ID}}/status" hx-vals='{"status":"closed"}' hx-swap="outerHTML" hx-target="closest tr" hx-confirm="Close {{.ID}}?">close</button>
+            {{else if eq .Status "in_progress"}}
+            <button class="btn btn-xs" hx-post="/bead/{{$.Database}}/{{.ID}}/status" hx-vals='{"status":"closed"}' hx-swap="outerHTML" hx-target="closest tr" hx-confirm="Close {{.ID}}?">close</button>
+            {{else if eq .Status "closed"}}
+            <button class="btn btn-xs" hx-post="/bead/{{$.Database}}/{{.ID}}/status" hx-vals='{"status":"open"}' hx-swap="outerHTML" hx-target="closest tr" hx-confirm="Reopen {{.ID}}?">reopen</button>
+            {{end}}
+          </td>
         </tr>
         {{end}}
       </tbody>
