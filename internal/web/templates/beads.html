@@ -98,7 +98,7 @@
         {{range .Issues}}
         <tr>
           <td><span class="rig-label">{{rigName .Rig}}</span></td>
-          <td><a href="/bead/{{.ID}}">{{.ID}}</a></td>
+          <td><a href="/bead/{{lower .Rig}}/{{.ID}}" hx-boost="true">{{.ID}}</a></td>
           <td>{{.Title}}</td>
           <td>{{priorityLabel .Priority}}</td>
           <td>{{.Type}}</td>

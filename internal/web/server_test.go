@@ -456,7 +456,7 @@ func TestBeadsList_WithData(t *testing.T) {
 	if !strings.Contains(body, "Test bead") {
 		t.Errorf("body missing bead title")
 	}
-	if !strings.Contains(body, `href="/bead/aegis-010"`) {
+	if !strings.Contains(body, `href="/bead/beads_aegis/aegis-010"`) {
 		t.Errorf("body missing bead link")
 	}
 }
