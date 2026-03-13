@@ -139,17 +139,26 @@
     </section>
     {{end}}
 
-    {{if .CleanDesc}}
     <section class="bead-description">
         <h2>Description</h2>
-        <pre class="description-text">{{.CleanDesc}}</pre>
+        <div id="bead-description">
+            {{if .CleanDesc}}
+            <pre class="description-text">{{.CleanDesc}}</pre>
+            {{else if .Issue.Description}}
+            <pre class="description-text">{{.Issue.Description}}</pre>
+            {{else}}
+            <pre class="description-text text-dim">(no description)</pre>
+            {{end}}
+            <button class="btn btn-xs bead-desc-edit" onclick="var s=this.parentElement; s.querySelector('.bead-desc-form').style.display='block'; s.querySelector('.description-text').style.display='none'; this.style.display='none'; s.querySelector('.bead-desc-form textarea').focus();">edit</button>
+            <form class="bead-desc-form" style="display:none" hx-post="/bead/{{.Database}}/{{.Issue.ID}}/description" hx-target="#bead-description" hx-swap="innerHTML">
+                <textarea name="description" class="bead-desc-textarea" rows="8">{{if .CleanDesc}}{{.CleanDesc}}{{else}}{{.Issue.Description}}{{end}}</textarea>
+                <div style="margin-top:0.25rem">
+                    <button type="submit" class="btn btn-xs">save</button>
+                    <button type="button" class="btn btn-xs" onclick="var s=this.closest('#bead-description'); s.querySelector('.bead-desc-form').style.display='none'; s.querySelector('.description-text').style.display=''; s.querySelector('.bead-desc-edit').style.display='';">cancel</button>
+                </div>
+            </form>
+        </div>
     </section>
-    {{else if .Issue.Description}}
-    <section class="bead-description">
-        <h2>Description</h2>
-        <pre class="description-text">{{.Issue.Description}}</pre>
-    </section>
-    {{end}}
 
     {{if .Children}}
     <section class="bead-children">

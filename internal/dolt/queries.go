@@ -602,6 +602,22 @@ func (c *Client) UpdateAssignee(ctx context.Context, database, issueID, assignee
 	return nil
 }
 
+func (c *Client) UpdateDescription(ctx context.Context, database, issueID, description string) error {
+	query := "UPDATE issues SET description = ?, updated_at = NOW() WHERE id = ?"
+	conn, err := c.db.Conn(ctx)
+	if err != nil {
+		return fmt.Errorf("dolt: conn: %w", err)
+	}
+	defer func() { _ = conn.Close() }()
+	if _, err := conn.ExecContext(ctx, fmt.Sprintf("USE `%s`", database)); err != nil {
+		return fmt.Errorf("dolt: use %s: %w", database, err)
+	}
+	if _, err := conn.ExecContext(ctx, query, description, issueID); err != nil {
+		return fmt.Errorf("dolt: update description: %w", err)
+	}
+	return nil
+}
+
 func (c *Client) UpdateTitle(ctx context.Context, database, issueID, title string) error {
 	query := "UPDATE issues SET title = ?, updated_at = NOW() WHERE id = ?"
 	conn, err := c.db.Conn(ctx)

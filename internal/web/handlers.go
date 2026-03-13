@@ -1363,6 +1363,36 @@ func (s *Server) handleBeadLabelAdd(w http.ResponseWriter, r *http.Request, data
 		template.HTMLEscapeString(label), template.HTMLEscapeString(label))
 }
 
+func (s *Server) handleBeadDescriptionUpdate(w http.ResponseWriter, r *http.Request, database, id string) {
+	if s.ds == nil {
+		http.Error(w, "no database", http.StatusServiceUnavailable)
+		return
+	}
+
+	desc := strings.TrimSpace(r.FormValue("description"))
+	if len(desc) > 10000 {
+		desc = desc[:10000]
+	}
+
+	if err := s.ds.UpdateDescription(r.Context(), database, id, desc); err != nil {
+		log.Printf("bead description update: %v", err)
+		http.Error(w, "update failed", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.Header().Set("HX-Trigger", `{"showToast":"Description updated"}`)
+	fmt.Fprintf(w, `<pre class="description-text">%s</pre>
+<button class="btn btn-xs bead-desc-edit" onclick="var s=this.parentElement; s.querySelector('.bead-desc-form').style.display='block'; s.querySelector('.description-text').style.display='none'; this.style.display='none'; s.querySelector('.bead-desc-form textarea').focus();">edit</button>
+<form class="bead-desc-form" style="display:none" hx-post="/bead/%s/%s/description" hx-target="#bead-description" hx-swap="innerHTML">
+  <textarea name="description" class="bead-desc-textarea" rows="8">%s</textarea>
+  <div style="margin-top:0.25rem"><button type="submit" class="btn btn-xs">save</button>
+  <button type="button" class="btn btn-xs" onclick="var s=this.closest('#bead-description'); s.querySelector('.bead-desc-form').style.display='none'; s.querySelector('.description-text').style.display=''; s.querySelector('.bead-desc-edit').style.display='';">cancel</button></div>
+</form>`,
+		template.HTMLEscapeString(desc), database, template.HTMLEscapeString(id),
+		template.HTMLEscapeString(desc))
+}
+
 func (s *Server) handleBeadTitleUpdate(w http.ResponseWriter, r *http.Request, database, id string) {
 	if s.ds == nil {
 		http.Error(w, "no database", http.StatusServiceUnavailable)
