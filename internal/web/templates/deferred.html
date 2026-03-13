@@ -1,0 +1,79 @@
+{{define "title"}}Deferred{{end}}
+{{define "content"}}
+<div class="backlog-page" hx-get="/deferred" hx-trigger="every 120s" hx-select=".backlog-page" hx-swap="outerHTML">
+  <h1>Deferred Items <time class="text-dim">{{.GeneratedAt.Format "Jan 02, 2006 15:04"}}</time></h1>
+
+  <div class="backlog-stats">
+    <div class="stat">
+      <span class="stat-value accent">{{.Total}}</span>
+      <span class="stat-label">Deferred</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value">{{.MedianAge}}d</span>
+      <span class="stat-label">Median Idle</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value">{{.OldestAge}}d</span>
+      <span class="stat-label">Longest Parked</span>
+    </div>
+  </div>
+
+  {{if .Items}}
+  <section class="backlog-card">
+    <h2>Priority Distribution</h2>
+    <div style="display:flex;gap:1rem;margin-bottom:1rem;">
+      {{range $i, $count := .ByPriority}}
+      <div class="stat" style="flex:1;">
+        <span class="stat-value">{{$count}}</span>
+        <span class="stat-label">P{{$i}}</span>
+      </div>
+      {{end}}
+    </div>
+  </section>
+
+  <section class="backlog-card">
+    <h2>All Deferred ({{.Total}})</h2>
+    <div class="table-wrap">
+    <table class="bead-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Title</th>
+          <th>Pri</th>
+          <th>Rig</th>
+          <th>Age</th>
+          <th>Idle</th>
+          <th>Assignee</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{range .Items}}
+        <tr>
+          <td><a href="/bead/{{.Rig}}/{{.Issue.ID}}" hx-boost="true">{{.Issue.ID}}</a></td>
+          <td>{{.Issue.Title}}</td>
+          <td>{{priorityLabel .Issue.Priority}}</td>
+          <td class="text-dim">{{.Rig}}</td>
+          <td>{{.AgeDays}}d</td>
+          <td>{{.IdleDays}}d</td>
+          <td class="text-dim">{{if .Issue.Assignee}}{{shortActor .Issue.Assignee}}{{else if .Issue.Owner}}{{shortActor .Issue.Owner}}{{else}}—{{end}}</td>
+          <td>
+            <button class="btn-sm btn-open"
+              hx-post="/bead/{{.Rig}}/{{.Issue.ID}}/status" hx-vals='{"status":"open"}'
+              hx-swap="none" hx-on::after-request="this.closest('tr').remove()">reopen</button>
+            <button class="btn-sm btn-close"
+              hx-post="/bead/{{.Rig}}/{{.Issue.ID}}/status" hx-vals='{"status":"closed"}'
+              hx-swap="none" hx-on::after-request="this.closest('tr').remove()">close</button>
+          </td>
+        </tr>
+        {{end}}
+      </tbody>
+    </table>
+    </div>
+  </section>
+  {{else}}
+  <p class="text-dim">No deferred items. Everything is either active or closed.</p>
+  {{end}}
+
+</div>
+{{end}}

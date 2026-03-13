@@ -1,0 +1,71 @@
+{{define "title"}}Throughput{{end}}
+{{define "content"}}
+<div class="backlog-page" hx-get="/throughput" hx-trigger="every 120s" hx-select=".backlog-page" hx-swap="outerHTML">
+  <h1>Weekly Throughput <time class="text-dim">{{.GeneratedAt.Format "Jan 02, 2006 15:04"}}</time></h1>
+
+  <div class="backlog-stats">
+    <div class="stat">
+      <span class="stat-value accent">{{.AvgCreated}}</span>
+      <span class="stat-label">Avg Created/wk</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value" style="color:var(--green)">{{.AvgClosed}}</span>
+      <span class="stat-label">Avg Closed/wk</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value">{{.TotalCreated}}</span>
+      <span class="stat-label">Total Created</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value">{{.TotalClosed}}</span>
+      <span class="stat-label">Total Closed</span>
+    </div>
+  </div>
+
+  {{if .Weeks}}
+  <section class="backlog-card">
+    <h2>{{.WeekCount}}-Week View</h2>
+    <div class="table-wrap">
+    <table class="bead-table">
+      <thead>
+        <tr>
+          <th>Week</th>
+          <th>Created</th>
+          <th>Closed</th>
+          <th>Net</th>
+          <th style="width:40%;">Bars</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{range .Weeks}}
+        <tr>
+          <td>{{.WeekStart}}</td>
+          <td>{{.Created}}</td>
+          <td>{{.Closed}}</td>
+          <td {{if gt .Net 0}}style="color:var(--red)"{{else if lt .Net 0}}style="color:var(--green)"{{end}}>
+            {{if gt .Net 0}}+{{end}}{{.Net}}
+          </td>
+          <td>
+            {{if $.MaxCount}}
+            <div style="display:flex;gap:2px;align-items:center;">
+              <span style="display:inline-block;background:var(--purple);height:12px;width:{{divf (mulf (itof .Created) 100.0) (itof $.MaxCount)}}%;max-width:100%;"></span>
+              <span style="display:inline-block;background:var(--green);height:12px;width:{{divf (mulf (itof .Closed) 100.0) (itof $.MaxCount)}}%;max-width:100%;"></span>
+            </div>
+            {{end}}
+          </td>
+        </tr>
+        {{end}}
+      </tbody>
+    </table>
+    </div>
+    <div style="margin-top:0.5rem;">
+      <span style="display:inline-block;width:12px;height:12px;background:var(--purple);vertical-align:middle;"></span> Created
+      <span style="display:inline-block;width:12px;height:12px;background:var(--green);vertical-align:middle;margin-left:1rem;"></span> Closed
+    </div>
+  </section>
+  {{else}}
+  <p class="text-dim">No throughput data available.</p>
+  {{end}}
+
+</div>
+{{end}}

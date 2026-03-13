@@ -491,6 +491,22 @@ func (s *Server) parseTemplates() {
 			template.New("").Funcs(funcMap).ParseFS(templateFS,
 				"templates/layout.html", "templates/contributors.html"),
 		),
+		"deferred": template.Must(
+			template.New("").Funcs(funcMap).ParseFS(templateFS,
+				"templates/layout.html", "templates/deferred.html"),
+		),
+		"throughput": template.Must(
+			template.New("").Funcs(funcMap).ParseFS(templateFS,
+				"templates/layout.html", "templates/throughput.html"),
+		),
+		"churn": template.Must(
+			template.New("").Funcs(funcMap).ParseFS(templateFS,
+				"templates/layout.html", "templates/churn.html"),
+		),
+		"parking-lot": template.Must(
+			template.New("").Funcs(funcMap).ParseFS(templateFS,
+				"templates/layout.html", "templates/parking-lot.html"),
+		),
 	}
 }
 
@@ -678,6 +694,14 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		s.handleResponseTime(w, r)
 	case len(segments) == 1 && segments[0] == "contributors":
 		s.handleContributors(w, r)
+	case len(segments) == 1 && segments[0] == "deferred":
+		s.handleDeferred(w, r)
+	case len(segments) == 1 && segments[0] == "throughput":
+		s.handleThroughput(w, r)
+	case len(segments) == 1 && segments[0] == "churn":
+		s.handleChurn(w, r)
+	case len(segments) == 1 && segments[0] == "parking-lot":
+		s.handleParkingLot(w, r)
 	case len(segments) == 1 && segments[0] == "heatmap":
 		s.handleHeatmap(w, r)
 	case len(segments) == 1 && segments[0] == "homelab":

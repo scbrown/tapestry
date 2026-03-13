@@ -1,0 +1,82 @@
+{{define "title"}}Parking Lot{{end}}
+{{define "content"}}
+<div class="backlog-page" hx-get="/parking-lot" hx-trigger="every 60s" hx-select=".backlog-page" hx-swap="outerHTML">
+  <h1>Parking Lot <time class="text-dim">{{.GeneratedAt.Format "Jan 02, 2006 15:04"}}</time></h1>
+  <p class="text-dim">In-progress beads idle for 3+ days — started but stalled.</p>
+
+  <div class="backlog-stats">
+    <div class="stat">
+      <span class="stat-value accent">{{.Total}}</span>
+      <span class="stat-label">Stalled</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value">{{.MedianIdle}}d</span>
+      <span class="stat-label">Median Idle</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value">{{.MaxIdle}}d</span>
+      <span class="stat-label">Longest Idle</span>
+    </div>
+  </div>
+
+  {{if .ByAssignee}}
+  <section class="backlog-card">
+    <h2>Stalled by Assignee</h2>
+    <div style="display:flex;flex-wrap:wrap;gap:1rem;">
+      {{range $assignee, $count := .ByAssignee}}
+      <div class="stat">
+        <span class="stat-value">{{$count}}</span>
+        <span class="stat-label">{{shortActor $assignee}}</span>
+      </div>
+      {{end}}
+    </div>
+  </section>
+  {{end}}
+
+  {{if .Items}}
+  <section class="backlog-card">
+    <h2>All Stalled ({{.Total}})</h2>
+    <div class="table-wrap">
+    <table class="bead-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Title</th>
+          <th>Pri</th>
+          <th>Rig</th>
+          <th>Idle</th>
+          <th>Age</th>
+          <th>Assignee</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{range .Items}}
+        <tr>
+          <td><a href="/bead/{{.Rig}}/{{.Issue.ID}}" hx-boost="true">{{.Issue.ID}}</a></td>
+          <td>{{.Issue.Title}}</td>
+          <td>{{priorityLabel .Issue.Priority}}</td>
+          <td class="text-dim">{{.Rig}}</td>
+          <td {{if gt .IdleDays 14}}style="color:var(--red)"{{else if gt .IdleDays 7}}style="color:var(--orange)"{{end}}>{{.IdleDays}}d</td>
+          <td class="text-dim">{{.AgeDays}}d</td>
+          <td class="text-dim">{{if .Issue.Assignee}}{{shortActor .Issue.Assignee}}{{else if .Issue.Owner}}{{shortActor .Issue.Owner}}{{else}}—{{end}}</td>
+          <td>
+            <button class="btn-sm btn-close"
+              hx-post="/bead/{{.Rig}}/{{.Issue.ID}}/status" hx-vals='{"status":"closed"}'
+              hx-swap="none" hx-on::after-request="this.closest('tr').remove()">close</button>
+            <button class="btn-sm btn-defer"
+              hx-post="/bead/{{.Rig}}/{{.Issue.ID}}/status" hx-vals='{"status":"deferred"}'
+              hx-swap="none" hx-on::after-request="this.closest('tr').remove()">defer</button>
+          </td>
+        </tr>
+        {{end}}
+      </tbody>
+    </table>
+    </div>
+  </section>
+  {{else}}
+  <p class="text-dim">No stalled work. All in-progress items are actively being worked on.</p>
+  {{end}}
+
+</div>
+{{end}}

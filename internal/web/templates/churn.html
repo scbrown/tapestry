@@ -1,0 +1,62 @@
+{{define "title"}}Churn{{end}}
+{{define "content"}}
+<div class="backlog-page" hx-get="/churn" hx-trigger="every 120s" hx-select=".backlog-page" hx-swap="outerHTML">
+  <h1>Status Churn <time class="text-dim">{{.GeneratedAt.Format "Jan 02, 2006 15:04"}}</time></h1>
+  <p class="text-dim">Open beads with 3+ status transitions — likely bouncing between states or reopened multiple times.</p>
+
+  <div class="backlog-stats">
+    <div class="stat">
+      <span class="stat-value accent">{{.Total}}</span>
+      <span class="stat-label">Churning</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value">{{printf "%.1f" .AvgChurn}}</span>
+      <span class="stat-label">Avg Transitions</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value">{{.MaxChurn}}</span>
+      <span class="stat-label">Most Transitions</span>
+    </div>
+  </div>
+
+  {{if .Items}}
+  <section class="backlog-card">
+    <div class="table-wrap">
+    <table class="bead-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Title</th>
+          <th>Status</th>
+          <th>Pri</th>
+          <th>Rig</th>
+          <th>Transitions</th>
+          <th>Bar</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{range .Items}}
+        <tr>
+          <td><a href="/bead/{{.Rig}}/{{.Issue.ID}}" hx-boost="true">{{.Issue.ID}}</a></td>
+          <td>{{.Issue.Title}}</td>
+          <td>{{statusBadge .Issue.Status}}</td>
+          <td>{{priorityLabel .Issue.Priority}}</td>
+          <td class="text-dim">{{.Rig}}</td>
+          <td><strong>{{.Transitions}}</strong></td>
+          <td>
+            {{if $.MaxChurn}}
+            <span style="display:inline-block;background:var(--orange);height:10px;width:{{divf (mulf (itof .Transitions) 100.0) (itof $.MaxChurn)}}%;max-width:100px;"></span>
+            {{end}}
+          </td>
+        </tr>
+        {{end}}
+      </tbody>
+    </table>
+    </div>
+  </section>
+  {{else}}
+  <p class="text-dim">No churning beads detected. All open items have clean status histories.</p>
+  {{end}}
+
+</div>
+{{end}}

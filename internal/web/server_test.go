@@ -3669,3 +3669,258 @@ func TestContributorsPage_HTMX(t *testing.T) {
 		t.Error("HTMX contributors should return partial, not full page")
 	}
 }
+
+// --- Deferred page tests ---
+
+func TestDeferredPage_NilDataSource(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/deferred", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /deferred status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Deferred Items") {
+		t.Error("expected 'Deferred Items' heading")
+	}
+}
+
+func TestDeferredPage_WithData(t *testing.T) {
+	now := time.Now()
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issues: []dolt.Issue{
+			{ID: "d1", Title: "Deferred bug", Status: "deferred", Priority: 2, CreatedAt: now.AddDate(0, 0, -30), UpdatedAt: now.AddDate(0, 0, -10)},
+			{ID: "d2", Title: "Parked feature", Status: "deferred", Priority: 1, CreatedAt: now.AddDate(0, 0, -60), UpdatedAt: now.AddDate(0, 0, -45)},
+		},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/deferred", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /deferred status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Deferred bug") {
+		t.Error("expected deferred issue title")
+	}
+	if !strings.Contains(body, "Priority Distribution") {
+		t.Error("expected priority distribution section")
+	}
+}
+
+func TestDeferredPage_HTMX(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/deferred", nil)
+	req.Header.Set("HX-Request", "true")
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("HTMX GET /deferred status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if strings.Contains(body, "<!DOCTYPE html>") {
+		t.Error("HTMX deferred should return partial, not full page")
+	}
+}
+
+// --- Throughput page tests ---
+
+func TestThroughputPage_NilDataSource(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/throughput", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /throughput status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Weekly Throughput") {
+		t.Error("expected 'Weekly Throughput' heading")
+	}
+}
+
+func TestThroughputPage_WithData(t *testing.T) {
+	now := time.Now()
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issues: []dolt.Issue{
+			{ID: "t1", Title: "Recent", Status: "open", CreatedAt: now.AddDate(0, 0, -3), UpdatedAt: now},
+			{ID: "t2", Title: "Closed this week", Status: "closed", CreatedAt: now.AddDate(0, 0, -10), UpdatedAt: now.AddDate(0, 0, -1)},
+			{ID: "t3", Title: "Old", Status: "open", CreatedAt: now.AddDate(0, 0, -50), UpdatedAt: now.AddDate(0, 0, -30)},
+		},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/throughput", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /throughput status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "12-Week View") {
+		t.Error("expected '12-Week View' section")
+	}
+	if !strings.Contains(body, "Avg Created/wk") {
+		t.Error("expected average stats")
+	}
+}
+
+func TestThroughputPage_HTMX(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/throughput", nil)
+	req.Header.Set("HX-Request", "true")
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("HTMX GET /throughput status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if strings.Contains(body, "<!DOCTYPE html>") {
+		t.Error("HTMX throughput should return partial, not full page")
+	}
+}
+
+// --- Churn page tests ---
+
+func TestChurnPage_NilDataSource(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/churn", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /churn status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Status Churn") {
+		t.Error("expected 'Status Churn' heading")
+	}
+}
+
+func TestChurnPage_WithData(t *testing.T) {
+	now := time.Now()
+	ds := &mockDataSource{
+		databases:     []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issues:        []dolt.Issue{
+			{ID: "c1", Title: "Bouncy bead", Status: "open", Priority: 1, CreatedAt: now.AddDate(0, 0, -20), UpdatedAt: now},
+		},
+		statusHistory: []dolt.StatusTransition{
+			{FromStatus: "", ToStatus: "open", CommitDate: now.AddDate(0, 0, -20)},
+			{FromStatus: "open", ToStatus: "in_progress", CommitDate: now.AddDate(0, 0, -15)},
+			{FromStatus: "in_progress", ToStatus: "closed", CommitDate: now.AddDate(0, 0, -10)},
+			{FromStatus: "closed", ToStatus: "open", CommitDate: now.AddDate(0, 0, -5)},
+		},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/churn", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /churn status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Bouncy bead") {
+		t.Error("expected churning issue title")
+	}
+}
+
+func TestChurnPage_HTMX(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/churn", nil)
+	req.Header.Set("HX-Request", "true")
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("HTMX GET /churn status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if strings.Contains(body, "<!DOCTYPE html>") {
+		t.Error("HTMX churn should return partial, not full page")
+	}
+}
+
+// --- Parking Lot page tests ---
+
+func TestParkingLotPage_NilDataSource(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/parking-lot", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /parking-lot status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Parking Lot") {
+		t.Error("expected 'Parking Lot' heading")
+	}
+}
+
+func TestParkingLotPage_WithData(t *testing.T) {
+	now := time.Now()
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issues: []dolt.Issue{
+			{ID: "p1", Title: "Stalled task", Status: "in_progress", Priority: 1, Assignee: "agent/alpha", CreatedAt: now.AddDate(0, 0, -20), UpdatedAt: now.AddDate(0, 0, -10)},
+			{ID: "p2", Title: "Active task", Status: "in_progress", Priority: 2, CreatedAt: now, UpdatedAt: now},
+		},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/parking-lot", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /parking-lot status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Stalled task") {
+		t.Error("expected stalled task (idle 10d)")
+	}
+	if strings.Contains(body, "Active task") {
+		t.Error("should NOT show active task (idle 0d, below threshold)")
+	}
+}
+
+func TestParkingLotPage_HTMX(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/parking-lot", nil)
+	req.Header.Set("HX-Request", "true")
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("HTMX GET /parking-lot status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if strings.Contains(body, "<!DOCTYPE html>") {
+		t.Error("HTMX parking-lot should return partial, not full page")
+	}
+}
