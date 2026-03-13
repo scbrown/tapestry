@@ -1348,6 +1348,58 @@ func (s *Server) handleBeadLabelAdd(w http.ResponseWriter, r *http.Request, data
 		template.HTMLEscapeString(label), template.HTMLEscapeString(label))
 }
 
+// handleBatchStatus handles POST /batch/status to update multiple beads at once.
+// Expects form fields: ids[] (format: "db/id"), status.
+func (s *Server) handleBatchStatus(w http.ResponseWriter, r *http.Request) {
+	if s.ds == nil {
+		http.Error(w, "no database", http.StatusServiceUnavailable)
+		return
+	}
+
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "bad request", http.StatusBadRequest)
+		return
+	}
+
+	newStatus := r.FormValue("status")
+	validStatuses := map[string]bool{
+		"open": true, "closed": true, "deferred": true,
+	}
+	if !validStatuses[newStatus] {
+		http.Error(w, "invalid status", http.StatusBadRequest)
+		return
+	}
+
+	ids := r.Form["ids[]"]
+	if len(ids) == 0 {
+		http.Error(w, "no beads specified", http.StatusBadRequest)
+		return
+	}
+	if len(ids) > 100 {
+		http.Error(w, "too many beads (max 100)", http.StatusBadRequest)
+		return
+	}
+
+	ctx := r.Context()
+	updated := 0
+	for _, ref := range ids {
+		parts := strings.SplitN(ref, "/", 2)
+		if len(parts) != 2 {
+			continue
+		}
+		db, id := parts[0], parts[1]
+		if err := s.ds.UpdateStatus(ctx, db, id, newStatus); err != nil {
+			log.Printf("batch status: %s/%s: %v", db, id, err)
+			continue
+		}
+		updated++
+	}
+
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.Header().Set("HX-Trigger", fmt.Sprintf(`{"showToast":"%d beads %s"}`, updated, newStatus))
+	fmt.Fprintf(w, `<div class="text-dim">%d beads updated to %s</div>`, updated, template.HTMLEscapeString(newStatus))
+}
+
 func statusClassName(s string) string {
 	switch s {
 	case "open":

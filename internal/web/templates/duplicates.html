@@ -19,8 +19,13 @@
   </div>
 
   {{range .Groups}}
-  <section class="backlog-card" style="margin-bottom: 1rem;">
-    <h2><span class="badge">{{.Count}}x</span> {{.Key}}</h2>
+  <section class="backlog-card dup-group" style="margin-bottom: 1rem;">
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+      <h2><span class="badge">{{.Count}}x</span> {{.Key}}</h2>
+      {{if gt .Count 1}}
+      <button class="btn btn-xs" onclick="closeOlderDups(this)" data-dups="{{range $i, $iss := .Issues}}{{if $i}}{{lower $iss.Rig}}/{{$iss.ID}},{{end}}{{end}}">close older {{sub .Count 1}}</button>
+      {{end}}
+    </div>
     <div class="table-wrap">
     <table class="bead-table">
       <thead>
@@ -35,18 +40,18 @@
         </tr>
       </thead>
       <tbody>
-        {{range .Issues}}
+        {{range $i, $iss := .Issues}}
         <tr>
-          <td><span class="rig-label">{{rigName .Rig}}</span></td>
-          <td><a href="/bead/{{lower .Rig}}/{{.ID}}" hx-boost="true">{{.ID}}</a></td>
-          <td><span class="priority-badge p{{.Priority}}">P{{.Priority}}</span></td>
-          <td><span class="badge {{statusClass .Status}}">{{.Status}}</span></td>
-          <td>{{.Title}}</td>
-          <td class="text-dim">{{formatDate .CreatedAt}}</td>
+          <td><span class="rig-label">{{rigName $iss.Rig}}</span></td>
+          <td><a href="/bead/{{lower $iss.Rig}}/{{$iss.ID}}" hx-boost="true">{{$iss.ID}}</a></td>
+          <td><span class="priority-badge p{{$iss.Priority}}">P{{$iss.Priority}}</span></td>
+          <td><span class="badge {{statusClass $iss.Status}}">{{$iss.Status}}</span></td>
+          <td>{{$iss.Title}}{{if eq $i 0}} <span class="badge">newest</span>{{end}}</td>
+          <td class="text-dim">{{formatDate $iss.CreatedAt}}</td>
           <td class="triage-actions">
             <div class="triage-btn-group">
-              <button class="btn btn-xs" hx-post="/bead/{{lower .Rig}}/{{.ID}}/status" hx-vals='{"status":"closed"}' hx-swap="outerHTML" hx-target="closest tr" hx-confirm="Close duplicate {{.ID}}?">close</button>
-              <button class="btn btn-xs" hx-post="/bead/{{lower .Rig}}/{{.ID}}/status" hx-vals='{"status":"deferred"}' hx-swap="outerHTML" hx-target="closest tr" hx-confirm="Defer {{.ID}}?">defer</button>
+              <button class="btn btn-xs" hx-post="/bead/{{lower $iss.Rig}}/{{$iss.ID}}/status" hx-vals='{"status":"closed"}' hx-swap="outerHTML" hx-target="closest tr" hx-confirm="Close duplicate {{$iss.ID}}?">close</button>
+              <button class="btn btn-xs" hx-post="/bead/{{lower $iss.Rig}}/{{$iss.ID}}/status" hx-vals='{"status":"deferred"}' hx-swap="outerHTML" hx-target="closest tr" hx-confirm="Defer {{$iss.ID}}?">defer</button>
             </div>
           </td>
         </tr>
@@ -56,6 +61,23 @@
     </div>
   </section>
   {{end}}
+
+  <script>
+  function closeOlderDups(btn) {
+    var refs = btn.getAttribute('data-dups').split(',').filter(Boolean);
+    if (!refs.length) return;
+    if (!confirm('Close ' + refs.length + ' older duplicate(s)? The newest will be kept.')) return;
+    var form = new FormData();
+    form.append('status', 'closed');
+    refs.forEach(function(r) { form.append('ids[]', r); });
+    fetch('/batch/status', { method: 'POST', body: form })
+      .then(function(resp) { return resp.text(); })
+      .then(function() {
+        // Refresh the page to show updated state
+        htmx.ajax('GET', '/duplicates', {target:'#content', swap:'innerHTML'});
+      });
+  }
+  </script>
 
   {{end}}
 </div>

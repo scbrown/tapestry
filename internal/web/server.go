@@ -543,6 +543,12 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// POST /batch/status — bulk status update via HTMX
+	if r.Method == http.MethodPost && len(segments) == 2 && segments[0] == "batch" && segments[1] == "status" {
+		s.handleBatchStatus(w, r)
+		return
+	}
+
 	if r.Method != http.MethodGet {
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 		return

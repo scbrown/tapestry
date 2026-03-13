@@ -1249,6 +1249,58 @@ func TestBeadLabelAdd_InvalidChars(t *testing.T) {
 	}
 }
 
+func TestBatchStatus(t *testing.T) {
+	ds := &mockDataSource{}
+	srv := New(ds)
+
+	body := "status=closed&ids[]=beads_aegis/aegis-001&ids[]=beads_aegis/aegis-002"
+	req := httptest.NewRequest("POST", "/batch/status", strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
+	}
+	if !strings.Contains(w.Body.String(), "2 beads updated") {
+		t.Errorf("response should mention 2 beads updated, got: %s", w.Body.String())
+	}
+	trigger := w.Header().Get("HX-Trigger")
+	if !strings.Contains(trigger, "showToast") {
+		t.Errorf("missing HX-Trigger header, got: %s", trigger)
+	}
+}
+
+func TestBatchStatus_InvalidStatus(t *testing.T) {
+	ds := &mockDataSource{}
+	srv := New(ds)
+
+	body := "status=invalid&ids[]=beads_aegis/aegis-001"
+	req := httptest.NewRequest("POST", "/batch/status", strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("status = %d, want %d", w.Code, http.StatusBadRequest)
+	}
+}
+
+func TestBatchStatus_NoIds(t *testing.T) {
+	ds := &mockDataSource{}
+	srv := New(ds)
+
+	body := "status=closed"
+	req := httptest.NewRequest("POST", "/batch/status", strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("status = %d, want %d", w.Code, http.StatusBadRequest)
+	}
+}
+
 func TestParseDescriptionMetadata(t *testing.T) {
 	tests := []struct {
 		name      string
