@@ -43,12 +43,12 @@
       {{range .Entries}}
       <tr>
         <td><span class="rig-label">{{rigName .Rig}}</span></td>
-        <td><a href="/bead/{{.From.ID}}">{{.From.ID}}</a></td>
+        <td><a href="/bead/{{lower .Rig}}/{{.From.ID}}">{{.From.ID}}</a></td>
         <td class="title-cell">{{.From.Title}}</td>
         <td>{{statusBadge .From.Status}}</td>
         <td>{{priorityLabel .From.Priority}}</td>
         <td class="dep-arrow">&rarr;</td>
-        <td><a href="/bead/{{.To.ID}}">{{.To.ID}}</a></td>
+        <td><a href="/bead/{{lower .Rig}}/{{.To.ID}}">{{.To.ID}}</a></td>
         <td class="title-cell">{{.To.Title}}</td>
         <td>{{statusBadge .To.Status}}</td>
         <td>{{priorityLabel .To.Priority}}</td>

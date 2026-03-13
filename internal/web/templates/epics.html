@@ -12,7 +12,7 @@
     <tbody>
       {{range .Epics}}
       <tr{{if eq .Epic.Status "closed"}} class="epic-closed" style="display:none"{{end}}{{if eq .Epic.Status "tombstone"}} class="epic-closed" style="display:none"{{end}}>
-        <td><a href="/bead/{{.Epic.ID}}">{{.Epic.ID}}</a></td>
+        <td><a href="/bead/{{lower .Rig}}/{{.Epic.ID}}">{{.Epic.ID}}</a></td>
         <td>{{.Epic.Title}}</td>
         <td><span class="work-priority p{{.Epic.Priority}}">{{priorityLabel .Epic.Priority}}</span></td>
         <td>{{statusBadge .Epic.Status}}</td>
