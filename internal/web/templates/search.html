@@ -28,6 +28,7 @@
         <th>Status</th>
         <th>Assignee</th>
         <th>Updated</th>
+        <th>Actions</th>
       </tr>
     </thead>
     <tbody>
@@ -41,6 +42,13 @@
         <td>{{statusBadge .Status}}</td>
         <td title="{{.Assignee}}">{{shortActor .Assignee}}</td>
         <td>{{timeAgo .UpdatedAt}}</td>
+        <td class="actions-cell">
+          {{if eq .Status "open"}}
+          <button class="btn btn-xs" hx-post="/bead/{{lower .Rig}}/{{.ID}}/status" hx-vals='{"status":"closed"}' hx-swap="outerHTML" hx-target="closest tr" hx-confirm="Close {{.ID}}?">close</button>
+          {{else if eq .Status "closed"}}
+          <button class="btn btn-xs" hx-post="/bead/{{lower .Rig}}/{{.ID}}/status" hx-vals='{"status":"open"}' hx-swap="outerHTML" hx-target="closest tr" hx-confirm="Reopen {{.ID}}?">reopen</button>
+          {{end}}
+        </td>
       </tr>
       {{end}}
     </tbody>
