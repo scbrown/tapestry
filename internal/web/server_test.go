@@ -152,6 +152,10 @@ func (m *mockDataSource) AddLabel(_ context.Context, _, _, _ string) error {
 	return m.err
 }
 
+func (m *mockDataSource) RemoveLabel(_ context.Context, _, _, _ string) error {
+	return m.err
+}
+
 func (m *mockDataSource) ThemeParks(_ context.Context, _ string) ([]dolt.ThemePark, error) {
 	return nil, m.err
 }
@@ -1250,6 +1254,37 @@ func TestBeadLabelAdd_InvalidChars(t *testing.T) {
 	srv := New(ds)
 
 	req := httptest.NewRequest("POST", "/bead/beads_aegis/aegis-200/label", strings.NewReader("label=bad+label"))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("status = %d, want %d", w.Code, http.StatusBadRequest)
+	}
+}
+
+func TestBeadLabelRemove(t *testing.T) {
+	ds := &mockDataSource{}
+	srv := New(ds)
+
+	req := httptest.NewRequest("POST", "/bead/beads_aegis/aegis-200/label/remove", strings.NewReader("label=bug"))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("status = %d, want %d", w.Code, http.StatusOK)
+	}
+	if w.Header().Get("HX-Trigger") == "" {
+		t.Error("expected HX-Trigger header")
+	}
+}
+
+func TestBeadLabelRemove_Empty(t *testing.T) {
+	ds := &mockDataSource{}
+	srv := New(ds)
+
+	req := httptest.NewRequest("POST", "/bead/beads_aegis/aegis-200/label/remove", strings.NewReader("label="))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	w := httptest.NewRecorder()
 	srv.ServeHTTP(w, req)

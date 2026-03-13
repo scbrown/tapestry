@@ -1438,6 +1438,11 @@ h1:hover .bead-title-edit { opacity: 1; }
 .toast.toast-show { opacity: 1; transform: translateX(0); }
 .toast.toast-error { border-left-color: var(--danger); }
 
+/* Label management */
+.label-removable { display: inline-flex; align-items: center; gap: 0; }
+.label-remove-btn { display: none; background: none; border: none; color: var(--danger); cursor: pointer; font-size: 0.85rem; padding: 0 0.15rem; line-height: 1; }
+.label-removable:hover .label-remove-btn { display: inline; }
+
 /* Batch operations bar */
 .batch-bar { display: flex; align-items: center; gap: 0.5rem; padding: 0.4rem 0.75rem; background: var(--surface); border-radius: var(--radius); margin-bottom: 0.5rem; }
 .batch-count { font-size: 0.85rem; color: var(--purple); font-weight: bold; }

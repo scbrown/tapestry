@@ -1363,6 +1363,30 @@ func (s *Server) handleBeadLabelAdd(w http.ResponseWriter, r *http.Request, data
 		template.HTMLEscapeString(label), template.HTMLEscapeString(label))
 }
 
+func (s *Server) handleBeadLabelRemove(w http.ResponseWriter, r *http.Request, database, id string) {
+	if s.ds == nil {
+		http.Error(w, "no database", http.StatusServiceUnavailable)
+		return
+	}
+
+	label := strings.TrimSpace(r.FormValue("label"))
+	if label == "" {
+		http.Error(w, "label required", http.StatusBadRequest)
+		return
+	}
+
+	if err := s.ds.RemoveLabel(r.Context(), database, id, label); err != nil {
+		log.Printf("bead label remove: %v", err)
+		http.Error(w, "failed to remove label", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.Header().Set("HX-Trigger", fmt.Sprintf(`{"showToast":"Label '%s' removed"}`, template.HTMLEscapeString(label)))
+	// Return empty string — the label badge is removed from DOM
+	w.WriteHeader(http.StatusOK)
+}
+
 func (s *Server) handleBeadDescriptionUpdate(w http.ResponseWriter, r *http.Request, database, id string) {
 	if s.ds == nil {
 		http.Error(w, "no database", http.StatusServiceUnavailable)
