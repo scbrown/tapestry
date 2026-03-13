@@ -2735,3 +2735,100 @@ func TestCycleTimePage_NoClosedBeads(t *testing.T) {
 		t.Error("expected 'No closed beads' message when no closed issues")
 	}
 }
+
+func TestQueuePage_NilDataSource(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/queue", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /queue status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Work Queue") {
+		t.Error("expected 'Work Queue' heading")
+	}
+}
+
+func TestQueuePage_WithData(t *testing.T) {
+	now := time.Now()
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issues: []dolt.Issue{
+			{ID: "q1", Title: "Urgent P0", Status: "open", Priority: 0, Type: "bug", CreatedAt: now.Add(-48 * time.Hour), UpdatedAt: now},
+			{ID: "q2", Title: "Normal task", Status: "open", Priority: 2, Type: "task", CreatedAt: now.Add(-24 * time.Hour), UpdatedAt: now},
+			{ID: "q3", Title: "In progress", Status: "in_progress", Priority: 1, CreatedAt: now, UpdatedAt: now},
+			{ID: "q4", Title: "Closed one", Status: "closed", Priority: 1, CreatedAt: now, UpdatedAt: now},
+		},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/queue", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /queue status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Urgent P0") {
+		t.Error("expected open P0 'Urgent P0' in queue")
+	}
+	if !strings.Contains(body, "Normal task") {
+		t.Error("expected open P2 'Normal task' in queue")
+	}
+	if strings.Contains(body, "In progress") {
+		t.Error("in_progress items should not appear in queue")
+	}
+	if strings.Contains(body, "Closed one") {
+		t.Error("closed items should not appear in queue")
+	}
+}
+
+func TestQueuePage_Empty(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issues:    []dolt.Issue{},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/queue", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /queue status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "No unblocked work") {
+		t.Error("expected empty queue message")
+	}
+}
+
+func TestQueuePage_HTMX(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issues: []dolt.Issue{
+			{ID: "q1", Title: "Task", Status: "open", Priority: 1, CreatedAt: time.Now(), UpdatedAt: time.Now()},
+		},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/queue", nil)
+	req.Header.Set("HX-Request", "true")
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("HTMX GET /queue status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if strings.Contains(body, "<!DOCTYPE html>") {
+		t.Error("HTMX queue should return partial, not full page")
+	}
+}

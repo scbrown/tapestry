@@ -242,6 +242,9 @@ var funcMap = template.FuncMap{
 	"lower": func(s string) string {
 		return strings.ToLower(s)
 	},
+	"add1": func(i int) int {
+		return i + 1
+	},
 }
 
 // Option configures the server.
@@ -445,6 +448,10 @@ func (s *Server) parseTemplates() {
 			template.New("").Funcs(funcMap).ParseFS(templateFS,
 				"templates/layout.html", "templates/cycle-time.html"),
 		),
+		"queue": template.Must(
+			template.New("").Funcs(funcMap).ParseFS(templateFS,
+				"templates/layout.html", "templates/queue.html"),
+		),
 	}
 }
 
@@ -572,6 +579,8 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		s.handleTrends(w, r)
 	case len(segments) == 1 && segments[0] == "cycle-time":
 		s.handleCycleTime(w, r)
+	case len(segments) == 1 && segments[0] == "queue":
+		s.handleQueue(w, r)
 	case len(segments) == 1 && segments[0] == "heatmap":
 		s.handleHeatmap(w, r)
 	case len(segments) == 1 && segments[0] == "homelab":

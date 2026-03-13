@@ -1,0 +1,54 @@
+{{define "title"}}Work Queue{{end}}
+{{define "content"}}
+<div class="backlog-page" hx-get="/queue" hx-trigger="every 60s" hx-select=".backlog-page" hx-swap="outerHTML">
+  <h1>Work Queue <time class="text-dim">{{.GeneratedAt.Format "Jan 02, 2006 15:04"}}</time></h1>
+
+  {{if eq .TotalReady 0}}
+  <p class="empty">No unblocked work in the queue.</p>
+  {{else}}
+
+  <div class="backlog-stats">
+    <div class="stat">
+      <span class="stat-value">{{.TotalReady}}</span>
+      <span class="stat-label">Ready beads</span>
+    </div>
+    {{range $p, $count := .ByPriority}}
+    <div class="stat">
+      <span class="stat-value"><span class="priority-badge p{{$p}}">P{{$p}}</span> {{$count}}</span>
+      <span class="stat-label">&nbsp;</span>
+    </div>
+    {{end}}
+  </div>
+
+  <div class="table-wrap">
+  <table class="bead-table">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>ID</th>
+        <th>Priority</th>
+        <th>Type</th>
+        <th>Title</th>
+        <th>Age</th>
+        <th>Assignee</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{range $i, $item := .Items}}
+      <tr>
+        <td class="text-dim">{{add1 $i}}</td>
+        <td><a href="/bead/{{$item.Issue.ID}}">{{$item.Issue.ID}}</a></td>
+        <td><span class="priority-badge p{{$item.Issue.Priority}}">P{{$item.Issue.Priority}}</span></td>
+        <td>{{if $item.Issue.Type}}<span class="badge">{{$item.Issue.Type}}</span>{{else}}—{{end}}</td>
+        <td>{{$item.Issue.Title}}</td>
+        <td>{{$item.AgeDays}}d</td>
+        <td>{{if $item.Issue.Assignee}}<a href="/agent/{{$item.Issue.Assignee}}">{{shortActor $item.Issue.Assignee}}</a>{{else}}<em>unassigned</em>{{end}}</td>
+      </tr>
+      {{end}}
+    </tbody>
+  </table>
+  </div>
+
+  {{end}}
+</div>
+{{end}}
