@@ -460,6 +460,10 @@ func (s *Server) parseTemplates() {
 			template.New("").Funcs(funcMap).ParseFS(templateFS,
 				"templates/layout.html", "templates/watchlist.html"),
 		),
+		"flow-rate": template.Must(
+			template.New("").Funcs(funcMap).ParseFS(templateFS,
+				"templates/layout.html", "templates/flow-rate.html"),
+		),
 	}
 }
 
@@ -593,6 +597,8 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		s.handleDuplicates(w, r)
 	case len(segments) == 1 && segments[0] == "watchlist":
 		s.handleWatchlist(w, r)
+	case len(segments) == 1 && segments[0] == "flow-rate":
+		s.handleFlowRate(w, r)
 	case len(segments) == 1 && segments[0] == "heatmap":
 		s.handleHeatmap(w, r)
 	case len(segments) == 1 && segments[0] == "homelab":

@@ -1,0 +1,65 @@
+{{define "title"}}Flow Rate{{end}}
+{{define "content"}}
+<div class="backlog-page" hx-get="/flow-rate" hx-trigger="every 120s" hx-select=".backlog-page" hx-swap="outerHTML">
+  <h1>Flow Rate (30 Days) <time class="text-dim">{{.GeneratedAt.Format "Jan 02, 2006 15:04"}}</time></h1>
+
+  <div class="backlog-stats">
+    <div class="stat">
+      <span class="stat-value">{{.TotalCreated}}</span>
+      <span class="stat-label">Created</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value">{{.TotalClosed}}</span>
+      <span class="stat-label">Closed</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value{{if gt .NetChange 0}} warn{{end}}">{{if gt .NetChange 0}}+{{end}}{{.NetChange}}</span>
+      <span class="stat-label">Net change</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value">{{printf "%.1f" .AvgDailyCreate}}</span>
+      <span class="stat-label">Avg/day in</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value">{{printf "%.1f" .AvgDailyClose}}</span>
+      <span class="stat-label">Avg/day out</span>
+    </div>
+  </div>
+
+  {{if .Days}}
+  <section class="backlog-card">
+    <h2>Daily Created vs Closed</h2>
+    <div class="table-wrap">
+    <table class="bead-table">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Created</th>
+          <th>Closed</th>
+          <th>Net</th>
+          <th style="width: 40%;">Flow</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{range .Days}}
+        <tr>
+          <td class="text-dim">{{.Date}}</td>
+          <td>{{if .Created}}{{.Created}}{{else}}—{{end}}</td>
+          <td>{{if .Closed}}{{.Closed}}{{else}}—{{end}}</td>
+          <td{{if gt .Net 0}} class="warn"{{end}}>{{if gt .Net 0}}+{{end}}{{.Net}}</td>
+          <td>
+            {{if $.MaxDaily}}
+            <span style="display:inline-block;background:#50fa7b;height:12px;width:{{printf "%.0f" (divf (mulf (itof .Closed) 100.0) (itof $.MaxDaily))}}%;margin-right:2px;" title="{{.Closed}} closed"></span>
+            <span style="display:inline-block;background:#ff5555;height:12px;width:{{printf "%.0f" (divf (mulf (itof .Created) 100.0) (itof $.MaxDaily))}}%;" title="{{.Created}} created"></span>
+            {{end}}
+          </td>
+        </tr>
+        {{end}}
+      </tbody>
+    </table>
+    </div>
+  </section>
+  {{end}}
+
+</div>
+{{end}}

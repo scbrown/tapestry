@@ -2979,3 +2979,68 @@ func TestWatchlistPage_AllClear(t *testing.T) {
 		t.Error("expected 'All clear' message when no P0/P1 beads")
 	}
 }
+
+func TestFlowRatePage_NilDataSource(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/flow-rate", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /flow-rate status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Flow Rate") {
+		t.Error("expected 'Flow Rate' heading")
+	}
+}
+
+func TestFlowRatePage_WithData(t *testing.T) {
+	now := time.Now()
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issues: []dolt.Issue{
+			{ID: "f1", Title: "Created today", Status: "open", Priority: 1, CreatedAt: now, UpdatedAt: now},
+			{ID: "f2", Title: "Created yesterday", Status: "open", Priority: 2, CreatedAt: now.Add(-24 * time.Hour), UpdatedAt: now},
+			{ID: "f3", Title: "Closed today", Status: "closed", Priority: 1, CreatedAt: now.Add(-48 * time.Hour), UpdatedAt: now},
+		},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/flow-rate", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /flow-rate status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Created") {
+		t.Error("expected 'Created' stat")
+	}
+	if !strings.Contains(body, "Closed") {
+		t.Error("expected 'Closed' stat")
+	}
+	if !strings.Contains(body, "Net change") {
+		t.Error("expected 'Net change' stat")
+	}
+}
+
+func TestFlowRatePage_HTMX(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/flow-rate", nil)
+	req.Header.Set("HX-Request", "true")
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("HTMX GET /flow-rate status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if strings.Contains(body, "<!DOCTYPE html>") {
+		t.Error("HTMX flow-rate should return partial, not full page")
+	}
+}
