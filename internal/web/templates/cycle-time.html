@@ -106,7 +106,7 @@
       <ul class="briefing-list">
         {{range .Fastest}}
         <li>
-          <a href="/bead/{{.Issue.ID}}">{{.Issue.ID}}</a>
+          <a href="/bead/{{lower .Issue.Rig}}/{{.Issue.ID}}">{{.Issue.ID}}</a>
           <span class="priority-badge p{{.Issue.Priority}}">P{{.Issue.Priority}}</span>
           {{.Issue.Title}}
           <span class="stale-age">{{printf "%.1f" .CycleDays}}d</span>
@@ -120,7 +120,7 @@
       <ul class="briefing-list">
         {{range .Slowest}}
         <li>
-          <a href="/bead/{{.Issue.ID}}">{{.Issue.ID}}</a>
+          <a href="/bead/{{lower .Issue.Rig}}/{{.Issue.ID}}">{{.Issue.ID}}</a>
           <span class="priority-badge p{{.Issue.Priority}}">P{{.Issue.Priority}}</span>
           {{.Issue.Title}}
           <span class="stale-age warn">{{printf "%.1f" .CycleDays}}d</span>

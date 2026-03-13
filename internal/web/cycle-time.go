@@ -100,11 +100,12 @@ func (s *Server) handleCycleTime(w http.ResponseWriter, r *http.Request) {
 
 	// Compute cycle times
 	var items []cycleTimeItem
-	for _, r := range results {
+	for i, r := range results {
 		for _, iss := range r.issues {
 			if iss.UpdatedAt.IsZero() || iss.CreatedAt.IsZero() {
 				continue
 			}
+			iss.Rig = dbs[i].Name
 			days := iss.UpdatedAt.Sub(iss.CreatedAt).Hours() / 24
 			if days < 0 {
 				days = 0

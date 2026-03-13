@@ -167,7 +167,7 @@
             {{range .Children}}
             <div class="child-row">
                 <span class="badge {{statusClass .Status}}">{{.Status}}</span>
-                <a href="/bead/{{.ID}}" hx-get="/bead/{{.ID}}" hx-target="#content" hx-push-url="true">{{.ID}}</a>
+                <a href="/bead/{{$.Database}}/{{.ID}}" hx-get="/bead/{{$.Database}}/{{.ID}}" hx-target="#content" hx-push-url="true">{{.ID}}</a>
                 <span class="child-title">{{.Title}}</span>
             </div>
             {{end}}

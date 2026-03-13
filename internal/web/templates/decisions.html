@@ -34,7 +34,7 @@
     {{range .Decisions}}
     <div class="decision-card {{.State}}" id="decision-{{.Issue.ID}}">
       <div class="decision-header">
-        <h3><a href="/bead/{{.Issue.ID}}">{{.Issue.Title}}</a></h3>
+        <h3><a href="/bead/{{lower .RigName}}/{{.Issue.ID}}">{{.Issue.Title}}</a></h3>
         <span class="decision-state {{.State}}">{{.State}}</span>
       </div>
 
