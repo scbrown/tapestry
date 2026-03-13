@@ -39,7 +39,7 @@
     <h2>Closed <span class="text-dim">({{.TotalClosed}})</span></h2>
     {{if .ClosedItems}}
     <table class="data-table">
-      <thead><tr><th>ID</th><th>P</th><th>Title</th><th>Agent</th><th>Rig</th></tr></thead>
+      <thead><tr><th>ID</th><th>P</th><th>Title</th><th>Agent</th><th>Rig</th><th></th></tr></thead>
       <tbody>
         {{range .ClosedItems}}
         <tr>
@@ -48,6 +48,7 @@
           <td>{{.Issue.Title}}</td>
           <td class="text-dim">{{shortActor .Issue.Assignee}}</td>
           <td class="text-dim">{{.Rig}}</td>
+          <td class="actions-cell"><button class="btn btn-xs" hx-post="/bead/{{lower .Rig}}/{{.Issue.ID}}/status" hx-vals='{"status":"open"}' hx-swap="outerHTML" hx-target="closest tr" hx-confirm="Reopen {{.Issue.ID}}?">reopen</button></td>
         </tr>
         {{end}}
       </tbody>
@@ -62,7 +63,7 @@
     <h2>Created <span class="text-dim">({{.TotalCreated}})</span></h2>
     {{if .CreatedItems}}
     <table class="data-table">
-      <thead><tr><th>ID</th><th>P</th><th>Title</th><th>Status</th><th>Owner</th><th>Rig</th></tr></thead>
+      <thead><tr><th>ID</th><th>P</th><th>Title</th><th>Status</th><th>Owner</th><th>Rig</th><th>Actions</th></tr></thead>
       <tbody>
         {{range .CreatedItems}}
         <tr>
@@ -72,6 +73,12 @@
           <td>{{statusBadge .Issue.Status}}</td>
           <td class="text-dim">{{shortActor .Issue.Owner}}</td>
           <td class="text-dim">{{.Rig}}</td>
+          <td class="actions-cell">
+            {{if eq .Issue.Status "open"}}
+            <button class="btn btn-xs" hx-post="/bead/{{lower .Rig}}/{{.Issue.ID}}/status" hx-vals='{"status":"closed"}' hx-swap="outerHTML" hx-target="closest tr" hx-confirm="Close {{.Issue.ID}}?">close</button>
+            <button class="btn btn-xs" hx-post="/bead/{{lower .Rig}}/{{.Issue.ID}}/status" hx-vals='{"status":"deferred"}' hx-swap="outerHTML" hx-target="closest tr" hx-confirm="Defer {{.Issue.ID}}?">defer</button>
+            {{end}}
+          </td>
         </tr>
         {{end}}
       </tbody>
