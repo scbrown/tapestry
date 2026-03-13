@@ -1,0 +1,98 @@
+{{define "title"}}Inventory{{end}}
+{{define "content"}}
+<div class="backlog-page" hx-get="/inventory" hx-trigger="every 120s" hx-select=".backlog-page" hx-swap="outerHTML">
+  <h1>Bead Inventory <time class="text-dim">{{.GeneratedAt.Format "Jan 02, 2006 15:04"}}</time></h1>
+
+  <div class="backlog-stats">
+    <div class="stat">
+      <span class="stat-value accent">{{.TotalBeads}}</span>
+      <span class="stat-label">Total Beads</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value">{{.RigCount}}</span>
+      <span class="stat-label">Rigs</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value">{{len .ByStatus}}</span>
+      <span class="stat-label">Statuses</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value">{{len .ByType}}</span>
+      <span class="stat-label">Types</span>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1.5rem;">
+
+  {{if .ByStatus}}
+  <section class="backlog-card">
+    <h2>By Status</h2>
+    <div class="table-wrap">
+    <table class="bead-table">
+      <thead><tr><th>Status</th><th>Count</th><th></th></tr></thead>
+      <tbody>
+        {{range .ByStatus}}
+        <tr>
+          <td>{{statusBadge .Status}}</td>
+          <td>{{.Count}}</td>
+          <td>
+            {{if $.TotalBeads}}
+            <span style="display:inline-block;background:var(--cyan);height:10px;width:{{printf "%.0f" (divf (mulf (itof .Count) 100.0) (itof $.TotalBeads))}}%;"></span>
+            {{end}}
+          </td>
+        </tr>
+        {{end}}
+      </tbody>
+    </table>
+    </div>
+  </section>
+  {{end}}
+
+  {{if .ByType}}
+  <section class="backlog-card">
+    <h2>By Type</h2>
+    <div class="table-wrap">
+    <table class="bead-table">
+      <thead><tr><th>Type</th><th>Count</th><th></th></tr></thead>
+      <tbody>
+        {{range .ByType}}
+        <tr>
+          <td>{{.Type}}</td>
+          <td>{{.Count}}</td>
+          <td>
+            {{if $.TotalBeads}}
+            <span style="display:inline-block;background:var(--green);height:10px;width:{{printf "%.0f" (divf (mulf (itof .Count) 100.0) (itof $.TotalBeads))}}%;"></span>
+            {{end}}
+          </td>
+        </tr>
+        {{end}}
+      </tbody>
+    </table>
+    </div>
+  </section>
+  {{end}}
+
+  {{if .ByRig}}
+  <section class="backlog-card">
+    <h2>By Rig</h2>
+    <div class="table-wrap">
+    <table class="bead-table">
+      <thead><tr><th>Rig</th><th>Total</th><th>Open</th><th>Closed</th></tr></thead>
+      <tbody>
+        {{range .ByRig}}
+        <tr>
+          <td>{{rigName .Rig}}</td>
+          <td>{{.Total}}</td>
+          <td>{{.Open}}</td>
+          <td>{{.Closed}}</td>
+        </tr>
+        {{end}}
+      </tbody>
+    </table>
+    </div>
+  </section>
+  {{end}}
+
+  </div>
+</div>
+{{end}}

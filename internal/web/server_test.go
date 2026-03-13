@@ -3186,3 +3186,68 @@ func TestTriagePage_AllAssigned(t *testing.T) {
 		t.Error("expected empty state message")
 	}
 }
+
+func TestInventoryPage_NilDataSource(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/inventory", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /inventory status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Bead Inventory") {
+		t.Error("expected 'Bead Inventory' heading")
+	}
+}
+
+func TestInventoryPage_WithData(t *testing.T) {
+	now := time.Now()
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issues: []dolt.Issue{
+			{ID: "i1", Title: "Open bug", Status: "open", Priority: 2, Type: "bug", CreatedAt: now, UpdatedAt: now},
+			{ID: "i2", Title: "Closed task", Status: "closed", Priority: 1, Type: "task", CreatedAt: now, UpdatedAt: now},
+			{ID: "i3", Title: "In progress", Status: "in_progress", Priority: 1, Type: "task", CreatedAt: now, UpdatedAt: now},
+		},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/inventory", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /inventory status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "By Status") {
+		t.Error("expected 'By Status' section")
+	}
+	if !strings.Contains(body, "By Type") {
+		t.Error("expected 'By Type' section")
+	}
+	if !strings.Contains(body, "By Rig") {
+		t.Error("expected 'By Rig' section")
+	}
+}
+
+func TestInventoryPage_HTMX(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/inventory", nil)
+	req.Header.Set("HX-Request", "true")
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("HTMX GET /inventory status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if strings.Contains(body, "<!DOCTYPE html>") {
+		t.Error("HTMX inventory should return partial, not full page")
+	}
+}

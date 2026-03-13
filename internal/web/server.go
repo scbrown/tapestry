@@ -473,6 +473,10 @@ func (s *Server) parseTemplates() {
 			template.New("").Funcs(funcMap).ParseFS(templateFS,
 				"templates/layout.html", "templates/triage.html"),
 		),
+		"inventory": template.Must(
+			template.New("").Funcs(funcMap).ParseFS(templateFS,
+				"templates/layout.html", "templates/inventory.html"),
+		),
 	}
 }
 
@@ -612,6 +616,8 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		s.handleComments(w, r)
 	case len(segments) == 1 && segments[0] == "triage":
 		s.handleTriage(w, r)
+	case len(segments) == 1 && segments[0] == "inventory":
+		s.handleInventory(w, r)
 	case len(segments) == 1 && segments[0] == "heatmap":
 		s.handleHeatmap(w, r)
 	case len(segments) == 1 && segments[0] == "homelab":
