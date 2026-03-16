@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"fmt"
 	"strings"
-	"sync"
 	"time"
 
 	_ "github.com/go-sql-driver/mysql"
@@ -29,23 +28,11 @@ func (r *Rows) Close() error {
 	return connErr
 }
 
-// countCacheEntry holds a cached CountByStatus result for one database.
-type countCacheEntry struct {
-	counts map[string]int
-	expiry time.Time
-}
-
-// countCacheTTL controls how long cached CountByStatus results are valid.
-const countCacheTTL = 30 * time.Second
-
 // Client manages a connection pool to a Dolt server and provides
 // typed query methods for beads databases.
 type Client struct {
 	db  *sql.DB
 	cfg Config
-
-	countMu    sync.Mutex
-	countCache map[string]countCacheEntry // keyed by database name
 }
 
 // New opens a connection pool to the Dolt server described by cfg.
