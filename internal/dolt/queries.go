@@ -122,7 +122,24 @@ func (c *Client) Diff(ctx context.Context, database, table, from, to string) ([]
 }
 
 // CountByStatus returns a map of status -> count for issues in the database.
+// Results are cached with a short TTL to prevent concurrent queries from
+// piling up on the Dolt server under multi-agent load.
 func (c *Client) CountByStatus(ctx context.Context, database string) (map[string]int, error) {
+	// Check cache first.
+	c.countMu.Lock()
+	if c.countCache != nil {
+		if entry, ok := c.countCache[database]; ok && time.Now().Before(entry.expiry) {
+			// Return a copy to avoid data races on the map.
+			result := make(map[string]int, len(entry.counts))
+			for k, v := range entry.counts {
+				result[k] = v
+			}
+			c.countMu.Unlock()
+			return result, nil
+		}
+	}
+	c.countMu.Unlock()
+
 	query := "SELECT status, COUNT(*) FROM issues " +
 		"WHERE issue_type IN ('task','bug','epic') GROUP BY status"
 	rows, err := c.queryDB(ctx, database, query)
@@ -140,7 +157,27 @@ func (c *Client) CountByStatus(ctx context.Context, database string) (map[string
 		}
 		counts[status] = count
 	}
-	return counts, rows.Err()
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	// Cache the result.
+	c.countMu.Lock()
+	if c.countCache == nil {
+		c.countCache = make(map[string]countCacheEntry)
+	}
+	c.countCache[database] = countCacheEntry{
+		counts: counts,
+		expiry: time.Now().Add(countCacheTTL),
+	}
+	c.countMu.Unlock()
+
+	// Return a copy.
+	result := make(map[string]int, len(counts))
+	for k, v := range counts {
+		result[k] = v
+	}
+	return result, nil
 }
 
 // CountByPriorityStatus returns issue counts grouped by priority and status.
