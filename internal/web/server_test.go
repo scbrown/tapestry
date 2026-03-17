@@ -6951,3 +6951,115 @@ func TestMomentumPage_SignalColors(t *testing.T) {
 		t.Error("expected momentum-signal cards")
 	}
 }
+
+// ── Risks Page Tests ──
+
+func TestRisksPage_NilDataSource(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/risks", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /risks status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Risk Radar") {
+		t.Error("expected 'Risk Radar' heading")
+	}
+}
+
+func TestRisksPage_WithData(t *testing.T) {
+	staleTime := time.Now().Add(-15 * 24 * time.Hour) // 15 days ago
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issues: []dolt.Issue{
+			{ID: "r1", Title: "Critical stale P0", Status: "open", Priority: 0, CreatedAt: staleTime, UpdatedAt: staleTime},
+			{ID: "r2", Title: "Warning stale P1", Status: "in_progress", Priority: 1, Assignee: "someone", CreatedAt: staleTime, UpdatedAt: staleTime},
+			{ID: "r3", Title: "Blocked too long", Status: "blocked", Priority: 2, CreatedAt: staleTime, UpdatedAt: staleTime},
+			{ID: "r4", Title: "Fresh item", Status: "open", Priority: 1, CreatedAt: time.Now(), UpdatedAt: time.Now()},
+		},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/risks", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /risks status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Critical stale P0") {
+		t.Error("expected critical stale P0 item")
+	}
+	if !strings.Contains(body, "CRIT") {
+		t.Error("expected CRIT severity badge")
+	}
+	if !strings.Contains(body, "Blocked too long") {
+		t.Error("expected blocked item as risk")
+	}
+}
+
+func TestRisksPage_RigFilter(t *testing.T) {
+	staleTime := time.Now().Add(-10 * 24 * time.Hour)
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}, {Name: "beads_hq"}},
+		issues: []dolt.Issue{
+			{ID: "rf1", Title: "Stale P1", Status: "open", Priority: 1, CreatedAt: staleTime, UpdatedAt: staleTime},
+		},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/risks?rig=beads_aegis", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "filter-active") {
+		t.Error("expected filter-active badge for rig filter")
+	}
+	if !strings.Contains(body, `rig=beads_aegis`) {
+		t.Error("expected rig filter preserved in auto-refresh URL")
+	}
+}
+
+func TestRisksPage_AutoRefresh(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/risks", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	body := w.Body.String()
+	if !strings.Contains(body, `hx-trigger="every 120s"`) {
+		t.Error("expected 120s auto-refresh on risks page")
+	}
+}
+
+func TestRisksPage_QuickActions(t *testing.T) {
+	staleTime := time.Now().Add(-10 * 24 * time.Hour)
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issues: []dolt.Issue{
+			{ID: "rq1", Title: "Stale P0", Status: "open", Priority: 0, CreatedAt: staleTime, UpdatedAt: staleTime},
+		},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/risks", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	body := w.Body.String()
+	if !strings.Contains(body, "hx-post=") {
+		t.Error("expected HTMX quick actions on risks page")
+	}
+}

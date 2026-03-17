@@ -1,0 +1,94 @@
+{{define "title"}}Risks{{end}}
+{{define "content"}}
+<div class="risks-page" hx-get="/risks{{if .FilterRig}}?rig={{.FilterRig}}{{end}}" hx-trigger="every 120s" hx-select=".risks-page" hx-swap="outerHTML">
+  <h1>Risk Radar <time class="text-dim">{{formatDateTime .GeneratedAt}}</time></h1>
+
+  {{if .Err}}
+  <div class="error">{{.Err}}</div>
+  {{else}}
+
+  {{if gt (len .Rigs) 1}}
+  <div class="dep-filters" style="margin-bottom:0.75rem">
+    <a href="/risks" class="badge {{if not .FilterRig}}filter-active{{end}}">All rigs</a>
+    {{range .Rigs}}
+    <a href="/risks?rig={{.}}" class="badge {{if eq . $.FilterRig}}filter-active{{end}}">{{rigName .}}</a>
+    {{end}}
+  </div>
+  {{end}}
+
+  <div class="stat-grid">
+    <div class="stat">
+      <span class="stat-value" style="color:#ff5555">{{.Critical}}</span>
+      <span class="stat-label">Critical</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value" style="color:#ffb86c">{{.Warning}}</span>
+      <span class="stat-label">Warning</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value" style="color:#8be9fd">{{.Info}}</span>
+      <span class="stat-label">Info</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value">{{len .Items}}</span>
+      <span class="stat-label">Total risks</span>
+    </div>
+  </div>
+
+  {{if .Items}}
+  <div class="table-wrap" style="margin-top:1rem">
+  <table class="bead-table">
+    <thead>
+      <tr>
+        <th>Sev</th>
+        <th>Rig</th>
+        <th>ID</th>
+        <th>Pri</th>
+        <th>Title</th>
+        <th>Status</th>
+        <th>Assignee</th>
+        <th>Age</th>
+        <th>Risk</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{range .Items}}
+      <tr class="risk-{{.Severity}}">
+        <td>
+          {{if eq .Severity "critical"}}<span class="badge" style="background:#ff5555;color:#282a36">CRIT</span>
+          {{else if eq .Severity "warning"}}<span class="badge" style="background:#ffb86c;color:#282a36">WARN</span>
+          {{else}}<span class="badge" style="background:#8be9fd;color:#282a36">INFO</span>{{end}}
+        </td>
+        <td><span class="rig-label">{{rigName .Rig}}</span></td>
+        <td><a href="/bead/{{lower .Rig}}/{{.Issue.ID}}" hx-boost="true">{{.Issue.ID}}</a></td>
+        <td><span class="priority-badge p{{.Issue.Priority}}">P{{.Issue.Priority}}</span></td>
+        <td>{{.Issue.Title}}</td>
+        <td>{{statusBadge .Issue.Status}}</td>
+        <td>{{if .Issue.Assignee}}{{shortActor .Issue.Assignee}}{{else}}<em class="text-dim">none</em>{{end}}</td>
+        <td>{{.AgeDays}}d</td>
+        <td class="text-dim">{{.Reason}}</td>
+        <td class="triage-actions">
+          <div class="triage-btn-group">
+            <button class="btn btn-xs" hx-post="/bead/{{lower .Rig}}/{{.Issue.ID}}/status" hx-vals='{"status":"closed"}' hx-swap="outerHTML" hx-target="closest tr" hx-confirm="Close {{.Issue.ID}}?">close</button>
+            <button class="btn btn-xs" hx-post="/bead/{{lower .Rig}}/{{.Issue.ID}}/status" hx-vals='{"status":"deferred"}' hx-swap="outerHTML" hx-target="closest tr" hx-confirm="Defer {{.Issue.ID}}?">defer</button>
+          </div>
+        </td>
+      </tr>
+      {{end}}
+    </tbody>
+  </table>
+  </div>
+  {{else}}
+  <p class="empty" style="margin-top:1rem">No risks detected. Everything looks healthy.</p>
+  {{end}}
+
+  {{end}}
+</div>
+
+<style>
+.risk-critical { border-left: 3px solid #ff5555; }
+.risk-warning { border-left: 3px solid #ffb86c; }
+.risk-info { border-left: 3px solid #8be9fd; }
+</style>
+{{end}}
