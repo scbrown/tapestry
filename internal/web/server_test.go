@@ -7469,3 +7469,103 @@ func TestSnapshotPage_AutoRefresh(t *testing.T) {
 		t.Error("expected 60s auto-refresh on snapshot page")
 	}
 }
+
+// ── Assignments tests ──
+
+func TestAssignmentsPage_WithData(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issues: []dolt.Issue{
+			{ID: "a1", Title: "Task for alice", Status: "in_progress", Priority: 1, Assignee: "alice", CreatedAt: time.Now().Add(-5 * 24 * time.Hour), UpdatedAt: time.Now()},
+			{ID: "a2", Title: "Task for bob", Status: "open", Priority: 2, Assignee: "bob", CreatedAt: time.Now().Add(-3 * 24 * time.Hour), UpdatedAt: time.Now()},
+			{ID: "a3", Title: "Unassigned task", Status: "open", Priority: 0, CreatedAt: time.Now().Add(-10 * 24 * time.Hour), UpdatedAt: time.Now()},
+		},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/assignments", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /assignments status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Assignments") {
+		t.Error("expected 'Assignments' heading")
+	}
+	if !strings.Contains(body, "alice") {
+		t.Error("expected agent 'alice'")
+	}
+	if !strings.Contains(body, "bob") {
+		t.Error("expected agent 'bob'")
+	}
+	if !strings.Contains(body, "Unassigned") {
+		t.Error("expected Unassigned section")
+	}
+}
+
+func TestAssignmentsPage_NilDS(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/assignments", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /assignments nil ds status = %d, want %d", w.Code, http.StatusOK)
+	}
+}
+
+func TestAssignmentsPage_RigFilter(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issues: []dolt.Issue{
+			{ID: "a1", Title: "Task", Status: "open", Priority: 2, Assignee: "alice", CreatedAt: time.Now().Add(-2 * 24 * time.Hour), UpdatedAt: time.Now()},
+		},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/assignments?rig=beads_aegis", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /assignments?rig status = %d, want %d", w.Code, http.StatusOK)
+	}
+}
+
+func TestAssignmentsPage_AutoRefresh(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/assignments", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	body := w.Body.String()
+	if !strings.Contains(body, `hx-trigger="every 60s"`) {
+		t.Error("expected 60s auto-refresh on assignments page")
+	}
+}
+
+func TestAssignmentsPage_QuickActions(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issues: []dolt.Issue{
+			{ID: "a1", Title: "Task", Status: "open", Priority: 2, Assignee: "alice", CreatedAt: time.Now().Add(-2 * 24 * time.Hour), UpdatedAt: time.Now()},
+		},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/assignments", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	body := w.Body.String()
+	if !strings.Contains(body, "hx-post=") {
+		t.Error("expected quick action buttons with hx-post")
+	}
+}

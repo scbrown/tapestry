@@ -1,0 +1,88 @@
+{{define "title"}}Assignments{{end}}
+{{define "content"}}
+<div class="assignments-page" hx-get="/assignments{{if .FilterRig}}?rig={{.FilterRig}}{{end}}" hx-trigger="every 60s" hx-select=".assignments-page" hx-swap="outerHTML">
+  <h1>Assignments <span class="text-dim">({{.TotalBeads}} active beads)</span> <time class="text-dim">{{formatDateTime .GeneratedAt}}</time></h1>
+
+  {{if .Err}}
+  <div class="error">{{.Err}}</div>
+  {{else}}
+
+  {{/* ── Rig Filter ── */}}
+  {{if .Rigs}}
+  <div class="dep-filters" style="margin-bottom:1rem">
+    <a href="/assignments" class="badge {{if not .FilterRig}}active{{end}}">all rigs</a>
+    {{range .Rigs}}
+    <a href="/assignments?rig={{.}}" class="badge {{if eq . $.FilterRig}}active{{end}}">{{rigName .}}</a>
+    {{end}}
+  </div>
+  {{end}}
+
+  {{/* ── Agent Sections ── */}}
+  {{range .Agents}}
+  <details class="assign-agent" open>
+    <summary>
+      <strong><a href="/agent/{{.Name}}">{{shortActor .Name}}</a></strong>
+      <span class="badge">{{.Count}}</span>
+    </summary>
+    <table class="assign-table">
+      <tbody>
+        {{range .Beads}}
+        <tr>
+          <td><a href="/bead/{{.DB}}/{{.ID}}">{{.ID}}</a></td>
+          <td>{{if ge .Priority 0}}<span class="badge {{priorityClass .Priority}}">P{{.Priority}}</span>{{end}}</td>
+          <td>{{statusBadge .Status}}</td>
+          <td class="truncate" style="max-width:350px">{{.Title}}</td>
+          <td class="text-dim">{{.AgeDays}}d</td>
+          <td>
+            <button class="btn-sm" hx-post="/bead/{{.DB}}/{{.ID}}/status" hx-vals='{"status":"closed"}' hx-swap="none" hx-on::after-request="this.closest('tr').remove()">close</button>
+            <button class="btn-sm" hx-post="/bead/{{.DB}}/{{.ID}}/status" hx-vals='{"status":"deferred"}' hx-swap="none" hx-on::after-request="this.closest('tr').remove()">defer</button>
+          </td>
+        </tr>
+        {{end}}
+      </tbody>
+    </table>
+  </details>
+  {{end}}
+
+  {{/* ── Unassigned ── */}}
+  {{if .Unassigned}}
+  <details class="assign-agent" open>
+    <summary>
+      <strong class="warn">Unassigned</strong>
+      <span class="badge">{{len .Unassigned}}</span>
+    </summary>
+    <table class="assign-table">
+      <tbody>
+        {{range .Unassigned}}
+        <tr>
+          <td><a href="/bead/{{.DB}}/{{.ID}}">{{.ID}}</a></td>
+          <td>{{if ge .Priority 0}}<span class="badge {{priorityClass .Priority}}">P{{.Priority}}</span>{{end}}</td>
+          <td>{{statusBadge .Status}}</td>
+          <td class="truncate" style="max-width:350px">{{.Title}}</td>
+          <td class="text-dim">{{.AgeDays}}d</td>
+          <td>
+            <button class="btn-sm" hx-post="/bead/{{.DB}}/{{.ID}}/status" hx-vals='{"status":"in_progress"}' hx-swap="none" hx-on::after-request="this.closest('tr').remove()">start</button>
+            <button class="btn-sm" hx-post="/bead/{{.DB}}/{{.ID}}/status" hx-vals='{"status":"closed"}' hx-swap="none" hx-on::after-request="this.closest('tr').remove()">close</button>
+          </td>
+        </tr>
+        {{end}}
+      </tbody>
+    </table>
+  </details>
+  {{end}}
+
+  {{if and (not .Agents) (not .Unassigned)}}
+  <p class="text-dim">No active beads found.</p>
+  {{end}}
+
+  {{end}}
+</div>
+
+<style>
+.assign-agent { margin-bottom:1rem; }
+.assign-agent summary { cursor:pointer; padding:0.5rem; background:var(--bg-card,#282a36); border-radius:4px; display:flex; gap:0.5rem; align-items:center; }
+.assign-agent summary:hover { background:var(--selection,#44475a); }
+.assign-table { width:100%; margin-top:0.25rem; }
+.assign-table td { padding:2px 6px; }
+</style>
+{{end}}
