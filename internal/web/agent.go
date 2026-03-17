@@ -14,10 +14,11 @@ import (
 )
 
 type agentDetailData struct {
-	Name          string
-	Stats         dolt.AgentStats
-	Issues        []dolt.Issue
-	HandoffStats  *events.ChainStats
+	Name           string
+	Stats          dolt.AgentStats
+	Issues         []dolt.Issue
+	Assignees      []string
+	HandoffStats   *events.ChainStats
 	RecentHandoffs []events.HandoffEvent
 }
 
@@ -40,8 +41,9 @@ func (s *Server) handleAgentDetail(w http.ResponseWriter, r *http.Request, name 
 	}
 
 	type dbResult struct {
-		issues []dolt.Issue
-		stats  dolt.AgentStats
+		issues    []dolt.Issue
+		stats     dolt.AgentStats
+		assignees []string
 	}
 
 	results := make([]dbResult, len(dbs))
@@ -51,6 +53,7 @@ func (s *Server) handleAgentDetail(w http.ResponseWriter, r *http.Request, name 
 		go func(i int, dbName string) {
 			defer wg.Done()
 			var r dbResult
+			r.assignees, _ = s.ds.DistinctAssignees(ctx, dbName)
 
 			// Search by assignee (primary) and owner (fallback)
 			for _, field := range []string{"assignee", "owner"} {
@@ -99,13 +102,21 @@ func (s *Server) handleAgentDetail(w http.ResponseWriter, r *http.Request, name 
 	}
 	wg.Wait()
 
+	assigneeSet := make(map[string]bool)
 	for _, r := range results {
 		data.Issues = append(data.Issues, r.issues...)
 		data.Stats.Owned += r.stats.Owned
 		data.Stats.Open += r.stats.Open
 		data.Stats.InProgress += r.stats.InProgress
 		data.Stats.Closed += r.stats.Closed
+		for _, a := range r.assignees {
+			assigneeSet[a] = true
+		}
 	}
+	for a := range assigneeSet {
+		data.Assignees = append(data.Assignees, a)
+	}
+	sort.Strings(data.Assignees)
 
 	// Also try matching by short name (e.g., "arnold" matches "aegis/crew/arnold")
 	if !strings.Contains(name, "/") && len(data.Issues) == 0 {

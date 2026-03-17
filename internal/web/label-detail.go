@@ -32,6 +32,7 @@ type labelDetailData struct {
 	Stats       labelDetailStats
 	Rigs        []string
 	FilterRig   string
+	Assignees   []string
 }
 
 func (s *Server) handleLabelDetail(w http.ResponseWriter, r *http.Request, label string) {
@@ -61,8 +62,9 @@ func (s *Server) handleLabelDetail(w http.ResponseWriter, r *http.Request, label
 	data.Rigs = rigs
 
 	type dbResult struct {
-		rig    string
-		issues []dolt.Issue
+		rig       string
+		issues    []dolt.Issue
+		assignees []string
 	}
 	results := make([]dbResult, len(dbs))
 	var wg sync.WaitGroup
@@ -74,15 +76,28 @@ func (s *Server) handleLabelDetail(w http.ResponseWriter, r *http.Request, label
 		wg.Add(1)
 		go func(idx int, dbName string) {
 			defer wg.Done()
+			assignees, _ := s.ds.DistinctAssignees(ctx, dbName)
 			issues, err := s.ds.IssuesByLabel(ctx, dbName, label)
 			if err != nil {
 				log.Printf("label-detail: %s: %v", dbName, err)
 				return
 			}
-			results[idx] = dbResult{rig: dbName, issues: issues}
+			results[idx] = dbResult{rig: dbName, issues: issues, assignees: assignees}
 		}(i, db.Name)
 	}
 	wg.Wait()
+
+	// Collect assignees
+	assigneeSet := make(map[string]bool)
+	for _, r := range results {
+		for _, a := range r.assignees {
+			assigneeSet[a] = true
+		}
+	}
+	for a := range assigneeSet {
+		data.Assignees = append(data.Assignees, a)
+	}
+	sort.Strings(data.Assignees)
 
 	var totalStats labelDetailStats
 	for _, r := range results {

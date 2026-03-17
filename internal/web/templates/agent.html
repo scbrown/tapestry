@@ -38,23 +38,56 @@
   {{if .Issues}}
   <section>
     <h2>Issues ({{len .Issues}})</h2>
+    <div class="batch-bar" id="batch-bar-agent" style="display:none">
+      <span class="batch-count">0 selected</span>
+      <button class="btn btn-xs" onclick="agentBatchAction('in_progress')">start selected</button>
+      <button class="btn btn-xs" onclick="agentBatchAction('closed')">close selected</button>
+      <button class="btn btn-xs" onclick="agentBatchAction('deferred')">defer selected</button>
+    </div>
     <div class="table-wrap">
     <table class="bead-table">
-      <thead><tr><th>ID</th><th>Title</th><th>Priority</th><th>Type</th><th>Status</th><th>Updated</th></tr></thead>
+      <thead><tr><th><input type="checkbox" onchange="agentToggleAll(this)"></th><th>ID</th><th>Title</th><th>Pri</th><th>Type</th><th>Status</th><th>Assignee</th><th>Updated</th><th>Actions</th></tr></thead>
       <tbody>
         {{range .Issues}}
         <tr>
+          <td><input type="checkbox" class="agent-cb" data-id="{{.ID}}" data-rig="{{lower .Rig}}" onchange="agentUpdateBar()"></td>
           <td><a href="/bead/{{lower .Rig}}/{{.ID}}" hx-boost="true">{{.ID}}</a></td>
           <td>{{.Title}}</td>
-          <td><span class="work-priority p{{.Priority}}">{{priorityLabel .Priority}}</span></td>
+          <td id="pri-{{.ID}}" class="bead-priority-inline"><span class="badge {{priorityClass .Priority}}">{{priorityLabel .Priority}}</span>
+            <span class="priority-edit triage-btn-group">
+              <button class="btn btn-xs priority-p0" hx-post="/bead/{{lower .Rig}}/{{.ID}}/priority" hx-vals='{"priority":"0"}' hx-target="#pri-{{.ID}}" hx-swap="innerHTML">P0</button>
+              <button class="btn btn-xs priority-p1" hx-post="/bead/{{lower .Rig}}/{{.ID}}/priority" hx-vals='{"priority":"1"}' hx-target="#pri-{{.ID}}" hx-swap="innerHTML">P1</button>
+              <button class="btn btn-xs priority-p2" hx-post="/bead/{{lower .Rig}}/{{.ID}}/priority" hx-vals='{"priority":"2"}' hx-target="#pri-{{.ID}}" hx-swap="innerHTML">P2</button>
+              <button class="btn btn-xs priority-p3" hx-post="/bead/{{lower .Rig}}/{{.ID}}/priority" hx-vals='{"priority":"3"}' hx-target="#pri-{{.ID}}" hx-swap="innerHTML">P3</button>
+            </span>
+          </td>
           <td>{{.Type}}</td>
           <td>{{statusBadge .Status}}</td>
+          <td>
+            <select class="triage-assign" hx-post="/bead/{{lower .Rig}}/{{.ID}}/assign" hx-swap="outerHTML" hx-target="closest tr" name="assignee">
+              <option value="">{{if .Assignee}}{{shortActor .Assignee}}{{else}}—{{end}}</option>
+              {{$cur := .Assignee}}
+              {{range $.Assignees}}<option value="{{.}}" {{if eq . $cur}}selected{{end}}>{{shortActor .}}</option>{{end}}
+            </select>
+          </td>
           <td>{{timeAgo .UpdatedAt}}</td>
+          <td class="triage-actions">
+            <div class="triage-btn-group">
+              {{if eq .Status "open"}}<button class="btn btn-xs" hx-post="/bead/{{lower .Rig}}/{{.ID}}/status" hx-vals='{"status":"in_progress"}' hx-swap="outerHTML" hx-target="closest tr">start</button>{{end}}
+              {{if ne .Status "closed"}}<button class="btn btn-xs" hx-post="/bead/{{lower .Rig}}/{{.ID}}/status" hx-vals='{"status":"closed"}' hx-swap="outerHTML" hx-target="closest tr" hx-confirm="Close {{.ID}}?">close</button>{{end}}
+              {{if ne .Status "deferred"}}<button class="btn btn-xs" hx-post="/bead/{{lower .Rig}}/{{.ID}}/status" hx-vals='{"status":"deferred"}' hx-swap="outerHTML" hx-target="closest tr" hx-confirm="Defer {{.ID}}?">defer</button>{{end}}
+            </div>
+          </td>
         </tr>
         {{end}}
       </tbody>
     </table>
     </div>
+    <script>
+    function agentToggleAll(m){document.querySelectorAll('.agent-cb').forEach(function(c){c.checked=m.checked});agentUpdateBar()}
+    function agentUpdateBar(){var c=document.querySelectorAll('.agent-cb:checked'),b=document.getElementById('batch-bar-agent');if(b){b.style.display=c.length>0?'flex':'none';b.querySelector('.batch-count').textContent=c.length+' selected'}}
+    function agentBatchAction(s){var c=document.querySelectorAll('.agent-cb:checked');if(!c.length)return;if(!confirm(s.charAt(0).toUpperCase()+s.slice(1)+' '+c.length+' beads?'))return;var f=new FormData();f.append('status',s);c.forEach(function(cb){f.append('ids[]',cb.getAttribute('data-rig')+'/'+cb.getAttribute('data-id'))});fetch('/batch/status',{method:'POST',body:f}).then(function(){c.forEach(function(cb){cb.closest('tr').remove()});agentUpdateBar();document.body.dispatchEvent(new CustomEvent('showToast',{detail:c.length+' beads '+s}))})}
+    </script>
   </section>
   {{else}}
   <p class="empty">No issues found for this agent.</p>
