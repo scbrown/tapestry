@@ -162,6 +162,7 @@ func (s *Server) handleSitemap(w http.ResponseWriter, r *http.Request) {
 				{"/created", "Created", "Recently filed beads intake feed"},
 				{"/closed", "Closed", "Recently completed beads feed"},
 				{"/sprint", "Sprint", "Weekly summary with agent breakdown and week nav"},
+				{"/changelog", "Changelog", "What shipped — closed beads organized by week"},
 				{"/audit-log", "Audit Log", "Global change feed: status changes, creates, comments"},
 				{"/status-flow", "Status Flow", "Status transition frequency analysis"},
 				{"/dog-pile", "Hot Beads", "High-activity bead tracker by heat score"},

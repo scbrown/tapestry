@@ -1,0 +1,52 @@
+{{define "title"}}Changelog{{end}}
+{{define "content"}}
+<h1>Changelog <small style="color:var(--comment)">({{.TotalClosed}} closed in 8 weeks)</small></h1>
+<p class="subtitle">What shipped, organized by week. Most recent first.</p>
+
+{{if .FilterRig}}<div class="dep-filters"><span class="dep-filter-badge">rig: {{.FilterRig}}</span> <a href="/changelog">clear</a></div>{{end}}
+
+{{if .Err}}<p class="error">{{.Err}}</p>{{end}}
+
+{{if .Weeks}}
+{{range .Weeks}}
+<div style="margin-bottom:2rem">
+    <h2 style="display:flex;align-items:center;gap:0.75rem;margin-bottom:0.5rem">
+        <span>{{.Label}}</span>
+        <span style="background:var(--purple);color:var(--foreground);padding:0.15rem 0.6rem;border-radius:12px;font-size:0.85rem">{{.Count}}</span>
+        {{range $type, $count := .ByType}}
+        <span style="color:var(--comment);font-size:0.8rem">{{$type}}: {{$count}}</span>
+        {{end}}
+    </h2>
+    <div style="overflow-x:auto">
+    <table class="bead-table">
+    <thead>
+    <tr>
+        <th>Priority</th>
+        <th>Type</th>
+        <th>Bead</th>
+        <th>Assignee</th>
+        <th>Rig</th>
+    </tr>
+    </thead>
+    <tbody>
+    {{range .Items}}
+    <tr>
+        <td><span class="{{.Issue.Priority | priorityClass}}">{{.Issue.Priority | priorityLabel}}</span></td>
+        <td>{{.Issue.Type}}</td>
+        <td><a href="/bead/{{.Rig}}/{{.Issue.ID}}">{{.Issue.Title}}</a></td>
+        <td>{{shortActor .Issue.Assignee}}</td>
+        <td style="color:var(--comment)">{{.Rig}}</td>
+    </tr>
+    {{end}}
+    </tbody>
+    </table>
+    </div>
+</div>
+{{end}}
+{{else}}
+<p style="color:var(--comment);margin-top:2rem">No closed beads in the last 8 weeks.</p>
+{{end}}
+
+<p style="color:var(--comment);font-size:0.85rem;margin-top:1rem">Generated {{.GeneratedAt.Format "2006-01-02 15:04"}} &middot; Auto-refresh 300s</p>
+<div hx-get="/changelog{{if .FilterRig}}?rig={{.FilterRig}}{{end}}" hx-trigger="every 300s" hx-target="#content" hx-swap="innerHTML"></div>
+{{end}}
