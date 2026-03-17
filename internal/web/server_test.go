@@ -5044,6 +5044,45 @@ func TestTriagePage_RigFilter(t *testing.T) {
 	}
 	body = w.Body.String()
 	if !strings.Contains(body, `?rig=beads_aegis`) {
-		t.Error("expected rig filter preserved in auto-refresh URL")
+		t.Error("expected rig filter preserved in triage auto-refresh URL")
+	}
+}
+
+func TestQueuePage_RigFilter(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}, {Name: "beads_gastown"}},
+		issues: []dolt.Issue{
+			{ID: "q1", Title: "Queue item", Status: "open", Priority: 1,
+				CreatedAt: time.Now().Add(-5 * 24 * time.Hour)},
+		},
+		assignees: []string{"alice"},
+	}
+
+	srv := New(ds)
+
+	// Unfiltered
+	req := httptest.NewRequest("GET", "/queue", nil)
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /queue status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "All rigs") {
+		t.Error("expected rig filter badges when multiple rigs have data")
+	}
+
+	// With rig filter
+	req = httptest.NewRequest("GET", "/queue?rig=beads_aegis", nil)
+	w = httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /queue?rig= status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body = w.Body.String()
+	if !strings.Contains(body, `?rig=beads_aegis`) {
+		t.Error("expected rig filter preserved in queue auto-refresh URL")
 	}
 }

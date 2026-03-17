@@ -23,6 +23,8 @@ type queueData struct {
 	ByPriority  map[int]int // count by priority
 	TotalReady  int
 	Assignees   []string // known assignees for quick-assign dropdown
+	Rigs        []string
+	FilterRig   string
 }
 
 func (s *Server) handleQueue(w http.ResponseWriter, r *http.Request) {
@@ -109,6 +111,34 @@ func (s *Server) handleQueue(w http.ResponseWriter, r *http.Request) {
 			})
 			data.ByPriority[iss.Priority]++
 		}
+	}
+
+	// Collect distinct rigs for filter
+	rigSet := make(map[string]bool)
+	for _, item := range data.Items {
+		rigSet[item.Rig] = true
+	}
+	var rigs []string
+	for rig := range rigSet {
+		rigs = append(rigs, rig)
+	}
+	sort.Strings(rigs)
+	data.Rigs = rigs
+
+	// Apply rig filter
+	filterRig := r.URL.Query().Get("rig")
+	data.FilterRig = filterRig
+	if filterRig != "" {
+		filtered := data.Items[:0]
+		filteredPri := map[int]int{}
+		for _, item := range data.Items {
+			if item.Rig == filterRig {
+				filtered = append(filtered, item)
+				filteredPri[item.Issue.Priority]++
+			}
+		}
+		data.Items = filtered
+		data.ByPriority = filteredPri
 	}
 
 	data.TotalReady = len(data.Items)
