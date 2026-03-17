@@ -37,6 +37,7 @@
     <button class="btn btn-xs" onclick="swarmBatchAction('closed')">close selected</button>
     <button class="btn btn-xs" onclick="swarmBatchAction('deferred')">defer selected</button>
   </div>
+  <div class="table-wrap">
   <table class="bead-table">
     <thead>
       <tr>
@@ -85,6 +86,7 @@
       {{end}}
     </tbody>
   </table>
+  </div>
   <script>
   function swarmToggleAll(master) {
     document.querySelectorAll('.swarm-cb').forEach(function(cb) { cb.checked = master.checked; });

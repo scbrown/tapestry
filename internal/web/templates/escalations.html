@@ -46,6 +46,7 @@
     </select>
     <input type="text" class="btn btn-xs batch-label-input" placeholder="add label..." onkeydown="if(event.key==='Enter'){escBatchLabel(this.value);this.value=''}" style="width:100px">
   </div>
+  <div class="table-wrap">
   <table class="bead-table">
     <thead>
       <tr>
@@ -91,6 +92,7 @@
       {{end}}
     </tbody>
   </table>
+  </div>
   <script>
   function escToggleAll(master) {
     document.querySelectorAll('.esc-cb').forEach(function(cb) { cb.checked = master.checked; });
