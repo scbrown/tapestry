@@ -44,6 +44,12 @@ type executiveData struct {
 	ClosedWeek      int
 	CreatedWeek     int
 
+	// Week-over-week comparison
+	ClosedPrevWeek  int
+	CreatedPrevWeek int
+	VelocityDelta   int // ClosedWeek - ClosedPrevWeek
+	NetFlow         int // CreatedWeek - ClosedWeek
+
 	// 7-day throughput
 	Days     []execDay
 	MaxCount int
@@ -66,6 +72,7 @@ func (s *Server) handleExecutive(w http.ResponseWriter, r *http.Request) {
 	todayStart := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
 	todayEnd := todayStart.AddDate(0, 0, 1)
 	weekStart := todayStart.AddDate(0, 0, -7)
+	prevWeekStart := weekStart.AddDate(0, 0, -7)
 
 	data := executiveData{GeneratedAt: now}
 
@@ -94,6 +101,8 @@ func (s *Server) handleExecutive(w http.ResponseWriter, r *http.Request) {
 		closedToday     int
 		createdWeek     int
 		closedWeek      int
+		createdPrevWeek int
+		closedPrevWeek  int
 		days            [7]struct{ created, closed int }
 		priorities      [5]int // P0-P4 counts for open/in_progress
 		blockers        []execBlocker
@@ -142,6 +151,16 @@ func (s *Server) handleExecutive(w http.ResponseWriter, r *http.Request) {
 			closedW, err := s.ds.CountClosedInRange(ctx, dbName, weekStart, todayEnd)
 			if err == nil {
 				r.closedWeek = closedW
+			}
+
+			// Previous week counts
+			createdPW, err := s.ds.CountCreatedInRange(ctx, dbName, prevWeekStart, weekStart)
+			if err == nil {
+				r.createdPrevWeek = createdPW
+			}
+			closedPW, err := s.ds.CountClosedInRange(ctx, dbName, prevWeekStart, weekStart)
+			if err == nil {
+				r.closedPrevWeek = closedPW
 			}
 
 			// 7-day throughput
@@ -262,6 +281,8 @@ func (s *Server) handleExecutive(w http.ResponseWriter, r *http.Request) {
 		data.ClosedToday += r.closedToday
 		data.CreatedWeek += r.createdWeek
 		data.ClosedWeek += r.closedWeek
+		data.CreatedPrevWeek += r.createdPrevWeek
+		data.ClosedPrevWeek += r.closedPrevWeek
 		data.Blockers = append(data.Blockers, r.blockers...)
 		data.Epics = append(data.Epics, r.epics...)
 		for p := 0; p < 5; p++ {
@@ -329,6 +350,9 @@ func (s *Server) handleExecutive(w http.ResponseWriter, r *http.Request) {
 	if len(data.Agents) > 10 {
 		data.Agents = data.Agents[:10]
 	}
+
+	data.VelocityDelta = data.ClosedWeek - data.ClosedPrevWeek
+	data.NetFlow = data.CreatedWeek - data.ClosedWeek
 
 	s.render(w, r, "executive", data)
 }

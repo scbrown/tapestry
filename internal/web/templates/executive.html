@@ -42,7 +42,9 @@
       <div class="exec-week-summary">
         <span>Created: <strong>{{.CreatedWeek}}</strong></span>
         <span>Closed: <strong class="accent">{{.ClosedWeek}}</strong></span>
-        <span>Net: <strong{{if gt .CreatedWeek .ClosedWeek}} class="warn"{{end}}>{{if gt .CreatedWeek .ClosedWeek}}+{{end}}{{sub .CreatedWeek .ClosedWeek}}</strong></span>
+        <span>Net: <strong{{if gt .NetFlow 0}} class="warn"{{end}}>{{if gt .NetFlow 0}}+{{end}}{{.NetFlow}}</strong></span>
+        <span class="text-dim">|</span>
+        <span>vs prev: <strong{{if gt .VelocityDelta 0}} class="text-ok"{{else if lt .VelocityDelta 0}} class="text-warn"{{end}}>{{if gt .VelocityDelta 0}}+{{end}}{{.VelocityDelta}} closed</strong></span>
       </div>
       {{if .Days}}
       <div class="exec-bars">

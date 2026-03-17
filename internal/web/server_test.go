@@ -1589,6 +1589,9 @@ func TestExecutivePage_WithData(t *testing.T) {
 	if !strings.Contains(body, "Agent Leaderboard") {
 		t.Error("expected agent leaderboard section")
 	}
+	if !strings.Contains(body, "vs prev") {
+		t.Error("expected week-over-week comparison in throughput section")
+	}
 }
 
 func TestBeadComment_Post(t *testing.T) {
