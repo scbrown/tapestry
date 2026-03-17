@@ -1,0 +1,59 @@
+{{define "title"}}Cross-Ref{{end}}
+{{define "content"}}
+<div class="crossref-page" hx-get="/crossref" hx-trigger="every 300s" hx-select=".crossref-page" hx-swap="outerHTML">
+  <h1>Cross-Database References <time class="text-dim">{{formatDateTime .GeneratedAt}}</time></h1>
+  <p class="text-dim">Beads that appear in multiple databases — cross-rig coordination points.</p>
+
+  {{if .Err}}
+  <div class="error">{{.Err}}</div>
+  {{else}}
+
+  <div class="briefing-grid">
+    <section class="briefing-card">
+      <h2>Overview</h2>
+      <div class="stat-grid">
+        <div class="stat">
+          <span class="stat-value">{{.TotalDBs}}</span>
+          <span class="stat-label">Databases</span>
+        </div>
+        <div class="stat">
+          <span class="stat-value">{{.TotalCross}}</span>
+          <span class="stat-label">Cross-ref beads</span>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  {{if .Items}}
+  <table class="bead-table">
+    <thead>
+      <tr>
+        <th>Bead</th>
+        <th>Title</th>
+        <th>Status</th>
+        <th>Pri</th>
+        <th>Databases</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{range .Items}}
+      <tr>
+        <td><a href="/bead/{{index .DBs 0}}/{{.ID}}">{{.ID}}</a></td>
+        <td>{{.Title}}</td>
+        <td>{{statusBadge .Status}}</td>
+        <td>{{priorityLabel .Priority}}</td>
+        <td>
+          {{range $i, $db := .DBs}}{{if $i}}, {{end}}<span class="badge">{{$db}}</span>{{end}}
+          <span class="text-dim">({{.DBCount}})</span>
+        </td>
+      </tr>
+      {{end}}
+    </tbody>
+  </table>
+  {{else}}
+  <p class="text-dim">No cross-database references found.</p>
+  {{end}}
+
+  {{end}}
+</div>
+{{end}}

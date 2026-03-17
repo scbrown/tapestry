@@ -1,0 +1,68 @@
+{{define "title"}}Freshness{{end}}
+{{define "content"}}
+<div class="freshness-page" hx-get="/freshness" hx-trigger="every 120s" hx-select=".freshness-page" hx-swap="outerHTML">
+  <h1>Data Freshness <time class="text-dim">{{formatDateTime .GeneratedAt}}</time></h1>
+  <p class="text-dim">How recently each database has been updated.</p>
+
+  {{if .Err}}
+  <div class="error">{{.Err}}</div>
+  {{else}}
+
+  <div class="briefing-grid">
+    <section class="briefing-card">
+      <h2>Overview</h2>
+      <div class="stat-grid">
+        <div class="stat">
+          <span class="stat-value">{{.TotalDBs}}</span>
+          <span class="stat-label">Databases</span>
+        </div>
+        <div class="stat">
+          <span class="stat-value good">{{.ActiveDBs}}</span>
+          <span class="stat-label">Active (7d)</span>
+        </div>
+        <div class="stat">
+          <span class="stat-value {{if gt .StaleDBs 0}}warn{{end}}">{{.StaleDBs}}</span>
+          <span class="stat-label">Stale (7d+)</span>
+        </div>
+        <div class="stat">
+          <span class="stat-value">{{.TotalBeads}}</span>
+          <span class="stat-label">Total beads</span>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  {{if .Databases}}
+  <table class="bead-table">
+    <thead>
+      <tr>
+        <th>Database</th>
+        <th>Total</th>
+        <th>Open</th>
+        <th>Created (7d)</th>
+        <th>Closed (7d)</th>
+        <th>Last Update</th>
+        <th>Stale Days</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{range .Databases}}
+      <tr class="{{if gt .StaleDays 7}}row-warn{{end}}">
+        <td><strong>{{.Name}}</strong></td>
+        <td>{{.TotalBeads}}</td>
+        <td>{{.OpenBeads}}</td>
+        <td>{{.RecentCreated}}</td>
+        <td>{{.RecentClosed}}</td>
+        <td>{{formatDateTime .LastUpdate}}</td>
+        <td>{{if eq .StaleDays 0}}<span class="good">today</span>{{else}}{{.StaleDays}}d{{end}}</td>
+      </tr>
+      {{end}}
+    </tbody>
+  </table>
+  {{else}}
+  <p class="text-dim">No databases found.</p>
+  {{end}}
+
+  {{end}}
+</div>
+{{end}}

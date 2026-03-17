@@ -8169,3 +8169,89 @@ func TestFocusPage_AutoRefresh(t *testing.T) {
 		t.Error("expected 60s auto-refresh on focus page")
 	}
 }
+
+// ── /crossref ──
+
+func TestCrossRefPage(t *testing.T) {
+	srv := New(&mockDataSource{})
+	req := httptest.NewRequest("GET", "/crossref", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /crossref status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Cross-Database") {
+		t.Error("expected 'Cross-Database' heading")
+	}
+}
+
+func TestCrossRefPage_NilDS(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/crossref", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /crossref nil ds status = %d, want %d", w.Code, http.StatusOK)
+	}
+}
+
+func TestCrossRefPage_AutoRefresh(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/crossref", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	body := w.Body.String()
+	if !strings.Contains(body, `hx-trigger="every 300s"`) {
+		t.Error("expected 300s auto-refresh on crossref page")
+	}
+}
+
+// ── /freshness ──
+
+func TestFreshnessPage(t *testing.T) {
+	srv := New(&mockDataSource{})
+	req := httptest.NewRequest("GET", "/freshness", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /freshness status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Data Freshness") {
+		t.Error("expected 'Data Freshness' heading")
+	}
+}
+
+func TestFreshnessPage_NilDS(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/freshness", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /freshness nil ds status = %d, want %d", w.Code, http.StatusOK)
+	}
+}
+
+func TestFreshnessPage_AutoRefresh(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/freshness", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	body := w.Body.String()
+	if !strings.Contains(body, `hx-trigger="every 120s"`) {
+		t.Error("expected 120s auto-refresh on freshness page")
+	}
+}
