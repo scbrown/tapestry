@@ -24,6 +24,8 @@ type parkingData struct {
 	MedianIdle  int
 	MaxIdle     int
 	ByAssignee  map[string]int
+	Rigs        []string
+	FilterRig   string
 }
 
 func (s *Server) handleParkingLot(w http.ResponseWriter, r *http.Request) {
@@ -65,12 +67,14 @@ func (s *Server) handleParkingLot(w http.ResponseWriter, r *http.Request) {
 	now := time.Now()
 	threshold := 3 // days idle before considered "parked"
 
+	rigSet := make(map[string]bool)
 	for _, r := range results {
 		for _, iss := range r.issues {
 			idle := int(now.Sub(iss.UpdatedAt).Hours() / 24)
 			if idle < threshold {
 				continue
 			}
+			rigSet[r.rig] = true
 			age := int(now.Sub(iss.CreatedAt).Hours() / 24)
 			data.Items = append(data.Items, parkingItem{
 				Rig: r.rig, Issue: iss, IdleDays: idle, AgeDays: age,
@@ -84,6 +88,35 @@ func (s *Server) handleParkingLot(w http.ResponseWriter, r *http.Request) {
 			}
 			data.ByAssignee[assignee]++
 		}
+	}
+
+	var rigs []string
+	for rig := range rigSet {
+		rigs = append(rigs, rig)
+	}
+	sort.Strings(rigs)
+	data.Rigs = rigs
+
+	filterRig := r.URL.Query().Get("rig")
+	data.FilterRig = filterRig
+	if filterRig != "" {
+		filtered := data.Items[:0]
+		filteredAssignee := map[string]int{}
+		for _, item := range data.Items {
+			if item.Rig == filterRig {
+				filtered = append(filtered, item)
+				assignee := item.Issue.Assignee
+				if assignee == "" {
+					assignee = item.Issue.Owner
+				}
+				if assignee == "" {
+					assignee = "(unassigned)"
+				}
+				filteredAssignee[assignee]++
+			}
+		}
+		data.Items = filtered
+		data.ByAssignee = filteredAssignee
 	}
 
 	// Sort by idle days descending

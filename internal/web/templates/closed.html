@@ -1,7 +1,7 @@
 {{define "title"}}Recently Closed{{end}}
 
 {{define "content"}}
-<div class="closed-view" hx-get="/closed" hx-trigger="every 120s" hx-select=".closed-view" hx-swap="outerHTML">
+<div class="closed-view" hx-get="/closed?days={{.Days}}{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" hx-trigger="every 120s" hx-select=".closed-view" hx-swap="outerHTML">
   <h1>Recently Closed</h1>
 
   {{if .Err}}
@@ -21,7 +21,16 @@
     </form>
   </div>
 
-  <div class="results-meta">{{.Total}} beads closed in the last {{.Days}} days</div>
+  {{if gt (len .Rigs) 1}}
+  <div class="dep-filters" style="margin-top:0.5rem">
+    <a href="/closed?days={{.Days}}" class="badge {{if not .FilterRig}}filter-active{{end}}">All rigs</a>
+    {{range .Rigs}}
+    <a href="/closed?days={{$.Days}}&rig={{.}}" class="badge {{if eq . $.FilterRig}}filter-active{{end}}">{{rigName .}}</a>
+    {{end}}
+  </div>
+  {{end}}
+
+  <div class="results-meta">{{.Total}} beads closed in the last {{.Days}} days{{if .FilterRig}} in {{rigName .FilterRig}}{{end}}</div>
 
   {{if .ByDay}}
   <div class="batch-bar" id="batch-bar-closed" style="display:none">

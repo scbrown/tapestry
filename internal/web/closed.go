@@ -23,11 +23,13 @@ type closedDay struct {
 }
 
 type closedData struct {
-	Entries  []closedEntry
-	ByDay    []closedDay
-	Total    int
-	Days     int
-	Err      string
+	Entries   []closedEntry
+	ByDay     []closedDay
+	Total     int
+	Days      int
+	Rigs      []string
+	FilterRig string
+	Err       string
 }
 
 func (s *Server) handleClosed(w http.ResponseWriter, r *http.Request) {
@@ -82,8 +84,29 @@ func (s *Server) handleClosed(w http.ResponseWriter, r *http.Request) {
 	wg.Wait()
 
 	var all []closedEntry
+	rigSet := make(map[string]bool)
 	for _, r := range results {
 		all = append(all, r.entries...)
+		for _, e := range r.entries {
+			rigSet[e.Rig] = true
+		}
+	}
+
+	var rigs []string
+	for rig := range rigSet {
+		rigs = append(rigs, rig)
+	}
+	sort.Strings(rigs)
+
+	filterRig := r.URL.Query().Get("rig")
+	if filterRig != "" {
+		filtered := all[:0]
+		for _, e := range all {
+			if e.Rig == filterRig {
+				filtered = append(filtered, e)
+			}
+		}
+		all = filtered
 	}
 
 	sort.Slice(all, func(i, j int) bool {
@@ -112,9 +135,11 @@ func (s *Server) handleClosed(w http.ResponseWriter, r *http.Request) {
 	}
 
 	s.render(w, r, "closed", closedData{
-		Entries: all,
-		ByDay:   byDay,
-		Total:   len(all),
-		Days:    days,
+		Entries:   all,
+		ByDay:     byDay,
+		Total:     len(all),
+		Days:      days,
+		Rigs:      rigs,
+		FilterRig: filterRig,
 	})
 }

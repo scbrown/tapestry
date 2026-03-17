@@ -4856,3 +4856,116 @@ func TestSearchPage_InProgressActions(t *testing.T) {
 		t.Error("expected defer button for in-progress items in search")
 	}
 }
+
+func TestStalePage_RigFilter(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}, {Name: "beads_gastown"}},
+		issues: []dolt.Issue{
+			{ID: "st1", Title: "Stale aegis", Status: "in_progress", Priority: 1, UpdatedAt: time.Now().Add(-10 * 24 * time.Hour)},
+		},
+	}
+
+	srv := New(ds)
+
+	// Test auto-refresh URL preserves days param
+	req := httptest.NewRequest("GET", "/stale?days=7", nil)
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /stale status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, `hx-get="/stale?days=7"`) {
+		t.Error("expected auto-refresh URL with days param")
+	}
+
+	// Test with rig filter
+	req = httptest.NewRequest("GET", "/stale?days=7&rig=beads_aegis", nil)
+	w = httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /stale?rig= status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body = w.Body.String()
+	if !strings.Contains(body, `&rig=beads_aegis`) {
+		t.Error("expected rig filter preserved in auto-refresh URL")
+	}
+}
+
+func TestClosedPage_RigFilter(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}, {Name: "beads_gastown"}},
+		issues: []dolt.Issue{
+			{ID: "cl1", Title: "Closed aegis", Status: "closed", Priority: 1, UpdatedAt: time.Now()},
+		},
+	}
+
+	srv := New(ds)
+
+	// Test auto-refresh URL preserves days param
+	req := httptest.NewRequest("GET", "/closed?days=7", nil)
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /closed status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, `hx-get="/closed?days=7"`) {
+		t.Error("expected auto-refresh URL with days param")
+	}
+
+	// Test with rig filter
+	req = httptest.NewRequest("GET", "/closed?days=7&rig=beads_aegis", nil)
+	w = httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /closed?rig= status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body = w.Body.String()
+	if !strings.Contains(body, `&rig=beads_aegis`) {
+		t.Error("expected rig filter preserved in auto-refresh URL")
+	}
+}
+
+func TestParkingLotPage_RigFilter(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}, {Name: "beads_gastown"}},
+		issues: []dolt.Issue{
+			{ID: "pk1", Title: "Parked item", Status: "in_progress", Priority: 1,
+				UpdatedAt: time.Now().Add(-10 * 24 * time.Hour),
+				CreatedAt: time.Now().Add(-20 * 24 * time.Hour)},
+		},
+	}
+
+	srv := New(ds)
+
+	// Unfiltered
+	req := httptest.NewRequest("GET", "/parking-lot", nil)
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /parking-lot status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Parking Lot") {
+		t.Error("expected Parking Lot heading")
+	}
+
+	// With rig filter
+	req = httptest.NewRequest("GET", "/parking-lot?rig=beads_aegis", nil)
+	w = httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /parking-lot?rig= status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body = w.Body.String()
+	if !strings.Contains(body, `?rig=beads_aegis`) {
+		t.Error("expected rig filter preserved in auto-refresh URL")
+	}
+}

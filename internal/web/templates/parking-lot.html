@@ -1,8 +1,17 @@
 {{define "title"}}Parking Lot{{end}}
 {{define "content"}}
-<div class="backlog-page" hx-get="/parking-lot" hx-trigger="every 60s" hx-select=".backlog-page" hx-swap="outerHTML">
+<div class="backlog-page" hx-get="/parking-lot{{if .FilterRig}}?rig={{.FilterRig}}{{end}}" hx-trigger="every 60s" hx-select=".backlog-page" hx-swap="outerHTML">
   <h1>Parking Lot <time class="text-dim">{{.GeneratedAt.Format "Jan 02, 2006 15:04"}}</time></h1>
   <p class="text-dim">In-progress beads idle for 3+ days — started but stalled.</p>
+
+  {{if gt (len .Rigs) 1}}
+  <div class="dep-filters" style="margin-bottom:0.5rem">
+    <a href="/parking-lot" class="badge {{if not .FilterRig}}filter-active{{end}}">All rigs</a>
+    {{range .Rigs}}
+    <a href="/parking-lot?rig={{.}}" class="badge {{if eq . $.FilterRig}}filter-active{{end}}">{{rigName .}}</a>
+    {{end}}
+  </div>
+  {{end}}
 
   <div class="backlog-stats">
     <div class="stat">

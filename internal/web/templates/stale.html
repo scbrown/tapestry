@@ -1,7 +1,7 @@
 {{define "title"}}Stale Work{{end}}
 
 {{define "content"}}
-<div class="stale-view" hx-get="/stale" hx-trigger="every 120s" hx-select=".stale-view" hx-swap="outerHTML">
+<div class="stale-view" hx-get="/stale?days={{.Days}}{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" hx-trigger="every 120s" hx-select=".stale-view" hx-swap="outerHTML">
   <h1>Stale Work</h1>
 
   {{if .Err}}
@@ -21,7 +21,16 @@
     </form>
   </div>
 
-  <div class="results-meta">{{.Total}} in-progress/hooked beads not updated in {{.Days}}+ days</div>
+  {{if gt (len .Rigs) 1}}
+  <div class="dep-filters" style="margin-top:0.5rem">
+    <a href="/stale?days={{.Days}}" class="badge {{if not .FilterRig}}filter-active{{end}}">All rigs</a>
+    {{range .Rigs}}
+    <a href="/stale?days={{$.Days}}&rig={{.}}" class="badge {{if eq . $.FilterRig}}filter-active{{end}}">{{rigName .}}</a>
+    {{end}}
+  </div>
+  {{end}}
+
+  <div class="results-meta">{{.Total}} in-progress/hooked beads not updated in {{.Days}}+ days{{if .FilterRig}} in {{rigName .FilterRig}}{{end}}</div>
 
   {{if .Entries}}
   <div class="batch-bar" id="batch-bar-stale" style="display:none">
