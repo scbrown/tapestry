@@ -10939,3 +10939,35 @@ func TestOutgoingPage_RigFilter(t *testing.T) {
 		t.Error("expected rig filter badge")
 	}
 }
+
+func TestFavoritesPage(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/favorites", nil)
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /favorites status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Favorites") {
+		t.Error("expected 'Favorites' heading")
+	}
+	if !strings.Contains(body, "localStorage") {
+		t.Error("expected localStorage-based favorites")
+	}
+}
+
+func TestFavoritesPage_HTMXPartial(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/favorites", nil)
+	req.Header.Set("HX-Request", "true")
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("HTMX GET /favorites status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if strings.Contains(body, "<!DOCTYPE html>") {
+		t.Error("HTMX favorites should return partial, not full page")
+	}
+}

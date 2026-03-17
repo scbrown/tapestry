@@ -202,6 +202,7 @@ func (s *Server) handleSitemap(w http.ResponseWriter, r *http.Request) {
 				{"/decisions", "Decisions", "Decision log"},
 				{"/achievements", "Achievements", "Unlocked achievements"},
 				{"/theme-parks", "Theme Parks", "Trip planning"},
+				{"/favorites", "Favorites", "Pinned beads (browser localStorage)"},
 			},
 		},
 	}

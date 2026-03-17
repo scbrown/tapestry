@@ -1,0 +1,77 @@
+{{define "title"}}Favorites{{end}}
+{{define "content"}}
+<div class="favorites-page">
+  <h1>Favorites</h1>
+  <p class="text-dim">Pin beads for quick access. Stored in your browser — survives page refreshes.</p>
+
+  <div class="favorites-add" style="margin:1rem 0">
+    <input type="text" id="fav-input" placeholder="Paste bead URL (e.g. /bead/beads_aegis/aegis-h8x)" style="width:300px;padding:0.3rem 0.5rem;background:var(--current-line);color:var(--foreground);border:1px solid var(--comment);border-radius:4px">
+    <button class="btn btn-xs" onclick="addFavorite()" style="margin-left:0.5rem">Add</button>
+  </div>
+
+  <div id="fav-list">
+    <p class="text-dim">Loading favorites...</p>
+  </div>
+</div>
+
+<script>
+function getFavorites() {
+  try { return JSON.parse(localStorage.getItem('tapestry-favorites') || '[]'); }
+  catch { return []; }
+}
+function saveFavorites(favs) {
+  localStorage.setItem('tapestry-favorites', JSON.stringify(favs));
+}
+function addFavorite() {
+  var input = document.getElementById('fav-input');
+  var val = input.value.trim();
+  if (!val) return;
+  // Parse URL: /bead/db/id or just db/id
+  var match = val.match(/\/bead\/([^/]+)\/([^/\s]+)/);
+  if (!match) {
+    // Try bare format: db/id
+    match = val.match(/^([^/]+)\/([^/\s]+)$/);
+    if (!match) {
+      alert('Enter a bead URL like /bead/beads_aegis/aegis-h8x');
+      return;
+    }
+  }
+  var db = match[1], id = match[2];
+  var favs = getFavorites();
+  if (favs.some(function(f) { return f.db === db && f.id === id; })) {
+    alert('Already in favorites');
+    return;
+  }
+  favs.push({db: db, id: id, added: new Date().toISOString()});
+  saveFavorites(favs);
+  input.value = '';
+  renderFavorites();
+}
+function removeFavorite(db, id) {
+  var favs = getFavorites().filter(function(f) { return !(f.db === db && f.id === id); });
+  saveFavorites(favs);
+  renderFavorites();
+}
+function renderFavorites() {
+  var favs = getFavorites();
+  var el = document.getElementById('fav-list');
+  if (!favs.length) {
+    el.innerHTML = '<p class="text-dim">No favorites yet. Add a bead URL above or click the star on any bead detail page.</p>';
+    return;
+  }
+  var html = '<table class="bead-table"><thead><tr><th>Bead</th><th>Database</th><th>Added</th><th></th></tr></thead><tbody>';
+  favs.forEach(function(f) {
+    var added = f.added ? new Date(f.added).toLocaleDateString() : '—';
+    html += '<tr>';
+    html += '<td><a href="/bead/' + f.db + '/' + f.id + '">' + f.id + '</a></td>';
+    html += '<td class="text-dim">' + f.db + '</td>';
+    html += '<td class="text-dim">' + added + '</td>';
+    html += '<td><button class="btn btn-xs" onclick="removeFavorite(\'' + f.db + '\',\'' + f.id + '\')">remove</button></td>';
+    html += '</tr>';
+  });
+  html += '</tbody></table>';
+  el.innerHTML = html;
+}
+renderFavorites();
+</script>
+{{end}}
