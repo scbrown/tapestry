@@ -24,6 +24,8 @@ type triageData struct {
 	UnassignedN  int
 	NoPriorityN  int
 	Assignees    []string // known assignees for quick-assign dropdown
+	Rigs         []string
+	FilterRig    string
 }
 
 func (s *Server) handleTriage(w http.ResponseWriter, r *http.Request) {
@@ -90,6 +92,42 @@ func (s *Server) handleTriage(w http.ResponseWriter, r *http.Request) {
 				data.NoPriority = append(data.NoPriority, triageIssue{Rig: r.rig, Issue: iss, Age: age})
 			}
 		}
+	}
+
+	// Collect distinct rigs for filter
+	rigSet := make(map[string]bool)
+	for _, e := range data.Unassigned {
+		rigSet[e.Rig] = true
+	}
+	for _, e := range data.NoPriority {
+		rigSet[e.Rig] = true
+	}
+	var rigs []string
+	for rig := range rigSet {
+		rigs = append(rigs, rig)
+	}
+	sort.Strings(rigs)
+	data.Rigs = rigs
+
+	// Apply rig filter
+	filterRig := r.URL.Query().Get("rig")
+	data.FilterRig = filterRig
+	if filterRig != "" {
+		filtered := data.Unassigned[:0]
+		for _, e := range data.Unassigned {
+			if e.Rig == filterRig {
+				filtered = append(filtered, e)
+			}
+		}
+		data.Unassigned = filtered
+
+		filteredNP := data.NoPriority[:0]
+		for _, e := range data.NoPriority {
+			if e.Rig == filterRig {
+				filteredNP = append(filteredNP, e)
+			}
+		}
+		data.NoPriority = filteredNP
 	}
 
 	// Sort both lists by age descending (oldest first)

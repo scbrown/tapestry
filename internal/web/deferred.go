@@ -25,6 +25,8 @@ type deferredData struct {
 	ByPriority  [5]int // P0-P4
 	MedianAge   int
 	OldestAge   int
+	Rigs        []string
+	FilterRig   string
 }
 
 func (s *Server) handleDeferred(w http.ResponseWriter, r *http.Request) {
@@ -76,6 +78,35 @@ func (s *Server) handleDeferred(w http.ResponseWriter, r *http.Request) {
 				data.ByPriority[iss.Priority]++
 			}
 		}
+	}
+
+	// Collect distinct rigs for filter
+	var rigs []string
+	for rig := range data.ByRig {
+		rigs = append(rigs, rig)
+	}
+	sort.Strings(rigs)
+	data.Rigs = rigs
+
+	// Apply rig filter
+	filterRig := r.URL.Query().Get("rig")
+	data.FilterRig = filterRig
+	if filterRig != "" {
+		filtered := data.Items[:0]
+		filteredByRig := map[string]int{}
+		var filteredPriority [5]int
+		for _, item := range data.Items {
+			if item.Rig == filterRig {
+				filtered = append(filtered, item)
+				filteredByRig[item.Rig]++
+				if item.Issue.Priority >= 0 && item.Issue.Priority <= 4 {
+					filteredPriority[item.Issue.Priority]++
+				}
+			}
+		}
+		data.Items = filtered
+		data.ByRig = filteredByRig
+		data.ByPriority = filteredPriority
 	}
 
 	// Sort by idle days descending (longest-parked first)

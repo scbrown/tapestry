@@ -4969,3 +4969,81 @@ func TestParkingLotPage_RigFilter(t *testing.T) {
 		t.Error("expected rig filter preserved in auto-refresh URL")
 	}
 }
+
+func TestDeferredPage_RigFilter(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}, {Name: "beads_gastown"}},
+		issues: []dolt.Issue{
+			{ID: "df1", Title: "Deferred item", Status: "deferred", Priority: 2,
+				UpdatedAt: time.Now().Add(-5 * 24 * time.Hour),
+				CreatedAt: time.Now().Add(-10 * 24 * time.Hour)},
+		},
+	}
+
+	srv := New(ds)
+
+	// Unfiltered
+	req := httptest.NewRequest("GET", "/deferred", nil)
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /deferred status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "All rigs") {
+		t.Error("expected rig filter badges when multiple rigs have data")
+	}
+
+	// With rig filter
+	req = httptest.NewRequest("GET", "/deferred?rig=beads_aegis", nil)
+	w = httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /deferred?rig= status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body = w.Body.String()
+	if !strings.Contains(body, `?rig=beads_aegis`) {
+		t.Error("expected rig filter preserved in auto-refresh URL")
+	}
+}
+
+func TestTriagePage_RigFilter(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}, {Name: "beads_gastown"}},
+		issues: []dolt.Issue{
+			{ID: "tr1", Title: "Unassigned triage", Status: "open", Priority: 1,
+				CreatedAt: time.Now().Add(-3 * 24 * time.Hour)},
+		},
+		assignees: []string{"alice", "bob"},
+	}
+
+	srv := New(ds)
+
+	// Unfiltered
+	req := httptest.NewRequest("GET", "/triage", nil)
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /triage status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "All rigs") {
+		t.Error("expected rig filter badges when multiple rigs have data")
+	}
+
+	// With rig filter
+	req = httptest.NewRequest("GET", "/triage?rig=beads_aegis", nil)
+	w = httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /triage?rig= status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body = w.Body.String()
+	if !strings.Contains(body, `?rig=beads_aegis`) {
+		t.Error("expected rig filter preserved in auto-refresh URL")
+	}
+}
