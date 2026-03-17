@@ -5592,3 +5592,49 @@ func TestClosedPage_AssigneeDropdown(t *testing.T) {
 		t.Error("expected assignee dropdown on closed page")
 	}
 }
+
+func TestDeferredPage_InlinePriority(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issues: []dolt.Issue{
+			{ID: "df1", Title: "Deferred item", Status: "deferred", Priority: 3, UpdatedAt: time.Now(), CreatedAt: time.Now()},
+		},
+		assignees: []string{"aegis/crew/arnold"},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/deferred", nil)
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "bead-priority-inline") {
+		t.Error("expected inline priority editing on deferred page")
+	}
+}
+
+func TestParkingLotPage_InlinePriority(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issues: []dolt.Issue{
+			{ID: "pl1", Title: "Stalled item", Status: "in_progress", Priority: 2, UpdatedAt: time.Now().Add(-5 * 24 * time.Hour), CreatedAt: time.Now().Add(-10 * 24 * time.Hour)},
+		},
+		assignees: []string{"aegis/crew/arnold"},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/parking-lot", nil)
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "bead-priority-inline") {
+		t.Error("expected inline priority editing on parking-lot page")
+	}
+}
