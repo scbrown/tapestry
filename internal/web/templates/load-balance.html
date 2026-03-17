@@ -1,0 +1,64 @@
+{{define "title"}}Load Balance{{end}}
+{{define "content"}}
+<div class="load-balance-page" hx-get="/load-balance{{if .FilterRig}}?rig={{.FilterRig}}{{end}}" hx-trigger="every 60s" hx-select=".load-balance-page" hx-swap="outerHTML">
+  <h1>Load Balance <span class="text-dim">({{.Total}} agents)</span></h1>
+  <p class="text-dim">Agent workload distribution — composite score: in-progress &times;3 + blocked &times;2 + high-pri &times;2 + open &times;0.5</p>
+
+  <div class="dep-filters">
+    {{if .Rigs}}
+    <select onchange="location.href='/load-balance?rig='+this.value">
+      <option value="">All rigs</option>
+      {{range .Rigs}}<option value="{{.}}" {{if eq . $.FilterRig}}selected{{end}}>{{.}}</option>{{end}}
+    </select>
+    {{end}}
+    {{if gt .AvgScore 0.0}}<span class="badge">avg score: {{printf "%.0f" .AvgScore}}</span>{{end}}
+  </div>
+
+  {{if .Err}}
+  <div class="error-banner">{{.Err}}</div>
+  {{else if .Agents}}
+  <table>
+    <thead>
+      <tr>
+        <th>Agent</th>
+        <th>Status</th>
+        <th>Open</th>
+        <th>Active</th>
+        <th>Blocked</th>
+        <th>High-Pri</th>
+        <th>Load</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{range .Agents}}
+      <tr>
+        <td><a href="/agent/{{.Name}}">{{shortActor .Name}}</a></td>
+        <td>
+          <span class="badge load-{{.Status}}">{{.Status}}</span>
+        </td>
+        <td>{{.Open}}</td>
+        <td>{{.InProgress}}</td>
+        <td>{{.Blocked}}</td>
+        <td>{{.HighPri}}</td>
+        <td>
+          <div class="dwell-bar-container">
+            <div class="dwell-bar {{if eq .Status "overloaded"}}dwell-danger{{else if eq .Status "busy"}}dwell-warning{{else}}dwell-ok{{end}}" style="width: {{printf "%.0f" .ScorePct}}%"></div>
+            <span class="dwell-label">{{printf "%.0f" .Score}}</span>
+          </div>
+        </td>
+      </tr>
+      {{end}}
+    </tbody>
+  </table>
+  {{else}}
+  <p class="empty">No agent workload data available.</p>
+  {{end}}
+</div>
+
+<style>
+.load-overloaded { background: var(--red, #ff5555); color: var(--bg, #282a36); }
+.load-busy { background: var(--orange, #ffb86c); color: var(--bg, #282a36); }
+.load-balanced { background: var(--green, #50fa7b); color: var(--bg, #282a36); }
+.load-idle { background: var(--comment, #6272a4); }
+</style>
+{{end}}

@@ -1,0 +1,83 @@
+{{define "title"}}Stats{{end}}
+{{define "content"}}
+<div class="stats-page" hx-get="/stats" hx-trigger="every 60s" hx-select=".stats-page" hx-swap="outerHTML">
+  <h1>System Stats</h1>
+
+  <div class="briefing-grid">
+    <section class="briefing-card">
+      <h2>Totals</h2>
+      <div class="stat-grid">
+        <div class="stat"><span class="stat-value">{{.TotalBeads}}</span><span class="stat-label">Total Beads</span></div>
+        <div class="stat"><span class="stat-value">{{.TotalOpen}}</span><span class="stat-label">Open</span></div>
+        <div class="stat"><span class="stat-value">{{.TotalActive}}</span><span class="stat-label">Active</span></div>
+        <div class="stat"><span class="stat-value">{{.TotalBlocked}}</span><span class="stat-label">Blocked</span></div>
+        <div class="stat"><span class="stat-value">{{.TotalClosed}}</span><span class="stat-label">Closed</span></div>
+        <div class="stat"><span class="stat-value">{{.TotalDeferred}}</span><span class="stat-label">Deferred</span></div>
+      </div>
+    </section>
+
+    <section class="briefing-card">
+      <h2>7-Day Flow</h2>
+      <div class="stat-grid">
+        <div class="stat"><span class="stat-value accent">{{.Created7d}}</span><span class="stat-label">Created</span></div>
+        <div class="stat"><span class="stat-value accent">{{.Closed7d}}</span><span class="stat-label">Closed</span></div>
+        <div class="stat">
+          <span class="stat-value {{if gt .NetFlow7d 0}}text-warn{{else if lt .NetFlow7d 0}}text-good{{end}}">
+            {{if gt .NetFlow7d 0}}+{{end}}{{.NetFlow7d}}
+          </span>
+          <span class="stat-label">Net Flow</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="briefing-card">
+      <h2>30-Day Flow</h2>
+      <div class="stat-grid">
+        <div class="stat"><span class="stat-value accent">{{.Created30d}}</span><span class="stat-label">Created</span></div>
+        <div class="stat"><span class="stat-value accent">{{.Closed30d}}</span><span class="stat-label">Closed</span></div>
+        <div class="stat">
+          <span class="stat-value {{if gt .NetFlow30d 0}}text-warn{{else if lt .NetFlow30d 0}}text-good{{end}}">
+            {{if gt .NetFlow30d 0}}+{{end}}{{.NetFlow30d}}
+          </span>
+          <span class="stat-label">Net Flow</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="briefing-card">
+      <h2>Workforce</h2>
+      <div class="stat-grid">
+        <div class="stat"><span class="stat-value">{{.AgentCount}}</span><span class="stat-label">Agents</span></div>
+        <div class="stat"><span class="stat-value">{{len .Rigs}}</span><span class="stat-label">Rigs</span></div>
+      </div>
+    </section>
+  </div>
+
+  {{if .Rigs}}
+  <h2 style="margin-top:1.5rem">Per-Rig Breakdown</h2>
+  <table>
+    <thead>
+      <tr><th>Rig</th><th>Open</th><th>Active</th><th>Blocked</th><th>Closed</th><th>Deferred</th><th>Total</th></tr>
+    </thead>
+    <tbody>
+      {{range .Rigs}}
+      <tr>
+        <td><a href="/rigs">{{.Name}}</a></td>
+        <td>{{.Open}}</td>
+        <td>{{.Active}}</td>
+        <td>{{.Blocked}}</td>
+        <td>{{.Closed}}</td>
+        <td>{{.Deferred}}</td>
+        <td><strong>{{.Total}}</strong></td>
+      </tr>
+      {{end}}
+    </tbody>
+  </table>
+  {{end}}
+</div>
+
+<style>
+.text-warn { color: var(--orange, #ffb86c); }
+.text-good { color: var(--green, #50fa7b); }
+</style>
+{{end}}

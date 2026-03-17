@@ -9947,3 +9947,135 @@ func TestTransfersPage_WindowFilter(t *testing.T) {
 		}
 	}
 }
+
+// ── Load Balance Page ──────────────────────────────────────────
+
+func TestLoadBalancePage_NilDataSource(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/load-balance", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /load-balance status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Load Balance") {
+		t.Error("expected 'Load Balance' heading")
+	}
+}
+
+func TestLoadBalancePage_WithData(t *testing.T) {
+	now := time.Now()
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issues: []dolt.Issue{
+			{ID: "lb-1", Title: "Active work", Status: "in_progress", Priority: 0, Assignee: "aegis/crew/arnold", UpdatedAt: now},
+			{ID: "lb-2", Title: "Open work", Status: "open", Priority: 2, Assignee: "aegis/crew/arnold", UpdatedAt: now},
+			{ID: "lb-3", Title: "Blocked work", Status: "blocked", Priority: 1, Assignee: "aegis/crew/grant", UpdatedAt: now},
+		},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/load-balance", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /load-balance status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "arnold") {
+		t.Error("expected agent arnold in results")
+	}
+}
+
+func TestLoadBalancePage_HTMXPartial(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/load-balance", nil)
+	req.Header.Set("HX-Request", "true")
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("HTMX GET /load-balance status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if strings.Contains(body, "<!DOCTYPE html>") {
+		t.Error("HTMX load-balance should return partial, not full page")
+	}
+}
+
+func TestLoadBalancePage_RigFilter(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}, {Name: "beads_gastown"}},
+	}
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/load-balance?rig=beads_aegis", nil)
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
+	}
+}
+
+// ── Stats Page ──────────────────────────────────────────────
+
+func TestStatsPage_NilDataSource(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/stats", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /stats status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "System Stats") {
+		t.Error("expected 'System Stats' heading")
+	}
+}
+
+func TestStatsPage_WithData(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		counts: map[string]int{
+			"open": 10, "in_progress": 5, "closed": 20, "blocked": 3,
+		},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/stats", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /stats status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "beads_aegis") {
+		t.Error("expected rig name in per-rig breakdown")
+	}
+}
+
+func TestStatsPage_HTMXPartial(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/stats", nil)
+	req.Header.Set("HX-Request", "true")
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("HTMX GET /stats status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if strings.Contains(body, "<!DOCTYPE html>") {
+		t.Error("HTMX stats should return partial, not full page")
+	}
+}
