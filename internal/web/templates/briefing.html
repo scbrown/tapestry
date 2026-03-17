@@ -44,11 +44,16 @@
       {{if .NeedsAttention}}
       <ul class="briefing-list">
         {{range .NeedsAttention}}
-        <li>
+        <li class="attention-item">
           <a href="/bead/{{lower .Rig}}/{{.ID}}" hx-boost="true">{{.ID}}</a>
           <span class="priority-badge p{{.Priority}}">P{{.Priority}}</span>
           {{.Title}}
           {{if .Assignee}}<span class="text-dim">{{shortActor .Assignee}}</span>{{end}}
+          <time class="text-dim freshness">{{timeAgo .UpdatedAt}}</time>
+          <span class="briefing-actions">
+            <button class="btn btn-xs" hx-post="/bead/{{lower .Rig}}/{{.ID}}/status" hx-vals='{"status":"closed"}' hx-swap="outerHTML" hx-target="closest li" hx-confirm="Close {{.ID}}?">close</button>
+            <button class="btn btn-xs" hx-post="/bead/{{lower .Rig}}/{{.ID}}/status" hx-vals='{"status":"deferred"}' hx-swap="outerHTML" hx-target="closest li" hx-confirm="Defer {{.ID}}?">defer</button>
+          </span>
         </li>
         {{end}}
       </ul>
@@ -63,12 +68,15 @@
       {{if .InFlight}}
       <ul class="briefing-list">
         {{range .InFlight}}
-        <li>
+        <li class="inflight-item">
           <a href="/bead/{{lower .Rig}}/{{.ID}}" hx-boost="true">{{.ID}}</a>
           <span class="priority-badge p{{.Priority}}">P{{.Priority}}</span>
           {{.Title}}
           {{if .Assignee}}<span class="text-dim">{{shortActor .Assignee}}</span>{{end}}
           <time class="text-dim freshness">{{timeAgo .UpdatedAt}}</time>
+          <span class="briefing-actions">
+            <button class="btn btn-xs" hx-post="/bead/{{lower .Rig}}/{{.ID}}/status" hx-vals='{"status":"closed"}' hx-swap="outerHTML" hx-target="closest li" hx-confirm="Close {{.ID}}?">close</button>
+          </span>
         </li>
         {{end}}
       </ul>
@@ -108,6 +116,7 @@
           <a href="/bead/{{lower .Issue.Rig}}/{{.Issue.ID}}" hx-boost="true">{{.Issue.ID}}</a>
           <span class="priority-badge p{{.Issue.Priority}}">P{{.Issue.Priority}}</span>
           {{.Issue.Title}}
+          <time class="text-dim freshness">{{timeAgo .Issue.UpdatedAt}}</time>
           <span class="blocked-reason">
             blocked by <a href="/bead/{{lower .BlockerRig}}/{{.BlockerID}}" hx-boost="true">{{.BlockerID}}</a>
             <span class="text-dim">({{.BlockerDesc}}{{if .Owner}} — {{shortActor .Owner}}{{end}})</span>
