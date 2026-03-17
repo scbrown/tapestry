@@ -8748,3 +8748,178 @@ func TestPhasePage_RigFilter(t *testing.T) {
 		t.Error("expected active rig filter badge")
 	}
 }
+
+// ── /tag-velocity ──
+
+func TestTagVelocityPage_NilDataSource(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/tag-velocity", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /tag-velocity status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Tag Velocity") {
+		t.Error("expected 'Tag Velocity' heading")
+	}
+}
+
+func TestTagVelocityPage_WithData(t *testing.T) {
+	now := time.Now()
+	ds := &mockDataSource{
+		databases:   []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		labelCounts: []dolt.LabelCount{{Label: "bug", Count: 3}},
+		issues: []dolt.Issue{
+			{ID: "tv1", Title: "Open bug", Status: "open", CreatedAt: now.AddDate(0, 0, -5), UpdatedAt: now},
+			{ID: "tv2", Title: "Closed bug", Status: "closed", CreatedAt: now.AddDate(0, 0, -10), UpdatedAt: now.AddDate(0, 0, -2)},
+		},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/tag-velocity", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /tag-velocity status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "bug") {
+		t.Error("expected label 'bug' in output")
+	}
+	if !strings.Contains(body, "Label Resolution Speed") {
+		t.Error("expected resolution speed section")
+	}
+}
+
+func TestTagVelocityPage_HTMXPartial(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/tag-velocity", nil)
+	req.Header.Set("HX-Request", "true")
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("HTMX GET /tag-velocity status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if strings.Contains(body, "<!DOCTYPE html>") {
+		t.Error("HTMX tag-velocity should return partial, not full page")
+	}
+}
+
+func TestTagVelocityPage_RigFilter(t *testing.T) {
+	ds := &mockDataSource{
+		databases:   []dolt.DatabaseInfo{{Name: "beads_aegis"}, {Name: "beads_gastown"}},
+		labelCounts: []dolt.LabelCount{{Label: "bug", Count: 1}},
+		issues: []dolt.Issue{
+			{ID: "tv1", Title: "Test", Status: "open", CreatedAt: time.Now().Add(-24 * time.Hour), UpdatedAt: time.Now()},
+		},
+	}
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/tag-velocity?rig=beads_aegis", nil)
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, `rig=beads_aegis`) {
+		t.Error("expected rig filter preserved in auto-refresh URL")
+	}
+	if !strings.Contains(body, "filter-active") {
+		t.Error("expected filter-active badge")
+	}
+}
+
+// ── /pacing ──
+
+func TestPacingPage_NilDataSource(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/pacing", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /pacing status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Backlog Pacing") {
+		t.Error("expected 'Backlog Pacing' heading")
+	}
+}
+
+func TestPacingPage_WithData(t *testing.T) {
+	now := time.Now()
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issues: []dolt.Issue{
+			{ID: "p1", Title: "Open item", Status: "open", CreatedAt: now.AddDate(0, 0, -5), UpdatedAt: now},
+			{ID: "p2", Title: "Closed item", Status: "closed", CreatedAt: now.AddDate(0, 0, -10), UpdatedAt: now.AddDate(0, 0, -2)},
+			{ID: "p3", Title: "Another open", Status: "open", CreatedAt: now.AddDate(0, 0, -3), UpdatedAt: now},
+		},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/pacing", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /pacing status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Daily Close Rate") {
+		t.Error("expected daily close rate stat")
+	}
+	if !strings.Contains(body, "Days to Clear") {
+		t.Error("expected days to clear stat")
+	}
+}
+
+func TestPacingPage_HTMXPartial(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/pacing", nil)
+	req.Header.Set("HX-Request", "true")
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("HTMX GET /pacing status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if strings.Contains(body, "<!DOCTYPE html>") {
+		t.Error("HTMX pacing should return partial, not full page")
+	}
+}
+
+func TestPacingPage_RigFilter(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}, {Name: "beads_gastown"}},
+		issues: []dolt.Issue{
+			{ID: "p1", Title: "Test", Status: "open", CreatedAt: time.Now().Add(-24 * time.Hour), UpdatedAt: time.Now()},
+		},
+	}
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/pacing?rig=beads_aegis", nil)
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, `rig=beads_aegis`) {
+		t.Error("expected rig filter preserved in auto-refresh URL")
+	}
+	if !strings.Contains(body, "filter-active") {
+		t.Error("expected filter-active badge")
+	}
+}

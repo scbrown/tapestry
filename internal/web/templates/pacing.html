@@ -1,0 +1,81 @@
+{{define "title"}}Pacing{{end}}
+{{define "content"}}
+<div class="backlog-page" hx-get="/pacing{{if .FilterRig}}?rig={{.FilterRig}}{{end}}" hx-trigger="every 120s" hx-select=".backlog-page" hx-swap="outerHTML">
+  <h1>Backlog Pacing <time class="text-dim">{{.GeneratedAt.Format "Jan 02, 2006 15:04"}}</time></h1>
+
+  {{if gt (len .Rigs) 1}}
+  <div class="dep-filters">
+    <a href="/pacing" class="badge {{if not .FilterRig}}filter-active{{end}}">All rigs</a>
+    {{range .Rigs}}
+    <a href="/pacing?rig={{.}}" class="badge {{if eq . $.FilterRig}}filter-active{{end}}">{{rigName .}}</a>
+    {{end}}
+  </div>
+  {{end}}
+
+  <div class="backlog-stats">
+    <div class="stat">
+      <span class="stat-value accent">{{.TotalOpen}}</span>
+      <span class="stat-label">Open Beads</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value" style="color:var(--green)">{{printf "%.1f" .DailyCloseRate}}</span>
+      <span class="stat-label">Daily Close Rate</span>
+    </div>
+    <div class="stat">
+      {{if ge .DaysToClear 0}}
+      <span class="stat-value" style="color:var(--orange)">{{.DaysToClear}}</span>
+      {{else}}
+      <span class="stat-value" style="color:var(--red)">&infin;</span>
+      {{end}}
+      <span class="stat-label">Days to Clear</span>
+    </div>
+    <div class="stat">
+      {{if eq .Indicator "ahead"}}
+      <span class="stat-value" style="color:var(--green)">Ahead</span>
+      {{else if eq .Indicator "behind"}}
+      <span class="stat-value" style="color:var(--red)">Behind</span>
+      {{else}}
+      <span class="stat-value" style="color:var(--cyan)">On Pace</span>
+      {{end}}
+      <span class="stat-label">Pacing</span>
+    </div>
+  </div>
+
+  <section class="backlog-card">
+    <h2>30-Day Activity</h2>
+    <div class="table-wrap">
+    <table class="bead-table">
+      <thead>
+        <tr>
+          <th>Metric</th>
+          <th>Value</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Closed (30 days)</td>
+          <td style="color:var(--green)">{{.Closed30}}</td>
+        </tr>
+        <tr>
+          <td>Created (30 days)</td>
+          <td style="color:var(--purple)">{{.Created30}}</td>
+        </tr>
+        <tr>
+          <td>Net Change (30 days)</td>
+          <td {{if lt (sub .Created30 .Closed30) 0}}style="color:var(--green)"{{else if gt (sub .Created30 .Closed30) 0}}style="color:var(--red)"{{end}}>
+            {{if gt (sub .Created30 .Closed30) 0}}+{{end}}{{sub .Created30 .Closed30}}
+          </td>
+        </tr>
+        <tr>
+          <td>Daily Net Rate</td>
+          <td {{if lt .NetRate 0.0}}style="color:var(--green)"{{else if gt .NetRate 0.0}}style="color:var(--red)"{{end}}>
+            {{printf "%+.1f" .NetRate}}/day
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    </div>
+  </section>
+
+</div>
+{{end}}

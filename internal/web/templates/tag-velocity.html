@@ -1,0 +1,61 @@
+{{define "title"}}Tag Velocity{{end}}
+{{define "content"}}
+<div class="backlog-page" hx-get="/tag-velocity{{if .FilterRig}}?rig={{.FilterRig}}{{end}}" hx-trigger="every 120s" hx-select=".backlog-page" hx-swap="outerHTML">
+  <h1>Tag Velocity <time class="text-dim">{{.GeneratedAt.Format "Jan 02, 2006 15:04"}}</time></h1>
+
+  {{if gt (len .Rigs) 1}}
+  <div class="dep-filters">
+    <a href="/tag-velocity" class="badge {{if not .FilterRig}}filter-active{{end}}">All rigs</a>
+    {{range .Rigs}}
+    <a href="/tag-velocity?rig={{.}}" class="badge {{if eq . $.FilterRig}}filter-active{{end}}">{{rigName .}}</a>
+    {{end}}
+  </div>
+  {{end}}
+
+  <div class="backlog-stats">
+    <div class="stat">
+      <span class="stat-value accent">{{len .Labels}}</span>
+      <span class="stat-label">Labels Tracked</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value" style="color:var(--cyan)">{{.TotalOpen}}</span>
+      <span class="stat-label">Total Open</span>
+    </div>
+  </div>
+
+  {{if .Labels}}
+  <section class="backlog-card">
+    <h2>Label Resolution Speed (30-day window)</h2>
+    <div class="table-wrap">
+    <table class="bead-table">
+      <thead>
+        <tr>
+          <th>Label</th>
+          <th>Open</th>
+          <th>Closed (30d)</th>
+          <th>Created (30d)</th>
+          <th>Net</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{range .Labels}}
+        <tr>
+          <td><a href="/labels?q={{.Label}}">{{.Label}}</a></td>
+          <td>{{.Open}}</td>
+          <td style="color:var(--green)">{{.Closed30}}</td>
+          <td style="color:var(--purple)">{{.Created30}}</td>
+          <td {{if lt .Net 0}}style="color:var(--green)"{{else if gt .Net 0}}style="color:var(--red)"{{end}}>
+            {{if gt .Net 0}}+{{end}}{{.Net}}
+          </td>
+        </tr>
+        {{end}}
+      </tbody>
+    </table>
+    </div>
+  </section>
+  {{else}}
+  <p class="text-dim">No label data available.</p>
+  {{end}}
+
+</div>
+{{end}}

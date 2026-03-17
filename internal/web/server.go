@@ -681,6 +681,14 @@ func (s *Server) parseTemplates() {
 			template.New("").Funcs(funcMap).ParseFS(templateFS,
 				"templates/layout.html", "templates/phase.html"),
 		),
+		"tag-velocity": template.Must(
+			template.New("").Funcs(funcMap).ParseFS(templateFS,
+				"templates/layout.html", "templates/tag-velocity.html"),
+		),
+		"pacing": template.Must(
+			template.New("").Funcs(funcMap).ParseFS(templateFS,
+				"templates/layout.html", "templates/pacing.html"),
+		),
 	}
 }
 
@@ -954,6 +962,10 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		s.handleDisposition(w, r)
 	case len(segments) == 1 && segments[0] == "phase":
 		s.handlePhase(w, r)
+	case len(segments) == 1 && segments[0] == "tag-velocity":
+		s.handleTagVelocity(w, r)
+	case len(segments) == 1 && segments[0] == "pacing":
+		s.handlePacing(w, r)
 	case len(segments) == 1 && segments[0] == "designs":
 		s.handleDesignsList(w, r)
 	case len(segments) == 2 && segments[0] == "designs":
