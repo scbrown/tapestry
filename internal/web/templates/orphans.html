@@ -37,6 +37,7 @@
           <th>Pri</th>
           <th>Rig</th>
           <th>Age</th>
+          <th>Assignee</th>
           <th>Missing</th>
           <th>Actions</th>
         </tr>
@@ -58,6 +59,15 @@
           </td>
           <td class="text-dim">{{.Rig}}</td>
           <td>{{.Age}}d</td>
+          <td>
+            <select class="triage-assign" hx-post="/bead/{{.Rig}}/{{.Issue.ID}}/assign" hx-swap="outerHTML" hx-target="closest tr" name="assignee">
+              <option value="">—</option>
+              {{$cur := .Issue.Assignee}}
+              {{range $.Assignees}}
+              <option value="{{.}}" {{if eq . $cur}}selected{{end}}>{{shortActor .}}</option>
+              {{end}}
+            </select>
+          </td>
           <td class="text-dim">{{.Reason}}</td>
           <td class="actions-cell">
             <button class="btn btn-xs" hx-post="/bead/{{.Rig}}/{{.Issue.ID}}/status" hx-vals='{"status":"closed"}' hx-swap="outerHTML" hx-target="closest tr" hx-confirm="Close {{.Issue.ID}}?">close</button>

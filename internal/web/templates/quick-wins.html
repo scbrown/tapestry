@@ -65,7 +65,15 @@
               {{if le .Score 2}}trivial{{else if le .Score 5}}low{{else}}medium{{end}}
             </span>
           </td>
-          <td class="text-dim">{{shortActor .Issue.Assignee}}</td>
+          <td>
+            <select class="triage-assign" hx-post="/bead/{{.Rig}}/{{.Issue.ID}}/assign" hx-swap="outerHTML" hx-target="closest tr" name="assignee">
+              <option value="">—</option>
+              {{$cur := .Issue.Assignee}}
+              {{range $.Assignees}}
+              <option value="{{.}}" {{if eq . $cur}}selected{{end}}>{{shortActor .}}</option>
+              {{end}}
+            </select>
+          </td>
           <td class="actions-cell">
             {{if eq .Issue.Status "open"}}<button class="btn btn-xs" hx-post="/bead/{{.Rig}}/{{.Issue.ID}}/status" hx-vals='{"status":"in_progress"}' hx-swap="outerHTML" hx-target="closest tr">start</button>{{end}}
             <button class="btn btn-xs" hx-post="/bead/{{.Rig}}/{{.Issue.ID}}/status" hx-vals='{"status":"closed"}' hx-swap="outerHTML" hx-target="closest tr" hx-confirm="Close {{.Issue.ID}}?">close</button>

@@ -23,6 +23,7 @@ type orphansData struct {
 	Total       int
 	Rigs        []string
 	FilterRig   string
+	Assignees   []string
 }
 
 func (s *Server) handleOrphans(w http.ResponseWriter, r *http.Request) {
@@ -53,8 +54,9 @@ func (s *Server) handleOrphans(w http.ResponseWriter, r *http.Request) {
 	now := time.Now()
 
 	type dbResult struct {
-		rig   string
-		items []orphanItem
+		rig       string
+		items     []orphanItem
+		assignees []string
 	}
 	results := make([]dbResult, len(dbs))
 	var wg sync.WaitGroup
@@ -66,6 +68,7 @@ func (s *Server) handleOrphans(w http.ResponseWriter, r *http.Request) {
 		wg.Add(1)
 		go func(idx int, dbName string) {
 			defer wg.Done()
+			assignees, _ := s.ds.DistinctAssignees(ctx, dbName)
 
 			// Get open issues
 			open, err := s.ds.Issues(ctx, dbName, dolt.IssueFilter{Status: "open", Limit: 5000})
@@ -146,15 +149,23 @@ func (s *Server) handleOrphans(w http.ResponseWriter, r *http.Request) {
 			}
 			labWg.Wait()
 
-			results[idx] = dbResult{rig: dbName, items: items}
+			results[idx] = dbResult{rig: dbName, items: items, assignees: assignees}
 		}(i, db.Name)
 	}
 	wg.Wait()
 
 	var allItems []orphanItem
+	assigneeSet := make(map[string]bool)
 	for _, r := range results {
 		allItems = append(allItems, r.items...)
+		for _, a := range r.assignees {
+			assigneeSet[a] = true
+		}
 	}
+	for a := range assigneeSet {
+		data.Assignees = append(data.Assignees, a)
+	}
+	sort.Strings(data.Assignees)
 
 	// Sort by age descending (oldest orphans first)
 	sort.Slice(allItems, func(i, j int) bool {
