@@ -1,7 +1,7 @@
 {{define "title"}}Dependencies{{end}}
 
 {{define "content"}}
-<div class="deps-view" hx-get="/deps" hx-trigger="every 120s" hx-select=".deps-view" hx-swap="outerHTML">
+<div class="deps-view" hx-get="/deps{{if .Filter}}?type={{.Filter}}{{end}}" hx-trigger="every 120s" hx-select=".deps-view" hx-swap="outerHTML">
   <h1>Dependency Graph</h1>
 
   {{if .Err}}

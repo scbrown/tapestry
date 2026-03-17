@@ -5943,3 +5943,40 @@ func TestLabelsPage_StartAndReopen(t *testing.T) {
 	}
 }
 
+func TestDepsPage_FilterPreservation(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/deps?type=child_of", nil)
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, `hx-get="/deps?type=child_of"`) {
+		t.Error("expected auto-refresh to preserve type filter on deps page")
+	}
+}
+
+func TestHandoffsPage_FilterPreservation(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/handoffs?actor=aegis/crew/arnold", nil)
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, `hx-get="/handoffs?actor=aegis/crew/arnold"`) {
+		t.Error("expected auto-refresh to preserve actor filter on handoffs page")
+	}
+}

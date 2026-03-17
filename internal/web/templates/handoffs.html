@@ -1,6 +1,6 @@
 {{define "title"}}Handoffs{{end}}
 {{define "content"}}
-<div class="handoffs-page" hx-get="/handoffs" hx-trigger="every 120s" hx-select=".handoffs-page" hx-swap="outerHTML">
+<div class="handoffs-page" hx-get="/handoffs{{if .ActorFilter}}?actor={{.ActorFilter}}{{end}}" hx-trigger="every 120s" hx-select=".handoffs-page" hx-swap="outerHTML">
   <h1>Handoff Chains <span class="text-dim">({{.TotalChains}} actors)</span></h1>
 
   {{if .ActorFilter}}
