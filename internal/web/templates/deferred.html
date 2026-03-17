@@ -91,6 +91,9 @@
           </td>
           <td>
             <button class="btn-sm btn-open"
+              hx-post="/bead/{{.Rig}}/{{.Issue.ID}}/status" hx-vals='{"status":"in_progress"}'
+              hx-swap="none" hx-on::after-request="this.closest('tr').remove()">start</button>
+            <button class="btn-sm btn-open"
               hx-post="/bead/{{.Rig}}/{{.Issue.ID}}/status" hx-vals='{"status":"open"}'
               hx-swap="none" hx-on::after-request="this.closest('tr').remove()">reopen</button>
             <button class="btn-sm btn-close"
