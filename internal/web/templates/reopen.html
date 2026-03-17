@@ -1,0 +1,62 @@
+{{define "title"}}Reopened{{end}}
+{{define "content"}}
+<div class="reopen-page" hx-get="/reopen{{if .FilterRig}}?rig={{.FilterRig}}{{end}}" hx-trigger="every 120s" hx-select=".reopen-page" hx-swap="outerHTML">
+  <h1>Reopened Beads <time class="text-dim">{{formatDateTime .GeneratedAt}}</time></h1>
+  <p class="text-dim">Open beads that were previously closed — potential regressions or incomplete fixes.</p>
+
+  {{if .Err}}
+  <div class="error">{{.Err}}</div>
+  {{else}}
+
+  {{/* ── Stats ── */}}
+  <div class="briefing-grid">
+    <section class="briefing-card">
+      <h2>Reopen Stats</h2>
+      <div class="stat-grid">
+        <div class="stat">
+          <span class="stat-value {{if gt .UniqueBeads 5}}warn{{end}}">{{.UniqueBeads}}</span>
+          <span class="stat-label">Reopened beads</span>
+        </div>
+        <div class="stat">
+          <span class="stat-value">{{.TotalReopens}}</span>
+          <span class="stat-label">Total reopens</span>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  {{/* ── Reopened Beads Table ── */}}
+  {{if .Beads}}
+  <table class="bead-table">
+    <thead>
+      <tr>
+        <th>Bead</th>
+        <th>Title</th>
+        <th>Status</th>
+        <th>Pri</th>
+        <th>Assignee</th>
+        <th>Reopens</th>
+        <th>Last Reopened</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{range .Beads}}
+      <tr>
+        <td><a href="/bead/{{.DB}}/{{.ID}}">{{.ID}}</a></td>
+        <td>{{.Title}}</td>
+        <td>{{statusBadge .Status}}</td>
+        <td>{{priorityLabel .Priority}}</td>
+        <td>{{if .Assignee}}<a href="/agent/{{.Assignee}}">{{shortActor .Assignee}}</a>{{else}}<span class="text-dim">—</span>{{end}}</td>
+        <td><strong>{{.Reopens}}</strong></td>
+        <td>{{formatDate .LastReopen}}</td>
+      </tr>
+      {{end}}
+    </tbody>
+  </table>
+  {{else}}
+  <p class="text-dim">No reopened beads — all closures held!</p>
+  {{end}}
+
+  {{end}}
+</div>
+{{end}}

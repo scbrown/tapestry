@@ -1,0 +1,64 @@
+{{define "title"}}Escalations{{end}}
+{{define "content"}}
+<div class="escalations-page" hx-get="/escalations{{if .FilterRig}}?rig={{.FilterRig}}{{end}}" hx-trigger="every 120s" hx-select=".escalations-page" hx-swap="outerHTML">
+  <h1>Escalations <time class="text-dim">{{formatDateTime .GeneratedAt}}</time></h1>
+  <p class="text-dim">High-priority beads with significant activity — likely escalated items.</p>
+
+  {{if .Err}}
+  <div class="error">{{.Err}}</div>
+  {{else}}
+
+  {{/* ── Stats ── */}}
+  <div class="briefing-grid">
+    <section class="briefing-card">
+      <h2>Escalation Summary</h2>
+      <div class="stat-grid">
+        <div class="stat">
+          <span class="stat-value {{if gt .TotalEsc 5}}warn{{end}}">{{.TotalEsc}}</span>
+          <span class="stat-label">Active escalations</span>
+        </div>
+        <div class="stat">
+          <span class="stat-value {{if gt .ToP0 0}}warn{{end}}">{{.ToP0}}</span>
+          <span class="stat-label">P0 items</span>
+        </div>
+        <div class="stat">
+          <span class="stat-value">{{.ToP1}}</span>
+          <span class="stat-label">P1 items</span>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  {{/* ── Escalated Beads ── */}}
+  {{if .Escalations}}
+  <table class="bead-table">
+    <thead>
+      <tr>
+        <th>Bead</th>
+        <th>Title</th>
+        <th>Status</th>
+        <th>Priority</th>
+        <th>Assignee</th>
+        <th>Last Updated</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{range .Escalations}}
+      <tr>
+        <td><a href="/bead/{{.DB}}/{{.ID}}">{{.ID}}</a></td>
+        <td>{{.Title}}</td>
+        <td>{{statusBadge .Status}}</td>
+        <td>{{priorityLabel .Priority}}</td>
+        <td>{{if .Assignee}}<a href="/agent/{{.Assignee}}">{{shortActor .Assignee}}</a>{{else}}<span class="text-dim">—</span>{{end}}</td>
+        <td>{{formatDate .EscalatedAt}}</td>
+      </tr>
+      {{end}}
+    </tbody>
+  </table>
+  {{else}}
+  <p class="text-dim">No active escalations.</p>
+  {{end}}
+
+  {{end}}
+</div>
+{{end}}

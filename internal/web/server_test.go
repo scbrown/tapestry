@@ -8004,3 +8004,119 @@ func TestIdlePage_AutoRefresh(t *testing.T) {
 		t.Error("expected 120s auto-refresh on idle page")
 	}
 }
+
+// ── /reopen ──
+
+func TestReopenPage(t *testing.T) {
+	srv := New(&mockDataSource{})
+	req := httptest.NewRequest("GET", "/reopen", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /reopen status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Reopened Beads") {
+		t.Error("expected 'Reopened Beads' heading")
+	}
+	if !strings.Contains(body, "Reopen Stats") {
+		t.Error("expected Reopen Stats section")
+	}
+}
+
+func TestReopenPage_NilDS(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/reopen", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /reopen nil ds status = %d, want %d", w.Code, http.StatusOK)
+	}
+}
+
+func TestReopenPage_RigFilter(t *testing.T) {
+	srv := New(&mockDataSource{})
+	req := httptest.NewRequest("GET", "/reopen?rig=beads_aegis", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /reopen?rig status = %d, want %d", w.Code, http.StatusOK)
+	}
+}
+
+func TestReopenPage_AutoRefresh(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/reopen", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	body := w.Body.String()
+	if !strings.Contains(body, `hx-trigger="every 120s"`) {
+		t.Error("expected 120s auto-refresh on reopen page")
+	}
+}
+
+// ── /escalations ──
+
+func TestEscalationsPage(t *testing.T) {
+	srv := New(&mockDataSource{})
+	req := httptest.NewRequest("GET", "/escalations", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /escalations status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Escalations") {
+		t.Error("expected 'Escalations' heading")
+	}
+	if !strings.Contains(body, "Escalation Summary") {
+		t.Error("expected Escalation Summary section")
+	}
+}
+
+func TestEscalationsPage_NilDS(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/escalations", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /escalations nil ds status = %d, want %d", w.Code, http.StatusOK)
+	}
+}
+
+func TestEscalationsPage_RigFilter(t *testing.T) {
+	srv := New(&mockDataSource{})
+	req := httptest.NewRequest("GET", "/escalations?rig=beads_aegis", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /escalations?rig status = %d, want %d", w.Code, http.StatusOK)
+	}
+}
+
+func TestEscalationsPage_AutoRefresh(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/escalations", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	body := w.Body.String()
+	if !strings.Contains(body, `hx-trigger="every 120s"`) {
+		t.Error("expected 120s auto-refresh on escalations page")
+	}
+}

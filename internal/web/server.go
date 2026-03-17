@@ -633,6 +633,14 @@ func (s *Server) parseTemplates() {
 			template.New("").Funcs(funcMap).ParseFS(templateFS,
 				"templates/layout.html", "templates/idle.html"),
 		),
+		"reopen": template.Must(
+			template.New("").Funcs(funcMap).ParseFS(templateFS,
+				"templates/layout.html", "templates/reopen.html"),
+		),
+		"escalations": template.Must(
+			template.New("").Funcs(funcMap).ParseFS(templateFS,
+				"templates/layout.html", "templates/escalations.html"),
+		),
 	}
 }
 
@@ -882,6 +890,10 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		s.handlePairFreq(w, r)
 	case len(segments) == 1 && segments[0] == "idle":
 		s.handleIdle(w, r)
+	case len(segments) == 1 && segments[0] == "reopen":
+		s.handleReopen(w, r)
+	case len(segments) == 1 && segments[0] == "escalations":
+		s.handleEscalations(w, r)
 	case len(segments) == 1 && segments[0] == "designs":
 		s.handleDesignsList(w, r)
 	case len(segments) == 2 && segments[0] == "designs":
