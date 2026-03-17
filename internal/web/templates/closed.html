@@ -64,7 +64,15 @@
           <td>{{.Issue.Title}}</td>
           <td>{{priorityLabel .Issue.Priority}}</td>
           <td>{{.Issue.Type}}</td>
-          <td title="{{.Issue.Assignee}}">{{shortActor .Issue.Assignee}}</td>
+          <td>
+            <select class="triage-assign" hx-post="/bead/{{lower .Rig}}/{{.Issue.ID}}/assign" hx-swap="outerHTML" hx-target="closest tr" name="assignee">
+              <option value="">—</option>
+              {{$cur := .Issue.Assignee}}
+              {{range $.Assignees}}
+              <option value="{{.}}" {{if eq . $cur}}selected{{end}}>{{shortActor .}}</option>
+              {{end}}
+            </select>
+          </td>
           <td>{{timeAgo .Issue.UpdatedAt}}</td>
           <td class="triage-actions">
             <button class="btn btn-xs" hx-post="/bead/{{lower .Rig}}/{{.Issue.ID}}/status" hx-vals='{"status":"open"}' hx-swap="outerHTML" hx-target="closest tr" hx-confirm="Reopen {{.Issue.ID}}?">reopen</button>

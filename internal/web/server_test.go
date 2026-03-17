@@ -5569,3 +5569,26 @@ func TestBlockedPage_InlinePriority(t *testing.T) {
 		t.Error("expected inline priority editing on blocked page")
 	}
 }
+
+func TestClosedPage_AssigneeDropdown(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issues: []dolt.Issue{
+			{ID: "c1", Title: "Done item", Status: "closed", Priority: 2, Assignee: "aegis/crew/arnold", UpdatedAt: time.Now()},
+		},
+		assignees: []string{"aegis/crew/arnold", "aegis/crew/grant"},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/closed", nil)
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "triage-assign") {
+		t.Error("expected assignee dropdown on closed page")
+	}
+}

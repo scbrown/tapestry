@@ -29,6 +29,7 @@ type closedData struct {
 	Days      int
 	Rigs      []string
 	FilterRig string
+	Assignees []string
 	Err       string
 }
 
@@ -56,7 +57,8 @@ func (s *Server) handleClosed(w http.ResponseWriter, r *http.Request) {
 	cutoff := time.Now().Add(-time.Duration(days) * 24 * time.Hour)
 
 	type dbResult struct {
-		entries []closedEntry
+		entries   []closedEntry
+		assignees []string
 	}
 
 	results := make([]dbResult, len(dbs))
@@ -78,7 +80,8 @@ func (s *Server) handleClosed(w http.ResponseWriter, r *http.Request) {
 			for _, iss := range issues {
 				entries = append(entries, closedEntry{Issue: iss, Rig: dbName})
 			}
-			results[i] = dbResult{entries: entries}
+			assignees, _ := s.ds.DistinctAssignees(ctx, dbName)
+			results[i] = dbResult{entries: entries, assignees: assignees}
 		}(i, db.Name)
 	}
 	wg.Wait()
@@ -134,6 +137,21 @@ func (s *Server) handleClosed(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
+	// Collect distinct assignees
+	assigneeSet := make(map[string]bool)
+	for _, r := range results {
+		for _, a := range r.assignees {
+			if a != "" {
+				assigneeSet[a] = true
+			}
+		}
+	}
+	var assignees []string
+	for a := range assigneeSet {
+		assignees = append(assignees, a)
+	}
+	sort.Strings(assignees)
+
 	s.render(w, r, "closed", closedData{
 		Entries:   all,
 		ByDay:     byDay,
@@ -141,5 +159,6 @@ func (s *Server) handleClosed(w http.ResponseWriter, r *http.Request) {
 		Days:      days,
 		Rigs:      rigs,
 		FilterRig: filterRig,
+		Assignees: assignees,
 	})
 }
