@@ -1453,3 +1453,7 @@ h1:hover .bead-title-edit { opacity: 1; }
 .kb-help-list { display: grid; grid-template-columns: auto 1fr; gap: 0.25rem 1rem; }
 .kb-help-list dt { font-family: monospace; color: var(--purple); font-weight: bold; }
 .kb-help-list dd { color: var(--text); }
+
+/* Briefing inline actions — hover-reveal close/defer buttons */
+.briefing-actions { display: none; margin-left: 0.5rem; }
+.briefing-list li:hover .briefing-actions { display: inline-flex; gap: 3px; }
