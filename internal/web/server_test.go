@@ -1678,6 +1678,39 @@ func TestBatchStatus_NoIds(t *testing.T) {
 	}
 }
 
+func TestBatchStatus_InProgress(t *testing.T) {
+	ds := &mockDataSource{}
+	srv := New(ds)
+
+	body := "status=in_progress&ids[]=beads_aegis/aegis-001"
+	req := httptest.NewRequest("POST", "/batch/status", strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
+	}
+	if !strings.Contains(w.Body.String(), "1 beads updated to in_progress") {
+		t.Errorf("response should confirm in_progress, got: %s", w.Body.String())
+	}
+}
+
+func TestBatchStatus_Blocked(t *testing.T) {
+	ds := &mockDataSource{}
+	srv := New(ds)
+
+	body := "status=blocked&ids[]=beads_aegis/aegis-001"
+	req := httptest.NewRequest("POST", "/batch/status", strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
+	}
+}
+
 func TestBatchPriority(t *testing.T) {
 	ds := &mockDataSource{}
 	srv := New(ds)

@@ -1574,7 +1574,7 @@ func (s *Server) handleBatchStatus(w http.ResponseWriter, r *http.Request) {
 
 	newStatus := r.FormValue("status")
 	validStatuses := map[string]bool{
-		"open": true, "closed": true, "deferred": true,
+		"open": true, "in_progress": true, "closed": true, "blocked": true, "deferred": true,
 	}
 	if !validStatuses[newStatus] {
 		http.Error(w, "invalid status", http.StatusBadRequest)
