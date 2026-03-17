@@ -661,6 +661,10 @@ func (s *Server) parseTemplates() {
 			template.New("").Funcs(funcMap).ParseFS(templateFS,
 				"templates/layout.html", "templates/label-matrix.html"),
 		),
+		"label-trends": template.Must(
+			template.New("").Funcs(funcMap).ParseFS(templateFS,
+				"templates/layout.html", "templates/label-trends.html"),
+		),
 	}
 }
 
@@ -924,6 +928,8 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		s.handleComplexity(w, r)
 	case len(segments) == 1 && segments[0] == "label-matrix":
 		s.handleLabelMatrix(w, r)
+	case len(segments) == 1 && segments[0] == "label-trends":
+		s.handleLabelTrends(w, r)
 	case len(segments) == 1 && segments[0] == "designs":
 		s.handleDesignsList(w, r)
 	case len(segments) == 2 && segments[0] == "designs":

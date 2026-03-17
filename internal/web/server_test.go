@@ -8365,3 +8365,58 @@ func TestLabelMatrixPage_RigFilter(t *testing.T) {
 		t.Fatalf("GET /label-matrix?rig=aegis status = %d, want %d", w.Code, http.StatusOK)
 	}
 }
+
+// ── /label-trends ──
+
+func TestLabelTrendsPage(t *testing.T) {
+	srv := New(&mockDataSource{})
+	req := httptest.NewRequest("GET", "/label-trends", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /label-trends status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Label Trends") {
+		t.Error("expected 'Label Trends' heading")
+	}
+}
+
+func TestLabelTrendsPage_NilDS(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/label-trends", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /label-trends nil ds status = %d, want %d", w.Code, http.StatusOK)
+	}
+}
+
+func TestLabelTrendsPage_AutoRefresh(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/label-trends", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	body := w.Body.String()
+	if !strings.Contains(body, `hx-trigger="every 300s"`) {
+		t.Error("expected 300s auto-refresh on label-trends page")
+	}
+}
+
+func TestLabelTrendsPage_RigFilter(t *testing.T) {
+	srv := New(&mockDataSource{})
+	req := httptest.NewRequest("GET", "/label-trends?rig=aegis", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /label-trends?rig=aegis status = %d, want %d", w.Code, http.StatusOK)
+	}
+}

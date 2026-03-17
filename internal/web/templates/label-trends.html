@@ -1,0 +1,52 @@
+{{define "title"}}Label Trends{{end}}
+{{define "content"}}
+<div class="label-trends-page" hx-get="/label-trends{{if .FilterRig}}?rig={{.FilterRig}}{{end}}" hx-trigger="every 300s" hx-select=".label-trends-page" hx-swap="outerHTML">
+  <h1>Label Trends <time class="text-dim">{{formatDateTime .GeneratedAt}}</time></h1>
+  <p class="text-dim">Label usage by creation week over the last 8 weeks. Top 30 labels by total.</p>
+
+  {{if .Rigs}}<div class="dep-filters" style="margin-top:0.5rem">
+    <a href="/label-trends" class="badge {{if not .FilterRig}}filter-active{{end}}">All rigs</a>
+    {{range .Rigs}}<a href="/label-trends?rig={{.}}" class="badge {{if eq . $.FilterRig}}filter-active{{end}}">{{.}}</a>
+    {{end}}
+  </div>{{end}}
+
+  {{if .Err}}
+  <div class="error">{{.Err}}</div>
+  {{else}}
+
+  {{if .Trends}}
+  <table class="bead-table">
+    <thead>
+      <tr>
+        <th>Label</th>
+        {{range .WeekHeaders}}<th style="font-size:0.75rem;text-align:center">{{.}}</th>{{end}}
+        <th>Total</th>
+        <th>Trend</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{range .Trends}}
+      <tr>
+        <td><a href="/labels?label={{.Label}}">{{.Label}}</a></td>
+        {{range .Weeks}}
+        <td style="text-align:center{{if gt .Count 0}};background:rgba(189,147,249,{{divf (mulf (itof .Count) 0.3) 10.0}}){{end}}">
+          {{if gt .Count 0}}{{.Count}}{{else}}<span class="text-dim">-</span>{{end}}
+        </td>
+        {{end}}
+        <td><strong>{{.Total}}</strong></td>
+        <td>
+          {{if eq .Direction "up"}}<span style="color:var(--success)">+{{.Delta}}</span>
+          {{else if eq .Direction "down"}}<span style="color:var(--danger)">{{.Delta}}</span>
+          {{else}}<span class="text-dim">=</span>{{end}}
+        </td>
+      </tr>
+      {{end}}
+    </tbody>
+  </table>
+  {{else}}
+  <p class="text-dim">No labeled beads found in the last 8 weeks.</p>
+  {{end}}
+
+  {{end}}
+</div>
+{{end}}
