@@ -23,6 +23,7 @@
   {{if .Items}}
   <div class="batch-bar" id="batch-bar-orphans" style="display:none">
     <span class="batch-count">0 selected</span>
+    <button class="btn btn-xs" onclick="orphansBatchAction('in_progress')">start selected</button>
     <button class="btn btn-xs" onclick="orphansBatchAction('closed')">close selected</button>
     <button class="btn btn-xs" onclick="orphansBatchAction('deferred')">defer selected</button>
   </div>

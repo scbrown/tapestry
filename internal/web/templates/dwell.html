@@ -22,6 +22,7 @@
   {{else if .Items}}
   <div class="batch-bar" id="batch-bar-dwell" style="display:none">
     <span class="batch-count">0 selected</span>
+    <button class="btn btn-xs" onclick="dwellBatchAction('in_progress')">start selected</button>
     <button class="btn btn-xs" onclick="dwellBatchAction('closed')">close selected</button>
     <button class="btn btn-xs" onclick="dwellBatchAction('deferred')">defer selected</button>
   </div>

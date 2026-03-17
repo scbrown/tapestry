@@ -18,6 +18,7 @@
   {{if .Issues}}
   <div class="batch-bar" id="batch-bar-search" style="display:none">
     <span class="batch-count">0 selected</span>
+    <button class="btn btn-xs" onclick="searchBatchAction('in_progress')">start selected</button>
     <button class="btn btn-xs" onclick="searchBatchAction('closed')">close selected</button>
     <button class="btn btn-xs" onclick="searchBatchAction('deferred')">defer selected</button>
   </div>
