@@ -5980,3 +5980,40 @@ func TestHandoffsPage_FilterPreservation(t *testing.T) {
 		t.Error("expected auto-refresh to preserve actor filter on handoffs page")
 	}
 }
+
+func TestCommentsPage_RigFilter(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}, {Name: "beads_gastown"}},
+		comments: []dolt.Comment{
+			{IssueID: "c1", Author: "aegis/crew/arnold", Body: "test", CreatedAt: time.Now()},
+		},
+	}
+
+	srv := New(ds)
+
+	// Without filter
+	req := httptest.NewRequest("GET", "/comments", nil)
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "All rigs") {
+		t.Error("expected rig filter bar on comments page with multiple rigs")
+	}
+
+	// With rig filter
+	req = httptest.NewRequest("GET", "/comments?rig=beads_aegis", nil)
+	w = httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body = w.Body.String()
+	if !strings.Contains(body, "rig=beads_aegis") {
+		t.Error("expected rig filter preserved in auto-refresh URL")
+	}
+}

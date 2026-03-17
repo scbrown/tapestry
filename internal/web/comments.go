@@ -24,6 +24,8 @@ type commentsData struct {
 	Total        int
 	Authors      []string // distinct authors for filter
 	FilterAuthor string   // currently selected author filter
+	Rigs         []string
+	FilterRig    string
 }
 
 func (s *Server) handleComments(w http.ResponseWriter, r *http.Request) {
@@ -63,6 +65,10 @@ func (s *Server) handleComments(w http.ResponseWriter, r *http.Request) {
 	wg.Wait()
 
 	// Merge and sort by created descending
+	rigSet := make(map[string]bool)
+	for _, db := range dbs {
+		rigSet[db.Name] = true
+	}
 	for _, r := range results {
 		for _, c := range r.comments {
 			data.Comments = append(data.Comments, commentEntry{
@@ -73,6 +79,23 @@ func (s *Server) handleComments(w http.ResponseWriter, r *http.Request) {
 				Created: c.CreatedAt,
 			})
 		}
+	}
+
+	for rig := range rigSet {
+		data.Rigs = append(data.Rigs, rig)
+	}
+	sort.Strings(data.Rigs)
+
+	// Apply rig filter if specified
+	data.FilterRig = r.URL.Query().Get("rig")
+	if data.FilterRig != "" {
+		filtered := data.Comments[:0]
+		for _, c := range data.Comments {
+			if c.Rig == data.FilterRig {
+				filtered = append(filtered, c)
+			}
+		}
+		data.Comments = filtered
 	}
 
 	sort.Slice(data.Comments, func(i, j int) bool {
