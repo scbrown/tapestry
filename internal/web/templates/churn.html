@@ -29,11 +29,17 @@
   </div>
 
   {{if .Items}}
+  <div class="batch-bar" id="batch-bar-churn" style="display:none">
+    <span class="batch-count">0 selected</span>
+    <button class="btn btn-xs" onclick="churnBatchAction('closed')">close selected</button>
+    <button class="btn btn-xs" onclick="churnBatchAction('deferred')">defer selected</button>
+  </div>
   <section class="backlog-card">
     <div class="table-wrap">
     <table class="bead-table">
       <thead>
         <tr>
+          <th><input type="checkbox" onchange="churnToggleAll(this)"></th>
           <th>ID</th>
           <th>Title</th>
           <th>Status</th>
@@ -41,11 +47,13 @@
           <th>Rig</th>
           <th>Transitions</th>
           <th>Bar</th>
+          <th>Actions</th>
         </tr>
       </thead>
       <tbody>
         {{range .Items}}
         <tr>
+          <td><input type="checkbox" class="churn-cb" data-id="{{.Issue.ID}}" data-rig="{{.Rig}}" onchange="churnUpdateBar()"></td>
           <td><a href="/bead/{{.Rig}}/{{.Issue.ID}}" hx-boost="true">{{.Issue.ID}}</a></td>
           <td>{{.Issue.Title}}</td>
           <td>{{statusBadge .Issue.Status}}</td>
@@ -65,12 +73,47 @@
             <span style="display:inline-block;background:var(--orange);height:10px;width:{{divf (mulf (itof .Transitions) 100.0) (itof $.MaxChurn)}}%;max-width:100px;"></span>
             {{end}}
           </td>
+          <td class="triage-actions">
+            <div class="triage-btn-group">
+              <button class="btn btn-xs" hx-post="/bead/{{.Rig}}/{{.Issue.ID}}/status" hx-vals='{"status":"closed"}' hx-swap="outerHTML" hx-target="closest tr" hx-confirm="Close {{.Issue.ID}}?">close</button>
+              <button class="btn btn-xs" hx-post="/bead/{{.Rig}}/{{.Issue.ID}}/status" hx-vals='{"status":"deferred"}' hx-swap="outerHTML" hx-target="closest tr" hx-confirm="Defer {{.Issue.ID}}?">defer</button>
+            </div>
+          </td>
         </tr>
         {{end}}
       </tbody>
     </table>
     </div>
   </section>
+  <script>
+  function churnToggleAll(master) {
+    document.querySelectorAll('.churn-cb').forEach(function(cb) { cb.checked = master.checked; });
+    churnUpdateBar();
+  }
+  function churnUpdateBar() {
+    var checked = document.querySelectorAll('.churn-cb:checked');
+    var bar = document.getElementById('batch-bar-churn');
+    if (bar) {
+      bar.style.display = checked.length > 0 ? 'flex' : 'none';
+      bar.querySelector('.batch-count').textContent = checked.length + ' selected';
+    }
+  }
+  function churnBatchAction(status) {
+    var checked = document.querySelectorAll('.churn-cb:checked');
+    if (!checked.length) return;
+    if (!confirm(status.charAt(0).toUpperCase()+status.slice(1)+' '+checked.length+' churning beads?')) return;
+    var form = new FormData();
+    form.append('status', status);
+    checked.forEach(function(cb) {
+      form.append('ids[]', cb.getAttribute('data-rig')+'/'+cb.getAttribute('data-id'));
+    });
+    fetch('/batch/status', {method:'POST', body:form}).then(function() {
+      checked.forEach(function(cb) { cb.closest('tr').remove(); });
+      churnUpdateBar();
+      document.body.dispatchEvent(new CustomEvent('showToast', {detail: checked.length+' churning beads '+status}));
+    });
+  }
+  </script>
   {{else}}
   <p class="text-dim">No churning beads detected. All open items have clean status histories.</p>
   {{end}}
