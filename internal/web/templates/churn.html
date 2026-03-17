@@ -79,6 +79,7 @@
                 <option value="">assign...</option>
                 {{range $.Assignees}}<option value="{{.}}">{{shortActor .}}</option>{{end}}
               </select>
+              {{if ne .Issue.Status "in_progress"}}<button class="btn btn-xs" hx-post="/bead/{{.Rig}}/{{.Issue.ID}}/status" hx-vals='{"status":"in_progress"}' hx-swap="outerHTML" hx-target="closest tr">start</button>{{end}}
               <button class="btn btn-xs" hx-post="/bead/{{.Rig}}/{{.Issue.ID}}/status" hx-vals='{"status":"closed"}' hx-swap="outerHTML" hx-target="closest tr" hx-confirm="Close {{.Issue.ID}}?">close</button>
               <button class="btn btn-xs" hx-post="/bead/{{.Rig}}/{{.Issue.ID}}/status" hx-vals='{"status":"deferred"}' hx-swap="outerHTML" hx-target="closest tr" hx-confirm="Defer {{.Issue.ID}}?">defer</button>
             </div>

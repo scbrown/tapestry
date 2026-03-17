@@ -85,6 +85,7 @@
           </td>
           <td>{{statusBadge .Status}}</td>
           <td>
+            {{if ne .Status "in_progress"}}<button class="btn-sm" hx-post="/bead/{{.DB}}/{{.ID}}/status" hx-vals='{"status":"in_progress"}' hx-swap="none" hx-on::after-request="this.closest('tr').remove()">start</button>{{end}}
             <button class="btn-sm" hx-post="/bead/{{.DB}}/{{.ID}}/status" hx-vals='{"status":"closed"}' hx-swap="none" hx-on::after-request="this.closest('tr').remove()">close</button>
             <button class="btn-sm" hx-post="/bead/{{.DB}}/{{.ID}}/status" hx-vals='{"status":"deferred"}' hx-swap="none" hx-on::after-request="this.closest('tr').remove()">defer</button>
           </td>
@@ -133,6 +134,7 @@
             </select>
           </td>
           <td>
+            <button class="btn-sm" hx-post="/bead/{{.DB}}/{{.ID}}/status" hx-vals='{"status":"in_progress"}' hx-swap="none" hx-on::after-request="this.closest('tr').remove()">start</button>
             <button class="btn-sm" hx-post="/bead/{{.DB}}/{{.ID}}/status" hx-vals='{"status":"open"}' hx-swap="none" hx-on::after-request="this.closest('tr').remove()">reopen</button>
             <button class="btn-sm" hx-post="/bead/{{.DB}}/{{.ID}}/status" hx-vals='{"status":"closed"}' hx-swap="none" hx-on::after-request="this.closest('tr').remove()">close</button>
           </td>

@@ -70,6 +70,7 @@
         </td>
         <td>
           <span class="briefing-actions">
+            {{if ne .Status "in_progress"}}<button class="btn btn-xs" hx-post="/bead/{{lower .Rig}}/{{.ID}}/status" hx-vals='{"status":"in_progress"}' hx-swap="outerHTML" hx-target="closest tr">start</button>{{end}}
             <button class="btn btn-xs" hx-post="/bead/{{lower .Rig}}/{{.ID}}/status" hx-vals='{"status":"closed"}' hx-swap="outerHTML" hx-target="closest tr" hx-confirm="Close {{.ID}}?">close</button>
             <button class="btn btn-xs" hx-post="/bead/{{lower .Rig}}/{{.ID}}/status" hx-vals='{"status":"deferred"}' hx-swap="outerHTML" hx-target="closest tr" hx-confirm="Defer {{.ID}}?">defer</button>
           </span>
