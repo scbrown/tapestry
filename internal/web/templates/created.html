@@ -67,6 +67,7 @@
           <th>Status</th>
           <th>Type</th>
           <th>Filed by</th>
+          <th>Assignee</th>
           <th>Created</th>
           <th></th>
         </tr>
@@ -90,6 +91,15 @@
           <td>{{statusBadge .Issue.Status}}</td>
           <td>{{.Issue.Type}}</td>
           <td>{{shortActor .Issue.Owner}}</td>
+          <td>
+            <select class="triage-assign" hx-post="/bead/{{lower .Rig}}/{{.Issue.ID}}/assign" hx-swap="outerHTML" hx-target="closest tr" name="assignee">
+              <option value="">—</option>
+              {{$cur := .Issue.Assignee}}
+              {{range $.Assignees}}
+              <option value="{{.}}" {{if eq . $cur}}selected{{end}}>{{shortActor .}}</option>
+              {{end}}
+            </select>
+          </td>
           <td>{{timeAgo .Issue.CreatedAt}}</td>
           <td class="triage-actions">
             {{if eq .Issue.Status "open"}}

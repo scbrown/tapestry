@@ -1879,6 +1879,33 @@ func TestCreatedPage_InlinePriority(t *testing.T) {
 	}
 }
 
+func TestCreatedPage_AssigneeDropdown(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issues: []dolt.Issue{
+			{ID: "cad1", Title: "Needs assignment", Status: "open", Priority: 1, CreatedAt: time.Now().Add(-1 * time.Hour), UpdatedAt: time.Now()},
+		},
+		assignees: []string{"aegis/crew/alice", "aegis/crew/bob"},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/created?days=7", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /created status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "triage-assign") {
+		t.Error("expected assignee dropdown on created page")
+	}
+	if !strings.Contains(body, "alice") {
+		t.Error("expected assignee option 'alice'")
+	}
+}
+
 func TestStalePage_NilDataSource(t *testing.T) {
 	srv := New(nil)
 	req := httptest.NewRequest("GET", "/stale", nil)

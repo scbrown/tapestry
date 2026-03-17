@@ -84,6 +84,9 @@ func (s *Server) handleCreated(w http.ResponseWriter, r *http.Request) {
 			}
 			var entries []createdEntry
 			for _, iss := range issues {
+				if isNoise(iss.ID, iss.Title) {
+					continue
+				}
 				if !iss.CreatedAt.Before(cutoff) {
 					entries = append(entries, createdEntry{Issue: iss, Rig: dbName})
 				}
