@@ -11235,3 +11235,34 @@ func TestFavoritesPage_HTMXPartial(t *testing.T) {
 		t.Error("HTMX favorites should return partial, not full page")
 	}
 }
+
+func TestFavoritesLookup(t *testing.T) {
+	srv := New(&mockDataSource{})
+	body := `[{"db":"beads_aegis","id":"aegis-abc123"}]`
+	req := httptest.NewRequest("POST", "/favorites/lookup", strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("POST /favorites/lookup status = %d, want %d", w.Code, http.StatusOK)
+	}
+	ct := w.Header().Get("Content-Type")
+	if !strings.Contains(ct, "application/json") {
+		t.Errorf("expected JSON content-type, got %q", ct)
+	}
+	resp := w.Body.String()
+	if !strings.Contains(resp, "aegis-abc123") {
+		t.Error("expected bead ID in response")
+	}
+}
+
+func TestFavoritesLookup_BadJSON(t *testing.T) {
+	srv := New(&mockDataSource{})
+	req := httptest.NewRequest("POST", "/favorites/lookup", strings.NewReader("not json"))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+	if w.Code != http.StatusBadRequest {
+		t.Fatalf("POST /favorites/lookup bad JSON status = %d, want %d", w.Code, http.StatusBadRequest)
+	}
+}

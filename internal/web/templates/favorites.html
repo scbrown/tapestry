@@ -5,7 +5,7 @@
   <p class="text-dim">Pin beads for quick access. Stored in your browser — survives page refreshes.</p>
 
   <div class="favorites-add" style="margin:1rem 0">
-    <input type="text" id="fav-input" placeholder="Paste bead URL (e.g. /bead/beads_aegis/aegis-h8x)" style="width:300px;padding:0.3rem 0.5rem;background:var(--current-line);color:var(--foreground);border:1px solid var(--comment);border-radius:4px">
+    <input type="text" id="fav-input" placeholder="Paste bead URL or ID (e.g. /bead/beads_aegis/aegis-h8x)" style="width:300px;padding:0.3rem 0.5rem;background:var(--current-line);color:var(--foreground);border:1px solid var(--comment);border-radius:4px" onkeydown="if(event.key==='Enter')addFavorite()">
     <button class="btn btn-xs" onclick="addFavorite()" style="margin-left:0.5rem">Add</button>
   </div>
 
@@ -17,7 +17,7 @@
 <script>
 function getFavorites() {
   try { return JSON.parse(localStorage.getItem('tapestry-favorites') || '[]'); }
-  catch { return []; }
+  catch(e) { return []; }
 }
 function saveFavorites(favs) {
   localStorage.setItem('tapestry-favorites', JSON.stringify(favs));
@@ -26,10 +26,8 @@ function addFavorite() {
   var input = document.getElementById('fav-input');
   var val = input.value.trim();
   if (!val) return;
-  // Parse URL: /bead/db/id or just db/id
   var match = val.match(/\/bead\/([^/]+)\/([^/\s]+)/);
   if (!match) {
-    // Try bare format: db/id
     match = val.match(/^([^/]+)\/([^/\s]+)$/);
     if (!match) {
       alert('Enter a bead URL like /bead/beads_aegis/aegis-h8x');
@@ -52,6 +50,24 @@ function removeFavorite(db, id) {
   saveFavorites(favs);
   renderFavorites();
 }
+function moveFavorite(db, id, dir) {
+  var favs = getFavorites();
+  var idx = favs.findIndex(function(f) { return f.db === db && f.id === id; });
+  if (idx < 0) return;
+  var newIdx = idx + dir;
+  if (newIdx < 0 || newIdx >= favs.length) return;
+  var tmp = favs[idx];
+  favs[idx] = favs[newIdx];
+  favs[newIdx] = tmp;
+  saveFavorites(favs);
+  renderFavorites();
+}
+var priClass = ['priority-p0','priority-p1','priority-p2','priority-p3','priority-p4'];
+var priLabel = ['P0','P1','P2','P3','P4'];
+function statusBadge(s) {
+  var cls = 'status-' + (s === 'open' ? 'open' : s === 'in_progress' ? 'progress' : s === 'closed' ? 'closed' : 'other');
+  return '<span class="badge ' + cls + '">' + s + '</span>';
+}
 function renderFavorites() {
   var favs = getFavorites();
   var el = document.getElementById('fav-list');
@@ -59,18 +75,50 @@ function renderFavorites() {
     el.innerHTML = '<p class="text-dim">No favorites yet. Add a bead URL above or click the star on any bead detail page.</p>';
     return;
   }
-  var html = '<table class="bead-table"><thead><tr><th>Bead</th><th>Database</th><th>Added</th><th></th></tr></thead><tbody>';
-  favs.forEach(function(f) {
-    var added = f.added ? new Date(f.added).toLocaleDateString() : '—';
-    html += '<tr>';
+  // Render skeleton immediately
+  var html = '<table class="bead-table"><thead><tr><th></th><th>Bead</th><th>Title</th><th>Pri</th><th>Status</th><th>Assignee</th><th></th></tr></thead><tbody>';
+  favs.forEach(function(f, i) {
+    html += '<tr id="fav-row-' + i + '">';
+    html += '<td class="text-dim" style="white-space:nowrap"><button class="btn btn-xs" onclick="moveFavorite(\'' + f.db + '\',\'' + f.id + '\',-1)" title="Move up">&uarr;</button> <button class="btn btn-xs" onclick="moveFavorite(\'' + f.db + '\',\'' + f.id + '\',1)" title="Move down">&darr;</button></td>';
     html += '<td><a href="/bead/' + f.db + '/' + f.id + '">' + f.id + '</a></td>';
-    html += '<td class="text-dim">' + f.db + '</td>';
-    html += '<td class="text-dim">' + added + '</td>';
+    html += '<td class="fav-title text-dim">loading...</td>';
+    html += '<td class="fav-pri"></td>';
+    html += '<td class="fav-status"></td>';
+    html += '<td class="fav-assignee text-dim"></td>';
     html += '<td><button class="btn btn-xs" onclick="removeFavorite(\'' + f.db + '\',\'' + f.id + '\')">remove</button></td>';
     html += '</tr>';
   });
   html += '</tbody></table>';
   el.innerHTML = html;
+  // Fetch live data
+  fetch('/favorites/lookup', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(favs.map(function(f) { return {db: f.db, id: f.id}; }))
+  }).then(function(r) { return r.json(); }).then(function(results) {
+    results.forEach(function(b, i) {
+      var row = document.getElementById('fav-row-' + i);
+      if (!row) return;
+      var titleCell = row.querySelector('.fav-title');
+      var priCell = row.querySelector('.fav-pri');
+      var statusCell = row.querySelector('.fav-status');
+      var assigneeCell = row.querySelector('.fav-assignee');
+      if (b.found) {
+        titleCell.textContent = b.title;
+        titleCell.classList.remove('text-dim');
+        priCell.innerHTML = '<span class="badge ' + (priClass[b.priority] || 'priority-p3') + '">' + (priLabel[b.priority] || 'P?') + '</span>';
+        statusCell.innerHTML = statusBadge(b.status);
+        assigneeCell.textContent = b.assignee || '';
+      } else {
+        titleCell.textContent = '(not found)';
+      }
+    });
+  }).catch(function() {
+    // Silently degrade — skeleton stays with "loading..."
+    document.querySelectorAll('.fav-title').forEach(function(el) {
+      if (el.textContent === 'loading...') el.textContent = '(offline)';
+    });
+  });
 }
 renderFavorites();
 </script>

@@ -889,6 +889,12 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// POST /favorites/lookup — fetch live bead data for pinned favorites
+	if r.Method == http.MethodPost && len(segments) == 2 && segments[0] == "favorites" && segments[1] == "lookup" {
+		s.handleFavoritesLookup(w, r)
+		return
+	}
+
 	if r.Method != http.MethodGet {
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 		return
