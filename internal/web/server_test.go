@@ -2749,19 +2749,21 @@ func TestRecapPage_NilDataSource(t *testing.T) {
 }
 
 func TestRecapPage_WithData(t *testing.T) {
-	now := time.Now()
+	// Use a fixed midday time to avoid midnight boundary flakes
+	fixed := time.Date(2026, 3, 15, 12, 0, 0, 0, time.Local)
+	dateStr := fixed.Format("2006-01-02")
 	ds := &mockDataSource{
 		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
 		issues: []dolt.Issue{
-			{ID: "r1", Title: "Created today", Status: "open", Priority: 1, Owner: "aegis/crew/alice", CreatedAt: now.Add(-1 * time.Hour), UpdatedAt: now},
-			{ID: "r2", Title: "Closed today", Status: "closed", Priority: 2, Assignee: "aegis/crew/bob", CreatedAt: now.Add(-24 * time.Hour), UpdatedAt: now},
-			{ID: "r3", Title: "Active work", Status: "in_progress", Priority: 1, Assignee: "aegis/crew/alice", CreatedAt: now.Add(-48 * time.Hour), UpdatedAt: now},
-			{ID: "r4", Title: "Old item", Status: "open", Priority: 3, CreatedAt: now.Add(-72 * time.Hour), UpdatedAt: now.Add(-72 * time.Hour)},
+			{ID: "r1", Title: "Created today", Status: "open", Priority: 1, Owner: "aegis/crew/alice", CreatedAt: fixed.Add(-1 * time.Hour), UpdatedAt: fixed},
+			{ID: "r2", Title: "Closed today", Status: "closed", Priority: 2, Assignee: "aegis/crew/bob", CreatedAt: fixed.Add(-24 * time.Hour), UpdatedAt: fixed},
+			{ID: "r3", Title: "Active work", Status: "in_progress", Priority: 1, Assignee: "aegis/crew/alice", CreatedAt: fixed.Add(-48 * time.Hour), UpdatedAt: fixed},
+			{ID: "r4", Title: "Old item", Status: "open", Priority: 3, CreatedAt: fixed.Add(-72 * time.Hour), UpdatedAt: fixed.Add(-72 * time.Hour)},
 		},
 	}
 
 	srv := New(ds)
-	req := httptest.NewRequest("GET", "/recap", nil)
+	req := httptest.NewRequest("GET", "/recap?date="+dateStr, nil)
 	w := httptest.NewRecorder()
 
 	srv.ServeHTTP(w, req)
@@ -4748,16 +4750,18 @@ func TestRecapPage_ActiveActions(t *testing.T) {
 }
 
 func TestRecapPage_BatchActions(t *testing.T) {
-	now := time.Now()
+	// Use a fixed midday time to avoid midnight boundary flakes
+	fixed := time.Date(2026, 3, 15, 12, 0, 0, 0, time.Local)
+	dateStr := fixed.Format("2006-01-02")
 	ds := &mockDataSource{
 		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
 		issues: []dolt.Issue{
-			{ID: "cr1", Title: "New bead", Status: "open", Priority: 2, Owner: "aegis/crew/bob", CreatedAt: now.Add(-1 * time.Hour), UpdatedAt: now},
+			{ID: "cr1", Title: "New bead", Status: "open", Priority: 2, Owner: "aegis/crew/bob", CreatedAt: fixed.Add(-1 * time.Hour), UpdatedAt: fixed},
 		},
 	}
 
 	srv := New(ds)
-	req := httptest.NewRequest("GET", "/recap", nil)
+	req := httptest.NewRequest("GET", "/recap?date="+dateStr, nil)
 	w := httptest.NewRecorder()
 
 	srv.ServeHTTP(w, req)
