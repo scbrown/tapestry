@@ -12010,3 +12010,74 @@ func TestFavoritesLookup_BadJSON(t *testing.T) {
 		t.Fatalf("POST /favorites/lookup bad JSON status = %d, want %d", w.Code, http.StatusBadRequest)
 	}
 }
+
+// ── Epic Detail ──
+
+func TestEpicDetail_Found(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issue: &dolt.Issue{
+			ID:       "aegis-epic1",
+			Title:    "Build the thing",
+			Status:   "open",
+			Priority: 1,
+			Type:     "epic",
+		},
+		deps: []dolt.Dependency{
+			{FromID: "aegis-child1", ToID: "aegis-epic1", Type: "child_of"},
+			{FromID: "aegis-child2", ToID: "aegis-epic1", Type: "child_of"},
+		},
+		comments: []dolt.Comment{
+			{ID: 1, IssueID: "aegis-epic1", Author: "nux", Body: "Epic progress note"},
+		},
+		labels: []string{"infra", "p1"},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/epic/aegis-epic1", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /epic/aegis-epic1 status = %d, want %d", w.Code, http.StatusOK)
+	}
+
+	body := w.Body.String()
+	checks := []string{"Build the thing", "aegis-epic1"}
+	for _, check := range checks {
+		if !strings.Contains(body, check) {
+			t.Errorf("body missing %q", check)
+		}
+	}
+}
+
+func TestEpicDetail_NotFound(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issue:     nil,
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/epic/nonexistent", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusNotFound {
+		t.Errorf("GET /epic/nonexistent status = %d, want %d", w.Code, http.StatusNotFound)
+	}
+}
+
+func TestEpicDetail_NilDataSource(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/epic/aegis-epic1", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	// nil ds renders the template with empty data (no crash)
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /epic/aegis-epic1 nil ds status = %d, want %d", w.Code, http.StatusOK)
+	}
+}

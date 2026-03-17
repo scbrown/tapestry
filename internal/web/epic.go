@@ -13,14 +13,15 @@ import (
 )
 
 type epicDetailData struct {
-	Issue    dolt.Issue
-	RigName  string
-	Database string
-	Children []dolt.Issue
-	Progress dolt.EpicProgress
-	Comments []dolt.Comment
-	Labels   []string
-	Err      string
+	Issue     dolt.Issue
+	RigName   string
+	Database  string
+	Children  []dolt.Issue
+	Progress  dolt.EpicProgress
+	Comments  []dolt.Comment
+	Labels    []string
+	Assignees []string
+	Err       string
 }
 
 func (s *Server) handleEpicDetail(w http.ResponseWriter, r *http.Request, id string) {
@@ -96,6 +97,11 @@ func (s *Server) handleEpicDetail(w http.ResponseWriter, r *http.Request, id str
 	})
 
 	data.Database = foundDB
+
+	assignees, err := s.ds.DistinctAssignees(ctx, foundDB)
+	if err == nil {
+		data.Assignees = assignees
+	}
 
 	comments, err := s.ds.Comments(ctx, foundDB, id)
 	if err == nil {
