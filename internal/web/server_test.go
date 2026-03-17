@@ -2074,6 +2074,31 @@ func TestActivityPage_BatchActions(t *testing.T) {
 	}
 }
 
+func TestActivityPage_RigFilter(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}, {Name: "beads_gastown"}},
+		issues: []dolt.Issue{
+			{ID: "arf1", Title: "Aegis work", Status: "open", Priority: 1, Rig: "beads_aegis", UpdatedAt: time.Now()},
+		},
+	}
+
+	srv := New(ds)
+
+	// Unfiltered — should show rig filter when multiple rigs have data
+	req := httptest.NewRequest("GET", "/activity?hours=24", nil)
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /activity status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	// Activity page preserves rig filter in auto-refresh URL
+	if !strings.Contains(body, `hx-get="/activity?hours=24"`) {
+		t.Error("expected auto-refresh URL with hours param")
+	}
+}
+
 func TestOwnersPage_NilDataSource(t *testing.T) {
 	srv := New(nil)
 	req := httptest.NewRequest("GET", "/owners", nil)

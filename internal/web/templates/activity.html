@@ -1,23 +1,32 @@
 {{define "title"}}Activity{{end}}
 
 {{define "content"}}
-<div class="activity-view" hx-get="/activity" hx-trigger="every 60s" hx-select=".activity-view" hx-swap="outerHTML">
+<div class="activity-view" hx-get="/activity?hours={{.Hours}}{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" hx-trigger="every 60s" hx-select=".activity-view" hx-swap="outerHTML">
   <h1>Recent Activity</h1>
 
   {{if .Err}}
   <div class="error">{{.Err}}</div>
   {{else}}
 
-  <div class="results-meta">{{.Total}} beads updated in the last {{.Hours}}h</div>
+  <div class="results-meta">{{.Total}} beads updated in the last {{.Hours}}h{{if .FilterRig}} in {{rigName .FilterRig}}{{end}}</div>
 
   <div class="dep-filters">
-    <a href="/activity?hours=1" class="badge {{if eq .Hours 1}}filter-active{{end}}">1h</a>
-    <a href="/activity?hours=4" class="badge {{if eq .Hours 4}}filter-active{{end}}">4h</a>
-    <a href="/activity?hours=12" class="badge {{if eq .Hours 12}}filter-active{{end}}">12h</a>
-    <a href="/activity?hours=24" class="badge {{if eq .Hours 24}}filter-active{{end}}">24h</a>
-    <a href="/activity?hours=48" class="badge {{if eq .Hours 48}}filter-active{{end}}">48h</a>
-    <a href="/activity?hours=168" class="badge {{if eq .Hours 168}}filter-active{{end}}">7d</a>
+    <a href="/activity?hours=1{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" class="badge {{if eq .Hours 1}}filter-active{{end}}">1h</a>
+    <a href="/activity?hours=4{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" class="badge {{if eq .Hours 4}}filter-active{{end}}">4h</a>
+    <a href="/activity?hours=12{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" class="badge {{if eq .Hours 12}}filter-active{{end}}">12h</a>
+    <a href="/activity?hours=24{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" class="badge {{if eq .Hours 24}}filter-active{{end}}">24h</a>
+    <a href="/activity?hours=48{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" class="badge {{if eq .Hours 48}}filter-active{{end}}">48h</a>
+    <a href="/activity?hours=168{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" class="badge {{if eq .Hours 168}}filter-active{{end}}">7d</a>
   </div>
+
+  {{if gt (len .Rigs) 1}}
+  <div class="dep-filters" style="margin-top:0.25rem">
+    <a href="/activity?hours={{.Hours}}" class="badge {{if not .FilterRig}}filter-active{{end}}">All rigs</a>
+    {{range .Rigs}}
+    <a href="/activity?hours={{$.Hours}}&rig={{.}}" class="badge {{if eq . $.FilterRig}}filter-active{{end}}">{{rigName .}}</a>
+    {{end}}
+  </div>
+  {{end}}
 
   {{if .Entries}}
   <div class="batch-bar" id="batch-bar-activity" style="display:none">

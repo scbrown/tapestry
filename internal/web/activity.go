@@ -17,10 +17,12 @@ type activityEntry struct {
 }
 
 type activityData struct {
-	Entries []activityEntry
-	Total   int
-	Hours   int
-	Err     string
+	Entries   []activityEntry
+	Total     int
+	Hours     int
+	Rigs      []string // available rigs for filter
+	FilterRig string   // current rig filter
+	Err       string
 }
 
 func (s *Server) handleActivity(w http.ResponseWriter, r *http.Request) {
@@ -78,8 +80,31 @@ func (s *Server) handleActivity(w http.ResponseWriter, r *http.Request) {
 	wg.Wait()
 
 	var all []activityEntry
+	rigSet := make(map[string]bool)
 	for _, r := range results {
 		all = append(all, r.entries...)
+		for _, e := range r.entries {
+			rigSet[e.Rig] = true
+		}
+	}
+
+	// Collect distinct rigs for filter
+	var rigs []string
+	for rig := range rigSet {
+		rigs = append(rigs, rig)
+	}
+	sort.Strings(rigs)
+
+	// Apply rig filter
+	filterRig := r.URL.Query().Get("rig")
+	if filterRig != "" {
+		filtered := all[:0]
+		for _, e := range all {
+			if e.Rig == filterRig {
+				filtered = append(filtered, e)
+			}
+		}
+		all = filtered
 	}
 
 	// Sort by most recently updated first
@@ -93,8 +118,10 @@ func (s *Server) handleActivity(w http.ResponseWriter, r *http.Request) {
 	}
 
 	s.render(w, r, "activity", activityData{
-		Entries: all,
-		Total:   len(all),
-		Hours:   hours,
+		Entries:   all,
+		Total:     len(all),
+		Hours:     hours,
+		Rigs:      rigs,
+		FilterRig: filterRig,
 	})
 }
