@@ -5494,3 +5494,78 @@ func TestKanbanPage_RigFilter(t *testing.T) {
 		t.Error("expected kanban board heading")
 	}
 }
+
+func TestActivityPage_InlinePriority(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issues: []dolt.Issue{
+			{ID: "act1", Title: "Recent work", Status: "open", Priority: 2, UpdatedAt: time.Now()},
+		},
+		assignees: []string{"aegis/crew/arnold"},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/activity", nil)
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "bead-priority-inline") {
+		t.Error("expected inline priority editing on activity page")
+	}
+	if !strings.Contains(body, "/priority") {
+		t.Error("expected priority POST endpoint in activity template")
+	}
+}
+
+func TestStalePage_InlinePriority(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issues: []dolt.Issue{
+			{ID: "st1", Title: "Stale item", Status: "in_progress", Priority: 1, UpdatedAt: time.Now().Add(-10 * 24 * time.Hour)},
+		},
+		assignees: []string{"aegis/crew/arnold"},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/stale", nil)
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "bead-priority-inline") {
+		t.Error("expected inline priority editing on stale page")
+	}
+}
+
+func TestBlockedPage_InlinePriority(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		blockedIssues: []dolt.BlockedIssue{
+			{
+				Issue:   dolt.Issue{ID: "b1", Title: "Blocked", Status: "open", Priority: 1, Assignee: "aegis/crew/arnold", UpdatedAt: time.Now()},
+				Blocker: dolt.Issue{ID: "b2", Title: "Blocker", Status: "in_progress", Owner: "aegis/crew/grant"},
+			},
+		},
+		assignees: []string{"aegis/crew/arnold"},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/blocked", nil)
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "bead-priority-inline") {
+		t.Error("expected inline priority editing on blocked page")
+	}
+}
