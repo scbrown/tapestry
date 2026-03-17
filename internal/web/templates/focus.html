@@ -41,10 +41,15 @@
   {{/* ── Focus List ── */}}
   {{if .Items}}
   <h2 style="margin-top:2rem">Top Priority Items</h2>
+  <div class="batch-bar" id="batch-bar-focus" style="display:none">
+    <span class="batch-count">0 selected</span>
+    <button class="btn btn-xs" onclick="focusBatchAction('closed')">close selected</button>
+    <button class="btn btn-xs" onclick="focusBatchAction('deferred')">defer selected</button>
+  </div>
   <table class="bead-table">
     <thead>
       <tr>
-        <th>#</th>
+        <th><input type="checkbox" onchange="focusToggleAll(this)"></th>
         <th>Bead</th>
         <th>Title</th>
         <th>Status</th>
@@ -59,7 +64,7 @@
     <tbody>
       {{range $i, $item := .Items}}
       <tr>
-        <td class="text-dim">{{add1 $i}}</td>
+        <td><input type="checkbox" class="focus-cb" data-id="{{$item.ID}}" data-rig="{{$item.DB}}" onchange="focusUpdateBar()"></td>
         <td><a href="/bead/{{$item.DB}}/{{$item.ID}}">{{$item.ID}}</a></td>
         <td>{{$item.Title}}</td>
         <td>{{statusBadge $item.Status}}</td>
@@ -93,6 +98,35 @@
       {{end}}
     </tbody>
   </table>
+  <script>
+  function focusToggleAll(master) {
+    document.querySelectorAll('.focus-cb').forEach(function(cb) { cb.checked = master.checked; });
+    focusUpdateBar();
+  }
+  function focusUpdateBar() {
+    var checked = document.querySelectorAll('.focus-cb:checked');
+    var bar = document.getElementById('batch-bar-focus');
+    if (bar) {
+      bar.style.display = checked.length > 0 ? 'flex' : 'none';
+      bar.querySelector('.batch-count').textContent = checked.length + ' selected';
+    }
+  }
+  function focusBatchAction(status) {
+    var checked = document.querySelectorAll('.focus-cb:checked');
+    if (!checked.length) return;
+    if (!confirm(status.charAt(0).toUpperCase()+status.slice(1)+' '+checked.length+' beads?')) return;
+    var form = new FormData();
+    form.append('status', status);
+    checked.forEach(function(cb) {
+      form.append('ids[]', cb.getAttribute('data-rig')+'/'+cb.getAttribute('data-id'));
+    });
+    fetch('/batch/status', {method:'POST', body:form}).then(function() {
+      checked.forEach(function(cb) { cb.closest('tr').remove(); });
+      focusUpdateBar();
+      document.body.dispatchEvent(new CustomEvent('showToast', {detail: checked.length+' beads '+status}));
+    });
+  }
+  </script>
   {{else}}
   <p class="text-dim">No scoreable beads found.</p>
   {{end}}
