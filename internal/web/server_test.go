@@ -7063,3 +7063,88 @@ func TestRisksPage_QuickActions(t *testing.T) {
 		t.Error("expected HTMX quick actions on risks page")
 	}
 }
+
+// ── Funnel Page Tests ──
+
+func TestFunnelPage_NilDataSource(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/funnel", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /funnel status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Conversion Funnel") {
+		t.Error("expected 'Conversion Funnel' heading")
+	}
+}
+
+func TestFunnelPage_WithData(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issues: []dolt.Issue{
+			{ID: "f1", Title: "Closed item", Status: "closed", Priority: 1, Assignee: "alice", CreatedAt: time.Now().Add(-10 * 24 * time.Hour), UpdatedAt: time.Now()},
+			{ID: "f2", Title: "Open item", Status: "open", Priority: 2, CreatedAt: time.Now().Add(-5 * 24 * time.Hour), UpdatedAt: time.Now()},
+			{ID: "f3", Title: "Active item", Status: "in_progress", Priority: 1, Assignee: "bob", CreatedAt: time.Now().Add(-3 * 24 * time.Hour), UpdatedAt: time.Now()},
+		},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/funnel", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /funnel status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Filed") {
+		t.Error("expected 'Filed' funnel stage")
+	}
+	if !strings.Contains(body, "Assigned") {
+		t.Error("expected 'Assigned' funnel stage")
+	}
+	if !strings.Contains(body, "Closed") {
+		t.Error("expected 'Closed' funnel stage")
+	}
+	if !strings.Contains(body, "Triage rate") {
+		t.Error("expected Triage rate stat")
+	}
+	if !strings.Contains(body, "Close rate") {
+		t.Error("expected Close rate stat")
+	}
+}
+
+func TestFunnelPage_HTMXPartial(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/funnel", nil)
+	req.Header.Set("HX-Request", "true")
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if strings.Contains(body, "<html") {
+		t.Error("HTMX partial should not include <html> tag")
+	}
+}
+
+func TestFunnelPage_AutoRefresh(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/funnel", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	body := w.Body.String()
+	if !strings.Contains(body, `hx-trigger="every 120s"`) {
+		t.Error("expected 120s auto-refresh on funnel page")
+	}
+}

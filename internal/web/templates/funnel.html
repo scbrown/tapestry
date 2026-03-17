@@ -1,0 +1,81 @@
+{{define "title"}}Funnel{{end}}
+{{define "content"}}
+<div class="funnel-page" hx-get="/funnel" hx-trigger="every 120s" hx-select=".funnel-page" hx-swap="outerHTML">
+  <h1>Conversion Funnel <time class="text-dim">{{formatDateTime .GeneratedAt}}</time></h1>
+
+  {{if .Err}}
+  <div class="error">{{.Err}}</div>
+  {{else}}
+
+  {{/* ── Funnel Visualization ── */}}
+  {{if .Stages}}
+  <div class="funnel-viz" style="margin-top:1rem">
+    {{range .Stages}}
+    <div class="funnel-stage">
+      <div class="funnel-bar-bg">
+        <div class="funnel-bar-fill" style="width:{{.Pct}}%"></div>
+      </div>
+      <div class="funnel-stage-info">
+        <span class="funnel-stage-name">{{.Name}}</span>
+        <span class="funnel-stage-count"><strong>{{.Count}}</strong> <span class="text-dim">({{.Pct}}%)</span></span>
+        {{if gt .DropPct 0}}<span class="funnel-drop text-dim">-{{.DropPct}}% drop</span>{{end}}
+      </div>
+    </div>
+    {{end}}
+  </div>
+  {{end}}
+
+  {{/* ── Conversion Rates ── */}}
+  <div class="stat-grid" style="margin-top:1.5rem">
+    <div class="stat">
+      <span class="stat-value">{{.Total}}</span>
+      <span class="stat-label">Total filed</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value {{if lt .TriageRate 50}}warn{{end}}">{{.TriageRate}}%</span>
+      <span class="stat-label">Triage rate</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value {{if lt .StartRate 30}}warn{{end}}">{{.StartRate}}%</span>
+      <span class="stat-label">Start rate</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value accent">{{.CloseRate}}%</span>
+      <span class="stat-label">Close rate</span>
+    </div>
+  </div>
+
+  {{/* ── Median Ages ── */}}
+  <div class="briefing-grid" style="margin-top:1.5rem">
+    <section class="briefing-card">
+      <h2>Median Age by Status</h2>
+      <div class="stat-grid">
+        <div class="stat">
+          <span class="stat-value">{{.MedianOpenAge}}d</span>
+          <span class="stat-label">Open</span>
+        </div>
+        <div class="stat">
+          <span class="stat-value pulse">{{.MedianProgressAge}}d</span>
+          <span class="stat-label">In Progress</span>
+        </div>
+        <div class="stat">
+          <span class="stat-value accent">{{.MedianClosedAge}}d</span>
+          <span class="stat-label">Closed</span>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  {{end}}
+</div>
+
+<style>
+.funnel-viz { display:flex; flex-direction:column; gap:0.5rem; }
+.funnel-stage { display:flex; align-items:center; gap:1rem; }
+.funnel-bar-bg { flex:1; height:28px; background:var(--bg-card,#282a36); border-radius:4px; overflow:hidden; border:1px solid var(--border,#44475a); }
+.funnel-bar-fill { height:100%; background:var(--purple,#bd93f9); border-radius:4px 0 0 4px; transition:width 0.3s; min-width:2px; }
+.funnel-stage-info { min-width:220px; display:flex; gap:0.75rem; align-items:baseline; }
+.funnel-stage-name { font-weight:600; min-width:70px; }
+.funnel-drop { font-size:0.8em; }
+</style>
+{{end}}
