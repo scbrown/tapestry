@@ -68,9 +68,21 @@
         <tr>
           <td><a href="/bead/{{.DB}}/{{.ID}}">{{.ID}}</a></td>
           <td class="truncate" style="max-width:300px">{{.Title}}</td>
-          <td>{{if ge .Priority 0}}<span class="badge {{priorityClass .Priority}}">P{{.Priority}}</span>{{end}}</td>
+          <td id="pri-{{.ID}}" class="bead-priority-inline"><span class="badge {{priorityClass .Priority}}">{{priorityLabel .Priority}}</span>
+            <span class="priority-edit triage-btn-group">
+              <button class="btn btn-xs priority-p0" hx-post="/bead/{{.DB}}/{{.ID}}/priority" hx-vals='{"priority":"0"}' hx-target="#pri-{{.ID}}" hx-swap="innerHTML">P0</button>
+              <button class="btn btn-xs priority-p1" hx-post="/bead/{{.DB}}/{{.ID}}/priority" hx-vals='{"priority":"1"}' hx-target="#pri-{{.ID}}" hx-swap="innerHTML">P1</button>
+              <button class="btn btn-xs priority-p2" hx-post="/bead/{{.DB}}/{{.ID}}/priority" hx-vals='{"priority":"2"}' hx-target="#pri-{{.ID}}" hx-swap="innerHTML">P2</button>
+              <button class="btn btn-xs priority-p3" hx-post="/bead/{{.DB}}/{{.ID}}/priority" hx-vals='{"priority":"3"}' hx-target="#pri-{{.ID}}" hx-swap="innerHTML">P3</button>
+            </span>
+          </td>
           <td><strong>{{.AgeDays}}d</strong></td>
-          <td>{{shortActor .Assignee}}</td>
+          <td>
+            <select class="triage-assign" hx-post="/bead/{{.DB}}/{{.ID}}/assign" hx-target="closest tr" hx-swap="outerHTML" name="assignee">
+              <option value="">{{if .Assignee}}{{shortActor .Assignee}}{{else}}assign...{{end}}</option>
+              {{range $.Assignees}}<option value="{{.}}">{{shortActor .}}</option>{{end}}
+            </select>
+          </td>
           <td>{{statusBadge .Status}}</td>
           <td>
             <button class="btn-sm" hx-post="/bead/{{.DB}}/{{.ID}}/status" hx-vals='{"status":"closed"}' hx-swap="none" hx-on::after-request="this.closest('tr').remove()">close</button>
@@ -105,9 +117,21 @@
         <tr>
           <td><a href="/bead/{{.DB}}/{{.ID}}">{{.ID}}</a></td>
           <td class="truncate" style="max-width:300px">{{.Title}}</td>
-          <td>{{if ge .Priority 0}}<span class="badge {{priorityClass .Priority}}">P{{.Priority}}</span>{{end}}</td>
+          <td id="pri-d-{{.ID}}" class="bead-priority-inline"><span class="badge {{priorityClass .Priority}}">{{priorityLabel .Priority}}</span>
+            <span class="priority-edit triage-btn-group">
+              <button class="btn btn-xs priority-p0" hx-post="/bead/{{.DB}}/{{.ID}}/priority" hx-vals='{"priority":"0"}' hx-target="#pri-d-{{.ID}}" hx-swap="innerHTML">P0</button>
+              <button class="btn btn-xs priority-p1" hx-post="/bead/{{.DB}}/{{.ID}}/priority" hx-vals='{"priority":"1"}' hx-target="#pri-d-{{.ID}}" hx-swap="innerHTML">P1</button>
+              <button class="btn btn-xs priority-p2" hx-post="/bead/{{.DB}}/{{.ID}}/priority" hx-vals='{"priority":"2"}' hx-target="#pri-d-{{.ID}}" hx-swap="innerHTML">P2</button>
+              <button class="btn btn-xs priority-p3" hx-post="/bead/{{.DB}}/{{.ID}}/priority" hx-vals='{"priority":"3"}' hx-target="#pri-d-{{.ID}}" hx-swap="innerHTML">P3</button>
+            </span>
+          </td>
           <td><strong>{{.AgeDays}}d</strong></td>
-          <td>{{shortActor .Assignee}}</td>
+          <td>
+            <select class="triage-assign" hx-post="/bead/{{.DB}}/{{.ID}}/assign" hx-target="closest tr" hx-swap="outerHTML" name="assignee">
+              <option value="">{{if .Assignee}}{{shortActor .Assignee}}{{else}}assign...{{end}}</option>
+              {{range $.Assignees}}<option value="{{.}}">{{shortActor .}}</option>{{end}}
+            </select>
+          </td>
           <td>
             <button class="btn-sm" hx-post="/bead/{{.DB}}/{{.ID}}/status" hx-vals='{"status":"open"}' hx-swap="none" hx-on::after-request="this.closest('tr').remove()">reopen</button>
             <button class="btn-sm" hx-post="/bead/{{.DB}}/{{.ID}}/status" hx-vals='{"status":"closed"}' hx-swap="none" hx-on::after-request="this.closest('tr').remove()">close</button>

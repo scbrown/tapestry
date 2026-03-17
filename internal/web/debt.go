@@ -48,6 +48,7 @@ type debtData struct {
 
 	Rigs      []string
 	FilterRig string
+	Assignees []string
 	Err       string
 }
 
@@ -95,6 +96,10 @@ func (s *Server) handleDebt(w http.ResponseWriter, r *http.Request) {
 		wg.Add(1)
 		go func(idx int, dbName string) {
 			defer wg.Done()
+			assignees, _ := s.ds.DistinctAssignees(ctx, dbName)
+			if len(assignees) > 0 {
+				data.Assignees = append(data.Assignees, assignees...)
+			}
 			var acc dbAccum
 
 			issues, err := s.ds.Issues(ctx, dbName, dolt.IssueFilter{Limit: 2000})
@@ -153,6 +158,7 @@ func (s *Server) handleDebt(w http.ResponseWriter, r *http.Request) {
 	}
 	wg.Wait()
 
+	sort.Strings(data.Assignees)
 	rigSet := make(map[string]bool)
 	var allBugs, allDeferred []debtItem
 
