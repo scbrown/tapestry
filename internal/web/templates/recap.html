@@ -38,7 +38,7 @@
   <section class="recap-section">
     <h2>Closed <span class="text-dim">({{.TotalClosed}})</span></h2>
     {{if .ClosedItems}}
-    <table class="data-table">
+    <table class="bead-table">
       <thead><tr><th>ID</th><th>P</th><th>Title</th><th>Agent</th><th>Rig</th><th></th></tr></thead>
       <tbody>
         {{range .ClosedItems}}
@@ -62,7 +62,7 @@
   <section class="recap-section">
     <h2>Created <span class="text-dim">({{.TotalCreated}})</span></h2>
     {{if .CreatedItems}}
-    <table class="data-table">
+    <table class="bead-table">
       <thead><tr><th>ID</th><th>P</th><th>Title</th><th>Status</th><th>Owner</th><th>Rig</th><th>Actions</th></tr></thead>
       <tbody>
         {{range .CreatedItems}}
@@ -92,7 +92,7 @@
   {{if .ActiveItems}}
   <section class="recap-section">
     <h2>Active Work <span class="text-dim">({{.TotalActive}})</span></h2>
-    <table class="data-table">
+    <table class="bead-table">
       <thead><tr><th>ID</th><th>P</th><th>Title</th><th>Agent</th><th>Rig</th></tr></thead>
       <tbody>
         {{range .ActiveItems}}
