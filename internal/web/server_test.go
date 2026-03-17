@@ -4053,3 +4053,70 @@ func TestWorkloadPage_HTMX(t *testing.T) {
 		t.Error("HTMX workload should return partial, not full page")
 	}
 }
+
+// --- Age Breakdown page tests ---
+
+func TestAgeBreakdownPage_NilDataSource(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/age-breakdown", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /age-breakdown status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Open Bead Age Breakdown") {
+		t.Error("expected 'Open Bead Age Breakdown' heading")
+	}
+}
+
+func TestAgeBreakdownPage_WithData(t *testing.T) {
+	now := time.Now()
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issues: []dolt.Issue{
+			{ID: "ab1", Title: "Fresh bug", Status: "open", Priority: 1, CreatedAt: now.AddDate(0, 0, -2), UpdatedAt: now},
+			{ID: "ab2", Title: "Month-old task", Status: "open", Priority: 2, CreatedAt: now.AddDate(0, 0, -45), UpdatedAt: now.AddDate(0, 0, -10)},
+			{ID: "ab3", Title: "Ancient issue", Status: "open", Priority: 3, CreatedAt: now.AddDate(0, -7, 0), UpdatedAt: now.AddDate(0, -6, 0)},
+		},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/age-breakdown", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /age-breakdown status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Distribution") {
+		t.Error("expected 'Distribution' section")
+	}
+	if !strings.Contains(body, "Oldest Open Bead") {
+		t.Error("expected oldest bead section")
+	}
+	if !strings.Contains(body, "Ancient issue") {
+		t.Error("expected oldest issue title")
+	}
+}
+
+func TestAgeBreakdownPage_HTMX(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/age-breakdown", nil)
+	req.Header.Set("HX-Request", "true")
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("HTMX GET /age-breakdown status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if strings.Contains(body, "<!DOCTYPE html>") {
+		t.Error("HTMX age-breakdown should return partial, not full page")
+	}
+}
