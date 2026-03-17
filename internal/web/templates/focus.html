@@ -1,8 +1,17 @@
 {{define "title"}}Focus{{end}}
 {{define "content"}}
-<div class="focus-page" hx-get="/focus" hx-trigger="every 60s" hx-select=".focus-page" hx-swap="outerHTML">
+<div class="focus-page" hx-get="/focus{{if .FilterRig}}?rig={{.FilterRig}}{{end}}" hx-trigger="every 60s" hx-select=".focus-page" hx-swap="outerHTML">
   <h1>Focus <time class="text-dim">{{formatDateTime .GeneratedAt}}</time></h1>
-  <p class="text-dim">What to work on next — ranked by composite urgency (priority + age + status).</p>
+  <p class="text-dim">What to work on next — ranked by composite urgency (priority + age + status).{{if .FilterRig}} Showing {{rigName .FilterRig}} only.{{end}}</p>
+
+  {{if gt (len .Rigs) 1}}
+  <div class="dep-filters" style="margin-top:0.5rem;margin-bottom:0.5rem">
+    <a href="/focus" class="badge {{if not .FilterRig}}filter-active{{end}}">All rigs</a>
+    {{range .Rigs}}
+    <a href="/focus?rig={{.}}" class="badge {{if eq . $.FilterRig}}filter-active{{end}}">{{rigName .}}</a>
+    {{end}}
+  </div>
+  {{end}}
 
   {{if .Err}}
   <div class="error">{{.Err}}</div>

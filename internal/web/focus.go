@@ -36,12 +36,17 @@ type focusData struct {
 	AvgScore    float64
 	MaxScore    float64
 
+	// Rig filter
+	FilterRig string
+	Rigs      []string
+
 	Err string
 }
 
 func (s *Server) handleFocus(w http.ResponseWriter, r *http.Request) {
 	now := time.Now()
-	data := focusData{GeneratedAt: now}
+	filterRig := r.URL.Query().Get("rig")
+	data := focusData{GeneratedAt: now, FilterRig: filterRig}
 
 	if s.ds == nil {
 		s.render(w, r, "focus", data)
@@ -59,11 +64,18 @@ func (s *Server) handleFocus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	for _, db := range dbs {
+		data.Rigs = append(data.Rigs, db.Name)
+	}
+
 	var allItems []focusBead
 	var mu sync.Mutex
 	var wg sync.WaitGroup
 
 	for _, db := range dbs {
+		if filterRig != "" && db.Name != filterRig {
+			continue
+		}
 		wg.Add(1)
 		go func(dbName string) {
 			defer wg.Done()
