@@ -641,6 +641,10 @@ func (s *Server) parseTemplates() {
 			template.New("").Funcs(funcMap).ParseFS(templateFS,
 				"templates/layout.html", "templates/escalations.html"),
 		),
+		"focus": template.Must(
+			template.New("").Funcs(funcMap).ParseFS(templateFS,
+				"templates/layout.html", "templates/focus.html"),
+		),
 	}
 }
 
@@ -894,6 +898,8 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		s.handleReopen(w, r)
 	case len(segments) == 1 && segments[0] == "escalations":
 		s.handleEscalations(w, r)
+	case len(segments) == 1 && segments[0] == "focus":
+		s.handleFocus(w, r)
 	case len(segments) == 1 && segments[0] == "designs":
 		s.handleDesignsList(w, r)
 	case len(segments) == 2 && segments[0] == "designs":

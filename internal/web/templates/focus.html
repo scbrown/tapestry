@@ -1,0 +1,71 @@
+{{define "title"}}Focus{{end}}
+{{define "content"}}
+<div class="focus-page" hx-get="/focus" hx-trigger="every 60s" hx-select=".focus-page" hx-swap="outerHTML">
+  <h1>Focus <time class="text-dim">{{formatDateTime .GeneratedAt}}</time></h1>
+  <p class="text-dim">What to work on next — ranked by composite urgency (priority + age + status).</p>
+
+  {{if .Err}}
+  <div class="error">{{.Err}}</div>
+  {{else}}
+
+  {{/* ── Summary ── */}}
+  <div class="briefing-grid">
+    <section class="briefing-card">
+      <h2>Scoring</h2>
+      <div class="stat-grid">
+        <div class="stat">
+          <span class="stat-value">{{.TotalScored}}</span>
+          <span class="stat-label">Beads scored</span>
+        </div>
+        <div class="stat">
+          <span class="stat-value">{{printf "%.0f" .MaxScore}}</span>
+          <span class="stat-label">Highest score</span>
+        </div>
+        <div class="stat">
+          <span class="stat-value">{{printf "%.1f" .AvgScore}}</span>
+          <span class="stat-label">Avg score</span>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  {{/* ── Focus List ── */}}
+  {{if .Items}}
+  <h2 style="margin-top:2rem">Top Priority Items</h2>
+  <table class="bead-table">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Bead</th>
+        <th>Title</th>
+        <th>Status</th>
+        <th>Pri</th>
+        <th>Age</th>
+        <th>Score</th>
+        <th>Signal</th>
+        <th>Assignee</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{range $i, $item := .Items}}
+      <tr>
+        <td class="text-dim">{{add1 $i}}</td>
+        <td><a href="/bead/{{$item.DB}}/{{$item.ID}}">{{$item.ID}}</a></td>
+        <td>{{$item.Title}}</td>
+        <td>{{statusBadge $item.Status}}</td>
+        <td>{{priorityLabel $item.Priority}}</td>
+        <td>{{$item.AgeDays}}d</td>
+        <td><strong>{{printf "%.0f" $item.Score}}</strong></td>
+        <td><span class="text-dim">{{$item.Reason}}</span></td>
+        <td>{{if $item.Assignee}}<a href="/agent/{{$item.Assignee}}">{{shortActor $item.Assignee}}</a>{{else}}<span class="text-dim">—</span>{{end}}</td>
+      </tr>
+      {{end}}
+    </tbody>
+  </table>
+  {{else}}
+  <p class="text-dim">No scoreable beads found.</p>
+  {{end}}
+
+  {{end}}
+</div>
+{{end}}

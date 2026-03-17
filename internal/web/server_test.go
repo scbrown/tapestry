@@ -8120,3 +8120,52 @@ func TestEscalationsPage_AutoRefresh(t *testing.T) {
 		t.Error("expected 120s auto-refresh on escalations page")
 	}
 }
+
+// ── /focus ──
+
+func TestFocusPage(t *testing.T) {
+	srv := New(&mockDataSource{})
+	req := httptest.NewRequest("GET", "/focus", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /focus status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Focus") {
+		t.Error("expected 'Focus' heading")
+	}
+	if !strings.Contains(body, "Scoring") {
+		t.Error("expected Scoring section")
+	}
+	if !strings.Contains(body, "Highest score") {
+		t.Error("expected Highest score stat")
+	}
+}
+
+func TestFocusPage_NilDS(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/focus", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /focus nil ds status = %d, want %d", w.Code, http.StatusOK)
+	}
+}
+
+func TestFocusPage_AutoRefresh(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/focus", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	body := w.Body.String()
+	if !strings.Contains(body, `hx-trigger="every 60s"`) {
+		t.Error("expected 60s auto-refresh on focus page")
+	}
+}
