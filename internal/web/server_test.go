@@ -3295,6 +3295,33 @@ func TestQueuePage_AssigneeDropdown(t *testing.T) {
 	}
 }
 
+func TestQueuePage_UrgencyScore(t *testing.T) {
+	now := time.Now()
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issues: []dolt.Issue{
+			{ID: "qu1", Title: "Old P0", Status: "open", Priority: 0, CreatedAt: now.Add(-72 * time.Hour), UpdatedAt: now},
+		},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/queue", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /queue status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "urgency-score") {
+		t.Error("expected urgency score display on queue page")
+	}
+	if !strings.Contains(body, "Urgency") {
+		t.Error("expected 'Urgency' column header")
+	}
+}
+
 func TestDuplicatesPage_NilDataSource(t *testing.T) {
 	srv := New(nil)
 	req := httptest.NewRequest("GET", "/duplicates", nil)

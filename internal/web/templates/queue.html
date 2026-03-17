@@ -30,6 +30,7 @@
         <th>Type</th>
         <th>Title</th>
         <th>Age</th>
+        <th>Urgency</th>
         <th>Assignee</th>
         <th>Actions</th>
       </tr>
@@ -51,6 +52,7 @@
         <td>{{if $item.Issue.Type}}<span class="badge">{{$item.Issue.Type}}</span>{{else}}—{{end}}</td>
         <td>{{$item.Issue.Title}}</td>
         <td>{{$item.AgeDays}}d</td>
+        <td><span class="urgency-score {{if gt $item.Score 200.0}}text-error{{else if gt $item.Score 100.0}}text-warn{{end}}" title="Score: {{printf "%.0f" $item.Score}}">{{printf "%.0f" $item.Score}}</span></td>
         <td>{{if $item.Issue.Assignee}}<a href="/agent/{{$item.Issue.Assignee}}">{{shortActor $item.Issue.Assignee}}</a>{{else}}<em>unassigned</em>{{end}}</td>
         <td class="triage-actions">
           <div class="triage-btn-group">
