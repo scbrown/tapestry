@@ -10159,3 +10159,150 @@ func TestPendingPage_RigFilter(t *testing.T) {
 		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
 	}
 }
+
+// ── Label Age Page ──────────────────────────────────────────
+
+func TestLabelAgePage_NilDataSource(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/label-age", nil)
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /label-age status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Label Age") {
+		t.Error("expected 'Label Age' heading")
+	}
+}
+
+func TestLabelAgePage_WithData(t *testing.T) {
+	now := time.Now()
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issues: []dolt.Issue{
+			{ID: "la-1", Title: "Labeled bead", Status: "open", Priority: 2, CreatedAt: now.AddDate(0, 0, -20), UpdatedAt: now},
+		},
+		labels: []string{"bug", "tooling"},
+	}
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/label-age", nil)
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /label-age status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "bug") {
+		t.Error("expected label name in results")
+	}
+}
+
+func TestLabelAgePage_HTMXPartial(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/label-age", nil)
+	req.Header.Set("HX-Request", "true")
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("HTMX GET /label-age status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if strings.Contains(body, "<!DOCTYPE html>") {
+		t.Error("HTMX label-age should return partial, not full page")
+	}
+}
+
+func TestLabelAgePage_RigFilter(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}, {Name: "beads_gastown"}},
+	}
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/label-age?rig=beads_aegis", nil)
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
+	}
+}
+
+// ── Status Flow Page ──────────────────────────────────────────
+
+func TestStatusFlowPage_NilDataSource(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/status-flow", nil)
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /status-flow status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Status Flow") {
+		t.Error("expected 'Status Flow' heading")
+	}
+}
+
+func TestStatusFlowPage_WithData(t *testing.T) {
+	now := time.Now()
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issueDiffs: []dolt.IssueDiffRow{
+			{DiffType: "modified", ToID: "sf-1", ToTitle: "Flow bead", FromStatus: "open", ToStatus: "in_progress", ToCommitDate: now},
+			{DiffType: "modified", ToID: "sf-2", ToTitle: "Close bead", FromStatus: "in_progress", ToStatus: "closed", ToCommitDate: now},
+		},
+	}
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/status-flow", nil)
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /status-flow status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "open") || !strings.Contains(body, "in_progress") {
+		t.Error("expected status transitions in results")
+	}
+}
+
+func TestStatusFlowPage_HTMXPartial(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/status-flow", nil)
+	req.Header.Set("HX-Request", "true")
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("HTMX GET /status-flow status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if strings.Contains(body, "<!DOCTYPE html>") {
+		t.Error("HTMX status-flow should return partial, not full page")
+	}
+}
+
+func TestStatusFlowPage_RigFilter(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}, {Name: "beads_gastown"}},
+	}
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/status-flow?rig=beads_aegis", nil)
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
+	}
+}
+
+func TestStatusFlowPage_WindowFilter(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+	}
+	srv := New(ds)
+	for _, window := range []string{"7d", "30d", "90d"} {
+		req := httptest.NewRequest("GET", "/status-flow?window="+window, nil)
+		w := httptest.NewRecorder()
+		srv.ServeHTTP(w, req)
+		if w.Code != http.StatusOK {
+			t.Fatalf("window=%s status = %d, want %d", window, w.Code, http.StatusOK)
+		}
+	}
+}

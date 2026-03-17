@@ -1,0 +1,51 @@
+{{define "title"}}Label Age{{end}}
+{{define "content"}}
+<div class="label-age-page" hx-get="/label-age{{if .FilterRig}}?rig={{.FilterRig}}{{end}}" hx-trigger="every 120s" hx-select=".label-age-page" hx-swap="outerHTML">
+  <h1>Label Age Analysis <span class="text-dim">({{.Total}} labels)</span></h1>
+  <p class="text-dim">How old are open beads by label — identifies neglected categories.</p>
+
+  <div class="dep-filters">
+    {{if .Rigs}}
+    <select onchange="location.href='/label-age?rig='+this.value">
+      <option value="">All rigs</option>
+      {{range .Rigs}}<option value="{{.}}" {{if eq . $.FilterRig}}selected{{end}}>{{.}}</option>{{end}}
+    </select>
+    {{end}}
+  </div>
+
+  {{if .Err}}
+  <div class="error-banner">{{.Err}}</div>
+  {{else if .Labels}}
+  <table>
+    <thead>
+      <tr>
+        <th>Label</th>
+        <th>Open</th>
+        <th>Median</th>
+        <th>Mean</th>
+        <th>Max Age</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {{range .Labels}}
+      <tr>
+        <td><a href="/label/{{.Label}}">{{.Label}}</a></td>
+        <td>{{.Count}}</td>
+        <td>{{printf "%.0f" .MedianDays}}d</td>
+        <td>{{printf "%.0f" .MeanDays}}d</td>
+        <td>{{printf "%.0f" .MaxDays}}d</td>
+        <td>
+          <div class="dwell-bar-container">
+            <div class="dwell-bar {{if ge .MaxDays 30.0}}dwell-danger{{else if ge .MaxDays 14.0}}dwell-warning{{else}}dwell-ok{{end}}" style="width: {{printf "%.0f" .BarPct}}%"></div>
+          </div>
+        </td>
+      </tr>
+      {{end}}
+    </tbody>
+  </table>
+  {{else}}
+  <p class="empty">No labeled open beads found.</p>
+  {{end}}
+</div>
+{{end}}

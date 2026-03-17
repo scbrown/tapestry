@@ -1,0 +1,54 @@
+{{define "title"}}Status Flow{{end}}
+{{define "content"}}
+<div class="status-flow-page" hx-get="/status-flow{{if .FilterRig}}?rig={{.FilterRig}}{{if ne .Window "30d"}}&window={{.Window}}{{end}}{{else}}{{if ne .Window "30d"}}?window={{.Window}}{{end}}{{end}}" hx-trigger="every 120s" hx-select=".status-flow-page" hx-swap="outerHTML">
+  <h1>Status Flow <span class="text-dim">({{.Total}} transitions)</span></h1>
+  <p class="text-dim">How beads move between statuses — most common transition paths.</p>
+
+  <div class="dep-filters">
+    {{if .Rigs}}
+    <select onchange="location.href='/status-flow?rig='+this.value+'{{if ne .Window "30d"}}&window={{.Window}}{{end}}'">
+      <option value="">All rigs</option>
+      {{range .Rigs}}<option value="{{.}}" {{if eq . $.FilterRig}}selected{{end}}>{{.}}</option>{{end}}
+    </select>
+    {{end}}
+    <a href="/status-flow?window=7d{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" class="badge {{if eq .Window "7d"}}status-open{{end}}">7 days</a>
+    <a href="/status-flow?window=30d{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" class="badge {{if eq .Window "30d"}}status-open{{end}}">30 days</a>
+    <a href="/status-flow?window=90d{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" class="badge {{if eq .Window "90d"}}status-open{{end}}">90 days</a>
+  </div>
+
+  {{if .Err}}
+  <div class="error-banner">{{.Err}}</div>
+  {{else if .Transitions}}
+  <table>
+    <thead>
+      <tr>
+        <th>From</th>
+        <th></th>
+        <th>To</th>
+        <th>Count</th>
+        <th>%</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {{range .Transitions}}
+      <tr>
+        <td>{{statusBadge .From}}</td>
+        <td class="text-dim">→</td>
+        <td>{{statusBadge .To}}</td>
+        <td><strong>{{.Count}}</strong></td>
+        <td>{{printf "%.1f" .Pct}}%</td>
+        <td>
+          <div class="dwell-bar-container" style="min-width:80px">
+            <div class="dwell-bar dwell-ok" style="width: {{printf "%.0f" .Pct}}%"></div>
+          </div>
+        </td>
+      </tr>
+      {{end}}
+    </tbody>
+  </table>
+  {{else}}
+  <p class="empty">No status transitions in this time window.</p>
+  {{end}}
+</div>
+{{end}}
