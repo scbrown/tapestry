@@ -51,13 +51,13 @@
     <tbody>
       {{range .Rows}}
       <tr>
-        <td><strong>{{.Type}}</strong></td>
+        <td><strong><a href="/beads?type={{.Type}}">{{.Type}}</a></strong></td>
         <td><strong>{{.Total}}</strong></td>
-        <td>{{if .Open}}{{.Open}}{{else}}—{{end}}</td>
-        <td>{{if .Progress}}{{.Progress}}{{else}}—{{end}}</td>
-        <td>{{if .Blocked}}{{.Blocked}}{{else}}—{{end}}</td>
-        <td>{{if .Closed}}{{.Closed}}{{else}}—{{end}}</td>
-        <td>{{if .Deferred}}{{.Deferred}}{{else}}—{{end}}</td>
+        <td>{{if .Open}}<a href="/beads?type={{.Type}}&amp;status=open">{{.Open}}</a>{{else}}—{{end}}</td>
+        <td>{{if .Progress}}<a href="/beads?type={{.Type}}&amp;status=in_progress">{{.Progress}}</a>{{else}}—{{end}}</td>
+        <td>{{if .Blocked}}<a href="/beads?type={{.Type}}&amp;status=blocked">{{.Blocked}}</a>{{else}}—{{end}}</td>
+        <td>{{if .Closed}}<a href="/beads?type={{.Type}}&amp;status=closed">{{.Closed}}</a>{{else}}—{{end}}</td>
+        <td>{{if .Deferred}}<a href="/beads?type={{.Type}}&amp;status=deferred">{{.Deferred}}</a>{{else}}—{{end}}</td>
       </tr>
       {{end}}
     </tbody>

@@ -28,11 +28,11 @@
       <tr>
         <td>{{if eq .Name "(unassigned)"}}<em>{{.Name}}</em>{{else}}<a href="/agent/{{.Name}}">{{shortActor .Name}}</a>{{end}}</td>
         <td><strong>{{.Total}}</strong></td>
-        <td>{{if .Open}}{{.Open}}{{else}}—{{end}}</td>
-        <td>{{if .Progress}}{{.Progress}}{{else}}—{{end}}</td>
-        <td>{{if .Blocked}}{{.Blocked}}{{else}}—{{end}}</td>
-        <td>{{if .Closed}}{{.Closed}}{{else}}—{{end}}</td>
-        <td>{{if .Deferred}}{{.Deferred}}{{else}}—{{end}}</td>
+        <td>{{if .Open}}<a href="/beads?assignee={{.Name}}&amp;status=open">{{.Open}}</a>{{else}}—{{end}}</td>
+        <td>{{if .Progress}}<a href="/beads?assignee={{.Name}}&amp;status=in_progress">{{.Progress}}</a>{{else}}—{{end}}</td>
+        <td>{{if .Blocked}}<a href="/beads?assignee={{.Name}}&amp;status=blocked">{{.Blocked}}</a>{{else}}—{{end}}</td>
+        <td>{{if .Closed}}<a href="/beads?assignee={{.Name}}&amp;status=closed">{{.Closed}}</a>{{else}}—{{end}}</td>
+        <td>{{if .Deferred}}<a href="/beads?assignee={{.Name}}&amp;status=deferred">{{.Deferred}}</a>{{else}}—{{end}}</td>
         <td>
           <div class="completion-bar">
             <div class="completion-fill" style="width: {{if .Total}}{{mulf (divf (itof .Closed) (itof .Total)) 100.0}}%{{else}}0%{{end}}"></div>
