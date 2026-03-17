@@ -1,7 +1,17 @@
 {{define "title"}}Epics{{end}}
 {{define "content"}}
-<div class="epics-page" hx-get="/epics" hx-trigger="every 120s" hx-select=".epics-page" hx-swap="outerHTML">
+<div class="epics-page" hx-get="/epics{{if .FilterRig}}?rig={{.FilterRig}}{{end}}" hx-trigger="every 120s" hx-select=".epics-page" hx-swap="outerHTML">
   <h1>Epics <span class="text-dim">({{len .Epics}})</span></h1>
+
+  {{if gt (len .Rigs) 1}}
+  <div class="dep-filters" style="margin-top:0.5rem;margin-bottom:0.5rem">
+    <a href="/epics" class="badge {{if not .FilterRig}}filter-active{{end}}">All rigs</a>
+    {{range .Rigs}}
+    <a href="/epics?rig={{.}}" class="badge {{if eq . $.FilterRig}}filter-active{{end}}">{{rigName .}}</a>
+    {{end}}
+  </div>
+  {{end}}
+
   {{if .Epics}}
   <div style="margin-bottom:0.5rem">
     <label><input type="checkbox" id="show-closed-epics" onchange="toggleClosedEpics()"> Show closed</label>

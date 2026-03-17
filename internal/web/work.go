@@ -318,7 +318,9 @@ func (s *Server) handleWork(w http.ResponseWriter, r *http.Request) {
 // ── Epics Page ────────────────────────────────────────────
 
 type epicsData struct {
-	Epics []epicTree
+	Epics     []epicTree
+	Rigs      []string
+	FilterRig string
 }
 
 func (s *Server) handleEpics(w http.ResponseWriter, r *http.Request) {
@@ -395,8 +397,28 @@ func (s *Server) handleEpics(w http.ResponseWriter, r *http.Request) {
 	}
 	wg.Wait()
 
+	rigSet := make(map[string]bool)
 	for _, r := range results {
 		data.Epics = append(data.Epics, r.epics...)
+		for _, e := range r.epics {
+			rigSet[e.Rig] = true
+		}
+	}
+
+	for rig := range rigSet {
+		data.Rigs = append(data.Rigs, rig)
+	}
+	sort.Strings(data.Rigs)
+
+	data.FilterRig = r.URL.Query().Get("rig")
+	if data.FilterRig != "" {
+		filtered := data.Epics[:0]
+		for _, e := range data.Epics {
+			if e.Rig == data.FilterRig {
+				filtered = append(filtered, e)
+			}
+		}
+		data.Epics = filtered
 	}
 
 	sort.Slice(data.Epics, func(i, j int) bool {

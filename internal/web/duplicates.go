@@ -22,6 +22,8 @@ type duplicatesData struct {
 	Groups      []dupGroup
 	TotalDups   int
 	TotalGroups int
+	Rigs        []string
+	FilterRig   string
 }
 
 // normalizeTitle strips common prefixes like "[AUTO] " and the alert name
@@ -72,6 +74,17 @@ func (s *Server) handleDuplicates(w http.ResponseWriter, r *http.Request) {
 	}
 	wg.Wait()
 
+	// Collect rigs
+	rigSet := make(map[string]bool)
+	for _, db := range dbs {
+		rigSet[db.Name] = true
+	}
+	for rig := range rigSet {
+		data.Rigs = append(data.Rigs, rig)
+	}
+	sort.Strings(data.Rigs)
+	data.FilterRig = r.URL.Query().Get("rig")
+
 	// Group open/in_progress issues by normalized title
 	groups := map[string][]dolt.Issue{}
 	for i, r := range results {
@@ -80,6 +93,9 @@ func (s *Server) handleDuplicates(w http.ResponseWriter, r *http.Request) {
 				continue
 			}
 			iss.Rig = dbs[i].Name
+			if data.FilterRig != "" && iss.Rig != data.FilterRig {
+				continue
+			}
 			key := normalizeTitle(iss.Title)
 			groups[key] = append(groups[key], iss)
 		}
