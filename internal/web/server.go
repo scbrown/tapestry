@@ -789,6 +789,10 @@ func (s *Server) parseTemplates() {
 			template.New("").Funcs(funcMap).ParseFS(templateFS,
 				"templates/layout.html", "templates/changelog.html"),
 		),
+		"impact": template.Must(
+			template.New("").Funcs(funcMap).ParseFS(templateFS,
+				"templates/layout.html", "templates/impact.html"),
+		),
 	}
 }
 
@@ -1108,6 +1112,8 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		s.handleTimeline(w, r)
 	case len(segments) == 1 && segments[0] == "changelog":
 		s.handleChangelog(w, r)
+	case len(segments) == 1 && segments[0] == "impact":
+		s.handleImpact(w, r)
 	case len(segments) == 1 && segments[0] == "designs":
 		s.handleDesignsList(w, r)
 	case len(segments) == 2 && segments[0] == "designs":

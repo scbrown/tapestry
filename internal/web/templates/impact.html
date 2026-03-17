@@ -1,0 +1,57 @@
+{{define "title"}}Impact{{end}}
+{{define "content"}}
+<h1>Impact</h1>
+<p class="subtitle">Agent impact scores: closures × 3 + creations × 1 + comments × 0.5</p>
+
+{{if .FilterRig}}<div class="dep-filters"><span class="dep-filter-badge">rig: {{.FilterRig}}</span> <a href="/impact">clear</a></div>{{end}}
+
+{{if .Err}}<p class="error">{{.Err}}</p>{{end}}
+
+{{if .Agents}}
+<div style="overflow-x:auto">
+<table class="bead-table">
+<thead>
+<tr>
+    <th>#</th>
+    <th>Agent</th>
+    <th>Score (30d)</th>
+    <th>Score (7d)</th>
+    <th>Closed (30d)</th>
+    <th>Closed (7d)</th>
+    <th>Created (30d)</th>
+    <th>Comments (30d)</th>
+    <th style="width:25%">Impact Bar</th>
+</tr>
+</thead>
+<tbody>
+{{$maxScore := 1.0}}
+{{if .Agents}}{{$maxScore = (index .Agents 0).Score30d}}{{end}}
+{{range $i, $a := .Agents}}
+<tr>
+    <td>{{add1 $i}}</td>
+    <td><a href="/agent/{{.Name}}">{{shortActor .Name}}</a></td>
+    <td><strong style="color:var(--green)">{{printf "%.0f" .Score30d}}</strong></td>
+    <td>{{printf "%.0f" .Score7d}}</td>
+    <td>{{if .Closed30d}}<span style="color:var(--purple)">{{.Closed30d}}</span>{{else}}<span style="color:var(--comment)">-</span>{{end}}</td>
+    <td>{{if .Closed7d}}<span style="color:var(--purple)">{{.Closed7d}}</span>{{else}}<span style="color:var(--comment)">-</span>{{end}}</td>
+    <td>{{if .Created30d}}<span style="color:var(--cyan)">{{.Created30d}}</span>{{else}}<span style="color:var(--comment)">-</span>{{end}}</td>
+    <td>{{if .Comments30d}}<span style="color:var(--orange)">{{.Comments30d}}</span>{{else}}<span style="color:var(--comment)">-</span>{{end}}</td>
+    <td>
+        {{if gt .Score30d 0.0}}
+        <div style="background:var(--selection);border-radius:4px;height:18px;overflow:hidden">
+            <div style="background:var(--green);height:100%;width:{{divf (mulf .Score30d 100.0) $maxScore}}%;border-radius:4px;min-width:2px"></div>
+        </div>
+        {{end}}
+    </td>
+</tr>
+{{end}}
+</tbody>
+</table>
+</div>
+{{else}}
+<p style="color:var(--comment);margin-top:2rem">No agent activity in the last 30 days.</p>
+{{end}}
+
+<p style="color:var(--comment);font-size:0.85rem;margin-top:1rem">Generated {{.GeneratedAt.Format "2006-01-02 15:04"}} &middot; Auto-refresh 300s</p>
+<div hx-get="/impact{{if .FilterRig}}?rig={{.FilterRig}}{{end}}" hx-trigger="every 300s" hx-target="#content" hx-swap="innerHTML"></div>
+{{end}}
