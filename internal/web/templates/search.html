@@ -38,6 +38,12 @@
       <option value="task"{{if eq .FilterType "task"}} selected{{end}}>Task</option>
       <option value="epic"{{if eq .FilterType "epic"}} selected{{end}}>Epic</option>
     </select>
+    {{if .Labels}}
+    <select name="label" style="padding:0.3rem;background:var(--current-line);color:var(--foreground);border:1px solid var(--comment);border-radius:4px">
+      <option value="">Any label</option>
+      {{range .Labels}}<option value="{{.}}"{{if eq . $.FilterLabel}} selected{{end}}>{{.}}</option>{{end}}
+    </select>
+    {{end}}
     <select name="sort" style="padding:0.3rem;background:var(--current-line);color:var(--foreground);border:1px solid var(--comment);border-radius:4px">
       <option value=""{{if eq .SortBy ""}} selected{{end}}>Sort: relevance</option>
       <option value="priority"{{if eq .SortBy "priority"}} selected{{end}}>Sort: priority</option>

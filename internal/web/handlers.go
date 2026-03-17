@@ -87,11 +87,13 @@ type searchData struct {
 	Issues       []dolt.Issue
 	Assignees    []string
 	Rigs         []string
+	Labels       []string
 	Err          string
 	FilterStatus string
 	FilterPri    string
 	FilterRig    string
 	FilterType   string
+	FilterLabel  string
 	SortBy       string
 }
 
@@ -503,6 +505,7 @@ func (s *Server) handleSearch(w http.ResponseWriter, r *http.Request) {
 	filterPri := r.URL.Query().Get("pri")
 	filterRig := r.URL.Query().Get("rig")
 	filterType := r.URL.Query().Get("type")
+	filterLabel := r.URL.Query().Get("label")
 	sortBy := r.URL.Query().Get("sort")
 	data := searchData{
 		Query:        q,
@@ -510,6 +513,7 @@ func (s *Server) handleSearch(w http.ResponseWriter, r *http.Request) {
 		FilterPri:    filterPri,
 		FilterRig:    filterRig,
 		FilterType:   filterType,
+		FilterLabel:  filterLabel,
 		SortBy:       sortBy,
 	}
 
@@ -553,6 +557,8 @@ func (s *Server) handleSearch(w http.ResponseWriter, r *http.Request) {
 	type searchResult struct {
 		issues    []dolt.Issue
 		assignees []string
+		labels    []string
+		labelIDs  map[string]bool // issue IDs with the filtered label
 	}
 	results := make([]searchResult, len(searchDbs))
 	var wg sync.WaitGroup
@@ -571,12 +577,31 @@ func (s *Server) handleSearch(w http.ResponseWriter, r *http.Request) {
 			}
 			r.issues = issues
 			r.assignees, _ = s.ds.DistinctAssignees(ctx, dbName)
+
+			// Fetch label list for dropdown
+			if labelCounts, err := s.ds.DistinctLabels(ctx, dbName); err == nil {
+				for _, lc := range labelCounts {
+					r.labels = append(r.labels, lc.Label)
+				}
+			}
+
+			// If label filter is set, fetch issues with that label for intersection
+			if filterLabel != "" {
+				r.labelIDs = make(map[string]bool)
+				if labelIssues, err := s.ds.IssuesByLabel(ctx, dbName, filterLabel); err == nil {
+					for _, li := range labelIssues {
+						r.labelIDs[li.ID] = true
+					}
+				}
+			}
+
 			results[i] = r
 		}(i, db.Name)
 	}
 	wg.Wait()
 
 	assigneeSet := make(map[string]bool)
+	labelSet := make(map[string]bool)
 	for _, r := range results {
 		for _, iss := range r.issues {
 			if filterStatus != "" && iss.Status != filterStatus {
@@ -591,6 +616,9 @@ func (s *Server) handleSearch(w http.ResponseWriter, r *http.Request) {
 			if filterType != "" && iss.Type != filterType {
 				continue
 			}
+			if filterLabel != "" && r.labelIDs != nil && !r.labelIDs[iss.ID] {
+				continue
+			}
 			data.Issues = append(data.Issues, iss)
 		}
 		for _, a := range r.assignees {
@@ -598,11 +626,18 @@ func (s *Server) handleSearch(w http.ResponseWriter, r *http.Request) {
 				assigneeSet[a] = true
 			}
 		}
+		for _, l := range r.labels {
+			labelSet[l] = true
+		}
 	}
 	for a := range assigneeSet {
 		data.Assignees = append(data.Assignees, a)
 	}
 	sort.Strings(data.Assignees)
+	for l := range labelSet {
+		data.Labels = append(data.Labels, l)
+	}
+	sort.Strings(data.Labels)
 
 	// Sort results
 	switch sortBy {

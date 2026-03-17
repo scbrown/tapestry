@@ -1271,6 +1271,32 @@ func TestSearch_SortByPriority(t *testing.T) {
 	}
 }
 
+func TestSearch_LabelFilter(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issues: []dolt.Issue{
+			{ID: "aegis-s1", Title: "Security bug", Status: "open", Priority: 1, Rig: "beads_aegis"},
+		},
+		labelCounts: []dolt.LabelCount{{Label: "security", Count: 3}, {Label: "desire-path", Count: 1}},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/search?q=security&label=security", nil)
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Any label") {
+		t.Error("expected label filter dropdown with 'Any label' option")
+	}
+	if !strings.Contains(body, "security") {
+		t.Error("expected 'security' label option in dropdown")
+	}
+}
+
 func TestSearch_EnhancedBatchBar(t *testing.T) {
 	ds := &mockDataSource{
 		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
