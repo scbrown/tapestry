@@ -1,0 +1,129 @@
+{{define "title"}}Standup{{end}}
+{{define "content"}}
+<div class="standup-page" hx-get="/standup{{if .FilterRig}}?rig={{.FilterRig}}{{end}}" hx-trigger="every 60s" hx-select=".standup-page" hx-swap="outerHTML">
+  <h1>Daily Standup <time class="text-dim">{{formatDateTime .GeneratedAt}}</time></h1>
+
+  {{if .Err}}
+  <div class="error">{{.Err}}</div>
+  {{else}}
+
+  {{if gt (len .Rigs) 1}}
+  <div class="dep-filters" style="margin-bottom:0.75rem">
+    <a href="/standup" class="badge {{if not .FilterRig}}filter-active{{end}}">All rigs</a>
+    {{range .Rigs}}
+    <a href="/standup?rig={{.}}" class="badge {{if eq . $.FilterRig}}filter-active{{end}}">{{rigName .}}</a>
+    {{end}}
+  </div>
+  {{end}}
+
+  <div class="stat-grid">
+    <div class="stat">
+      <span class="stat-value accent">{{.TotalClosed}}</span>
+      <span class="stat-label">Closed yesterday</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value pulse">{{.TotalActive}}</span>
+      <span class="stat-label">In progress</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value warn">{{.TotalBlocked}}</span>
+      <span class="stat-label">Blocked</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value">{{len .Agents}}</span>
+      <span class="stat-label">Active agents</span>
+    </div>
+  </div>
+
+  {{if .Agents}}
+  <div class="standup-agents">
+    {{range .Agents}}
+    <section class="briefing-card" style="margin-top:1rem">
+      <h2>
+        <a href="/agent/{{.Name}}">{{shortActor .Name}}</a>
+        <span class="text-dim" style="font-size:0.8em; margin-left:0.5rem">
+          {{if gt .ClosedCount 0}}<span class="accent">{{.ClosedCount}} closed</span>{{end}}
+          {{if gt .ActiveCount 0}}<span class="pulse">{{.ActiveCount}} active</span>{{end}}
+          {{if gt .BlockedCount 0}}<span class="warn">{{.BlockedCount}} blocked</span>{{end}}
+        </span>
+      </h2>
+
+      {{if .ClosedYest}}
+      <div class="standup-section">
+        <h3 class="text-dim" style="margin:0.5rem 0 0.25rem">Done</h3>
+        <ul class="briefing-list">
+          {{range .ClosedYest}}
+          <li>
+            <a href="/bead/{{lower .Rig}}/{{.Issue.ID}}" hx-boost="true">{{.Issue.ID}}</a>
+            <span class="priority-badge p{{.Issue.Priority}}">P{{.Issue.Priority}}</span>
+            {{.Issue.Title}}
+            <span class="rig-label text-dim">{{rigName .Rig}}</span>
+          </li>
+          {{end}}
+        </ul>
+      </div>
+      {{end}}
+
+      {{if .InProgress}}
+      <div class="standup-section">
+        <h3 class="text-dim" style="margin:0.5rem 0 0.25rem">Working on</h3>
+        <ul class="briefing-list">
+          {{range .InProgress}}
+          <li>
+            <a href="/bead/{{lower .Rig}}/{{.Issue.ID}}" hx-boost="true">{{.Issue.ID}}</a>
+            <span class="priority-badge p{{.Issue.Priority}}">P{{.Issue.Priority}}</span>
+            {{.Issue.Title}}
+            <span class="rig-label text-dim">{{rigName .Rig}}</span>
+            <time class="text-dim freshness">{{timeAgo .Issue.UpdatedAt}}</time>
+          </li>
+          {{end}}
+        </ul>
+      </div>
+      {{end}}
+
+      {{if .Blocked}}
+      <div class="standup-section">
+        <h3 class="text-dim" style="margin:0.5rem 0 0.25rem">Blocked</h3>
+        <ul class="briefing-list">
+          {{range .Blocked}}
+          <li class="blocked-item">
+            <a href="/bead/{{lower .Rig}}/{{.Issue.ID}}" hx-boost="true">{{.Issue.ID}}</a>
+            <span class="priority-badge p{{.Issue.Priority}}">P{{.Issue.Priority}}</span>
+            {{.Issue.Title}}
+            <span class="rig-label text-dim">{{rigName .Rig}}</span>
+          </li>
+          {{end}}
+        </ul>
+      </div>
+      {{end}}
+
+      {{if and (not .ClosedYest) (not .InProgress) (not .Blocked)}}
+      <p class="empty">No recent activity.</p>
+      {{end}}
+    </section>
+    {{end}}
+  </div>
+  {{else}}
+  <p class="empty">No agent activity to report.</p>
+  {{end}}
+
+  {{if .Unassigned}}
+  <section class="briefing-card" style="margin-top:1rem">
+    <h2>Unassigned <span class="text-dim">({{len .Unassigned}})</span></h2>
+    <ul class="briefing-list">
+      {{range .Unassigned}}
+      <li>
+        <a href="/bead/{{lower .Rig}}/{{.Issue.ID}}" hx-boost="true">{{.Issue.ID}}</a>
+        <span class="priority-badge p{{.Issue.Priority}}">P{{.Issue.Priority}}</span>
+        {{statusBadge .Issue.Status}}
+        {{.Issue.Title}}
+        <span class="rig-label text-dim">{{rigName .Rig}}</span>
+      </li>
+      {{end}}
+    </ul>
+  </section>
+  {{end}}
+
+  {{end}}
+</div>
+{{end}}

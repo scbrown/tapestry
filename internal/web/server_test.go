@@ -6703,3 +6703,143 @@ func TestCohortPage_RigFilter(t *testing.T) {
 		t.Error("expected filter-active badge")
 	}
 }
+
+// ── Standup Page Tests ──
+
+func TestStandupPage_NilDataSource(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/standup", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /standup status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Daily Standup") {
+		t.Error("expected 'Daily Standup' heading")
+	}
+}
+
+func TestStandupPage_WithData(t *testing.T) {
+	now := time.Now()
+	yesterday := now.AddDate(0, 0, -1)
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issues: []dolt.Issue{
+			{ID: "su1", Title: "Done yesterday", Status: "closed", Priority: 1, Assignee: "aegis/crew/alice", CreatedAt: yesterday.Add(-24 * time.Hour), UpdatedAt: yesterday},
+			{ID: "su2", Title: "Working on this", Status: "in_progress", Priority: 2, Assignee: "aegis/crew/alice", CreatedAt: yesterday.Add(-48 * time.Hour), UpdatedAt: now},
+			{ID: "su3", Title: "Stuck on blocker", Status: "blocked", Priority: 1, Assignee: "aegis/crew/bob", CreatedAt: yesterday.Add(-72 * time.Hour), UpdatedAt: yesterday},
+		},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/standup", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /standup status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "alice") {
+		t.Error("expected agent alice in standup")
+	}
+	if !strings.Contains(body, "bob") {
+		t.Error("expected agent bob in standup")
+	}
+	if !strings.Contains(body, "Working on this") {
+		t.Error("expected in-progress item")
+	}
+	if !strings.Contains(body, "Stuck on blocker") {
+		t.Error("expected blocked item")
+	}
+}
+
+func TestStandupPage_HTMXPartial(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/standup", nil)
+	req.Header.Set("HX-Request", "true")
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if strings.Contains(body, "<html") {
+		t.Error("HTMX partial should not include <html> tag")
+	}
+	if !strings.Contains(body, "Daily Standup") {
+		t.Error("expected standup content in partial")
+	}
+}
+
+func TestStandupPage_RigFilter(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}, {Name: "beads_hq"}},
+		issues: []dolt.Issue{
+			{ID: "su-r1", Title: "Aegis item", Status: "in_progress", Priority: 1, Assignee: "aegis/crew/alice", CreatedAt: time.Now().Add(-48 * time.Hour), UpdatedAt: time.Now()},
+		},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/standup?rig=beads_aegis", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "filter-active") {
+		t.Error("expected filter-active badge for rig filter")
+	}
+	if !strings.Contains(body, `rig=beads_aegis`) {
+		t.Error("expected rig filter preserved in auto-refresh URL")
+	}
+}
+
+func TestStandupPage_AutoRefresh(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/standup", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	body := w.Body.String()
+	if !strings.Contains(body, `hx-trigger="every 60s"`) {
+		t.Error("expected 60s auto-refresh on standup page")
+	}
+}
+
+func TestStandupPage_StatGrid(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issues: []dolt.Issue{
+			{ID: "su-s1", Title: "Active item", Status: "in_progress", Priority: 1, Assignee: "aegis/crew/alice", CreatedAt: time.Now().Add(-24 * time.Hour), UpdatedAt: time.Now()},
+			{ID: "su-s2", Title: "Blocked item", Status: "blocked", Priority: 2, Assignee: "aegis/crew/alice", CreatedAt: time.Now().Add(-48 * time.Hour), UpdatedAt: time.Now()},
+		},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/standup", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	body := w.Body.String()
+	if !strings.Contains(body, "In progress") {
+		t.Error("expected 'In progress' stat label")
+	}
+	if !strings.Contains(body, "Blocked") {
+		t.Error("expected 'Blocked' stat label")
+	}
+	if !strings.Contains(body, "Active agents") {
+		t.Error("expected 'Active agents' stat label")
+	}
+}
