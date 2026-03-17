@@ -10506,3 +10506,87 @@ func TestPulsePage_RigFilter(t *testing.T) {
 		t.Error("expected rig filter badge")
 	}
 }
+
+// --- Timeline page tests ---
+
+func TestTimelinePage_NilDataSource(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/timeline", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /timeline status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Timeline") {
+		t.Error("expected 'Timeline' heading")
+	}
+}
+
+func TestTimelinePage_WithData(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		counts:    map[string]int{"open": 5},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/timeline", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /timeline status = %d, want %d", w.Code, http.StatusOK)
+	}
+}
+
+func TestTimelinePage_HTMXPartial(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/timeline", nil)
+	req.Header.Set("HX-Request", "true")
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("HTMX GET /timeline status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if strings.Contains(body, "<!DOCTYPE html>") {
+		t.Error("HTMX timeline should return partial, not full page")
+	}
+}
+
+func TestTimelinePage_WindowParam(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+	}
+	srv := New(ds)
+	for _, window := range []string{"6h", "12h", "24h", "48h"} {
+		req := httptest.NewRequest("GET", "/timeline?window="+window, nil)
+		w := httptest.NewRecorder()
+		srv.ServeHTTP(w, req)
+		if w.Code != http.StatusOK {
+			t.Fatalf("GET /timeline?window=%s status = %d, want %d", window, w.Code, http.StatusOK)
+		}
+	}
+}
+
+func TestTimelinePage_RigFilter(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}, {Name: "beads_gastown"}},
+	}
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/timeline?rig=beads_aegis", nil)
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "beads_aegis") {
+		t.Error("expected rig filter badge")
+	}
+}

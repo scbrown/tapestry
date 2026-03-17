@@ -36,6 +36,7 @@ func (s *Server) handleSitemap(w http.ResponseWriter, r *http.Request) {
 				{"/momentum", "Momentum", "Health traffic lights: velocity, flow, blockers, staleness"},
 				{"/signals", "Signals", "6 traffic-light health signals"},
 				{"/pulse", "Pulse", "24-hour system pulse with hourly breakdown"},
+				{"/timeline", "Timeline", "Unified chronological activity feed"},
 			},
 		},
 		{
