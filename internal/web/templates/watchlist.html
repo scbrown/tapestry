@@ -32,6 +32,7 @@
     <h2><span class="priority-badge p0">P0</span> Critical ({{.TotalP0}})</h2>
     <div class="batch-bar" id="batch-bar-p0" style="display:none">
       <span class="batch-count">0 selected</span>
+      <button class="btn btn-xs" onclick="batchAction('p0','in_progress')">start selected</button>
       <button class="btn btn-xs" onclick="batchAction('p0','closed')">close selected</button>
       <button class="btn btn-xs" onclick="batchAction('p0','deferred')">defer selected</button>
     </div>
@@ -87,6 +88,7 @@
     <h2><span class="priority-badge p1">P1</span> High ({{.TotalP1}})</h2>
     <div class="batch-bar" id="batch-bar-p1" style="display:none">
       <span class="batch-count">0 selected</span>
+      <button class="btn btn-xs" onclick="batchAction('p1','in_progress')">start selected</button>
       <button class="btn btn-xs" onclick="batchAction('p1','closed')">close selected</button>
       <button class="btn btn-xs" onclick="batchAction('p1','deferred')">defer selected</button>
     </div>
