@@ -34,6 +34,7 @@ type backlogData struct {
 	ByPriority  []priorityAge
 	Rigs        []string
 	FilterRig   string
+	Assignees   []string
 }
 
 type priorityAge struct {
@@ -68,6 +69,10 @@ func (s *Server) handleBacklog(w http.ResponseWriter, r *http.Request) {
 		wg.Add(1)
 		go func(i int, dbName string) {
 			defer wg.Done()
+			assignees, _ := s.ds.DistinctAssignees(ctx, dbName)
+			if len(assignees) > 0 {
+				data.Assignees = append(data.Assignees, assignees...)
+			}
 			issues, err := s.ds.Issues(ctx, dbName, dolt.IssueFilter{Limit: 2000})
 			if err != nil {
 				log.Printf("backlog: %s: %v", dbName, err)
@@ -77,6 +82,7 @@ func (s *Server) handleBacklog(w http.ResponseWriter, r *http.Request) {
 		}(i, db.Name)
 	}
 	wg.Wait()
+	sort.Strings(data.Assignees)
 
 	filterRig := r.URL.Query().Get("rig")
 	rigSet := make(map[string]bool)

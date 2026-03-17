@@ -27,11 +27,17 @@
   </div>
 
   {{if .Items}}
+  <div class="batch-bar" id="batch-bar-dogpile" style="display:none">
+    <span class="batch-count">0 selected</span>
+    <button class="btn btn-xs" onclick="dogpileBatchAction('closed')">close selected</button>
+    <button class="btn btn-xs" onclick="dogpileBatchAction('deferred')">defer selected</button>
+  </div>
   <section class="backlog-card">
     <div class="table-wrap">
     <table class="bead-table">
       <thead>
         <tr>
+          <th><input type="checkbox" onchange="dogpileToggleAll(this)"></th>
           <th>Heat</th>
           <th>ID</th>
           <th>Title</th>
@@ -46,6 +52,7 @@
       <tbody>
         {{range .Items}}
         <tr>
+          <td><input type="checkbox" class="dogpile-cb" data-id="{{.Issue.ID}}" data-rig="{{.Rig}}" onchange="dogpileUpdateBar()"></td>
           <td><strong style="color:{{if gt .HeatScore 15}}#ff5555{{else if gt .HeatScore 8}}#ffb86c{{else}}#f1fa8c{{end}}">{{.HeatScore}}</strong></td>
           <td><a href="/bead/{{.Rig}}/{{.Issue.ID}}" hx-boost="true">{{.Issue.ID}}</a></td>
           <td>{{.Issue.Title}}</td>
@@ -61,12 +68,16 @@
           <td class="text-dim">{{.Rig}}</td>
           <td>{{.StatusChanges}}</td>
           <td>{{.CommentCount}}</td>
-          <td class="actions-cell">
-            <span class="briefing-actions">
+          <td class="triage-actions">
+            <div class="triage-btn-group">
+              <select class="triage-assign" hx-post="/bead/{{.Rig}}/{{.Issue.ID}}/assign" hx-target="closest tr" hx-swap="outerHTML" name="assignee">
+                <option value="">assign...</option>
+                {{range $.Assignees}}<option value="{{.}}">{{shortActor .}}</option>{{end}}
+              </select>
               {{if eq .Issue.Status "open"}}<button class="btn btn-xs" hx-post="/bead/{{.Rig}}/{{.Issue.ID}}/status" hx-vals='{"status":"in_progress"}' hx-swap="outerHTML" hx-target="closest tr">start</button>{{end}}
               {{if ne .Issue.Status "closed"}}<button class="btn btn-xs" hx-post="/bead/{{.Rig}}/{{.Issue.ID}}/status" hx-vals='{"status":"closed"}' hx-swap="outerHTML" hx-target="closest tr" hx-confirm="Close {{.Issue.ID}}?">close</button>{{end}}
               {{if ne .Issue.Status "deferred"}}<button class="btn btn-xs" hx-post="/bead/{{.Rig}}/{{.Issue.ID}}/status" hx-vals='{"status":"deferred"}' hx-swap="outerHTML" hx-target="closest tr" hx-confirm="Defer {{.Issue.ID}}?">defer</button>{{end}}
-            </span>
+            </div>
           </td>
         </tr>
         {{end}}
@@ -74,6 +85,35 @@
     </table>
     </div>
   </section>
+  <script>
+  function dogpileToggleAll(master) {
+    document.querySelectorAll('.dogpile-cb').forEach(function(cb) { cb.checked = master.checked; });
+    dogpileUpdateBar();
+  }
+  function dogpileUpdateBar() {
+    var checked = document.querySelectorAll('.dogpile-cb:checked');
+    var bar = document.getElementById('batch-bar-dogpile');
+    if (bar) {
+      bar.style.display = checked.length > 0 ? 'flex' : 'none';
+      bar.querySelector('.batch-count').textContent = checked.length + ' selected';
+    }
+  }
+  function dogpileBatchAction(status) {
+    var checked = document.querySelectorAll('.dogpile-cb:checked');
+    if (!checked.length) return;
+    if (!confirm(status.charAt(0).toUpperCase()+status.slice(1)+' '+checked.length+' beads?')) return;
+    var form = new FormData();
+    form.append('status', status);
+    checked.forEach(function(cb) {
+      form.append('ids[]', cb.getAttribute('data-rig')+'/'+cb.getAttribute('data-id'));
+    });
+    fetch('/batch/status', {method:'POST', body:form}).then(function() {
+      checked.forEach(function(cb) { cb.closest('tr').remove(); });
+      dogpileUpdateBar();
+      document.body.dispatchEvent(new CustomEvent('showToast', {detail: checked.length+' beads '+status}));
+    });
+  }
+  </script>
   {{else}}
   <p class="text-dim">No hot beads found in the selected window.</p>
   {{end}}

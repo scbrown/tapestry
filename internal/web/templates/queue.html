@@ -29,10 +29,16 @@
     {{end}}
   </div>
 
+  <div class="batch-bar" id="batch-bar-queue" style="display:none">
+    <span class="batch-count">0 selected</span>
+    <button class="btn btn-xs" onclick="queueBatchAction('closed')">close selected</button>
+    <button class="btn btn-xs" onclick="queueBatchAction('deferred')">defer selected</button>
+  </div>
   <div class="table-wrap">
   <table class="bead-table">
     <thead>
       <tr>
+        <th><input type="checkbox" onchange="queueToggleAll(this)"></th>
         <th>#</th>
         <th>ID</th>
         <th>Priority</th>
@@ -47,6 +53,7 @@
     <tbody>
       {{range $i, $item := .Items}}
       <tr>
+        <td><input type="checkbox" class="queue-cb" data-id="{{$item.Issue.ID}}" data-rig="{{lower $item.Rig}}" onchange="queueUpdateBar()"></td>
         <td class="text-dim">{{add1 $i}}</td>
         <td><a href="/bead/{{lower $item.Rig}}/{{$item.Issue.ID}}" hx-boost="true">{{$item.Issue.ID}}</a></td>
         <td id="pri-{{$item.Issue.ID}}" class="bead-priority-inline"><span class="priority-badge p{{$item.Issue.Priority}}">P{{$item.Issue.Priority}}</span>
@@ -80,6 +87,35 @@
   </table>
   </div>
 
+  <script>
+  function queueToggleAll(master) {
+    document.querySelectorAll('.queue-cb').forEach(function(cb) { cb.checked = master.checked; });
+    queueUpdateBar();
+  }
+  function queueUpdateBar() {
+    var checked = document.querySelectorAll('.queue-cb:checked');
+    var bar = document.getElementById('batch-bar-queue');
+    if (bar) {
+      bar.style.display = checked.length > 0 ? 'flex' : 'none';
+      bar.querySelector('.batch-count').textContent = checked.length + ' selected';
+    }
+  }
+  function queueBatchAction(status) {
+    var checked = document.querySelectorAll('.queue-cb:checked');
+    if (!checked.length) return;
+    if (!confirm(status.charAt(0).toUpperCase()+status.slice(1)+' '+checked.length+' beads?')) return;
+    var form = new FormData();
+    form.append('status', status);
+    checked.forEach(function(cb) {
+      form.append('ids[]', cb.getAttribute('data-rig')+'/'+cb.getAttribute('data-id'));
+    });
+    fetch('/batch/status', {method:'POST', body:form}).then(function() {
+      checked.forEach(function(cb) { cb.closest('tr').remove(); });
+      queueUpdateBar();
+      document.body.dispatchEvent(new CustomEvent('showToast', {detail: checked.length+' beads '+status}));
+    });
+  }
+  </script>
   {{end}}
 </div>
 {{end}}

@@ -30,7 +30,8 @@ type reopenData struct {
 	TotalReopens int
 	UniqueBeads  int
 
-	Err string
+	Assignees []string
+	Err       string
 }
 
 func (s *Server) handleReopen(w http.ResponseWriter, r *http.Request) {
@@ -64,6 +65,13 @@ func (s *Server) handleReopen(w http.ResponseWriter, r *http.Request) {
 		wg.Add(1)
 		go func(dbName string) {
 			defer wg.Done()
+
+			assignees, _ := s.ds.DistinctAssignees(ctx, dbName)
+			if len(assignees) > 0 {
+				mu.Lock()
+				data.Assignees = append(data.Assignees, assignees...)
+				mu.Unlock()
+			}
 
 			issues, err := s.ds.Issues(ctx, dbName, dolt.IssueFilter{Limit: 2000})
 			if err != nil {
@@ -116,6 +124,7 @@ func (s *Server) handleReopen(w http.ResponseWriter, r *http.Request) {
 	}
 	wg.Wait()
 
+	sort.Strings(data.Assignees)
 	data.UniqueBeads = len(data.Beads)
 
 	sort.Slice(data.Beads, func(i, j int) bool {

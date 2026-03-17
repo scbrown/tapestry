@@ -31,9 +31,15 @@
 
   {{/* ── Swarm Table ── */}}
   {{if .SwarmBeads}}
+  <div class="batch-bar" id="batch-bar-swarm" style="display:none">
+    <span class="batch-count">0 selected</span>
+    <button class="btn btn-xs" onclick="swarmBatchAction('closed')">close selected</button>
+    <button class="btn btn-xs" onclick="swarmBatchAction('deferred')">defer selected</button>
+  </div>
   <table class="bead-table">
     <thead>
       <tr>
+        <th><input type="checkbox" onchange="swarmToggleAll(this)"></th>
         <th>Bead</th>
         <th>Title</th>
         <th>Status</th>
@@ -46,6 +52,7 @@
     <tbody>
       {{range .SwarmBeads}}
       <tr>
+        <td><input type="checkbox" class="swarm-cb" data-id="{{.ID}}" data-rig="{{.DB}}" onchange="swarmUpdateBar()"></td>
         <td><a href="/bead/{{.DB}}/{{.ID}}">{{.ID}}</a></td>
         <td>{{.Title}}</td>
         <td>{{statusBadge .Status}}</td>
@@ -62,17 +69,50 @@
           <span class="text-dim">({{.AgentCount}})</span>
         </td>
         <td>{{.Comments}}</td>
-        <td class="actions-cell">
-          <span class="briefing-actions">
+        <td class="triage-actions">
+          <div class="triage-btn-group">
+            <select class="triage-assign" hx-post="/bead/{{.DB}}/{{.ID}}/assign" hx-target="closest tr" hx-swap="outerHTML" name="assignee">
+              <option value="">assign...</option>
+              {{range $.Assignees}}<option value="{{.}}">{{shortActor .}}</option>{{end}}
+            </select>
             {{if eq .Status "open"}}<button class="btn btn-xs" hx-post="/bead/{{.DB}}/{{.ID}}/status" hx-vals='{"status":"in_progress"}' hx-swap="outerHTML" hx-target="closest tr">start</button>{{end}}
             {{if ne .Status "closed"}}<button class="btn btn-xs" hx-post="/bead/{{.DB}}/{{.ID}}/status" hx-vals='{"status":"closed"}' hx-swap="outerHTML" hx-target="closest tr" hx-confirm="Close {{.ID}}?">close</button>{{end}}
             {{if ne .Status "deferred"}}<button class="btn btn-xs" hx-post="/bead/{{.DB}}/{{.ID}}/status" hx-vals='{"status":"deferred"}' hx-swap="outerHTML" hx-target="closest tr" hx-confirm="Defer {{.ID}}?">defer</button>{{end}}
-          </span>
+          </div>
         </td>
       </tr>
       {{end}}
     </tbody>
   </table>
+  <script>
+  function swarmToggleAll(master) {
+    document.querySelectorAll('.swarm-cb').forEach(function(cb) { cb.checked = master.checked; });
+    swarmUpdateBar();
+  }
+  function swarmUpdateBar() {
+    var checked = document.querySelectorAll('.swarm-cb:checked');
+    var bar = document.getElementById('batch-bar-swarm');
+    if (bar) {
+      bar.style.display = checked.length > 0 ? 'flex' : 'none';
+      bar.querySelector('.batch-count').textContent = checked.length + ' selected';
+    }
+  }
+  function swarmBatchAction(status) {
+    var checked = document.querySelectorAll('.swarm-cb:checked');
+    if (!checked.length) return;
+    if (!confirm(status.charAt(0).toUpperCase()+status.slice(1)+' '+checked.length+' beads?')) return;
+    var form = new FormData();
+    form.append('status', status);
+    checked.forEach(function(cb) {
+      form.append('ids[]', cb.getAttribute('data-rig')+'/'+cb.getAttribute('data-id'));
+    });
+    fetch('/batch/status', {method:'POST', body:form}).then(function() {
+      checked.forEach(function(cb) { cb.closest('tr').remove(); });
+      swarmUpdateBar();
+      document.body.dispatchEvent(new CustomEvent('showToast', {detail: checked.length+' beads '+status}));
+    });
+  }
+  </script>
   {{else}}
   <p class="text-dim">No multi-agent beads found.</p>
   {{end}}

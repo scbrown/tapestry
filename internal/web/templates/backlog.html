@@ -73,10 +73,16 @@
 
     <section class="backlog-card backlog-oldest">
       <h2>Oldest Open Beads</h2>
+      <div class="batch-bar" id="batch-bar-oldest" style="display:none">
+        <span class="batch-count">0 selected</span>
+        <button class="btn btn-xs" onclick="backlogBatchAction('closed')">close selected</button>
+        <button class="btn btn-xs" onclick="backlogBatchAction('deferred')">defer selected</button>
+      </div>
       <div class="table-wrap">
       <table class="bead-table">
         <thead>
           <tr>
+            <th><input type="checkbox" onchange="backlogToggleAll(this)"></th>
             <th>Rig</th>
             <th>ID</th>
             <th>Pri</th>
@@ -89,6 +95,7 @@
         <tbody>
           {{range .Oldest}}
           <tr>
+            <td><input type="checkbox" class="backlog-cb" data-id="{{.Issue.ID}}" data-rig="{{lower .Issue.Rig}}" onchange="backlogUpdateBar()"></td>
             <td><span class="rig-label">{{rigName .Issue.Rig}}</span></td>
             <td><a href="/bead/{{lower .Issue.Rig}}/{{.Issue.ID}}" hx-boost="true">{{.Issue.ID}}</a></td>
             <td id="pri-{{.Issue.ID}}" class="bead-priority-inline"><span class="badge {{priorityClass .Issue.Priority}}">{{priorityLabel .Issue.Priority}}</span>
@@ -104,6 +111,10 @@
             <td class="stale-age">{{.AgeDays}}d</td>
             <td class="triage-actions">
               <div class="triage-btn-group">
+                <select class="triage-assign" hx-post="/bead/{{lower .Issue.Rig}}/{{.Issue.ID}}/assign" hx-target="closest tr" hx-swap="outerHTML" name="assignee">
+                  <option value="">assign...</option>
+                  {{range $.Assignees}}<option value="{{.}}">{{shortActor .}}</option>{{end}}
+                </select>
                 <button class="btn btn-xs" hx-post="/bead/{{lower .Issue.Rig}}/{{.Issue.ID}}/status" hx-vals='{"status":"closed"}' hx-swap="outerHTML" hx-target="closest tr" hx-confirm="Close {{.Issue.ID}}?">close</button>
                 <button class="btn btn-xs" hx-post="/bead/{{lower .Issue.Rig}}/{{.Issue.ID}}/status" hx-vals='{"status":"deferred"}' hx-swap="outerHTML" hx-target="closest tr" hx-confirm="Defer {{.Issue.ID}}?">defer</button>
               </div>
@@ -116,6 +127,35 @@
     </section>
 
   </div>
+  <script>
+  function backlogToggleAll(master) {
+    document.querySelectorAll('.backlog-cb').forEach(function(cb) { cb.checked = master.checked; });
+    backlogUpdateBar();
+  }
+  function backlogUpdateBar() {
+    var checked = document.querySelectorAll('.backlog-cb:checked');
+    var bar = document.getElementById('batch-bar-oldest');
+    if (bar) {
+      bar.style.display = checked.length > 0 ? 'flex' : 'none';
+      bar.querySelector('.batch-count').textContent = checked.length + ' selected';
+    }
+  }
+  function backlogBatchAction(status) {
+    var checked = document.querySelectorAll('.backlog-cb:checked');
+    if (!checked.length) return;
+    if (!confirm(status.charAt(0).toUpperCase()+status.slice(1)+' '+checked.length+' beads?')) return;
+    var form = new FormData();
+    form.append('status', status);
+    checked.forEach(function(cb) {
+      form.append('ids[]', cb.getAttribute('data-rig')+'/'+cb.getAttribute('data-id'));
+    });
+    fetch('/batch/status', {method:'POST', body:form}).then(function() {
+      checked.forEach(function(cb) { cb.closest('tr').remove(); });
+      backlogUpdateBar();
+      document.body.dispatchEvent(new CustomEvent('showToast', {detail: checked.length+' beads '+status}));
+    });
+  }
+  </script>
   {{end}}
 </div>
 {{end}}

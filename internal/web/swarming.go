@@ -35,7 +35,8 @@ type swarmingData struct {
 	MaxAgents    int
 	AvgAgents    float64
 
-	Err string
+	Assignees []string
+	Err       string
 }
 
 func (s *Server) handleSwarming(w http.ResponseWriter, r *http.Request) {
@@ -69,6 +70,13 @@ func (s *Server) handleSwarming(w http.ResponseWriter, r *http.Request) {
 		wg.Add(1)
 		go func(dbName string) {
 			defer wg.Done()
+
+			assignees, _ := s.ds.DistinctAssignees(ctx, dbName)
+			if len(assignees) > 0 {
+				mu.Lock()
+				data.Assignees = append(data.Assignees, assignees...)
+				mu.Unlock()
+			}
 
 			issues, err := s.ds.Issues(ctx, dbName, dolt.IssueFilter{Limit: 2000})
 			if err != nil {
@@ -125,6 +133,7 @@ func (s *Server) handleSwarming(w http.ResponseWriter, r *http.Request) {
 	}
 	wg.Wait()
 
+	sort.Strings(data.Assignees)
 	// Sort by agent count descending
 	sort.Slice(data.SwarmBeads, func(i, j int) bool {
 		if data.SwarmBeads[i].AgentCount != data.SwarmBeads[j].AgentCount {

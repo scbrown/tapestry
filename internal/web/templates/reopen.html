@@ -27,9 +27,15 @@
 
   {{/* ── Reopened Beads Table ── */}}
   {{if .Beads}}
+  <div class="batch-bar" id="batch-bar-reopen" style="display:none">
+    <span class="batch-count">0 selected</span>
+    <button class="btn btn-xs" onclick="reopenBatchAction('closed')">close selected</button>
+    <button class="btn btn-xs" onclick="reopenBatchAction('deferred')">defer selected</button>
+  </div>
   <table class="bead-table">
     <thead>
       <tr>
+        <th><input type="checkbox" onchange="reopenToggleAll(this)"></th>
         <th>Bead</th>
         <th>Title</th>
         <th>Status</th>
@@ -43,6 +49,7 @@
     <tbody>
       {{range .Beads}}
       <tr>
+        <td><input type="checkbox" class="reopen-cb" data-id="{{.ID}}" data-rig="{{.DB}}" onchange="reopenUpdateBar()"></td>
         <td><a href="/bead/{{.DB}}/{{.ID}}">{{.ID}}</a></td>
         <td>{{.Title}}</td>
         <td>{{statusBadge .Status}}</td>
@@ -54,18 +61,54 @@
             <button class="btn btn-xs priority-p3" hx-post="/bead/{{.DB}}/{{.ID}}/priority" hx-vals='{"priority":"3"}' hx-target="#pri-{{.ID}}" hx-swap="innerHTML">P3</button>
           </span>
         </td>
-        <td>{{if .Assignee}}<a href="/agent/{{.Assignee}}">{{shortActor .Assignee}}</a>{{else}}<span class="text-dim">—</span>{{end}}</td>
+        <td>
+          <select class="triage-assign" hx-post="/bead/{{.DB}}/{{.ID}}/assign" hx-target="closest tr" hx-swap="outerHTML" name="assignee">
+            <option value="">{{if .Assignee}}{{shortActor .Assignee}}{{else}}assign...{{end}}</option>
+            {{range $.Assignees}}<option value="{{.}}">{{shortActor .}}</option>{{end}}
+          </select>
+        </td>
         <td><strong>{{.Reopens}}</strong></td>
         <td>{{formatDate .LastReopen}}</td>
-        <td class="actions-cell">
-          {{if eq .Status "open"}}<button class="btn btn-xs" hx-post="/bead/{{.DB}}/{{.ID}}/status" hx-vals='{"status":"in_progress"}' hx-swap="outerHTML" hx-target="closest tr">start</button>{{end}}
-          <button class="btn btn-xs" hx-post="/bead/{{.DB}}/{{.ID}}/status" hx-vals='{"status":"closed"}' hx-swap="outerHTML" hx-target="closest tr" hx-confirm="Close {{.ID}}?">close</button>
-          <button class="btn btn-xs" hx-post="/bead/{{.DB}}/{{.ID}}/status" hx-vals='{"status":"deferred"}' hx-swap="outerHTML" hx-target="closest tr" hx-confirm="Defer {{.ID}}?">defer</button>
+        <td class="triage-actions">
+          <div class="triage-btn-group">
+            {{if eq .Status "open"}}<button class="btn btn-xs" hx-post="/bead/{{.DB}}/{{.ID}}/status" hx-vals='{"status":"in_progress"}' hx-swap="outerHTML" hx-target="closest tr">start</button>{{end}}
+            <button class="btn btn-xs" hx-post="/bead/{{.DB}}/{{.ID}}/status" hx-vals='{"status":"closed"}' hx-swap="outerHTML" hx-target="closest tr" hx-confirm="Close {{.ID}}?">close</button>
+            <button class="btn btn-xs" hx-post="/bead/{{.DB}}/{{.ID}}/status" hx-vals='{"status":"deferred"}' hx-swap="outerHTML" hx-target="closest tr" hx-confirm="Defer {{.ID}}?">defer</button>
+          </div>
         </td>
       </tr>
       {{end}}
     </tbody>
   </table>
+  <script>
+  function reopenToggleAll(master) {
+    document.querySelectorAll('.reopen-cb').forEach(function(cb) { cb.checked = master.checked; });
+    reopenUpdateBar();
+  }
+  function reopenUpdateBar() {
+    var checked = document.querySelectorAll('.reopen-cb:checked');
+    var bar = document.getElementById('batch-bar-reopen');
+    if (bar) {
+      bar.style.display = checked.length > 0 ? 'flex' : 'none';
+      bar.querySelector('.batch-count').textContent = checked.length + ' selected';
+    }
+  }
+  function reopenBatchAction(status) {
+    var checked = document.querySelectorAll('.reopen-cb:checked');
+    if (!checked.length) return;
+    if (!confirm(status.charAt(0).toUpperCase()+status.slice(1)+' '+checked.length+' beads?')) return;
+    var form = new FormData();
+    form.append('status', status);
+    checked.forEach(function(cb) {
+      form.append('ids[]', cb.getAttribute('data-rig')+'/'+cb.getAttribute('data-id'));
+    });
+    fetch('/batch/status', {method:'POST', body:form}).then(function() {
+      checked.forEach(function(cb) { cb.closest('tr').remove(); });
+      reopenUpdateBar();
+      document.body.dispatchEvent(new CustomEvent('showToast', {detail: checked.length+' beads '+status}));
+    });
+  }
+  </script>
   {{else}}
   <p class="text-dim">No reopened beads — all closures held!</p>
   {{end}}

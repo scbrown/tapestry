@@ -24,6 +24,7 @@ type churnData struct {
 	MaxChurn    int
 	Rigs        []string
 	FilterRig   string
+	Assignees   []string
 }
 
 func (s *Server) handleChurn(w http.ResponseWriter, r *http.Request) {
@@ -52,6 +53,10 @@ func (s *Server) handleChurn(w http.ResponseWriter, r *http.Request) {
 		wg.Add(1)
 		go func(i int, dbName string) {
 			defer wg.Done()
+			assignees, _ := s.ds.DistinctAssignees(ctx, dbName)
+			if len(assignees) > 0 {
+				data.Assignees = append(data.Assignees, assignees...)
+			}
 			// Get open and in_progress issues
 			open, err := s.ds.Issues(ctx, dbName, dolt.IssueFilter{Status: "open", Limit: 5000})
 			if err != nil {
@@ -68,6 +73,7 @@ func (s *Server) handleChurn(w http.ResponseWriter, r *http.Request) {
 	}
 	wg.Wait()
 
+	sort.Strings(data.Assignees)
 	// For each open/in_progress issue, check status history for churn
 	type histResult struct {
 		rig         string

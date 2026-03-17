@@ -25,6 +25,7 @@ type dogPileData struct {
 	Rigs        []string
 	FilterRig   string
 	Window      string
+	Assignees   []string
 }
 
 func (s *Server) handleDogPile(w http.ResponseWriter, r *http.Request) {
@@ -82,6 +83,10 @@ func (s *Server) handleDogPile(w http.ResponseWriter, r *http.Request) {
 		wg.Add(1)
 		go func(idx int, dbName string) {
 			defer wg.Done()
+			assignees, _ := s.ds.DistinctAssignees(ctx, dbName)
+			if len(assignees) > 0 {
+				data.Assignees = append(data.Assignees, assignees...)
+			}
 			var items []dogPileItem
 
 			// Count status changes per issue
@@ -154,6 +159,8 @@ func (s *Server) handleDogPile(w http.ResponseWriter, r *http.Request) {
 		}(i, db.Name)
 	}
 	wg.Wait()
+
+	sort.Strings(data.Assignees)
 
 	var allItems []dogPileItem
 	for _, r := range results {

@@ -24,6 +24,7 @@ type duplicatesData struct {
 	TotalGroups int
 	Rigs        []string
 	FilterRig   string
+	Assignees   []string
 }
 
 // normalizeTitle strips common prefixes like "[AUTO] " and the alert name
@@ -64,6 +65,10 @@ func (s *Server) handleDuplicates(w http.ResponseWriter, r *http.Request) {
 		wg.Add(1)
 		go func(i int, dbName string) {
 			defer wg.Done()
+			assignees, _ := s.ds.DistinctAssignees(ctx, dbName)
+			if len(assignees) > 0 {
+				data.Assignees = append(data.Assignees, assignees...)
+			}
 			issues, err := s.ds.Issues(ctx, dbName, dolt.IssueFilter{Limit: 3000})
 			if err != nil {
 				log.Printf("duplicates: %s: %v", dbName, err)
@@ -74,6 +79,7 @@ func (s *Server) handleDuplicates(w http.ResponseWriter, r *http.Request) {
 	}
 	wg.Wait()
 
+	sort.Strings(data.Assignees)
 	// Collect rigs
 	rigSet := make(map[string]bool)
 	for _, db := range dbs {
