@@ -66,10 +66,16 @@
           </td>
           <td>{{.Type}}</td>
           <td>{{statusBadge .Status}}</td>
-          <td>{{if .Assignee}}<a href="/agent/{{.Assignee}}">{{shortActor .Assignee}}</a>{{end}}</td>
+          <td>
+            <select class="triage-assign" hx-post="/bead/{{$.Database}}/{{.ID}}/assign" hx-swap="outerHTML" hx-target="closest tr" name="assignee">
+              <option value="">{{if .Assignee}}{{shortActor .Assignee}}{{else}}assign...{{end}}</option>
+              {{range $.Assignees}}<option value="{{.}}">{{shortActor .}}</option>{{end}}
+            </select>
+          </td>
           <td>{{timeAgo .UpdatedAt}}</td>
           <td class="actions-cell">
             {{if eq .Status "open"}}
+            <button class="btn btn-xs" hx-post="/bead/{{$.Database}}/{{.ID}}/status" hx-vals='{"status":"in_progress"}' hx-swap="outerHTML" hx-target="closest tr">start</button>
             <button class="btn btn-xs" hx-post="/bead/{{$.Database}}/{{.ID}}/status" hx-vals='{"status":"closed"}' hx-swap="outerHTML" hx-target="closest tr" hx-confirm="Close {{.ID}}?">close</button>
             {{else if eq .Status "in_progress"}}
             <button class="btn btn-xs" hx-post="/bead/{{$.Database}}/{{.ID}}/status" hx-vals='{"status":"closed"}' hx-swap="outerHTML" hx-target="closest tr" hx-confirm="Close {{.ID}}?">close</button>
