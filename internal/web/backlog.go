@@ -32,6 +32,8 @@ type backlogData struct {
 	P90Age      int
 	Oldest      []backlogItem
 	ByPriority  []priorityAge
+	Rigs        []string
+	FilterRig   string
 }
 
 type priorityAge struct {
@@ -57,6 +59,7 @@ func (s *Server) handleBacklog(w http.ResponseWriter, r *http.Request) {
 	}
 
 	type dbResult struct {
+		rig    string
 		issues []dolt.Issue
 	}
 	results := make([]dbResult, len(dbs))
@@ -70,14 +73,30 @@ func (s *Server) handleBacklog(w http.ResponseWriter, r *http.Request) {
 				log.Printf("backlog: %s: %v", dbName, err)
 				return
 			}
-			results[i] = dbResult{issues: issues}
+			results[i] = dbResult{rig: dbName, issues: issues}
 		}(i, db.Name)
 	}
 	wg.Wait()
 
+	filterRig := r.URL.Query().Get("rig")
+	rigSet := make(map[string]bool)
+	for _, r := range results {
+		if len(r.issues) > 0 {
+			rigSet[r.rig] = true
+		}
+	}
+	for rig := range rigSet {
+		data.Rigs = append(data.Rigs, rig)
+	}
+	sort.Strings(data.Rigs)
+	data.FilterRig = filterRig
+
 	now := time.Now()
 	var openIssues []backlogItem
 	for i, r := range results {
+		if filterRig != "" && r.rig != filterRig {
+			continue
+		}
 		for _, iss := range r.issues {
 			if iss.Status == "closed" || iss.Status == "deferred" {
 				continue

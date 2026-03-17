@@ -1,10 +1,19 @@
 {{define "title"}}Backlog{{end}}
 {{define "content"}}
-<div class="backlog-page" hx-get="/backlog" hx-trigger="every 120s" hx-select=".backlog-page" hx-swap="outerHTML">
+<div class="backlog-page" hx-get="/backlog{{if .FilterRig}}?rig={{.FilterRig}}{{end}}" hx-trigger="every 120s" hx-select=".backlog-page" hx-swap="outerHTML">
   <h1>Backlog Health <time class="text-dim">{{.GeneratedAt.Format "Jan 02, 2006 15:04"}}</time></h1>
 
+  {{if gt (len .Rigs) 1}}
+  <div class="dep-filters" style="margin-bottom:0.5rem">
+    <a href="/backlog" class="badge {{if not .FilterRig}}filter-active{{end}}">All rigs</a>
+    {{range .Rigs}}
+    <a href="/backlog?rig={{.}}" class="badge {{if eq . $.FilterRig}}filter-active{{end}}">{{rigName .}}</a>
+    {{end}}
+  </div>
+  {{end}}
+
   {{if eq .TotalOpen 0}}
-  <p class="empty">No open beads in the backlog.</p>
+  <p class="empty">No open beads in the backlog.{{if .FilterRig}} Try removing the rig filter.{{end}}</p>
   {{else}}
 
   <div class="backlog-stats">
