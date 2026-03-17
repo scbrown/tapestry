@@ -201,6 +201,23 @@
                 }
             }
         }
+        // g + key: global page navigation (two-key chord)
+        if (e.key === 'g' && !window._gPending) {
+            window._gPending = true;
+            window._gTimer = setTimeout(function() { window._gPending = false; }, 800);
+            return;
+        }
+        if (window._gPending) {
+            window._gPending = false;
+            clearTimeout(window._gTimer);
+            var gNav = {
+                'b': '/briefing', 't': '/triage', 'w': '/work', 'k': '/kanban',
+                'e': '/executive', 's': '/standup', 'a': '/agents', 'p': '/pulse',
+                'l': '/timeline', 'q': '/queue', 'r': '/ready', 'h': '/',
+                'f': '/search', 'v': '/velocity', 'n': '/kanban', 'i': '/beads'
+            };
+            if (gNav[e.key]) { e.preventDefault(); window.location.href = gNav[e.key]; return; }
+        }
         // ? for keyboard shortcut help
         if (e.key === '?') {
             e.preventDefault();
@@ -222,6 +239,24 @@
               '<dt>d</dt><dd>Defer selected bead</dd>' +
               '<dt>x</dt><dd>Toggle checkbox on selected row</dd>' +
               '<dt>?</dt><dd>Toggle this help</dd>' +
+              '</dl>' +
+              '<h3 style="margin:0.75rem 0 0.25rem">Go to (g + key)</h3>' +
+              '<dl class="kb-help-list">' +
+              '<dt>g h</dt><dd>Home</dd>' +
+              '<dt>g b</dt><dd>Briefing</dd>' +
+              '<dt>g t</dt><dd>Triage</dd>' +
+              '<dt>g w</dt><dd>Work</dd>' +
+              '<dt>g k</dt><dd>Kanban</dd>' +
+              '<dt>g e</dt><dd>Executive</dd>' +
+              '<dt>g s</dt><dd>Standup</dd>' +
+              '<dt>g a</dt><dd>Agents</dd>' +
+              '<dt>g p</dt><dd>Pulse</dd>' +
+              '<dt>g l</dt><dd>Timeline</dd>' +
+              '<dt>g q</dt><dd>Queue</dd>' +
+              '<dt>g r</dt><dd>Ready</dd>' +
+              '<dt>g f</dt><dd>Search</dd>' +
+              '<dt>g i</dt><dd>Beads</dd>' +
+              '<dt>g v</dt><dd>Velocity</dd>' +
               '</dl></div>';
             help.addEventListener('click', function(ev) { if (ev.target === help) help.remove(); });
             document.body.appendChild(help);
