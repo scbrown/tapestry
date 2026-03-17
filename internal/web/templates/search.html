@@ -55,7 +55,12 @@
         </td>
         <td>{{.Type}}</td>
         <td>{{statusBadge .Status}}</td>
-        <td title="{{.Assignee}}">{{shortActor .Assignee}}</td>
+        <td>
+          <select class="triage-assign" hx-post="/bead/{{lower .Rig}}/{{.ID}}/assign" hx-target="closest tr" hx-swap="outerHTML" name="assignee">
+            <option value="">{{if .Assignee}}{{shortActor .Assignee}}{{else}}assign...{{end}}</option>
+            {{range $.Assignees}}<option value="{{.}}">{{shortActor .}}</option>{{end}}
+          </select>
+        </td>
         <td>{{timeAgo .UpdatedAt}}</td>
         <td class="actions-cell">
           {{if eq .Status "open"}}

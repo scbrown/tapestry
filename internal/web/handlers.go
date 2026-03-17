@@ -83,9 +83,10 @@ type pageLink struct {
 }
 
 type searchData struct {
-	Query  string
-	Issues []dolt.Issue
-	Err    string
+	Query     string
+	Issues    []dolt.Issue
+	Assignees []string
+	Err       string
 }
 
 func (s *Server) handleIndex(w http.ResponseWriter, r *http.Request) {
@@ -509,7 +510,8 @@ func (s *Server) handleSearch(w http.ResponseWriter, r *http.Request) {
 	}
 
 	type searchResult struct {
-		issues []dolt.Issue
+		issues    []dolt.Issue
+		assignees []string
 	}
 	results := make([]searchResult, len(dbs))
 	var wg sync.WaitGroup
@@ -517,21 +519,35 @@ func (s *Server) handleSearch(w http.ResponseWriter, r *http.Request) {
 		wg.Add(1)
 		go func(i int, dbName string) {
 			defer wg.Done()
+			var r searchResult
 			issues, err := s.ds.SearchIssues(ctx, dbName, q, 20)
 			if err != nil {
+				results[i] = r
 				return
 			}
 			for j := range issues {
 				issues[j].Rig = dbName
 			}
-			results[i] = searchResult{issues: issues}
+			r.issues = issues
+			r.assignees, _ = s.ds.DistinctAssignees(ctx, dbName)
+			results[i] = r
 		}(i, db.Name)
 	}
 	wg.Wait()
 
+	assigneeSet := make(map[string]bool)
 	for _, r := range results {
 		data.Issues = append(data.Issues, r.issues...)
+		for _, a := range r.assignees {
+			if a != "" {
+				assigneeSet[a] = true
+			}
+		}
 	}
+	for a := range assigneeSet {
+		data.Assignees = append(data.Assignees, a)
+	}
+	sort.Strings(data.Assignees)
 
 	s.render(w, r, "search", data)
 }
