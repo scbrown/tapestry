@@ -19,7 +19,7 @@
       <h3>{{.Title}}</h3>
       <div class="design-card-meta">
         {{if .BeadID}}
-        {{if gt .Priority 0}}<span class="priority-badge {{priorityClass .Priority}}">{{priorityLabel .Priority}}</span>{{end}}
+        <span class="priority-badge {{priorityClass .Priority}}">{{priorityLabel .Priority}}</span>
         {{statusBadge .BeadStatus}}
         {{end}}
         <span class="text-dim">{{timeAgo .Modified}}</span>
