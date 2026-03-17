@@ -22,6 +22,7 @@ type queueData struct {
 	Items       []queueItem
 	ByPriority  map[int]int // count by priority
 	TotalReady  int
+	Assignees   []string // known assignees for quick-assign dropdown
 }
 
 func (s *Server) handleQueue(w http.ResponseWriter, r *http.Request) {
@@ -45,8 +46,9 @@ func (s *Server) handleQueue(w http.ResponseWriter, r *http.Request) {
 
 	// Fetch open + in_progress issues and blocked set
 	type dbResult struct {
-		issues  []dolt.Issue
-		blocked map[string]bool
+		issues    []dolt.Issue
+		blocked   map[string]bool
+		assignees []string
 	}
 	results := make([]dbResult, len(dbs))
 	var wg sync.WaitGroup
@@ -70,7 +72,8 @@ func (s *Server) handleQueue(w http.ResponseWriter, r *http.Request) {
 				}
 			}
 
-			results[i] = dbResult{issues: issues, blocked: blocked}
+			assignees, _ := s.ds.DistinctAssignees(ctx, dbName)
+			results[i] = dbResult{issues: issues, blocked: blocked, assignees: assignees}
 		}(i, db.Name)
 	}
 	wg.Wait()
@@ -109,6 +112,20 @@ func (s *Server) handleQueue(w http.ResponseWriter, r *http.Request) {
 	}
 
 	data.TotalReady = len(data.Items)
+
+	// Collect distinct assignees for quick-assign dropdown
+	assigneeSet := make(map[string]bool)
+	for _, r := range results {
+		for _, a := range r.assignees {
+			if a != "" {
+				assigneeSet[a] = true
+			}
+		}
+	}
+	for a := range assigneeSet {
+		data.Assignees = append(data.Assignees, a)
+	}
+	sort.Strings(data.Assignees)
 
 	// Sort by score descending (most urgent first)
 	sort.Slice(data.Items, func(i, j int) bool {

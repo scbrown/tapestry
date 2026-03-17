@@ -54,6 +54,10 @@
         <td>{{if $item.Issue.Assignee}}<a href="/agent/{{$item.Issue.Assignee}}">{{shortActor $item.Issue.Assignee}}</a>{{else}}<em>unassigned</em>{{end}}</td>
         <td class="triage-actions">
           <div class="triage-btn-group">
+            <select class="triage-assign" hx-post="/bead/{{lower $item.Rig}}/{{$item.Issue.ID}}/assign" hx-target="closest tr" hx-swap="outerHTML" name="assignee">
+              <option value="">assign...</option>
+              {{range $.Assignees}}<option value="{{.}}"{{if eq . $item.Issue.Assignee}} selected{{end}}>{{shortActor .}}</option>{{end}}
+            </select>
             {{if ne $item.Issue.Status "in_progress"}}<button class="btn btn-xs" hx-post="/bead/{{lower $item.Rig}}/{{$item.Issue.ID}}/status" hx-vals='{"status":"in_progress"}' hx-swap="outerHTML" hx-target="closest tr">start</button>{{end}}
             <button class="btn btn-xs" hx-post="/bead/{{lower $item.Rig}}/{{$item.Issue.ID}}/status" hx-vals='{"status":"closed"}' hx-swap="outerHTML" hx-target="closest tr" hx-confirm="Close {{$item.Issue.ID}}?">close</button>
             <button class="btn btn-xs" hx-post="/bead/{{lower $item.Rig}}/{{$item.Issue.ID}}/status" hx-vals='{"status":"deferred"}' hx-swap="outerHTML" hx-target="closest tr" hx-confirm="Defer {{$item.Issue.ID}}?">defer</button>

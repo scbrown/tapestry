@@ -33,6 +33,7 @@ type mockDataSource struct {
 	achievementDefs []dolt.AchievementDef
 	achievementUnlocks []dolt.AchievementUnlock
 	labels          []string
+	assignees       []string
 	err             error
 }
 
@@ -77,7 +78,7 @@ func (m *mockDataSource) SearchIssues(_ context.Context, _, _ string, _ int) ([]
 }
 
 func (m *mockDataSource) DistinctAssignees(_ context.Context, _ string) ([]string, error) {
-	return nil, m.err
+	return m.assignees, m.err
 }
 
 func (m *mockDataSource) BlockedIssues(_ context.Context, _ string) ([]dolt.BlockedIssue, error) {
@@ -3196,6 +3197,40 @@ func TestQueuePage_HTMX(t *testing.T) {
 	body := w.Body.String()
 	if strings.Contains(body, "<!DOCTYPE html>") {
 		t.Error("HTMX queue should return partial, not full page")
+	}
+}
+
+func TestQueuePage_AssigneeDropdown(t *testing.T) {
+	now := time.Now()
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issues: []dolt.Issue{
+			{ID: "qa1", Title: "Unassigned work", Status: "open", Priority: 1, CreatedAt: now.Add(-24 * time.Hour), UpdatedAt: now},
+		},
+		assignees: []string{"aegis/crew/alice", "aegis/crew/bob"},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/queue", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /queue status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "triage-assign") {
+		t.Error("expected assignee dropdown on queue page")
+	}
+	if !strings.Contains(body, "alice") {
+		t.Error("expected alice in assignee dropdown")
+	}
+	if !strings.Contains(body, "bob") {
+		t.Error("expected bob in assignee dropdown")
+	}
+	if !strings.Contains(body, "/assign") {
+		t.Error("expected /assign endpoint in dropdown")
 	}
 }
 
