@@ -1,37 +1,46 @@
 {{define "title"}}Executive{{end}}
 {{define "content"}}
-<div class="exec" hx-get="/executive" hx-trigger="every 60s" hx-target="#content" hx-swap="innerHTML">
+<div class="exec" hx-get="/executive{{if .FilterRig}}?rig={{.FilterRig}}{{end}}" hx-trigger="every 60s" hx-target="#content" hx-swap="innerHTML">
   <div class="exec-header">
     <h1>Executive Status</h1>
     <time class="text-dim">{{formatDateTime .GeneratedAt}}</time>
   </div>
 
-  {{/* Top-line KPIs */}}
+  {{if gt (len .Rigs) 1}}
+  <div class="dep-filters" style="margin-bottom:0.75rem">
+    <a href="/executive" class="badge {{if not .FilterRig}}filter-active{{end}}">All rigs</a>
+    {{range .Rigs}}
+    <a href="/executive?rig={{.}}" class="badge {{if eq . $.FilterRig}}filter-active{{end}}">{{rigName .}}</a>
+    {{end}}
+  </div>
+  {{end}}
+
+  {{/* Top-line KPIs — clickable drill-downs */}}
   <div class="exec-kpi-row">
-    <div class="exec-kpi">
+    <a href="/work{{if .FilterRig}}?rig={{.FilterRig}}{{end}}" class="exec-kpi" hx-boost="true">
       <span class="exec-kpi-value">{{.OpenCount}}</span>
       <span class="exec-kpi-label">Open</span>
-    </div>
-    <div class="exec-kpi">
+    </a>
+    <a href="/kanban{{if .FilterRig}}?rig={{.FilterRig}}{{end}}" class="exec-kpi" hx-boost="true">
       <span class="exec-kpi-value pulse">{{.InProgressCount}}</span>
       <span class="exec-kpi-label">Active</span>
-    </div>
-    <div class="exec-kpi">
+    </a>
+    <a href="/blocked{{if .FilterRig}}?rig={{.FilterRig}}{{end}}" class="exec-kpi" hx-boost="true">
       <span class="exec-kpi-value warn">{{.BlockedCount}}</span>
       <span class="exec-kpi-label">Blocked</span>
-    </div>
-    <div class="exec-kpi">
+    </a>
+    <a href="/closed{{if .FilterRig}}?rig={{.FilterRig}}{{end}}" class="exec-kpi" hx-boost="true">
       <span class="exec-kpi-value accent">{{.ClosedToday}}</span>
       <span class="exec-kpi-label">Closed Today</span>
-    </div>
-    <div class="exec-kpi">
+    </a>
+    <a href="/velocity{{if .FilterRig}}?rig={{.FilterRig}}{{end}}" class="exec-kpi" hx-boost="true">
       <span class="exec-kpi-value accent">{{.ClosedWeek}}</span>
       <span class="exec-kpi-label">Closed 7d</span>
-    </div>
-    <div class="exec-kpi">
+    </a>
+    <a href="/beads{{if .FilterRig}}?rig={{.FilterRig}}{{end}}" class="exec-kpi" hx-boost="true">
       <span class="exec-kpi-value dim">{{.TotalBeads}}</span>
       <span class="exec-kpi-label">Total</span>
-    </div>
+    </a>
   </div>
 
   <div class="exec-grid">

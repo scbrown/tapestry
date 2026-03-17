@@ -1604,6 +1604,124 @@ func TestExecutivePage_WithData(t *testing.T) {
 	}
 }
 
+func TestExecutivePage_RigFilter(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}, {Name: "beads_gastown"}},
+		counts:    map[string]int{"open": 10, "in_progress": 3, "blocked": 2, "closed": 50},
+		created:   5,
+		closed:    8,
+		issues: []dolt.Issue{
+			{ID: "aegis-e1", Title: "P1 work", Status: "open", Priority: 1, UpdatedAt: time.Now()},
+		},
+	}
+
+	srv := New(ds)
+
+	// Without filter — should show rig filter badges
+	req := httptest.NewRequest("GET", "/executive", nil)
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /executive status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "All rigs") {
+		t.Error("expected 'All rigs' filter badge")
+	}
+	if !strings.Contains(body, "filter-active") {
+		t.Error("expected active filter badge")
+	}
+
+	// With rig filter
+	req = httptest.NewRequest("GET", "/executive?rig=beads_aegis", nil)
+	w = httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /executive?rig= status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body = w.Body.String()
+	if !strings.Contains(body, "Executive Status") {
+		t.Error("expected 'Executive Status' heading with rig filter")
+	}
+
+	// KPI drill-down links
+	if !strings.Contains(body, `href="/work?rig=beads_aegis"`) {
+		t.Error("expected drill-down link to /work with rig filter")
+	}
+	if !strings.Contains(body, `href="/blocked?rig=beads_aegis"`) {
+		t.Error("expected drill-down link to /blocked with rig filter")
+	}
+}
+
+func TestBriefingPage_RigFilter(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}, {Name: "beads_gastown"}},
+		counts:    map[string]int{"open": 5, "in_progress": 2, "closed": 10},
+		created:   3,
+		closed:    1,
+		issues: []dolt.Issue{
+			{ID: "aegis-b1", Title: "Human task", Status: "open", Priority: 1, Owner: "stiwi", UpdatedAt: time.Now()},
+		},
+	}
+
+	srv := New(ds)
+
+	// Without filter — should show rig filter badges
+	req := httptest.NewRequest("GET", "/briefing", nil)
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /briefing status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "All rigs") {
+		t.Error("expected 'All rigs' filter badge on briefing")
+	}
+
+	// With rig filter
+	req = httptest.NewRequest("GET", "/briefing?rig=beads_aegis", nil)
+	w = httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /briefing?rig= status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body = w.Body.String()
+	if !strings.Contains(body, "Briefing") {
+		t.Error("expected 'Briefing' heading with rig filter")
+	}
+}
+
+func TestExecutivePage_DrillDownLinks(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		counts:    map[string]int{"open": 10, "in_progress": 3, "blocked": 2, "closed": 50},
+		created:   5,
+		closed:    8,
+		issues: []dolt.Issue{
+			{ID: "aegis-e1", Title: "P1 work", Status: "open", Priority: 1, UpdatedAt: time.Now()},
+		},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/executive", nil)
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+
+	body := w.Body.String()
+	if !strings.Contains(body, `href="/work"`) {
+		t.Error("expected drill-down link to /work")
+	}
+	if !strings.Contains(body, `href="/blocked"`) {
+		t.Error("expected drill-down link to /blocked")
+	}
+	if !strings.Contains(body, `href="/kanban"`) {
+		t.Error("expected drill-down link to /kanban")
+	}
+	if !strings.Contains(body, `href="/velocity"`) {
+		t.Error("expected drill-down link to /velocity")
+	}
+}
+
 func TestBeadComment_Post(t *testing.T) {
 	ds := &mockDataSource{
 		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},

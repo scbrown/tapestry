@@ -789,6 +789,8 @@ type briefingBlockedItem struct {
 
 type briefingData struct {
 	GeneratedAt     time.Time
+	FilterRig       string
+	Rigs            []string
 	OpenCount       int
 	InProgressCount int
 	ClosedCount     int
@@ -814,8 +816,10 @@ func (s *Server) handleBriefing(w http.ResponseWriter, r *http.Request) {
 	todayEnd := todayStart.AddDate(0, 0, 1)
 	yesterday := now.Add(-24 * time.Hour)
 
+	filterRig := r.URL.Query().Get("rig")
 	data := briefingData{
 		GeneratedAt: now,
+		FilterRig:   filterRig,
 		HLA: hlaStatus{
 			Online:      false,
 			Error:       "HLA archive not yet integrated — pending SSH auth fix",
@@ -838,6 +842,12 @@ func (s *Server) handleBriefing(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Collect rig names for filter bar
+	for _, db := range dbs {
+		data.Rigs = append(data.Rigs, db.Name)
+	}
+	sort.Strings(data.Rigs)
+
 	type briefingDBResult struct {
 		openCount       int
 		inProgressCount int
@@ -857,6 +867,9 @@ func (s *Server) handleBriefing(w http.ResponseWriter, r *http.Request) {
 	results := make([]briefingDBResult, len(dbs))
 	var wg sync.WaitGroup
 	for i, db := range dbs {
+		if filterRig != "" && db.Name != filterRig {
+			continue
+		}
 		wg.Add(1)
 		go func(i int, dbName string) {
 			defer wg.Done()

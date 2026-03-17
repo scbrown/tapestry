@@ -33,6 +33,10 @@ type execBlocker struct {
 type executiveData struct {
 	GeneratedAt time.Time
 
+	// Rig filter
+	FilterRig string
+	Rigs      []string
+
 	// Top-line metrics
 	OpenCount       int
 	InProgressCount int
@@ -74,7 +78,8 @@ func (s *Server) handleExecutive(w http.ResponseWriter, r *http.Request) {
 	weekStart := todayStart.AddDate(0, 0, -7)
 	prevWeekStart := weekStart.AddDate(0, 0, -7)
 
-	data := executiveData{GeneratedAt: now}
+	filterRig := r.URL.Query().Get("rig")
+	data := executiveData{GeneratedAt: now, FilterRig: filterRig}
 
 	if s.ds == nil {
 		s.render(w, r, "executive", data)
@@ -90,6 +95,12 @@ func (s *Server) handleExecutive(w http.ResponseWriter, r *http.Request) {
 		s.render(w, r, "executive", data)
 		return
 	}
+
+	// Collect rig names for filter bar
+	for _, db := range dbs {
+		data.Rigs = append(data.Rigs, db.Name)
+	}
+	sort.Strings(data.Rigs)
 
 	type execDBResult struct {
 		openCount       int
@@ -113,6 +124,9 @@ func (s *Server) handleExecutive(w http.ResponseWriter, r *http.Request) {
 	results := make([]execDBResult, len(dbs))
 	var wg sync.WaitGroup
 	for i, db := range dbs {
+		if filterRig != "" && db.Name != filterRig {
+			continue
+		}
 		wg.Add(1)
 		go func(i int, dbName string) {
 			defer wg.Done()
