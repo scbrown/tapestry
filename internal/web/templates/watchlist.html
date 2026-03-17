@@ -43,6 +43,7 @@
         <option value="">assign to...</option>
         {{range $.Assignees}}<option value="{{.}}">{{shortActor .}}</option>{{end}}
       </select>
+      <input type="text" class="btn btn-xs batch-label-input" placeholder="add label..." onkeydown="if(event.key==='Enter'){watchlist_BatchLabel(this.value);this.value=''}" style="width:100px">
     </div>
     <div class="table-wrap">
     <table class="bead-table">
@@ -107,6 +108,7 @@
         <option value="">assign to...</option>
         {{range $.Assignees}}<option value="{{.}}">{{shortActor .}}</option>{{end}}
       </select>
+      <input type="text" class="btn btn-xs batch-label-input" placeholder="add label..." onkeydown="if(event.key==='Enter'){watchlist_BatchLabel(this.value);this.value=''}" style="width:100px">
     </div>
     <div class="table-wrap">
     <table class="bead-table">
@@ -207,6 +209,17 @@
     fetch('/batch/assignee', {method:'POST', body:form}).then(function() {
       document.body.dispatchEvent(new CustomEvent('showToast', {detail: checked.length+' beads assigned'}));
       location.reload();
+    });
+  }
+  function watchlist_BatchLabel(label) {
+    if (!label) return;
+    var checked = document.querySelectorAll('.batch-cb:checked');
+    if (!checked.length) return;
+    var form = new FormData();
+    form.append('label', label);
+    checked.forEach(function(cb) { form.append('ids[]', cb.getAttribute('data-rig')+'/'+cb.getAttribute('data-id')); });
+    fetch('/batch/label', {method:'POST', body:form}).then(function() {
+      document.body.dispatchEvent(new CustomEvent('showToast', {detail: checked.length+' beads labeled "'+label+'"'}));
     });
   }
   </script>
