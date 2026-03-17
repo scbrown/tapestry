@@ -140,6 +140,7 @@ func (s *Server) handleSitemap(w http.ResponseWriter, r *http.Request) {
 				{"/age-breakdown", "Age Breakdown", "Open bead age distribution by band"},
 				{"/priority-drift", "Priority Drift", "Priority health: open/active/blocked/stale per priority"},
 				{"/stats", "Stats", "System-wide stats: totals, 7/30-day flow, per-rig breakdown"},
+				{"/ratios", "Ratios", "Operational health ratios: bug:feature, close rate, blocker ratio"},
 			},
 		},
 		{

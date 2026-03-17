@@ -1,0 +1,32 @@
+{{define "title"}}Ratios{{end}}
+{{define "content"}}
+<h1>Operational Ratios</h1>
+<p class="subtitle">Key diagnostic ratios for system health.</p>
+
+{{if .FilterRig}}<div class="dep-filters"><span class="dep-filter-badge">rig: {{.FilterRig}}</span> <a href="/ratios">clear</a></div>{{end}}
+
+{{if .Err}}<p class="error">{{.Err}}</p>{{end}}
+
+{{if .Ratios}}
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(350px,1fr));gap:1.25rem;margin-top:1rem">
+{{range .Ratios}}
+<div style="background:var(--current-line);border-radius:8px;padding:1.25rem;border-left:4px solid {{if eq .Health "good"}}var(--green){{else if eq .Health "warning"}}var(--yellow){{else}}var(--red){{end}}">
+    <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:0.5rem">
+        <h3 style="margin:0;font-size:1rem">{{.Name}}</h3>
+        <span style="font-size:1.75rem;font-weight:700;color:{{if eq .Health "good"}}var(--green){{else if eq .Health "warning"}}var(--yellow){{else}}var(--red){{end}}">{{printf "%.2f" .Value}}</span>
+    </div>
+    <div style="color:var(--comment);font-size:0.85rem;margin-bottom:0.5rem">{{.Desc}}</div>
+    <div style="display:flex;justify-content:space-between;color:var(--comment);font-size:0.8rem">
+        <span>{{.Numerator}} / {{.Denominator}}</span>
+        <span style="color:{{if eq .Health "good"}}var(--green){{else if eq .Health "warning"}}var(--yellow){{else}}var(--red){{end}}">{{if eq .Health "good"}}healthy{{else if eq .Health "warning"}}watch{{else}}attention{{end}}</span>
+    </div>
+</div>
+{{end}}
+</div>
+{{else}}
+<p style="color:var(--comment);margin-top:2rem">No data available.</p>
+{{end}}
+
+<p style="color:var(--comment);font-size:0.85rem;margin-top:1.5rem">Generated {{.GeneratedAt.Format "2006-01-02 15:04"}} &middot; Auto-refresh 300s</p>
+<div hx-get="/ratios{{if .FilterRig}}?rig={{.FilterRig}}{{end}}" hx-trigger="every 300s" hx-target="#content" hx-swap="innerHTML"></div>
+{{end}}
