@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -4245,5 +4246,190 @@ func TestNetFlowPage_HTMX(t *testing.T) {
 	body := w.Body.String()
 	if strings.Contains(body, "<!DOCTYPE html>") {
 		t.Error("HTMX net-flow should return partial, not full page")
+	}
+}
+
+func TestProbesPage_NoWorkspace(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/probes", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /probes status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Probe") {
+		t.Error("expected 'Probe' in heading")
+	}
+}
+
+func TestProbesPage_WithWorkspace(t *testing.T) {
+	// Create a temp workspace with a docs/probes directory
+	dir := t.TempDir()
+	probesDir := dir + "/docs/probes"
+	if err := os.MkdirAll(probesDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	// Write a sample probe file
+	if err := os.WriteFile(probesDir+"/2026-03-16-test-probe.md", []byte("# Test Probe\n\nSome findings here."), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	srv := New(nil, WithWorkspace(dir))
+	req := httptest.NewRequest("GET", "/probes", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /probes status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Probe") {
+		t.Error("expected 'Probe' heading")
+	}
+	if !strings.Contains(body, "Test Probe") {
+		t.Error("expected probe entry 'Test Probe' in output")
+	}
+}
+
+func TestProbesPage_CategoryFilter(t *testing.T) {
+	dir := t.TempDir()
+	probesDir := dir + "/docs/probes"
+	subDir := probesDir + "/alerts"
+	if err := os.MkdirAll(subDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(probesDir+"/2026-03-16-general.md", []byte("# General\n\nGeneral probe."), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(subDir+"/2026-03-16-alert.md", []byte("# Alert Probe\n\nAlert finding."), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	srv := New(nil, WithWorkspace(dir))
+
+	// Filter to alerts category only
+	req := httptest.NewRequest("GET", "/probes?category=alerts", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /probes?category=alerts status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Alert Probe") {
+		t.Error("expected 'Alert Probe' in filtered output")
+	}
+}
+
+func TestProbesPage_HTMX(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/probes", nil)
+	req.Header.Set("HX-Request", "true")
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("HTMX GET /probes status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if strings.Contains(body, "<!DOCTYPE html>") {
+		t.Error("HTMX probes should return partial, not full page")
+	}
+}
+
+func TestDesignViewPage_NilDataSource(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/designs/test-doc", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	// Should render without panic regardless of forgejo availability
+	if w.Code != http.StatusOK && w.Code != http.StatusNotFound {
+		t.Fatalf("GET /designs/test-doc status = %d, want 200 or 404", w.Code)
+	}
+}
+
+func TestDesignViewPage_InvalidName(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/designs/bad%20name!", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusNotFound {
+		t.Fatalf("GET /designs/bad name! status = %d, want %d", w.Code, http.StatusNotFound)
+	}
+}
+
+func TestDesignComment_MissingFields(t *testing.T) {
+	srv := New(nil)
+	body := strings.NewReader("bead_id=&bead_db=&author=&body=")
+	req := httptest.NewRequest("POST", "/designs/test-doc/comment", body)
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	// Should redirect with feedback=missing
+	if w.Code != http.StatusSeeOther {
+		t.Fatalf("POST design comment (empty) status = %d, want %d", w.Code, http.StatusSeeOther)
+	}
+	loc := w.Header().Get("Location")
+	if !strings.Contains(loc, "feedback=missing") {
+		t.Errorf("expected redirect to feedback=missing, got: %s", loc)
+	}
+}
+
+func TestDesignComment_InvalidName(t *testing.T) {
+	srv := New(nil)
+	body := strings.NewReader("bead_id=x&bead_db=y&author=a&body=b")
+	req := httptest.NewRequest("POST", "/designs/bad%20name!/comment", body)
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusNotFound {
+		t.Fatalf("POST design comment (bad name) status = %d, want %d", w.Code, http.StatusNotFound)
+	}
+}
+
+func TestDesignApprove_MissingFields(t *testing.T) {
+	srv := New(nil)
+	body := strings.NewReader("bead_id=&bead_db=")
+	req := httptest.NewRequest("POST", "/designs/test-doc/approve", body)
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	// Should redirect with feedback=error (missing bead_id/bead_db)
+	if w.Code != http.StatusSeeOther {
+		t.Fatalf("POST design approve (empty) status = %d, want %d", w.Code, http.StatusSeeOther)
+	}
+	loc := w.Header().Get("Location")
+	if !strings.Contains(loc, "feedback=error") {
+		t.Errorf("expected redirect to feedback=error, got: %s", loc)
+	}
+}
+
+func TestDesignApprove_InvalidName(t *testing.T) {
+	srv := New(nil)
+	body := strings.NewReader("bead_id=x&bead_db=y")
+	req := httptest.NewRequest("POST", "/designs/bad%20name!/approve", body)
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusNotFound {
+		t.Fatalf("POST design approve (bad name) status = %d, want %d", w.Code, http.StatusNotFound)
 	}
 }
