@@ -41,6 +41,7 @@
             <a href="/scope">scope</a>
             <a href="/rigs">rigs</a>
             <a href="/burndown">burndown</a>
+            <a href="/burnup">burnup</a>
             <a href="/flow-rate">flow-rate</a>
             <a href="/trends">trends</a>
             <a href="/heatmap">heatmap</a>
@@ -95,6 +96,8 @@
             <a href="/label-matrix">label-matrix</a>
             <a href="/label-trends">label-trends</a>
             <a href="/ready">ready</a>
+            <a href="/disposition">disposition</a>
+            <a href="/phase">phases</a>
             <span class="nav-sep">|</span>
             <a href="/homelab">homelab</a>
             <a href="/probes">probes</a>
@@ -251,6 +254,7 @@
       {name:'Scope', path:'/scope', desc:'Cumulative flow diagram'},
       {name:'Rigs', path:'/rigs', desc:'Per-rig status breakdown'},
       {name:'Burndown', path:'/burndown', desc:'Open bead count trend'},
+      {name:'Burn Up', path:'/burnup', desc:'Cumulative closed beads over 30 days'},
       {name:'Flow Rate', path:'/flow-rate', desc:'30-day created vs closed rate'},
       {name:'Trends', path:'/trends', desc:'Weekly trend analysis'},
       {name:'Heatmap', path:'/heatmap', desc:'Activity calendar'},
@@ -307,6 +311,8 @@
       {name:'Label Matrix', path:'/label-matrix', desc:'Labels x status heatmap'},
       {name:'Label Trends', path:'/label-trends', desc:'Label usage trends over 8 weeks'},
       {name:'Ready', path:'/ready', desc:'Ready beads with no blockers, sorted by priority'},
+      {name:'Disposition', path:'/disposition', desc:'Weekly work item resolution breakdown'},
+      {name:'Epic Phases', path:'/phase', desc:'Epic completion progress with phase bars'},
     ];
     var qnSelected = 0;
 

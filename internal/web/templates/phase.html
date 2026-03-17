@@ -1,0 +1,96 @@
+{{define "title"}}Epic Phases{{end}}
+{{define "content"}}
+<div class="phase-page" hx-get="/phase{{if .FilterRig}}?rig={{.FilterRig}}{{end}}" hx-trigger="every 120s" hx-select=".phase-page" hx-swap="outerHTML">
+  <h1>Epic Phases <time class="text-dim">{{.GeneratedAt.Format "Jan 02, 2006 15:04"}}</time></h1>
+
+  {{if gt (len .Rigs) 1}}
+  <div class="dep-filters" style="margin-bottom:0.5rem">
+    <a href="/phase" class="badge {{if not .FilterRig}}filter-active{{end}}">All rigs</a>
+    {{range .Rigs}}
+    <a href="/phase?rig={{.}}" class="badge {{if eq . $.FilterRig}}filter-active{{end}}">{{rigName .}}</a>
+    {{end}}
+  </div>
+  {{end}}
+
+  <div class="stat-grid" style="margin-bottom:1.5rem">
+    <div class="stat">
+      <span class="stat-value accent">{{.TotalEpics}}</span>
+      <span class="stat-label">Epics</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value text-ok">{{.Completed}}</span>
+      <span class="stat-label">Complete</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value text-warn">{{.InFlight}}</span>
+      <span class="stat-label">In flight</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value text-dim">{{.NotStarted}}</span>
+      <span class="stat-label">Not started</span>
+    </div>
+  </div>
+
+  {{if .Epics}}
+  <section>
+    <div class="table-wrap">
+    <table class="bead-table">
+      <thead>
+        <tr>
+          <th>Epic</th>
+          <th>Pri</th>
+          <th>Progress</th>
+          <th style="min-width:200px">Phase Bar</th>
+          <th>Done</th>
+          <th>WIP</th>
+          <th>Blocked</th>
+          <th>Open</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{range .Epics}}
+        <tr>
+          <td><a href="/epic/{{.ID}}">{{.Title}}</a></td>
+          <td>{{priorityLabel .Priority}}</td>
+          <td>
+            <strong>{{printf "%.0f" .Pct}}%</strong>
+            <span class="text-dim">({{.Closed}}/{{.Total}})</span>
+          </td>
+          <td>
+            {{if gt .Total 0}}
+            <div style="display:flex;height:18px;border-radius:3px;overflow:hidden;background:var(--bg-secondary)">
+              {{if gt .Closed 0}}<div style="width:{{divf (mulf (itof .Closed) 100.0) (itof .Total)}}%;background:var(--green)" title="{{.Closed}} closed"></div>{{end}}
+              {{if gt .InProgress 0}}<div style="width:{{divf (mulf (itof .InProgress) 100.0) (itof .Total)}}%;background:var(--cyan)" title="{{.InProgress}} in progress"></div>{{end}}
+              {{if gt .Blocked 0}}<div style="width:{{divf (mulf (itof .Blocked) 100.0) (itof .Total)}}%;background:var(--orange)" title="{{.Blocked}} blocked"></div>{{end}}
+              {{if gt .Open 0}}<div style="width:{{divf (mulf (itof .Open) 100.0) (itof .Total)}}%;background:var(--purple)" title="{{.Open}} open"></div>{{end}}
+              {{if gt .Deferred 0}}<div style="width:{{divf (mulf (itof .Deferred) 100.0) (itof .Total)}}%;background:var(--comment)" title="{{.Deferred}} deferred"></div>{{end}}
+            </div>
+            {{else}}
+            <span class="text-dim">No children</span>
+            {{end}}
+          </td>
+          <td class="text-ok">{{.Closed}}</td>
+          <td>{{.InProgress}}</td>
+          <td class="text-warn">{{.Blocked}}</td>
+          <td>{{.Open}}</td>
+        </tr>
+        {{end}}
+      </tbody>
+    </table>
+    </div>
+  </section>
+
+  <section style="margin-top:1rem">
+    <div style="display:flex;gap:1.5rem;flex-wrap:wrap;font-size:0.85rem">
+      <span><span style="display:inline-block;width:12px;height:12px;background:var(--green);border-radius:2px;vertical-align:middle"></span> Closed</span>
+      <span><span style="display:inline-block;width:12px;height:12px;background:var(--cyan);border-radius:2px;vertical-align:middle"></span> In Progress</span>
+      <span><span style="display:inline-block;width:12px;height:12px;background:var(--orange);border-radius:2px;vertical-align:middle"></span> Blocked</span>
+      <span><span style="display:inline-block;width:12px;height:12px;background:var(--purple);border-radius:2px;vertical-align:middle"></span> Open</span>
+      <span><span style="display:inline-block;width:12px;height:12px;background:var(--comment);border-radius:2px;vertical-align:middle"></span> Deferred</span>
+    </div>
+  </section>
+  {{else}}
+  <p class="empty">No epics found.</p>
+  {{end}}
+</div>
+{{end}}

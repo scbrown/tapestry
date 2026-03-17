@@ -1,0 +1,72 @@
+{{define "title"}}Burn Up{{end}}
+{{define "content"}}
+<div class="burnup-page" hx-get="/burnup{{if .FilterRig}}?rig={{.FilterRig}}{{end}}" hx-trigger="every 120s" hx-select=".burnup-page" hx-swap="outerHTML">
+  <h1>Burn Up <time class="text-dim">{{.GeneratedAt.Format "Jan 02, 2006 15:04"}}</time></h1>
+
+  {{if gt (len .Rigs) 1}}
+  <div class="dep-filters" style="margin-bottom:0.5rem">
+    <a href="/burnup" class="badge {{if not .FilterRig}}filter-active{{end}}">All rigs</a>
+    {{range .Rigs}}
+    <a href="/burnup?rig={{.}}" class="badge {{if eq . $.FilterRig}}filter-active{{end}}">{{rigName .}}</a>
+    {{end}}
+  </div>
+  {{end}}
+
+  <div class="stat-grid" style="margin-bottom:1.5rem">
+    <div class="stat">
+      <span class="stat-value accent">{{.TotalClosed}}</span>
+      <span class="stat-label">Closed in {{.Period}}d</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value">{{printf "%.1f" .AvgPerDay}}</span>
+      <span class="stat-label">Avg/day</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value">{{.MaxCum}}</span>
+      <span class="stat-label">Cumulative</span>
+    </div>
+  </div>
+
+  {{if .Days}}
+  <section>
+    <h2>Cumulative Closed ({{.Period}}-day)</h2>
+    <div class="exec-bars" style="min-height:120px">
+      {{range .Days}}
+      <div class="exec-bar-group">
+        <div class="exec-bar-pair">
+          <div class="exec-bar closed" style="height:{{barHeight .Cumulative $.MaxCum}}%" title="{{.Cumulative}} cumulative closed on {{.Date.Format "Jan 02"}}"></div>
+        </div>
+        <span class="exec-bar-label">{{.Date.Format "02"}}</span>
+      </div>
+      {{end}}
+    </div>
+  </section>
+
+  <section style="margin-top:1.5rem">
+    <h2>Daily Detail</h2>
+    <div class="table-wrap">
+    <table class="bead-table">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Closed</th>
+          <th>Cumulative</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{range .Days}}
+        <tr>
+          <td>{{.Date.Format "Mon Jan 02"}}</td>
+          <td>{{if gt .Closed 0}}<strong class="text-ok">{{.Closed}}</strong>{{else}}0{{end}}</td>
+          <td><strong>{{.Cumulative}}</strong></td>
+        </tr>
+        {{end}}
+      </tbody>
+    </table>
+    </div>
+  </section>
+  {{else}}
+  <p class="empty">No data available.</p>
+  {{end}}
+</div>
+{{end}}

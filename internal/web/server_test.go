@@ -8489,3 +8489,262 @@ func TestReadyPage_TemplateHasActions(t *testing.T) {
 		t.Error("expected ready page heading")
 	}
 }
+
+// --- Burn Up page tests ---
+
+func TestBurnupPage_NilDataSource(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/burnup", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /burnup status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Burn Up") {
+		t.Error("expected 'Burn Up' heading")
+	}
+}
+
+func TestBurnupPage_WithData(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		counts:    map[string]int{"open": 5, "closed": 10},
+		created:   3,
+		closed:    2,
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/burnup", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /burnup status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Daily Detail") {
+		t.Error("expected 'Daily Detail' table")
+	}
+}
+
+func TestBurnupPage_HTMXPartial(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/burnup", nil)
+	req.Header.Set("HX-Request", "true")
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("HTMX GET /burnup status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if strings.Contains(body, "<!DOCTYPE html>") {
+		t.Error("HTMX burnup should return partial, not full page")
+	}
+}
+
+func TestBurnupPage_RigFilter(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}, {Name: "beads_gastown"}},
+		counts:    map[string]int{"closed": 5},
+		closed:    1,
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/burnup?rig=beads_aegis", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /burnup?rig= status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "filter-active") {
+		t.Error("expected active rig filter badge")
+	}
+}
+
+// --- Disposition page tests ---
+
+func TestDispositionPage_NilDataSource(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/disposition", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /disposition status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Disposition") {
+		t.Error("expected 'Disposition' heading")
+	}
+}
+
+func TestDispositionPage_WithData(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		counts:    map[string]int{"open": 5, "closed": 10},
+		issues: []dolt.Issue{
+			{ID: "a1", Title: "closed one", Status: "closed", UpdatedAt: time.Now()},
+			{ID: "a2", Title: "deferred one", Status: "deferred", UpdatedAt: time.Now()},
+			{ID: "a3", Title: "open one", Status: "open", UpdatedAt: time.Now()},
+		},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/disposition", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /disposition status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Weekly Disposition") {
+		t.Error("expected 'Weekly Disposition' table")
+	}
+	if !strings.Contains(body, "Close rate") {
+		t.Error("expected 'Close rate' stat")
+	}
+}
+
+func TestDispositionPage_HTMXPartial(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/disposition", nil)
+	req.Header.Set("HX-Request", "true")
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("HTMX GET /disposition status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if strings.Contains(body, "<!DOCTYPE html>") {
+		t.Error("HTMX disposition should return partial, not full page")
+	}
+}
+
+func TestDispositionPage_RigFilter(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}, {Name: "beads_gastown"}},
+		counts:    map[string]int{"closed": 5},
+		issues: []dolt.Issue{
+			{ID: "a1", Title: "t", Status: "closed", UpdatedAt: time.Now()},
+		},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/disposition?rig=beads_aegis", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /disposition?rig= status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "filter-active") {
+		t.Error("expected active rig filter badge")
+	}
+}
+
+// --- Phase page tests ---
+
+func TestPhasePage_NilDataSource(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/phase", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /phase status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Epic Phases") {
+		t.Error("expected 'Epic Phases' heading")
+	}
+}
+
+func TestPhasePage_WithData(t *testing.T) {
+	// mock returns m.issues for both Epics() and Issues(), so include all in one slice
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		counts:    map[string]int{"open": 5},
+		deps: []dolt.Dependency{
+			{FromID: "task-1", ToID: "epic-1", Type: "child_of"},
+			{FromID: "task-2", ToID: "epic-1", Type: "child_of"},
+		},
+		issues: []dolt.Issue{
+			{ID: "epic-1", Title: "Test Epic", Type: "epic", Priority: 1},
+			{ID: "task-1", Title: "Task 1", Status: "closed"},
+			{ID: "task-2", Title: "Task 2", Status: "open"},
+		},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/phase", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /phase status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Test Epic") {
+		t.Error("expected epic title")
+	}
+	if !strings.Contains(body, "50%") {
+		t.Error("expected 50% completion")
+	}
+}
+
+func TestPhasePage_HTMXPartial(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/phase", nil)
+	req.Header.Set("HX-Request", "true")
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("HTMX GET /phase status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if strings.Contains(body, "<!DOCTYPE html>") {
+		t.Error("HTMX phase should return partial, not full page")
+	}
+}
+
+func TestPhasePage_RigFilter(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}, {Name: "beads_gastown"}},
+		counts:    map[string]int{"open": 5},
+		issues:    []dolt.Issue{},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/phase?rig=beads_aegis", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /phase?rig= status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "filter-active") {
+		t.Error("expected active rig filter badge")
+	}
+}

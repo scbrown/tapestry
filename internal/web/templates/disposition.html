@@ -1,0 +1,88 @@
+{{define "title"}}Disposition{{end}}
+{{define "content"}}
+<div class="disposition-page" hx-get="/disposition{{if .FilterRig}}?rig={{.FilterRig}}{{end}}" hx-trigger="every 120s" hx-select=".disposition-page" hx-swap="outerHTML">
+  <h1>Disposition <time class="text-dim">{{.GeneratedAt.Format "Jan 02, 2006 15:04"}}</time></h1>
+
+  {{if gt (len .Rigs) 1}}
+  <div class="dep-filters" style="margin-bottom:0.5rem">
+    <a href="/disposition" class="badge {{if not .FilterRig}}filter-active{{end}}">All rigs</a>
+    {{range .Rigs}}
+    <a href="/disposition?rig={{.}}" class="badge {{if eq . $.FilterRig}}filter-active{{end}}">{{rigName .}}</a>
+    {{end}}
+  </div>
+  {{end}}
+
+  <div class="stat-grid" style="margin-bottom:1.5rem">
+    <div class="stat">
+      <span class="stat-value text-ok">{{.TotalClosed}}</span>
+      <span class="stat-label">Closed</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value text-dim">{{.TotalDeferred}}</span>
+      <span class="stat-label">Deferred</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value text-warn">{{.TotalBlocked}}</span>
+      <span class="stat-label">Blocked</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value accent">{{printf "%.0f" .CloseRate}}%</span>
+      <span class="stat-label">Close rate</span>
+    </div>
+  </div>
+
+  {{if .Weeks}}
+  <section>
+    <h2>Weekly Disposition ({{.WeekCount}} weeks)</h2>
+    <div class="table-wrap">
+    <table class="bead-table">
+      <thead>
+        <tr>
+          <th>Week of</th>
+          <th>Closed</th>
+          <th>Deferred</th>
+          <th>Blocked</th>
+          <th>Open</th>
+          <th>Total</th>
+          <th style="min-width:180px">Distribution</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{range .Weeks}}
+        <tr>
+          <td>{{.WeekStart}}</td>
+          <td class="text-ok">{{.Closed}}</td>
+          <td class="text-dim">{{.Deferred}}</td>
+          <td class="text-warn">{{.Blocked}}</td>
+          <td>{{.Open}}</td>
+          <td><strong>{{.Total}}</strong></td>
+          <td>
+            {{if gt .Total 0}}
+            <div style="display:flex;height:18px;border-radius:3px;overflow:hidden;background:var(--bg-secondary)">
+              {{if gt .Closed 0}}<div style="width:{{divf (mulf (itof .Closed) 100.0) (itof .Total)}}%;background:var(--green)" title="{{.Closed}} closed"></div>{{end}}
+              {{if gt .Deferred 0}}<div style="width:{{divf (mulf (itof .Deferred) 100.0) (itof .Total)}}%;background:var(--comment)" title="{{.Deferred}} deferred"></div>{{end}}
+              {{if gt .Blocked 0}}<div style="width:{{divf (mulf (itof .Blocked) 100.0) (itof .Total)}}%;background:var(--orange)" title="{{.Blocked}} blocked"></div>{{end}}
+              {{if gt .Open 0}}<div style="width:{{divf (mulf (itof .Open) 100.0) (itof .Total)}}%;background:var(--purple)" title="{{.Open}} open"></div>{{end}}
+            </div>
+            {{end}}
+          </td>
+        </tr>
+        {{end}}
+      </tbody>
+    </table>
+    </div>
+  </section>
+
+  <section style="margin-top:1rem">
+    <div style="display:flex;gap:1.5rem;flex-wrap:wrap;font-size:0.85rem">
+      <span><span style="display:inline-block;width:12px;height:12px;background:var(--green);border-radius:2px;vertical-align:middle"></span> Closed</span>
+      <span><span style="display:inline-block;width:12px;height:12px;background:var(--comment);border-radius:2px;vertical-align:middle"></span> Deferred</span>
+      <span><span style="display:inline-block;width:12px;height:12px;background:var(--orange);border-radius:2px;vertical-align:middle"></span> Blocked</span>
+      <span><span style="display:inline-block;width:12px;height:12px;background:var(--purple);border-radius:2px;vertical-align:middle"></span> Open</span>
+    </div>
+  </section>
+  {{else}}
+  <p class="empty">No data available.</p>
+  {{end}}
+</div>
+{{end}}
