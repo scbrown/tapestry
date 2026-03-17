@@ -52,6 +52,7 @@
       <option value="">assign to...</option>
       {{range $.Assignees}}<option value="{{.}}">{{shortActor .}}</option>{{end}}
     </select>
+    <input type="text" class="btn btn-xs batch-label-input" placeholder="add label..." onkeydown="if(event.key==='Enter'){readyBatchLabel(this.value);this.value=''}" style="width:100px">
   </div>
   <div class="table-wrap">
   <table class="bead-table">
@@ -108,6 +109,7 @@
   function readyBatchAction(s){var c=document.querySelectorAll('.ready-cb:checked');if(!c.length)return;if(!confirm(s.charAt(0).toUpperCase()+s.slice(1)+' '+c.length+' beads?'))return;var f=new FormData();f.append('status',s);c.forEach(function(cb){f.append('ids[]',cb.getAttribute('data-rig')+'/'+cb.getAttribute('data-id'))});fetch('/batch/status',{method:'POST',body:f}).then(function(){c.forEach(function(cb){cb.closest('tr').remove()});readyUpdateBar();document.body.dispatchEvent(new CustomEvent('showToast',{detail:c.length+' beads '+s}))})}
   function readyBatchPriority(p){if(p==='')return;var c=document.querySelectorAll('.ready-cb:checked');if(!c.length)return;if(!confirm('Set '+c.length+' beads to P'+p+'?'))return;var f=new FormData();f.append('priority',p);c.forEach(function(cb){f.append('ids[]',cb.getAttribute('data-rig')+'/'+cb.getAttribute('data-id'))});fetch('/batch/priority',{method:'POST',body:f}).then(function(){document.body.dispatchEvent(new CustomEvent('showToast',{detail:c.length+' beads set to P'+p}));location.reload()})}
   function readyBatchAssignee(a){if(a==='')return;var c=document.querySelectorAll('.ready-cb:checked');if(!c.length)return;if(!confirm('Assign '+c.length+' beads to '+a+'?'))return;var f=new FormData();f.append('assignee',a);c.forEach(function(cb){f.append('ids[]',cb.getAttribute('data-rig')+'/'+cb.getAttribute('data-id'))});fetch('/batch/assignee',{method:'POST',body:f}).then(function(){document.body.dispatchEvent(new CustomEvent('showToast',{detail:c.length+' beads assigned'}));location.reload()})}
+  function readyBatchLabel(label){if(!label)return;var c=document.querySelectorAll('.ready-cb:checked');if(!c.length)return;var f=new FormData();f.append('label',label);c.forEach(function(cb){f.append('ids[]',cb.getAttribute('data-rig')+'/'+cb.getAttribute('data-id'))});fetch('/batch/label',{method:'POST',body:f}).then(function(){document.body.dispatchEvent(new CustomEvent('showToast',{detail:c.length+' beads labeled "'+label+'"'}))})}
   </script>
   {{else}}
   <p class="text-dim">No ready beads found. Everything is either in progress, blocked, or closed.</p>
