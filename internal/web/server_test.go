@@ -4500,3 +4500,163 @@ func TestDesignApprove_InvalidName(t *testing.T) {
 		t.Fatalf("POST design approve (bad name) status = %d, want %d", w.Code, http.StatusNotFound)
 	}
 }
+
+func TestRecapPage_AutoRefresh(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/recap", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /recap status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, `hx-trigger="every 60s"`) {
+		t.Error("expected auto-refresh hx-trigger on recap page")
+	}
+	if !strings.Contains(body, `hx-get="/recap?date=`) {
+		t.Error("expected hx-get with date param for auto-refresh")
+	}
+}
+
+func TestRecapPage_ActiveActions(t *testing.T) {
+	now := time.Now()
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issues: []dolt.Issue{
+			{ID: "act1", Title: "Active task", Status: "in_progress", Priority: 1, Assignee: "aegis/crew/alice", CreatedAt: now.Add(-48 * time.Hour), UpdatedAt: now},
+		},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/recap", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /recap status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Active task") {
+		t.Error("expected active task in recap")
+	}
+	// Active items should now have close/defer buttons
+	if !strings.Contains(body, `hx-vals='{"status":"closed"}'`) {
+		t.Error("expected close button on active items")
+	}
+	if !strings.Contains(body, `hx-vals='{"status":"deferred"}'`) {
+		t.Error("expected defer button on active items")
+	}
+}
+
+func TestRecapPage_BatchActions(t *testing.T) {
+	now := time.Now()
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issues: []dolt.Issue{
+			{ID: "cr1", Title: "New bead", Status: "open", Priority: 2, Owner: "aegis/crew/bob", CreatedAt: now.Add(-1 * time.Hour), UpdatedAt: now},
+		},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/recap", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /recap status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "batch-bar-created") {
+		t.Error("expected batch bar for created section")
+	}
+	if !strings.Contains(body, "recapToggleAll") {
+		t.Error("expected batch toggle-all checkbox in created section")
+	}
+	if !strings.Contains(body, "recapBatchAction") {
+		t.Error("expected batch action script")
+	}
+}
+
+func TestSearchPage_BatchActions(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issues: []dolt.Issue{
+			{ID: "s1", Title: "Search result", Status: "open", Rig: "beads_aegis", UpdatedAt: time.Now()},
+		},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/search?q=search", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /search status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "batch-bar-search") {
+		t.Error("expected batch bar on search page")
+	}
+	if !strings.Contains(body, "searchToggleAll") {
+		t.Error("expected batch toggle-all on search page")
+	}
+	if !strings.Contains(body, "searchBatchAction") {
+		t.Error("expected batch action script on search page")
+	}
+}
+
+func TestSearchPage_DeferButton(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issues: []dolt.Issue{
+			{ID: "sd1", Title: "Open bead", Status: "open", Rig: "beads_aegis", UpdatedAt: time.Now()},
+		},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/search?q=open", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /search status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	// Open items should have defer button
+	if !strings.Contains(body, `"status":"deferred"`) {
+		t.Error("expected defer button for open items in search")
+	}
+}
+
+func TestSearchPage_InProgressActions(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issues: []dolt.Issue{
+			{ID: "sip1", Title: "In progress bead", Status: "in_progress", Rig: "beads_aegis", UpdatedAt: time.Now()},
+		},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/search?q=progress", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /search status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	// In-progress items should have close and defer buttons
+	if !strings.Contains(body, `"status":"closed"`) {
+		t.Error("expected close button for in-progress items in search")
+	}
+	if !strings.Contains(body, `"status":"deferred"`) {
+		t.Error("expected defer button for in-progress items in search")
+	}
+}

@@ -1,7 +1,7 @@
 {{define "title"}}Recap{{end}}
 {{define "content"}}
-<div class="recap-page">
-  <h1>Daily Recap</h1>
+<div class="recap-page" hx-get="/recap?date={{.Date.Format "2006-01-02"}}" hx-trigger="every 60s" hx-select=".recap-page" hx-swap="outerHTML">
+  <h1>Daily Recap <time class="text-dim">{{.GeneratedAt.Format "15:04"}}</time></h1>
 
   <div class="recap-nav">
     <a href="/recap?date={{.PrevDate}}" hx-get="/recap?date={{.PrevDate}}" hx-target="#content" hx-push-url="true" class="btn btn-sm">&larr; Previous</a>
@@ -62,11 +62,17 @@
   <section class="recap-section">
     <h2>Created <span class="text-dim">({{.TotalCreated}})</span></h2>
     {{if .CreatedItems}}
+    <div class="batch-bar" id="batch-bar-created" style="display:none">
+      <span class="batch-count">0 selected</span>
+      <button class="btn btn-xs" onclick="recapBatchAction('created','closed')">close selected</button>
+      <button class="btn btn-xs" onclick="recapBatchAction('created','deferred')">defer selected</button>
+    </div>
     <table class="bead-table">
-      <thead><tr><th>ID</th><th>P</th><th>Title</th><th>Status</th><th>Owner</th><th>Rig</th><th>Actions</th></tr></thead>
-      <tbody>
+      <thead><tr><th><input type="checkbox" onchange="recapToggleAll(this,'created')"></th><th>ID</th><th>P</th><th>Title</th><th>Status</th><th>Owner</th><th>Rig</th><th>Actions</th></tr></thead>
+      <tbody id="tbody-created">
         {{range .CreatedItems}}
         <tr>
+          <td>{{if eq .Issue.Status "open"}}<input type="checkbox" class="batch-cb" data-section="created" data-id="{{.Issue.ID}}" data-rig="{{lower .Rig}}" onchange="recapUpdateBar('created')">{{end}}</td>
           <td><a href="/bead/{{lower .Rig}}/{{.Issue.ID}}" hx-boost="true">{{.Issue.ID}}</a></td>
           <td><span class="priority-badge p{{.Issue.Priority}}">P{{.Issue.Priority}}</span></td>
           <td>{{.Issue.Title}}</td>
@@ -93,7 +99,7 @@
   <section class="recap-section">
     <h2>Active Work <span class="text-dim">({{.TotalActive}})</span></h2>
     <table class="bead-table">
-      <thead><tr><th>ID</th><th>P</th><th>Title</th><th>Agent</th><th>Rig</th></tr></thead>
+      <thead><tr><th>ID</th><th>P</th><th>Title</th><th>Agent</th><th>Rig</th><th>Actions</th></tr></thead>
       <tbody>
         {{range .ActiveItems}}
         <tr>
@@ -102,6 +108,10 @@
           <td>{{.Issue.Title}}</td>
           <td class="text-dim">{{shortActor .Issue.Assignee}}</td>
           <td class="text-dim">{{.Rig}}</td>
+          <td class="actions-cell">
+            <button class="btn btn-xs" hx-post="/bead/{{lower .Rig}}/{{.Issue.ID}}/status" hx-vals='{"status":"closed"}' hx-swap="outerHTML" hx-target="closest tr" hx-confirm="Close {{.Issue.ID}}?">close</button>
+            <button class="btn btn-xs" hx-post="/bead/{{lower .Rig}}/{{.Issue.ID}}/status" hx-vals='{"status":"deferred"}' hx-swap="outerHTML" hx-target="closest tr" hx-confirm="Defer {{.Issue.ID}}?">defer</button>
+          </td>
         </tr>
         {{end}}
       </tbody>
@@ -138,5 +148,34 @@
   </section>
   {{end}}
 
+  <script>
+  function recapToggleAll(master, section) {
+    document.querySelectorAll('.batch-cb[data-section="'+section+'"]').forEach(function(cb) { cb.checked = master.checked; });
+    recapUpdateBar(section);
+  }
+  function recapUpdateBar(section) {
+    var checked = document.querySelectorAll('.batch-cb[data-section="'+section+'"]:checked');
+    var bar = document.getElementById('batch-bar-'+section);
+    if (bar) {
+      bar.style.display = checked.length > 0 ? 'flex' : 'none';
+      bar.querySelector('.batch-count').textContent = checked.length + ' selected';
+    }
+  }
+  function recapBatchAction(section, status) {
+    var checked = document.querySelectorAll('.batch-cb[data-section="'+section+'"]:checked');
+    if (!checked.length) return;
+    if (!confirm(status.charAt(0).toUpperCase()+status.slice(1)+' '+checked.length+' beads?')) return;
+    var form = new FormData();
+    form.append('status', status);
+    checked.forEach(function(cb) {
+      form.append('ids[]', cb.getAttribute('data-rig')+'/'+cb.getAttribute('data-id'));
+    });
+    fetch('/batch/status', {method:'POST', body:form}).then(function() {
+      checked.forEach(function(cb) { cb.closest('tr').remove(); });
+      recapUpdateBar(section);
+      document.body.dispatchEvent(new CustomEvent('showToast', {detail: checked.length+' beads '+status}));
+    });
+  }
+  </script>
 </div>
 {{end}}
