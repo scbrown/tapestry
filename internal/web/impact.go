@@ -26,6 +26,7 @@ type impactData struct {
 	GeneratedAt time.Time
 	Agents      []impactAgent
 	FilterRig   string
+	Rigs        []string
 	Err         string
 }
 
@@ -46,6 +47,13 @@ func (s *Server) handleImpact(w http.ResponseWriter, r *http.Request) {
 		s.render(w, r, "impact", data)
 		return
 	}
+
+	var rigNames []string
+	for _, db := range dbs {
+		rigNames = append(rigNames, db.Name)
+	}
+	sort.Strings(rigNames)
+	data.Rigs = rigNames
 
 	now := time.Now()
 	sevenDaysAgo := now.AddDate(0, 0, -7)

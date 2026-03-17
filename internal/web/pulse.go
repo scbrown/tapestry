@@ -37,6 +37,7 @@ type pulseData struct {
 	PeakHour     int
 	PeakCount    int
 	FilterRig    string
+	Rigs         []string
 	Err          string
 }
 
@@ -58,6 +59,13 @@ func (s *Server) handlePulse(w http.ResponseWriter, r *http.Request) {
 		s.render(w, r, "pulse", data)
 		return
 	}
+
+	var rigNames []string
+	for _, db := range dbs {
+		rigNames = append(rigNames, db.Name)
+	}
+	sort.Strings(rigNames)
+	data.Rigs = rigNames
 
 	now := time.Now()
 	since := now.Add(-24 * time.Hour)

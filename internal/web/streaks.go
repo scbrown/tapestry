@@ -21,6 +21,7 @@ type streaksData struct {
 	GeneratedAt time.Time
 	Agents      []agentStreak
 	FilterRig   string
+	Rigs        []string
 	Err         string
 }
 
@@ -41,6 +42,13 @@ func (s *Server) handleStreaks(w http.ResponseWriter, r *http.Request) {
 		s.render(w, r, "streaks", data)
 		return
 	}
+
+	var rigNames []string
+	for _, db := range dbs {
+		rigNames = append(rigNames, db.Name)
+	}
+	sort.Strings(rigNames)
+	data.Rigs = rigNames
 
 	now := time.Now()
 	thirtyDaysAgo := now.AddDate(0, 0, -30)

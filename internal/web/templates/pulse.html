@@ -3,7 +3,14 @@
 <h1>24-Hour Pulse</h1>
 <p class="subtitle">System activity over the last 24 hours, broken down by hour.</p>
 
-{{if .FilterRig}}<div class="dep-filters"><span class="dep-filter-badge">rig: {{.FilterRig}}</span> <a href="/pulse">clear</a></div>{{end}}
+{{if gt (len .Rigs) 1}}
+<div class="dep-filters" style="margin-bottom:0.75rem">
+    <a href="/pulse" class="badge {{if not .FilterRig}}filter-active{{end}}">All rigs</a>
+    {{range .Rigs}}
+    <a href="/pulse?rig={{.}}" class="badge {{if eq . $.FilterRig}}filter-active{{end}}">{{rigName .}}</a>
+    {{end}}
+</div>
+{{end}}
 
 {{if .Err}}<p class="error">{{.Err}}</p>{{end}}
 

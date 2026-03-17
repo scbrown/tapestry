@@ -3,7 +3,14 @@
 <h1>Impact</h1>
 <p class="subtitle">Agent impact scores: closures × 3 + creations × 1 + comments × 0.5</p>
 
-{{if .FilterRig}}<div class="dep-filters"><span class="dep-filter-badge">rig: {{.FilterRig}}</span> <a href="/impact">clear</a></div>{{end}}
+{{if gt (len .Rigs) 1}}
+<div class="dep-filters" style="margin-bottom:0.75rem">
+    <a href="/impact" class="badge {{if not .FilterRig}}filter-active{{end}}">All rigs</a>
+    {{range .Rigs}}
+    <a href="/impact?rig={{.}}" class="badge {{if eq . $.FilterRig}}filter-active{{end}}">{{rigName .}}</a>
+    {{end}}
+</div>
+{{end}}
 
 {{if .Err}}<p class="error">{{.Err}}</p>{{end}}
 

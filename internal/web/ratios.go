@@ -3,6 +3,7 @@ package web
 import (
 	"log"
 	"net/http"
+	"sort"
 	"sync"
 	"time"
 
@@ -22,6 +23,7 @@ type ratiosData struct {
 	GeneratedAt time.Time
 	Ratios      []ratio
 	FilterRig   string
+	Rigs        []string
 	Err         string
 }
 
@@ -42,6 +44,13 @@ func (s *Server) handleRatios(w http.ResponseWriter, r *http.Request) {
 		s.render(w, r, "ratios", data)
 		return
 	}
+
+	var rigNames []string
+	for _, db := range dbs {
+		rigNames = append(rigNames, db.Name)
+	}
+	sort.Strings(rigNames)
+	data.Rigs = rigNames
 
 	now := time.Now()
 	sevenDaysAgo := now.AddDate(0, 0, -7)
