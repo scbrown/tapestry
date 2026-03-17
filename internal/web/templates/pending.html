@@ -1,0 +1,58 @@
+{{define "title"}}Pending{{end}}
+{{define "content"}}
+<div class="pending-page" hx-get="/pending{{if .FilterRig}}?rig={{.FilterRig}}{{end}}" hx-trigger="every 60s" hx-select=".pending-page" hx-swap="outerHTML">
+  <h1>Pending Action <span class="text-dim">({{.Total}})</span></h1>
+  <p class="text-dim">Beads waiting for someone to act — assigned but not started, or high-pri and unowned.</p>
+
+  <div class="dep-filters">
+    {{if .Rigs}}
+    <select onchange="location.href='/pending?rig='+this.value">
+      <option value="">All rigs</option>
+      {{range .Rigs}}<option value="{{.}}" {{if eq . $.FilterRig}}selected{{end}}>{{.}}</option>{{end}}
+    </select>
+    {{end}}
+  </div>
+
+  {{if .Err}}
+  <div class="error-banner">{{.Err}}</div>
+  {{else if .Items}}
+  <table>
+    <thead>
+      <tr>
+        <th>Bead</th>
+        <th>P</th>
+        <th>Title</th>
+        <th>Assignee</th>
+        <th>Reason</th>
+        <th>Waiting</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {{range .Items}}
+      <tr>
+        <td><a href="/bead/{{lower .Rig}}/{{.ID}}" hx-boost="true">{{.ID}}</a></td>
+        <td><span class="priority-badge p{{.Priority}}">P{{.Priority}}</span></td>
+        <td>{{.Title}}</td>
+        <td>{{if .Assignee}}<a href="/agent/{{.Assignee}}">{{shortActor .Assignee}}</a>{{else}}<span class="text-dim">unassigned</span>{{end}}</td>
+        <td>
+          {{if eq .Reason "assigned-not-started"}}<span class="badge status-open">not started</span>
+          {{else if eq .Reason "high-pri-open"}}<span class="badge status-blocked">unassigned P0/P1</span>
+          {{else}}{{.Reason}}{{end}}
+        </td>
+        <td><time class="text-dim">{{.Age}}</time></td>
+        <td>
+          <span class="briefing-actions">
+            <button class="btn btn-xs" hx-post="/bead/{{lower .Rig}}/{{.ID}}/status" hx-vals='{"status":"in_progress"}' hx-swap="outerHTML" hx-target="closest tr">start</button>
+            <button class="btn btn-xs" hx-post="/bead/{{lower .Rig}}/{{.ID}}/status" hx-vals='{"status":"closed"}' hx-swap="outerHTML" hx-target="closest tr" hx-confirm="Close {{.ID}}?">close</button>
+          </span>
+        </td>
+      </tr>
+      {{end}}
+    </tbody>
+  </table>
+  {{else}}
+  <p class="empty">Nothing pending — all assigned beads are in progress or all high-pri beads are owned.</p>
+  {{end}}
+</div>
+{{end}}

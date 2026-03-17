@@ -10079,3 +10079,83 @@ func TestStatsPage_HTMXPartial(t *testing.T) {
 		t.Error("HTMX stats should return partial, not full page")
 	}
 }
+
+// ── Pending Page ──────────────────────────────────────────────
+
+func TestPendingPage_NilDataSource(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/pending", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /pending status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Pending Action") {
+		t.Error("expected 'Pending Action' heading")
+	}
+}
+
+func TestPendingPage_WithData(t *testing.T) {
+	now := time.Now()
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issues: []dolt.Issue{
+			{ID: "pend-1", Title: "Assigned not started", Status: "open", Priority: 1, Assignee: "aegis/crew/arnold", UpdatedAt: now.AddDate(0, 0, -3)},
+			{ID: "pend-2", Title: "High pri unassigned", Status: "open", Priority: 0, UpdatedAt: now.AddDate(0, 0, -1)},
+			{ID: "pend-3", Title: "In progress", Status: "in_progress", Priority: 1, Assignee: "aegis/crew/grant", UpdatedAt: now},
+		},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/pending", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /pending status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Assigned not started") {
+		t.Error("expected assigned-not-started bead")
+	}
+	if !strings.Contains(body, "High pri unassigned") {
+		t.Error("expected high-pri unassigned bead")
+	}
+	if strings.Contains(body, "In progress") {
+		t.Error("in-progress beads should not appear as pending")
+	}
+}
+
+func TestPendingPage_HTMXPartial(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/pending", nil)
+	req.Header.Set("HX-Request", "true")
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("HTMX GET /pending status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if strings.Contains(body, "<!DOCTYPE html>") {
+		t.Error("HTMX pending should return partial, not full page")
+	}
+}
+
+func TestPendingPage_RigFilter(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}, {Name: "beads_gastown"}},
+	}
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/pending?rig=beads_aegis", nil)
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
+	}
+}

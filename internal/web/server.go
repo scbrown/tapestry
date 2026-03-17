@@ -757,6 +757,10 @@ func (s *Server) parseTemplates() {
 			template.New("").Funcs(funcMap).ParseFS(templateFS,
 				"templates/layout.html", "templates/stats.html"),
 		),
+		"pending": template.Must(
+			template.New("").Funcs(funcMap).ParseFS(templateFS,
+				"templates/layout.html", "templates/pending.html"),
+		),
 	}
 }
 
@@ -1060,6 +1064,8 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		s.handleLoadBalance(w, r)
 	case len(segments) == 1 && segments[0] == "stats":
 		s.handleStats(w, r)
+	case len(segments) == 1 && segments[0] == "pending":
+		s.handlePending(w, r)
 	case len(segments) == 1 && segments[0] == "designs":
 		s.handleDesignsList(w, r)
 	case len(segments) == 2 && segments[0] == "designs":
