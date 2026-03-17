@@ -8724,6 +8724,50 @@ func TestReopenPage(t *testing.T) {
 	}
 }
 
+func TestReopenPage_EnhancedBatchBar(t *testing.T) {
+	now := time.Now()
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issues: []dolt.Issue{
+			{ID: "reop-1", Title: "Reopened bug", Status: "open", Priority: 1, Assignee: "aegis/crew/arnold", UpdatedAt: now},
+		},
+		assignees: []string{"aegis/crew/arnold", "aegis/crew/deacon"},
+		statusHistory: []dolt.StatusTransition{
+			{ToStatus: "open", CommitDate: now.Add(-72 * time.Hour)},
+			{FromStatus: "open", ToStatus: "closed", CommitDate: now.Add(-48 * time.Hour)},
+			{FromStatus: "closed", ToStatus: "open", CommitDate: now.Add(-24 * time.Hour)},
+		},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/reopen", nil)
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /reopen status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "batch-priority") {
+		t.Error("expected batch-priority dropdown in reopen batch bar")
+	}
+	if !strings.Contains(body, "batch-assign") {
+		t.Error("expected batch-assign dropdown in reopen batch bar")
+	}
+	if !strings.Contains(body, "batch-label-input") {
+		t.Error("expected batch-label-input in reopen batch bar")
+	}
+	if !strings.Contains(body, "reopenBatchPriority") {
+		t.Error("expected reopenBatchPriority JS function")
+	}
+	if !strings.Contains(body, "reopenBatchAssignee") {
+		t.Error("expected reopenBatchAssignee JS function")
+	}
+	if !strings.Contains(body, "reopenBatchLabel") {
+		t.Error("expected reopenBatchLabel JS function")
+	}
+}
+
 func TestReopenPage_NilDS(t *testing.T) {
 	srv := New(nil)
 	req := httptest.NewRequest("GET", "/reopen", nil)
@@ -8779,6 +8823,52 @@ func TestEscalationsPage(t *testing.T) {
 	}
 	if !strings.Contains(body, "Escalation Summary") {
 		t.Error("expected Escalation Summary section")
+	}
+}
+
+func TestEscalationsPage_EnhancedBatchBar(t *testing.T) {
+	now := time.Now()
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issues: []dolt.Issue{
+			{ID: "esc-1", Title: "Escalated item", Status: "open", Priority: 0, Assignee: "aegis/crew/arnold",
+				CreatedAt: now.Add(-72 * time.Hour), UpdatedAt: now.Add(-1 * time.Hour)},
+		},
+		assignees: []string{"aegis/crew/arnold", "aegis/crew/deacon"},
+		statusHistory: []dolt.StatusTransition{
+			{ToStatus: "open", CommitDate: now.Add(-72 * time.Hour)},
+			{FromStatus: "open", ToStatus: "in_progress", CommitDate: now.Add(-48 * time.Hour)},
+			{FromStatus: "in_progress", ToStatus: "blocked", CommitDate: now.Add(-24 * time.Hour)},
+			{FromStatus: "blocked", ToStatus: "open", CommitDate: now.Add(-1 * time.Hour)},
+		},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/escalations", nil)
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /escalations status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "batch-priority") {
+		t.Error("expected batch-priority dropdown in escalations batch bar")
+	}
+	if !strings.Contains(body, "batch-assign") {
+		t.Error("expected batch-assign dropdown in escalations batch bar")
+	}
+	if !strings.Contains(body, "batch-label-input") {
+		t.Error("expected batch-label-input in escalations batch bar")
+	}
+	if !strings.Contains(body, "escBatchPriority") {
+		t.Error("expected escBatchPriority JS function")
+	}
+	if !strings.Contains(body, "escBatchAssignee") {
+		t.Error("expected escBatchAssignee JS function")
+	}
+	if !strings.Contains(body, "escBatchLabel") {
+		t.Error("expected escBatchLabel JS function")
 	}
 }
 
@@ -10213,6 +10303,52 @@ func TestDogPilePage_WithData(t *testing.T) {
 	body := w.Body.String()
 	if !strings.Contains(body, "Very active") {
 		t.Error("expected hot bead title")
+	}
+}
+
+func TestDogPilePage_EnhancedBatchBar(t *testing.T) {
+	now := time.Now()
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issueDiffs: []dolt.IssueDiffRow{
+			{DiffType: "modified", ToID: "hot-1", ToTitle: "Very active", FromStatus: "open", ToStatus: "in_progress", ToCommitDate: now},
+			{DiffType: "modified", ToID: "hot-1", ToTitle: "Very active", FromStatus: "in_progress", ToStatus: "blocked", ToCommitDate: now.Add(-time.Hour)},
+			{DiffType: "modified", ToID: "hot-1", ToTitle: "Very active", FromStatus: "blocked", ToStatus: "open", ToCommitDate: now.Add(-2 * time.Hour)},
+		},
+		commentDiffs: []dolt.CommentDiffRow{
+			{DiffType: "added", ToIssueID: "hot-1", ToAuthor: "test", ToBody: "comment 1", ToCommitDate: now},
+			{DiffType: "added", ToIssueID: "hot-1", ToAuthor: "test", ToBody: "comment 2", ToCommitDate: now},
+		},
+		issue:     &dolt.Issue{ID: "hot-1", Title: "Very active", Status: "open", Priority: 1},
+		assignees: []string{"aegis/crew/arnold"},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/dog-pile", nil)
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /dog-pile status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "batch-priority") {
+		t.Error("expected batch-priority dropdown in dog-pile batch bar")
+	}
+	if !strings.Contains(body, "batch-assign") {
+		t.Error("expected batch-assign dropdown in dog-pile batch bar")
+	}
+	if !strings.Contains(body, "batch-label-input") {
+		t.Error("expected batch-label-input in dog-pile batch bar")
+	}
+	if !strings.Contains(body, "dogpileBatchPriority") {
+		t.Error("expected dogpileBatchPriority JS function")
+	}
+	if !strings.Contains(body, "dogpileBatchAssignee") {
+		t.Error("expected dogpileBatchAssignee JS function")
+	}
+	if !strings.Contains(body, "dogpileBatchLabel") {
+		t.Error("expected dogpileBatchLabel JS function")
 	}
 }
 
