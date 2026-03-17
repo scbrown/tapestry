@@ -88,6 +88,10 @@
           <span class="priority-badge p{{.Priority}}">P{{.Priority}}</span>
           {{.Title}}
           <time class="text-dim freshness">{{timeAgo .CreatedAt}}</time>
+          <span class="briefing-actions">
+            <button class="btn btn-xs" hx-post="/bead/{{lower .Rig}}/{{.ID}}/status" hx-vals='{"status":"closed"}' hx-swap="outerHTML" hx-target="closest li" hx-confirm="Close {{.ID}}?">close</button>
+            <button class="btn btn-xs" hx-post="/bead/{{lower .Rig}}/{{.ID}}/status" hx-vals='{"status":"deferred"}' hx-swap="outerHTML" hx-target="closest li" hx-confirm="Defer {{.ID}}?">defer</button>
+          </span>
         </li>
         {{end}}
       </ul>
@@ -144,6 +148,10 @@
           {{.Title}}
           <span class="stale-age">{{daysAgo .UpdatedAt}}d idle</span>
           {{if .Assignee}}<span class="text-dim">{{shortActor .Assignee}}</span>{{end}}
+          <span class="briefing-actions">
+            <button class="btn btn-xs" hx-post="/bead/{{lower .Rig}}/{{.ID}}/status" hx-vals='{"status":"closed"}' hx-swap="outerHTML" hx-target="closest li" hx-confirm="Close {{.ID}}?">close</button>
+            <button class="btn btn-xs" hx-post="/bead/{{lower .Rig}}/{{.ID}}/status" hx-vals='{"status":"deferred"}' hx-swap="outerHTML" hx-target="closest li" hx-confirm="Defer {{.ID}}?">defer</button>
+          </span>
         </li>
         {{end}}
       </ul>
