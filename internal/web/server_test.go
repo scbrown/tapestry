@@ -1673,6 +1673,38 @@ func TestClosedPage_WithData(t *testing.T) {
 	}
 }
 
+func TestClosedPage_BatchReopen(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issues: []dolt.Issue{
+			{ID: "aegis-cbr1", Title: "Closed item", Status: "closed", Priority: 1, UpdatedAt: time.Now()},
+		},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/closed?days=7", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /closed status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "batch-bar-closed") {
+		t.Error("expected batch bar on closed page")
+	}
+	if !strings.Contains(body, "closedToggleDay") {
+		t.Error("expected per-day toggle-all on closed page")
+	}
+	if !strings.Contains(body, "closedBatchAction") {
+		t.Error("expected batch reopen script on closed page")
+	}
+	if !strings.Contains(body, "reopen selected") {
+		t.Error("expected 'reopen selected' button text")
+	}
+}
+
 func TestStalePage_NilDataSource(t *testing.T) {
 	srv := New(nil)
 	req := httptest.NewRequest("GET", "/stale", nil)

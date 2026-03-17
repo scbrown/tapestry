@@ -24,6 +24,10 @@
   <div class="results-meta">{{.Total}} beads closed in the last {{.Days}} days</div>
 
   {{if .ByDay}}
+  <div class="batch-bar" id="batch-bar-closed" style="display:none">
+    <span class="batch-count">0 selected</span>
+    <button class="btn btn-xs" onclick="closedBatchAction('open')">reopen selected</button>
+  </div>
   {{range .ByDay}}
   <div class="closed-day-group">
     <h2 class="closed-day-header">{{.Date}} <span class="text-dim">({{.Count}})</span></h2>
@@ -31,6 +35,7 @@
     <table class="bead-table">
       <thead>
         <tr>
+          <th><input type="checkbox" onchange="closedToggleDay(this)"></th>
           <th>Rig</th>
           <th>ID</th>
           <th>Title</th>
@@ -44,6 +49,7 @@
       <tbody>
         {{range .Entries}}
         <tr>
+          <td><input type="checkbox" class="closed-cb" data-id="{{.Issue.ID}}" data-rig="{{lower .Rig}}" onchange="closedUpdateBar()"></td>
           <td><span class="rig-label">{{rigName .Rig}}</span></td>
           <td><a href="/bead/{{lower .Rig}}/{{.Issue.ID}}" hx-boost="true">{{.Issue.ID}}</a></td>
           <td>{{.Issue.Title}}</td>
@@ -61,6 +67,36 @@
     </div>
   </div>
   {{end}}
+  <script>
+  function closedToggleDay(master) {
+    var tbody = master.closest('table').querySelector('tbody');
+    tbody.querySelectorAll('.closed-cb').forEach(function(cb) { cb.checked = master.checked; });
+    closedUpdateBar();
+  }
+  function closedUpdateBar() {
+    var checked = document.querySelectorAll('.closed-cb:checked');
+    var bar = document.getElementById('batch-bar-closed');
+    if (bar) {
+      bar.style.display = checked.length > 0 ? 'flex' : 'none';
+      bar.querySelector('.batch-count').textContent = checked.length + ' selected';
+    }
+  }
+  function closedBatchAction(status) {
+    var checked = document.querySelectorAll('.closed-cb:checked');
+    if (!checked.length) return;
+    if (!confirm('Reopen '+checked.length+' beads?')) return;
+    var form = new FormData();
+    form.append('status', status);
+    checked.forEach(function(cb) {
+      form.append('ids[]', cb.getAttribute('data-rig')+'/'+cb.getAttribute('data-id'));
+    });
+    fetch('/batch/status', {method:'POST', body:form}).then(function() {
+      checked.forEach(function(cb) { cb.closest('tr').remove(); });
+      closedUpdateBar();
+      document.body.dispatchEvent(new CustomEvent('showToast', {detail: checked.length+' beads reopened'}));
+    });
+  }
+  </script>
   {{else}}
   <p class="empty">No beads closed in this time window.</p>
   {{end}}
