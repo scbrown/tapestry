@@ -216,4 +216,3 @@ func (s *Server) handleCalendar(w http.ResponseWriter, r *http.Request) {
 
 	s.render(w, r, "calendar", data)
 }
-
