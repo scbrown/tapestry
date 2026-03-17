@@ -25,6 +25,7 @@ type watchlistData struct {
 	TotalP1     int
 	Rigs        []string
 	FilterRig   string
+	Assignees   []string
 }
 
 func (s *Server) handleWatchlist(w http.ResponseWriter, r *http.Request) {
@@ -44,7 +45,8 @@ func (s *Server) handleWatchlist(w http.ResponseWriter, r *http.Request) {
 	}
 
 	type dbResult struct {
-		issues []dolt.Issue
+		issues    []dolt.Issue
+		assignees []string
 	}
 	results := make([]dbResult, len(dbs))
 	var wg sync.WaitGroup
@@ -57,7 +59,8 @@ func (s *Server) handleWatchlist(w http.ResponseWriter, r *http.Request) {
 				log.Printf("watchlist: %s: %v", dbName, err)
 				return
 			}
-			results[i] = dbResult{issues: issues}
+			assignees, _ := s.ds.DistinctAssignees(ctx, dbName)
+			results[i] = dbResult{issues: issues, assignees: assignees}
 		}(i, db.Name)
 	}
 	wg.Wait()
@@ -144,6 +147,20 @@ func (s *Server) handleWatchlist(w http.ResponseWriter, r *http.Request) {
 
 	data.TotalP0 = len(data.P0)
 	data.TotalP1 = len(data.P1)
+
+	// Collect distinct assignees for reassign dropdown
+	assigneeSet := make(map[string]bool)
+	for _, r := range results {
+		for _, a := range r.assignees {
+			if a != "" {
+				assigneeSet[a] = true
+			}
+		}
+	}
+	for a := range assigneeSet {
+		data.Assignees = append(data.Assignees, a)
+	}
+	sort.Strings(data.Assignees)
 
 	s.render(w, r, "watchlist", data)
 }

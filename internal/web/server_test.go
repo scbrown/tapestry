@@ -5421,3 +5421,49 @@ func TestDuplicatesPage_RigFilter(t *testing.T) {
 		t.Error("expected rig filter preserved in auto-refresh URL")
 	}
 }
+
+func TestActivityPage_AssigneeDropdown(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issues: []dolt.Issue{
+			{ID: "act1", Title: "Recent work", Status: "open", Priority: 1, Assignee: "aegis/crew/arnold", UpdatedAt: time.Now()},
+		},
+		assignees: []string{"aegis/crew/arnold", "aegis/crew/grant"},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/activity", nil)
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "triage-assign") {
+		t.Error("expected assignee dropdown on activity page")
+	}
+}
+
+func TestWatchlistPage_AssigneeDropdown(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issues: []dolt.Issue{
+			{ID: "wl1", Title: "P0 item", Status: "open", Priority: 0, Assignee: "aegis/crew/arnold", UpdatedAt: time.Now(), CreatedAt: time.Now()},
+		},
+		assignees: []string{"aegis/crew/arnold", "aegis/crew/grant"},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/watchlist", nil)
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "triage-assign") {
+		t.Error("expected assignee dropdown on watchlist page")
+	}
+}

@@ -22,6 +22,7 @@ type activityData struct {
 	Hours     int
 	Rigs      []string // available rigs for filter
 	FilterRig string   // current rig filter
+	Assignees []string
 	Err       string
 }
 
@@ -49,7 +50,8 @@ func (s *Server) handleActivity(w http.ResponseWriter, r *http.Request) {
 	cutoff := time.Now().Add(-time.Duration(hours) * time.Hour)
 
 	type dbResult struct {
-		entries []activityEntry
+		entries   []activityEntry
+		assignees []string
 	}
 
 	results := make([]dbResult, len(dbs))
@@ -74,7 +76,8 @@ func (s *Server) handleActivity(w http.ResponseWriter, r *http.Request) {
 					Rig:   dbName,
 				})
 			}
-			results[i] = dbResult{entries: entries}
+			assignees, _ := s.ds.DistinctAssignees(ctx, dbName)
+			results[i] = dbResult{entries: entries, assignees: assignees}
 		}(i, db.Name)
 	}
 	wg.Wait()
@@ -117,11 +120,27 @@ func (s *Server) handleActivity(w http.ResponseWriter, r *http.Request) {
 		all = all[:200]
 	}
 
+	// Collect distinct assignees for reassign dropdown
+	assigneeSet := make(map[string]bool)
+	for _, r := range results {
+		for _, a := range r.assignees {
+			if a != "" {
+				assigneeSet[a] = true
+			}
+		}
+	}
+	var assignees []string
+	for a := range assigneeSet {
+		assignees = append(assignees, a)
+	}
+	sort.Strings(assignees)
+
 	s.render(w, r, "activity", activityData{
 		Entries:   all,
 		Total:     len(all),
 		Hours:     hours,
 		Rigs:      rigs,
 		FilterRig: filterRig,
+		Assignees: assignees,
 	})
 }
