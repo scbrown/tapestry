@@ -11,7 +11,9 @@
         &rsaquo; <a href="/bead/{{.Database}}/{{.Issue.ID}}">{{.Issue.ID}}</a>
     </nav>
 
-    <h1 id="bead-title">
+    <div style="display:flex;align-items:center;gap:0.5rem">
+    <button id="fav-star" class="btn btn-xs" style="font-size:1.2rem;line-height:1;padding:0.1rem 0.3rem" onclick="toggleFavorite('{{.Database}}','{{.Issue.ID}}')" title="Toggle favorite"></button>
+    <h1 id="bead-title" style="margin:0">
         <span class="bead-title-text">{{.Issue.Title}}</span>
         <button class="btn btn-xs bead-title-edit" onclick="this.parentElement.querySelector('.bead-title-form').style.display='inline-flex'; this.parentElement.querySelector('.bead-title-text').style.display='none'; this.style.display='none'; this.parentElement.querySelector('.bead-title-form input').focus();">edit</button>
         <form class="bead-title-form" style="display:none" hx-post="/bead/{{.Database}}/{{.Issue.ID}}/title" hx-target="#bead-title" hx-swap="innerHTML">
@@ -20,6 +22,7 @@
             <button type="button" class="btn btn-xs" onclick="this.parentElement.style.display='none'; this.parentElement.parentElement.querySelector('.bead-title-text').style.display=''; this.parentElement.parentElement.querySelector('.bead-title-edit').style.display='';">cancel</button>
         </form>
     </h1>
+    </div>
 
     <div class="bead-meta">
         <span class="badge {{statusClass .Issue.Status}}">{{.Issue.Status}}</span>
@@ -237,5 +240,23 @@
     {{end}}
 
     {{end}}
+
+    <script>
+    (function(){
+      var db='{{.Database}}',id='{{.Issue.ID}}';
+      function getFavs(){try{return JSON.parse(localStorage.getItem('tapestry-favorites')||'[]')}catch(e){return[]}}
+      function isFav(){return getFavs().some(function(f){return f.db===db&&f.id===id})}
+      function render(){document.getElementById('fav-star').textContent=isFav()?'\u2605':'\u2606'}
+      window.toggleFavorite=function(){
+        var favs=getFavs();
+        if(isFav()){favs=favs.filter(function(f){return!(f.db===db&&f.id===id)})}
+        else{favs.push({db:db,id:id,added:new Date().toISOString()})}
+        localStorage.setItem('tapestry-favorites',JSON.stringify(favs));
+        render();
+      };
+      render();
+    })();
+    </script>
+
 </div>
 {{end}}
