@@ -9397,3 +9397,184 @@ func TestReschedulesPage_RigFilter(t *testing.T) {
 		t.Error("expected filter-active badge for rig filter")
 	}
 }
+
+// ── /retention ──
+
+func TestRetentionPage_NilDataSource(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/retention", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /retention status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Time in Status") {
+		t.Error("expected 'Time in Status' heading")
+	}
+}
+
+func TestRetentionPage_WithData(t *testing.T) {
+	now := time.Now()
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issues: []dolt.Issue{
+			{ID: "ret-1", Title: "Closed thing", Status: "closed", Priority: 2, CreatedAt: now.AddDate(0, 0, -30), UpdatedAt: now},
+		},
+		statusHistory: []dolt.StatusTransition{
+			{FromStatus: "", ToStatus: "open", CommitDate: now.AddDate(0, 0, -30)},
+			{FromStatus: "open", ToStatus: "in_progress", CommitDate: now.AddDate(0, 0, -20)},
+			{FromStatus: "in_progress", ToStatus: "closed", CommitDate: now.AddDate(0, 0, -5)},
+		},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/retention", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /retention status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Transitions") {
+		t.Error("expected 'Transitions' column header")
+	}
+}
+
+func TestRetentionPage_HTMXPartial(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/retention", nil)
+	req.Header.Set("HX-Request", "true")
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("HTMX GET /retention status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if strings.Contains(body, "<!DOCTYPE html>") {
+		t.Error("HTMX retention should return partial, not full page")
+	}
+}
+
+func TestRetentionPage_RigFilter(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}, {Name: "beads_gastown"}},
+	}
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/retention?rig=beads_aegis", nil)
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "filter-active") {
+		t.Error("expected filter-active badge for rig filter")
+	}
+}
+
+// ── /dog-pile ──
+
+func TestDogPilePage_NilDataSource(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/dog-pile", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /dog-pile status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Hot Beads") {
+		t.Error("expected 'Hot Beads' heading")
+	}
+}
+
+func TestDogPilePage_WithData(t *testing.T) {
+	now := time.Now()
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issueDiffs: []dolt.IssueDiffRow{
+			{DiffType: "modified", ToID: "hot-1", ToTitle: "Very active", FromStatus: "open", ToStatus: "in_progress", ToCommitDate: now},
+			{DiffType: "modified", ToID: "hot-1", ToTitle: "Very active", FromStatus: "in_progress", ToStatus: "blocked", ToCommitDate: now.Add(-time.Hour)},
+			{DiffType: "modified", ToID: "hot-1", ToTitle: "Very active", FromStatus: "blocked", ToStatus: "open", ToCommitDate: now.Add(-2 * time.Hour)},
+		},
+		commentDiffs: []dolt.CommentDiffRow{
+			{DiffType: "added", ToIssueID: "hot-1", ToAuthor: "test", ToBody: "comment 1", ToCommitDate: now},
+			{DiffType: "added", ToIssueID: "hot-1", ToAuthor: "test", ToBody: "comment 2", ToCommitDate: now},
+		},
+		issue: &dolt.Issue{ID: "hot-1", Title: "Very active", Status: "open", Priority: 1},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/dog-pile", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /dog-pile status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Very active") {
+		t.Error("expected hot bead title")
+	}
+}
+
+func TestDogPilePage_HTMXPartial(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/dog-pile", nil)
+	req.Header.Set("HX-Request", "true")
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("HTMX GET /dog-pile status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if strings.Contains(body, "<!DOCTYPE html>") {
+		t.Error("HTMX dog-pile should return partial, not full page")
+	}
+}
+
+func TestDogPilePage_RigFilter(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}, {Name: "beads_gastown"}},
+	}
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/dog-pile?rig=beads_aegis", nil)
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "filter-active") {
+		t.Error("expected filter-active badge for rig filter")
+	}
+}
+
+func TestDogPilePage_WindowFilter(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+	}
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/dog-pile?window=24h", nil)
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, `window=24h`) {
+		t.Error("expected window parameter preserved")
+	}
+}

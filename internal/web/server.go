@@ -220,6 +220,20 @@ var funcMap = template.FuncMap{
 		}
 		return fmt.Sprintf("%dh%dm", h, m)
 	},
+	"fmtHours": func(h float64) string {
+		if h < 1 {
+			return fmt.Sprintf("%dm", int(h*60))
+		}
+		days := int(h / 24)
+		hours := int(h) % 24
+		if days > 0 {
+			if hours == 0 {
+				return fmt.Sprintf("%dd", days)
+			}
+			return fmt.Sprintf("%dd%dh", days, hours)
+		}
+		return fmt.Sprintf("%dh", int(h))
+	},
 	"payloadString": func(e events.Event, key string) string {
 		return events.PayloadString(e, key)
 	},
@@ -711,6 +725,14 @@ func (s *Server) parseTemplates() {
 			template.New("").Funcs(funcMap).ParseFS(templateFS,
 				"templates/layout.html", "templates/reschedules.html"),
 		),
+		"retention": template.Must(
+			template.New("").Funcs(funcMap).ParseFS(templateFS,
+				"templates/layout.html", "templates/retention.html"),
+		),
+		"dog-pile": template.Must(
+			template.New("").Funcs(funcMap).ParseFS(templateFS,
+				"templates/layout.html", "templates/dog-pile.html"),
+		),
 	}
 }
 
@@ -998,6 +1020,10 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		s.handleLabelDetail(w, r, segments[1])
 	case len(segments) == 1 && segments[0] == "reschedules":
 		s.handleReschedules(w, r)
+	case len(segments) == 1 && segments[0] == "retention":
+		s.handleRetention(w, r)
+	case len(segments) == 1 && segments[0] == "dog-pile":
+		s.handleDogPile(w, r)
 	case len(segments) == 1 && segments[0] == "designs":
 		s.handleDesignsList(w, r)
 	case len(segments) == 2 && segments[0] == "designs":

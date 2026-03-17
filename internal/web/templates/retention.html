@@ -1,0 +1,55 @@
+{{define "title"}}Time in Status{{end}}
+{{define "content"}}
+<div class="backlog-page" hx-get="/retention{{if .FilterRig}}?rig={{.FilterRig}}{{end}}" hx-trigger="every 300s" hx-select=".backlog-page" hx-swap="outerHTML">
+  <h1>Time in Status <time class="text-dim">{{.GeneratedAt.Format "Jan 02, 2006 15:04"}}</time></h1>
+  <p class="text-dim">How long closed beads spent in each status before transitioning.{{if .FilterRig}} Showing {{rigName .FilterRig}} only.{{end}}</p>
+
+  {{if gt (len .Rigs) 1}}
+  <div class="dep-filters" style="margin-top:0.5rem;margin-bottom:0.5rem">
+    <a href="/retention" class="badge {{if not .FilterRig}}filter-active{{end}}">All rigs</a>
+    {{range .Rigs}}
+    <a href="/retention?rig={{.}}" class="badge {{if eq . $.FilterRig}}filter-active{{end}}">{{rigName .}}</a>
+    {{end}}
+  </div>
+  {{end}}
+
+  {{if .Buckets}}
+  <section class="backlog-card">
+    <div class="table-wrap">
+    <table class="bead-table">
+      <thead>
+        <tr>
+          <th>Status</th>
+          <th>Transitions</th>
+          <th>Median</th>
+          <th>Mean</th>
+          <th>P90</th>
+          <th>Distribution</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{range .Buckets}}
+        <tr>
+          <td>{{statusBadge .Status}}</td>
+          <td><strong>{{.Count}}</strong></td>
+          <td>{{fmtHours .MedianH}}</td>
+          <td>{{fmtHours .MeanH}}</td>
+          <td>{{fmtHours .P90H}}</td>
+          <td>
+            <div style="display:flex;gap:4px;align-items:center">
+              <div style="width:{{barHeight .MedianH 720.0}}%;min-width:2px;height:12px;background:#8be9fd;border-radius:2px" title="Median"></div>
+              <div style="width:{{barHeight .P90H 720.0}}%;min-width:2px;height:8px;background:#6272a4;border-radius:2px" title="P90"></div>
+            </div>
+          </td>
+        </tr>
+        {{end}}
+      </tbody>
+    </table>
+    </div>
+  </section>
+  {{else}}
+  <p class="text-dim">No status transition data available.</p>
+  {{end}}
+
+</div>
+{{end}}

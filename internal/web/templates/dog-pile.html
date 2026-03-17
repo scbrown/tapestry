@@ -1,0 +1,67 @@
+{{define "title"}}Hot Beads{{end}}
+{{define "content"}}
+<div class="backlog-page" hx-get="/dog-pile?window={{.Window}}{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" hx-trigger="every 120s" hx-select=".backlog-page" hx-swap="outerHTML">
+  <h1>Hot Beads <time class="text-dim">{{.GeneratedAt.Format "Jan 02, 2006 15:04"}}</time></h1>
+  <p class="text-dim">Beads with heavy recent activity (status changes + comments).{{if .FilterRig}} Showing {{rigName .FilterRig}} only.{{end}}</p>
+
+  <div class="dep-filters" style="margin-top:0.5rem;margin-bottom:0.5rem">
+    <a href="/dog-pile?window=24h{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" class="badge {{if eq .Window "24h"}}filter-active{{end}}">24h</a>
+    <a href="/dog-pile?window=7d{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" class="badge {{if eq .Window "7d"}}filter-active{{end}}">7d</a>
+    <a href="/dog-pile?window=30d{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" class="badge {{if eq .Window "30d"}}filter-active{{end}}">30d</a>
+  </div>
+
+  {{if gt (len .Rigs) 1}}
+  <div class="dep-filters" style="margin-top:0.5rem;margin-bottom:0.5rem">
+    <a href="/dog-pile?window={{.Window}}" class="badge {{if not .FilterRig}}filter-active{{end}}">All rigs</a>
+    {{range .Rigs}}
+    <a href="/dog-pile?window={{$.Window}}&rig={{.}}" class="badge {{if eq . $.FilterRig}}filter-active{{end}}">{{rigName .}}</a>
+    {{end}}
+  </div>
+  {{end}}
+
+  <div class="backlog-stats">
+    <div class="stat">
+      <span class="stat-value accent">{{.Total}}</span>
+      <span class="stat-label">Hot Beads</span>
+    </div>
+  </div>
+
+  {{if .Items}}
+  <section class="backlog-card">
+    <div class="table-wrap">
+    <table class="bead-table">
+      <thead>
+        <tr>
+          <th>Heat</th>
+          <th>ID</th>
+          <th>Title</th>
+          <th>Status</th>
+          <th>Pri</th>
+          <th>Rig</th>
+          <th>Status Δ</th>
+          <th>Comments</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{range .Items}}
+        <tr>
+          <td><strong style="color:{{if gt .HeatScore 15}}#ff5555{{else if gt .HeatScore 8}}#ffb86c{{else}}#f1fa8c{{end}}">{{.HeatScore}}</strong></td>
+          <td><a href="/bead/{{.Rig}}/{{.Issue.ID}}" hx-boost="true">{{.Issue.ID}}</a></td>
+          <td>{{.Issue.Title}}</td>
+          <td>{{statusBadge .Issue.Status}}</td>
+          <td><span class="priority-badge p{{.Issue.Priority}}">P{{.Issue.Priority}}</span></td>
+          <td class="text-dim">{{.Rig}}</td>
+          <td>{{.StatusChanges}}</td>
+          <td>{{.CommentCount}}</td>
+        </tr>
+        {{end}}
+      </tbody>
+    </table>
+    </div>
+  </section>
+  {{else}}
+  <p class="text-dim">No hot beads found in the selected window.</p>
+  {{end}}
+
+</div>
+{{end}}
