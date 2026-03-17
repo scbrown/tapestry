@@ -5205,3 +5205,148 @@ func TestDeferredPage_AssigneeDropdown(t *testing.T) {
 		t.Error("expected assignee dropdown on deferred page")
 	}
 }
+
+func TestBlockedPage_RigFilter(t *testing.T) {
+	ds := &mockDataSource{
+		databases:     []dolt.DatabaseInfo{{Name: "beads_aegis"}, {Name: "beads_gastown"}},
+		blockedIssues: []dolt.BlockedIssue{
+			{
+				Issue:   dolt.Issue{ID: "aegis-b1", Title: "Needs auth", Status: "open", Priority: 1, Assignee: "aegis/crew/arnold", UpdatedAt: time.Now()},
+				Blocker: dolt.Issue{ID: "aegis-b2", Title: "Auth module", Status: "in_progress", Owner: "aegis/crew/grant"},
+			},
+		},
+	}
+
+	srv := New(ds)
+
+	// Test without filter — should show rig filter badges
+	req := httptest.NewRequest("GET", "/blocked", nil)
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /blocked status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "All rigs") {
+		t.Error("expected 'All rigs' filter badge")
+	}
+
+	// Test with rig filter
+	req = httptest.NewRequest("GET", "/blocked?rig=beads_aegis", nil)
+	w = httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /blocked?rig= status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body = w.Body.String()
+	if !strings.Contains(body, `rig=beads_aegis`) {
+		t.Error("expected rig filter preserved in auto-refresh URL")
+	}
+}
+
+func TestBlockedPage_AssigneeDropdown(t *testing.T) {
+	ds := &mockDataSource{
+		databases:     []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		blockedIssues: []dolt.BlockedIssue{
+			{
+				Issue:   dolt.Issue{ID: "aegis-b1", Title: "Needs auth", Status: "open", Priority: 1, Assignee: "aegis/crew/arnold", UpdatedAt: time.Now()},
+				Blocker: dolt.Issue{ID: "aegis-b2", Title: "Auth module", Status: "in_progress", Owner: "aegis/crew/grant"},
+			},
+		},
+		assignees: []string{"aegis/crew/arnold", "aegis/crew/grant"},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/blocked", nil)
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "triage-assign") {
+		t.Error("expected assignee dropdown on blocked page")
+	}
+}
+
+func TestChurnPage_RigFilter(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}, {Name: "beads_gastown"}},
+		issues: []dolt.Issue{
+			{ID: "ch1", Title: "Churning", Status: "open", Priority: 2, UpdatedAt: time.Now()},
+		},
+		statusHistory: []dolt.StatusTransition{
+			{ToStatus: "open", CommitDate: time.Now().Add(-3 * 24 * time.Hour)},
+			{FromStatus: "open", ToStatus: "in_progress", CommitDate: time.Now().Add(-2 * 24 * time.Hour)},
+			{FromStatus: "in_progress", ToStatus: "open", CommitDate: time.Now().Add(-1 * 24 * time.Hour)},
+		},
+	}
+
+	srv := New(ds)
+
+	// Test without filter
+	req := httptest.NewRequest("GET", "/churn", nil)
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /churn status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "All rigs") {
+		t.Error("expected 'All rigs' filter badge")
+	}
+
+	// Test with rig filter
+	req = httptest.NewRequest("GET", "/churn?rig=beads_aegis", nil)
+	w = httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /churn?rig= status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body = w.Body.String()
+	if !strings.Contains(body, `rig=beads_aegis`) {
+		t.Error("expected rig filter preserved in auto-refresh URL")
+	}
+}
+
+func TestWorkloadPage_RigFilter(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}, {Name: "beads_gastown"}},
+		issues: []dolt.Issue{
+			{ID: "wl1", Title: "Work item", Status: "open", Priority: 1, Assignee: "aegis/crew/arnold", UpdatedAt: time.Now()},
+		},
+	}
+
+	srv := New(ds)
+
+	// Test without filter
+	req := httptest.NewRequest("GET", "/workload", nil)
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /workload status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "All rigs") {
+		t.Error("expected 'All rigs' filter badge")
+	}
+
+	// Test with rig filter
+	req = httptest.NewRequest("GET", "/workload?rig=beads_aegis", nil)
+	w = httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /workload?rig= status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body = w.Body.String()
+	if !strings.Contains(body, `rig=beads_aegis`) {
+		t.Error("expected rig filter preserved in auto-refresh URL")
+	}
+}

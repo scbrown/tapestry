@@ -19,6 +19,9 @@ type blockedData struct {
 	Entries      []blockedEntry
 	Total        int
 	ByBlocker    []blockerGroup
+	Rigs         []string
+	FilterRig    string
+	Assignees    []string
 	Err          string
 }
 
@@ -43,7 +46,8 @@ func (s *Server) handleBlocked(w http.ResponseWriter, r *http.Request) {
 	}
 
 	type dbResult struct {
-		entries []blockedEntry
+		entries   []blockedEntry
+		assignees []string
 	}
 
 	results := make([]dbResult, len(dbs))
@@ -65,14 +69,36 @@ func (s *Server) handleBlocked(w http.ResponseWriter, r *http.Request) {
 					Rig:     dbName,
 				})
 			}
-			results[i] = dbResult{entries: entries}
+			assignees, _ := s.ds.DistinctAssignees(ctx, dbName)
+			results[i] = dbResult{entries: entries, assignees: assignees}
 		}(i, db.Name)
 	}
 	wg.Wait()
 
 	var all []blockedEntry
+	rigSet := make(map[string]bool)
 	for _, r := range results {
 		all = append(all, r.entries...)
+		for _, e := range r.entries {
+			rigSet[e.Rig] = true
+		}
+	}
+
+	var rigs []string
+	for rig := range rigSet {
+		rigs = append(rigs, rig)
+	}
+	sort.Strings(rigs)
+
+	filterRig := r.URL.Query().Get("rig")
+	if filterRig != "" {
+		filtered := all[:0]
+		for _, e := range all {
+			if e.Rig == filterRig {
+				filtered = append(filtered, e)
+			}
+		}
+		all = filtered
 	}
 
 	sort.Slice(all, func(i, j int) bool {
@@ -100,9 +126,27 @@ func (s *Server) handleBlocked(w http.ResponseWriter, r *http.Request) {
 		return groups[i].Count > groups[j].Count
 	})
 
+	// Collect distinct assignees for reassign dropdown
+	assigneeSet := make(map[string]bool)
+	for _, r := range results {
+		for _, a := range r.assignees {
+			if a != "" {
+				assigneeSet[a] = true
+			}
+		}
+	}
+	var assignees []string
+	for a := range assigneeSet {
+		assignees = append(assignees, a)
+	}
+	sort.Strings(assignees)
+
 	s.render(w, r, "blocked", blockedData{
 		Entries:   all,
 		Total:     len(all),
 		ByBlocker: groups,
+		Rigs:      rigs,
+		FilterRig: filterRig,
+		Assignees: assignees,
 	})
 }

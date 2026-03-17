@@ -1,8 +1,17 @@
 {{define "title"}}Churn{{end}}
 {{define "content"}}
-<div class="backlog-page" hx-get="/churn" hx-trigger="every 120s" hx-select=".backlog-page" hx-swap="outerHTML">
+<div class="backlog-page" hx-get="/churn{{if .FilterRig}}?rig={{.FilterRig}}{{end}}" hx-trigger="every 120s" hx-select=".backlog-page" hx-swap="outerHTML">
   <h1>Status Churn <time class="text-dim">{{.GeneratedAt.Format "Jan 02, 2006 15:04"}}</time></h1>
-  <p class="text-dim">Open beads with 3+ status transitions — likely bouncing between states or reopened multiple times.</p>
+  <p class="text-dim">Open beads with 3+ status transitions — likely bouncing between states or reopened multiple times.{{if .FilterRig}} Showing {{rigName .FilterRig}} only.{{end}}</p>
+
+  {{if gt (len .Rigs) 1}}
+  <div class="dep-filters" style="margin-top:0.5rem;margin-bottom:0.5rem">
+    <a href="/churn" class="badge {{if not .FilterRig}}filter-active{{end}}">All rigs</a>
+    {{range .Rigs}}
+    <a href="/churn?rig={{.}}" class="badge {{if eq . $.FilterRig}}filter-active{{end}}">{{rigName .}}</a>
+    {{end}}
+  </div>
+  {{end}}
 
   <div class="backlog-stats">
     <div class="stat">

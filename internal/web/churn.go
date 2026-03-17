@@ -22,6 +22,8 @@ type churnData struct {
 	Total       int
 	AvgChurn    float64
 	MaxChurn    int
+	Rigs        []string
+	FilterRig   string
 }
 
 func (s *Server) handleChurn(w http.ResponseWriter, r *http.Request) {
@@ -104,12 +106,36 @@ func (s *Server) handleChurn(w http.ResponseWriter, r *http.Request) {
 	}
 	histWg.Wait()
 
+	rigSet := make(map[string]bool)
 	for _, hr := range histResults {
 		data.Items = append(data.Items, churnItem{
 			Rig: hr.rig, Issue: hr.issue, Transitions: hr.transitions,
 		})
+		rigSet[hr.rig] = true
 		if hr.transitions > data.MaxChurn {
 			data.MaxChurn = hr.transitions
+		}
+	}
+
+	for rig := range rigSet {
+		data.Rigs = append(data.Rigs, rig)
+	}
+	sort.Strings(data.Rigs)
+
+	data.FilterRig = r.URL.Query().Get("rig")
+	if data.FilterRig != "" {
+		filtered := data.Items[:0]
+		for _, item := range data.Items {
+			if item.Rig == data.FilterRig {
+				filtered = append(filtered, item)
+			}
+		}
+		data.Items = filtered
+		data.MaxChurn = 0
+		for _, item := range data.Items {
+			if item.Transitions > data.MaxChurn {
+				data.MaxChurn = item.Transitions
+			}
 		}
 	}
 
