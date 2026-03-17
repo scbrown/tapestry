@@ -7404,3 +7404,68 @@ func TestDebtPage_AutoRefresh(t *testing.T) {
 		t.Error("expected 120s auto-refresh on debt page")
 	}
 }
+
+// ── Snapshot tests ──
+
+func TestSnapshotPage_WithData(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issues: []dolt.Issue{
+			{ID: "s1", Title: "P0 bug", Status: "open", Type: "bug", Priority: 0, Assignee: "alice", CreatedAt: time.Now().Add(-2 * 24 * time.Hour), UpdatedAt: time.Now()},
+			{ID: "s2", Title: "Active task", Status: "in_progress", Type: "task", Priority: 2, Assignee: "bob", CreatedAt: time.Now().Add(-5 * 24 * time.Hour), UpdatedAt: time.Now()},
+			{ID: "s3", Title: "Blocked item", Status: "blocked", Type: "task", Priority: 1, Assignee: "alice", CreatedAt: time.Now().Add(-10 * 24 * time.Hour), UpdatedAt: time.Now()},
+			{ID: "s4", Title: "Deferred", Status: "deferred", Type: "task", Priority: 3, CreatedAt: time.Now().Add(-30 * 24 * time.Hour), UpdatedAt: time.Now()},
+		},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/snapshot", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /snapshot status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "System Snapshot") {
+		t.Error("expected 'System Snapshot' heading")
+	}
+	if !strings.Contains(body, "Backlog") {
+		t.Error("expected Backlog section")
+	}
+	if !strings.Contains(body, "Urgency") {
+		t.Error("expected Urgency section")
+	}
+	if !strings.Contains(body, "Workforce") {
+		t.Error("expected Workforce section")
+	}
+	if !strings.Contains(body, "P0 open") {
+		t.Error("expected P0 open stat")
+	}
+}
+
+func TestSnapshotPage_NilDS(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/snapshot", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /snapshot nil ds status = %d, want %d", w.Code, http.StatusOK)
+	}
+}
+
+func TestSnapshotPage_AutoRefresh(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/snapshot", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	body := w.Body.String()
+	if !strings.Contains(body, `hx-trigger="every 60s"`) {
+		t.Error("expected 60s auto-refresh on snapshot page")
+	}
+}

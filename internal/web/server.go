@@ -593,6 +593,10 @@ func (s *Server) parseTemplates() {
 			template.New("").Funcs(funcMap).ParseFS(templateFS,
 				"templates/layout.html", "templates/debt.html"),
 		),
+		"snapshot": template.Must(
+			template.New("").Funcs(funcMap).ParseFS(templateFS,
+				"templates/layout.html", "templates/snapshot.html"),
+		),
 	}
 }
 
@@ -822,6 +826,8 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		s.handleCalendar(w, r)
 	case len(segments) == 1 && segments[0] == "debt":
 		s.handleDebt(w, r)
+	case len(segments) == 1 && segments[0] == "snapshot":
+		s.handleSnapshot(w, r)
 	case len(segments) == 1 && segments[0] == "designs":
 		s.handleDesignsList(w, r)
 	case len(segments) == 2 && segments[0] == "designs":

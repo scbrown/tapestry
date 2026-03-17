@@ -1,0 +1,121 @@
+{{define "title"}}Snapshot{{end}}
+{{define "content"}}
+<div class="snapshot-page" hx-get="/snapshot" hx-trigger="every 60s" hx-select=".snapshot-page" hx-swap="outerHTML">
+  <h1>System Snapshot <time class="text-dim">{{formatDateTime .GeneratedAt}}</time></h1>
+
+  {{if .Err}}
+  <div class="error">{{.Err}}</div>
+  {{else}}
+
+  {{/* ── Status Overview ── */}}
+  <div class="briefing-grid">
+    <section class="briefing-card">
+      <h2>Backlog</h2>
+      <div class="stat-grid">
+        <div class="stat">
+          <span class="stat-value">{{.TotalOpen}}</span>
+          <span class="stat-label">Open</span>
+        </div>
+        <div class="stat">
+          <span class="stat-value pulse">{{.InProgress}}</span>
+          <span class="stat-label">In progress</span>
+        </div>
+        <div class="stat">
+          <span class="stat-value {{if gt .Blocked 5}}warn{{end}}">{{.Blocked}}</span>
+          <span class="stat-label"><a href="/blocked">Blocked</a></span>
+        </div>
+        <div class="stat">
+          <span class="stat-value">{{.Deferred}}</span>
+          <span class="stat-label"><a href="/deferred">Deferred</a></span>
+        </div>
+      </div>
+    </section>
+
+    <section class="briefing-card">
+      <h2>7-Day Activity</h2>
+      <div class="stat-grid">
+        <div class="stat">
+          <span class="stat-value">{{.CreatedWeek}}</span>
+          <span class="stat-label"><a href="/created">Created</a></span>
+        </div>
+        <div class="stat">
+          <span class="stat-value accent">{{.ClosedWeek}}</span>
+          <span class="stat-label"><a href="/closed">Closed</a></span>
+        </div>
+        <div class="stat">
+          <span class="stat-value {{if gt .NetWeek 10}}warn{{end}}{{if lt .NetWeek 0}} accent{{end}}">{{if gt .NetWeek 0}}+{{end}}{{.NetWeek}}</span>
+          <span class="stat-label"><a href="/net-flow">Net</a></span>
+        </div>
+      </div>
+    </section>
+
+    <section class="briefing-card">
+      <h2>Urgency</h2>
+      <div class="stat-grid">
+        <div class="stat">
+          <span class="stat-value {{if gt .P0Open 0}}warn{{end}}">{{.P0Open}}</span>
+          <span class="stat-label">P0 open</span>
+        </div>
+        <div class="stat">
+          <span class="stat-value {{if gt .P1Open 5}}warn{{end}}">{{.P1Open}}</span>
+          <span class="stat-label">P1 open</span>
+        </div>
+        <div class="stat">
+          <span class="stat-value {{if gt .StaleCount 20}}warn{{end}}">{{.StaleCount}}</span>
+          <span class="stat-label"><a href="/stale">Stale</a></span>
+        </div>
+        <div class="stat">
+          <span class="stat-value {{if gt .UnassignedCnt 10}}warn{{end}}">{{.UnassignedCnt}}</span>
+          <span class="stat-label"><a href="/triage">Unassigned</a></span>
+        </div>
+      </div>
+    </section>
+
+    <section class="briefing-card">
+      <h2>Workforce</h2>
+      <div class="stat-grid">
+        <div class="stat">
+          <span class="stat-value pulse">{{.ActiveAgents}}</span>
+          <span class="stat-label">Active agents</span>
+        </div>
+        <div class="stat">
+          <span class="stat-value">{{.TotalAgents}}</span>
+          <span class="stat-label"><a href="/contributors">Total agents</a></span>
+        </div>
+      </div>
+    </section>
+
+    <section class="briefing-card">
+      <h2>Composition</h2>
+      <div class="stat-grid">
+        <div class="stat">
+          <span class="stat-value">{{.BugCount}}</span>
+          <span class="stat-label"><a href="/debt">Bugs</a></span>
+        </div>
+        <div class="stat">
+          <span class="stat-value">{{.TaskCount}}</span>
+          <span class="stat-label">Tasks</span>
+        </div>
+        <div class="stat">
+          <span class="stat-value">{{.EpicCount}}</span>
+          <span class="stat-label"><a href="/epics">Epics</a></span>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  {{/* ── Quick Links ── */}}
+  <div style="margin-top:1.5rem; display:flex; flex-wrap:wrap; gap:0.5rem">
+    <a href="/executive" class="badge">executive</a>
+    <a href="/momentum" class="badge">momentum</a>
+    <a href="/risks" class="badge">risks</a>
+    <a href="/overflow" class="badge">overflow</a>
+    <a href="/watchlist" class="badge">watchlist</a>
+    <a href="/queue" class="badge">queue</a>
+    <a href="/standup" class="badge">standup</a>
+    <a href="/velocity" class="badge">velocity</a>
+  </div>
+
+  {{end}}
+</div>
+{{end}}

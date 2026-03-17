@@ -2,7 +2,6 @@ package web
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"net/http"
 	"strconv"
@@ -218,28 +217,3 @@ func (s *Server) handleCalendar(w http.ResponseWriter, r *http.Request) {
 	s.render(w, r, "calendar", data)
 }
 
-func calQueryParam(year, month int, rig string) string {
-	q := fmt.Sprintf("?year=%d&month=%d", year, month)
-	if rig != "" {
-		q += "&rig=" + rig
-	}
-	return q
-}
-
-// calIntensity returns a CSS class based on daily activity level.
-func calIntensity(count, max int) string {
-	if count == 0 || max == 0 {
-		return ""
-	}
-	ratio := float64(count) / float64(max)
-	switch {
-	case ratio > 0.75:
-		return "cal-hot"
-	case ratio > 0.5:
-		return "cal-warm"
-	case ratio > 0.25:
-		return "cal-mild"
-	default:
-		return "cal-cool"
-	}
-}
