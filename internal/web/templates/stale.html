@@ -63,7 +63,15 @@
         <td>{{.Issue.Title}}</td>
         <td>{{priorityLabel .Issue.Priority}}</td>
         <td>{{statusBadge .Issue.Status}}</td>
-        <td title="{{.Issue.Assignee}}">{{shortActor .Issue.Assignee}}</td>
+        <td>
+          <select class="triage-assign" hx-post="/bead/{{lower .Rig}}/{{.Issue.ID}}/assign" hx-swap="outerHTML" hx-target="closest tr" name="assignee">
+            <option value="">—</option>
+            {{$cur := .Issue.Assignee}}
+            {{range $.Assignees}}
+            <option value="{{.}}" {{if eq . $cur}}selected{{end}}>{{shortActor .}}</option>
+            {{end}}
+          </select>
+        </td>
         <td><strong class="{{if gt .DaysStale 7}}text-error{{else if gt .DaysStale 3}}text-warn{{end}}">{{.DaysStale}}d</strong></td>
         <td>{{timeAgo .Issue.UpdatedAt}}</td>
         <td class="triage-actions">

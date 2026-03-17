@@ -23,6 +23,7 @@ type staleData struct {
 	Days      int
 	Rigs      []string
 	FilterRig string
+	Assignees []string
 	Err       string
 }
 
@@ -50,7 +51,8 @@ func (s *Server) handleStale(w http.ResponseWriter, r *http.Request) {
 	cutoff := time.Now().Add(-time.Duration(days) * 24 * time.Hour)
 
 	type dbResult struct {
-		entries []staleEntry
+		entries   []staleEntry
+		assignees []string
 	}
 
 	results := make([]dbResult, len(dbs))
@@ -80,6 +82,7 @@ func (s *Server) handleStale(w http.ResponseWriter, r *http.Request) {
 					})
 				}
 			}
+			res.assignees, _ = s.ds.DistinctAssignees(ctx, dbName)
 			results[i] = res
 		}(i, db.Name)
 	}
@@ -115,11 +118,27 @@ func (s *Server) handleStale(w http.ResponseWriter, r *http.Request) {
 		return all[i].DaysStale > all[j].DaysStale
 	})
 
+	// Collect distinct assignees for reassign dropdown
+	assigneeSet := make(map[string]bool)
+	for _, r := range results {
+		for _, a := range r.assignees {
+			if a != "" {
+				assigneeSet[a] = true
+			}
+		}
+	}
+	var assignees []string
+	for a := range assigneeSet {
+		assignees = append(assignees, a)
+	}
+	sort.Strings(assignees)
+
 	s.render(w, r, "stale", staleData{
 		Entries:   all,
 		Total:     len(all),
 		Days:      days,
 		Rigs:      rigs,
 		FilterRig: filterRig,
+		Assignees: assignees,
 	})
 }

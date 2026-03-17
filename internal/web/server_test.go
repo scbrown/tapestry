@@ -5125,3 +5125,31 @@ func TestWatchlistPage_RigFilter(t *testing.T) {
 		t.Error("expected rig filter preserved in watchlist auto-refresh URL")
 	}
 }
+
+func TestStalePage_AssigneeDropdown(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issues: []dolt.Issue{
+			{ID: "st1", Title: "Stale work", Status: "in_progress", Priority: 1,
+				Assignee:  "alice",
+				UpdatedAt: time.Now().Add(-10 * 24 * time.Hour)},
+		},
+		assignees: []string{"alice", "bob", "charlie"},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/stale?days=3", nil)
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /stale status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "triage-assign") {
+		t.Error("expected assignee dropdown with triage-assign class")
+	}
+	if !strings.Contains(body, "/assign") {
+		t.Error("expected assign POST endpoint in dropdown")
+	}
+}
