@@ -625,6 +625,14 @@ func (s *Server) parseTemplates() {
 			template.New("").Funcs(funcMap).ParseFS(templateFS,
 				"templates/layout.html", "templates/signals.html"),
 		),
+		"pair-freq": template.Must(
+			template.New("").Funcs(funcMap).ParseFS(templateFS,
+				"templates/layout.html", "templates/pair-freq.html"),
+		),
+		"idle": template.Must(
+			template.New("").Funcs(funcMap).ParseFS(templateFS,
+				"templates/layout.html", "templates/idle.html"),
+		),
 	}
 }
 
@@ -870,6 +878,10 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		s.handleSwarming(w, r)
 	case len(segments) == 1 && segments[0] == "signals":
 		s.handleSignals(w, r)
+	case len(segments) == 1 && segments[0] == "pair-freq":
+		s.handlePairFreq(w, r)
+	case len(segments) == 1 && segments[0] == "idle":
+		s.handleIdle(w, r)
 	case len(segments) == 1 && segments[0] == "designs":
 		s.handleDesignsList(w, r)
 	case len(segments) == 2 && segments[0] == "designs":

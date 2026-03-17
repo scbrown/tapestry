@@ -1,0 +1,63 @@
+{{define "title"}}Idle Agents{{end}}
+{{define "content"}}
+<div class="idle-page" hx-get="/idle" hx-trigger="every 120s" hx-select=".idle-page" hx-swap="outerHTML">
+  <h1>Idle Agents <time class="text-dim">{{formatDateTime .GeneratedAt}}</time></h1>
+  <p class="text-dim">Agents with no bead updates in {{.ThresholdDays}}+ days.</p>
+
+  {{if .Err}}
+  <div class="error">{{.Err}}</div>
+  {{else}}
+
+  {{/* ── Summary ── */}}
+  <div class="briefing-grid">
+    <section class="briefing-card">
+      <h2>Agent Status</h2>
+      <div class="stat-grid">
+        <div class="stat">
+          <span class="stat-value">{{.TotalAgents}}</span>
+          <span class="stat-label">Total agents</span>
+        </div>
+        <div class="stat">
+          <span class="stat-value good">{{.ActiveCount}}</span>
+          <span class="stat-label">Active</span>
+        </div>
+        <div class="stat">
+          <span class="stat-value {{if gt .IdleCount 0}}warn{{end}}">{{.IdleCount}}</span>
+          <span class="stat-label">Idle ({{.ThresholdDays}}d+)</span>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  {{/* ── Idle Agent Table ── */}}
+  {{if .IdleAgents}}
+  <h2 style="margin-top:2rem">Idle Agents</h2>
+  <table class="bead-table">
+    <thead>
+      <tr>
+        <th>Agent</th>
+        <th>Last Activity</th>
+        <th>Idle Days</th>
+        <th>Open Beads</th>
+        <th>In Progress</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{range .IdleAgents}}
+      <tr class="{{if gt .IdleDays 14}}row-warn{{end}}">
+        <td><a href="/agent/{{.Name}}">{{shortActor .Name}}</a></td>
+        <td>{{formatDate .LastUpdate}}</td>
+        <td><strong>{{.IdleDays}}</strong></td>
+        <td>{{.OpenBeads}}</td>
+        <td>{{.InProgress}}</td>
+      </tr>
+      {{end}}
+    </tbody>
+  </table>
+  {{else}}
+  <p class="text-dim">No idle agents — everyone is active!</p>
+  {{end}}
+
+  {{end}}
+</div>
+{{end}}

@@ -1,0 +1,65 @@
+{{define "title"}}Label Pairs{{end}}
+{{define "content"}}
+<div class="pair-freq-page" hx-get="/pair-freq" hx-trigger="every 300s" hx-select=".pair-freq-page" hx-swap="outerHTML">
+  <h1>Label Co-Occurrence <time class="text-dim">{{formatDateTime .GeneratedAt}}</time></h1>
+  <p class="text-dim">Which labels frequently appear together on the same bead.</p>
+
+  {{if .Err}}
+  <div class="error">{{.Err}}</div>
+  {{else}}
+
+  {{/* ── Stats ── */}}
+  <div class="briefing-grid">
+    <section class="briefing-card">
+      <h2>Overview</h2>
+      <div class="stat-grid">
+        <div class="stat">
+          <span class="stat-value">{{.TotalPairs}}</span>
+          <span class="stat-label">Unique pairs</span>
+        </div>
+        {{if .TopLabel}}
+        <div class="stat">
+          <span class="stat-value">{{.TopLabel}}</span>
+          <span class="stat-label">Most paired label</span>
+        </div>
+        {{end}}
+      </div>
+    </section>
+  </div>
+
+  {{/* ── Pair Table ── */}}
+  {{if .Pairs}}
+  <h2 style="margin-top:2rem">Top Label Pairs</h2>
+  <table class="bead-table">
+    <thead>
+      <tr>
+        <th>Label A</th>
+        <th>Label B</th>
+        <th>Co-occurrences</th>
+        <th>Frequency</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{$max := 1}}
+      {{range .Pairs}}{{if gt .Count $max}}{{$max = .Count}}{{end}}{{end}}
+      {{range .Pairs}}
+      <tr>
+        <td><a href="/labels?label={{.LabelA}}">{{.LabelA}}</a></td>
+        <td><a href="/labels?label={{.LabelB}}">{{.LabelB}}</a></td>
+        <td><strong>{{.Count}}</strong></td>
+        <td>
+          <div class="inline-bar" style="width:120px">
+            <div class="bar bar-created" style="width:{{mulf (divf (itof .Count) (itof $max)) 100.0}}%;height:12px"></div>
+          </div>
+        </td>
+      </tr>
+      {{end}}
+    </tbody>
+  </table>
+  {{else}}
+  <p class="text-dim">No label pairs found.</p>
+  {{end}}
+
+  {{end}}
+</div>
+{{end}}

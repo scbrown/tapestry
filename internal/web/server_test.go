@@ -7915,3 +7915,92 @@ func TestSignalsPage_AutoRefresh(t *testing.T) {
 		t.Error("expected 60s auto-refresh on signals page")
 	}
 }
+
+// ── /pair-freq ──
+
+func TestPairFreqPage(t *testing.T) {
+	srv := New(&mockDataSource{})
+	req := httptest.NewRequest("GET", "/pair-freq", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /pair-freq status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Label Co-Occurrence") {
+		t.Error("expected 'Label Co-Occurrence' heading")
+	}
+}
+
+func TestPairFreqPage_NilDS(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/pair-freq", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /pair-freq nil ds status = %d, want %d", w.Code, http.StatusOK)
+	}
+}
+
+func TestPairFreqPage_AutoRefresh(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/pair-freq", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	body := w.Body.String()
+	if !strings.Contains(body, `hx-trigger="every 300s"`) {
+		t.Error("expected 300s auto-refresh on pair-freq page")
+	}
+}
+
+// ── /idle ──
+
+func TestIdlePage(t *testing.T) {
+	srv := New(&mockDataSource{})
+	req := httptest.NewRequest("GET", "/idle", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /idle status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Idle Agents") {
+		t.Error("expected 'Idle Agents' heading")
+	}
+	if !strings.Contains(body, "Agent Status") {
+		t.Error("expected Agent Status section")
+	}
+}
+
+func TestIdlePage_NilDS(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/idle", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /idle nil ds status = %d, want %d", w.Code, http.StatusOK)
+	}
+}
+
+func TestIdlePage_AutoRefresh(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/idle", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	body := w.Body.String()
+	if !strings.Contains(body, `hx-trigger="every 120s"`) {
+		t.Error("expected 120s auto-refresh on idle page")
+	}
+}
