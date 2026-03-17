@@ -1,15 +1,31 @@
 {{define "title"}}Timeline{{end}}
 {{define "content"}}
-<h1>Timeline <small style="color:var(--comment)">({{.Total}} events)</small></h1>
+<h1>Timeline <small style="color:var(--comment)">({{.Total}} events{{if .FilterType}}, showing {{.FilterType}}{{end}})</small></h1>
 <p class="subtitle">Unified chronological activity feed — creates, closes, status changes, comments, reassignments.</p>
 
-{{if .FilterRig}}<div class="dep-filters"><span class="dep-filter-badge">rig: {{.FilterRig}}</span> <a href="/timeline?window={{.Window}}">clear</a></div>{{end}}
+{{if gt (len .Rigs) 1}}
+<div class="dep-filters" style="margin-bottom:0.75rem">
+    <a href="/timeline?window={{.Window}}{{if .FilterType}}&type={{.FilterType}}{{end}}" class="badge {{if not .FilterRig}}filter-active{{end}}">All rigs</a>
+    {{range .Rigs}}
+    <a href="/timeline?window={{$.Window}}{{if $.FilterType}}&type={{$.FilterType}}{{end}}&rig={{.}}" class="badge {{if eq . $.FilterRig}}filter-active{{end}}">{{rigName .}}</a>
+    {{end}}
+</div>
+{{end}}
 
-<div style="display:flex;gap:0.5rem;margin:0.75rem 0">
-    <a href="/timeline?window=6h{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" style="padding:0.3rem 0.75rem;border-radius:4px;text-decoration:none;{{if eq .Window "6h"}}background:var(--purple);color:var(--foreground){{else}}background:var(--current-line);color:var(--comment){{end}}">6h</a>
-    <a href="/timeline?window=12h{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" style="padding:0.3rem 0.75rem;border-radius:4px;text-decoration:none;{{if eq .Window "12h"}}background:var(--purple);color:var(--foreground){{else}}background:var(--current-line);color:var(--comment){{end}}">12h</a>
-    <a href="/timeline?window=24h{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" style="padding:0.3rem 0.75rem;border-radius:4px;text-decoration:none;{{if eq .Window "24h"}}background:var(--purple);color:var(--foreground){{else}}background:var(--current-line);color:var(--comment){{end}}">24h</a>
-    <a href="/timeline?window=48h{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" style="padding:0.3rem 0.75rem;border-radius:4px;text-decoration:none;{{if eq .Window "48h"}}background:var(--purple);color:var(--foreground){{else}}background:var(--current-line);color:var(--comment){{end}}">48h</a>
+<div style="display:flex;gap:0.5rem;margin:0.75rem 0;flex-wrap:wrap">
+    <a href="/timeline?window=6h{{if .FilterRig}}&rig={{.FilterRig}}{{end}}{{if .FilterType}}&type={{.FilterType}}{{end}}" style="padding:0.3rem 0.75rem;border-radius:4px;text-decoration:none;{{if eq .Window "6h"}}background:var(--purple);color:var(--foreground){{else}}background:var(--current-line);color:var(--comment){{end}}">6h</a>
+    <a href="/timeline?window=12h{{if .FilterRig}}&rig={{.FilterRig}}{{end}}{{if .FilterType}}&type={{.FilterType}}{{end}}" style="padding:0.3rem 0.75rem;border-radius:4px;text-decoration:none;{{if eq .Window "12h"}}background:var(--purple);color:var(--foreground){{else}}background:var(--current-line);color:var(--comment){{end}}">12h</a>
+    <a href="/timeline?window=24h{{if .FilterRig}}&rig={{.FilterRig}}{{end}}{{if .FilterType}}&type={{.FilterType}}{{end}}" style="padding:0.3rem 0.75rem;border-radius:4px;text-decoration:none;{{if eq .Window "24h"}}background:var(--purple);color:var(--foreground){{else}}background:var(--current-line);color:var(--comment){{end}}">24h</a>
+    <a href="/timeline?window=48h{{if .FilterRig}}&rig={{.FilterRig}}{{end}}{{if .FilterType}}&type={{.FilterType}}{{end}}" style="padding:0.3rem 0.75rem;border-radius:4px;text-decoration:none;{{if eq .Window "48h"}}background:var(--purple);color:var(--foreground){{else}}background:var(--current-line);color:var(--comment){{end}}">48h</a>
+</div>
+
+<div style="display:flex;gap:0.5rem;margin:0 0 0.75rem;flex-wrap:wrap">
+    <a href="/timeline?window={{.Window}}{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" style="padding:0.3rem 0.75rem;border-radius:4px;text-decoration:none;{{if not .FilterType}}background:var(--purple);color:var(--foreground){{else}}background:var(--current-line);color:var(--comment){{end}}">All</a>
+    <a href="/timeline?window={{.Window}}{{if .FilterRig}}&rig={{.FilterRig}}{{end}}&type=created" style="padding:0.3rem 0.75rem;border-radius:4px;text-decoration:none;{{if eq .FilterType "created"}}background:var(--green);color:var(--background){{else}}background:var(--current-line);color:var(--green){{end}}">+ created {{with index .TypeCounts "created"}}<small>({{.}})</small>{{end}}</a>
+    <a href="/timeline?window={{.Window}}{{if .FilterRig}}&rig={{.FilterRig}}{{end}}&type=closed" style="padding:0.3rem 0.75rem;border-radius:4px;text-decoration:none;{{if eq .FilterType "closed"}}background:var(--purple);color:var(--foreground){{else}}background:var(--current-line);color:var(--purple){{end}}">✓ closed {{with index .TypeCounts "closed"}}<small>({{.}})</small>{{end}}</a>
+    <a href="/timeline?window={{.Window}}{{if .FilterRig}}&rig={{.FilterRig}}{{end}}&type=comment" style="padding:0.3rem 0.75rem;border-radius:4px;text-decoration:none;{{if eq .FilterType "comment"}}background:var(--cyan);color:var(--background){{else}}background:var(--current-line);color:var(--cyan){{end}}">comment {{with index .TypeCounts "comment"}}<small>({{.}})</small>{{end}}</a>
+    <a href="/timeline?window={{.Window}}{{if .FilterRig}}&rig={{.FilterRig}}{{end}}&type=reassigned" style="padding:0.3rem 0.75rem;border-radius:4px;text-decoration:none;{{if eq .FilterType "reassigned"}}background:var(--orange);color:var(--background){{else}}background:var(--current-line);color:var(--orange){{end}}">reassign {{with index .TypeCounts "reassigned"}}<small>({{.}})</small>{{end}}</a>
+    <a href="/timeline?window={{.Window}}{{if .FilterRig}}&rig={{.FilterRig}}{{end}}&type=status_change" style="padding:0.3rem 0.75rem;border-radius:4px;text-decoration:none;{{if eq .FilterType "status_change"}}background:var(--yellow);color:var(--background){{else}}background:var(--current-line);color:var(--yellow){{end}}">status {{with index .TypeCounts "status_change"}}<small>({{.}})</small>{{end}}</a>
 </div>
 
 {{if .Err}}<p class="error">{{.Err}}</p>{{end}}
@@ -42,5 +58,5 @@
 {{end}}
 
 <p style="color:var(--comment);font-size:0.85rem;margin-top:1rem">Generated {{.GeneratedAt.Format "2006-01-02 15:04"}} &middot; Auto-refresh 60s</p>
-<div hx-get="/timeline?window={{.Window}}{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" hx-trigger="every 60s" hx-target="#content" hx-swap="innerHTML"></div>
+<div hx-get="/timeline?window={{.Window}}{{if .FilterRig}}&rig={{.FilterRig}}{{end}}{{if .FilterType}}&type={{.FilterType}}{{end}}" hx-trigger="every 60s" hx-target="#content" hx-swap="innerHTML"></div>
 {{end}}

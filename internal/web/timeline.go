@@ -27,7 +27,10 @@ type timelineData struct {
 	Events      []timelineEvent
 	Window      string // "6h", "12h", "24h", "48h"
 	FilterRig   string
+	FilterType  string // "created", "closed", "comment", "reassigned", "status_change", or "" for all
 	Total       int
+	Rigs        []string
+	TypeCounts  map[string]int // event type → count (before filtering)
 	Err         string
 }
 
@@ -41,6 +44,7 @@ func (s *Server) handleTimeline(w http.ResponseWriter, r *http.Request) {
 
 	ctx := r.Context()
 	data.FilterRig = r.URL.Query().Get("rig")
+	data.FilterType = r.URL.Query().Get("type")
 	data.Window = r.URL.Query().Get("window")
 	if data.Window == "" {
 		data.Window = "24h"
@@ -189,7 +193,33 @@ func (s *Server) handleTimeline(w http.ResponseWriter, r *http.Request) {
 		return allEvents[i].Time.After(allEvents[j].Time)
 	})
 
+	// Build rig list from databases
+	var rigNames []string
+	for _, db := range dbs {
+		rigNames = append(rigNames, db.Name)
+	}
+	sort.Strings(rigNames)
+	data.Rigs = rigNames
+
+	// Count events by type (before filtering)
+	data.TypeCounts = map[string]int{}
+	for _, ev := range allEvents {
+		data.TypeCounts[ev.Type]++
+	}
+
 	data.Total = len(allEvents)
+
+	// Apply type filter
+	if data.FilterType != "" {
+		var filtered []timelineEvent
+		for _, ev := range allEvents {
+			if ev.Type == data.FilterType {
+				filtered = append(filtered, ev)
+			}
+		}
+		allEvents = filtered
+	}
+
 	// Cap at 500 events
 	if len(allEvents) > 500 {
 		allEvents = allEvents[:500]

@@ -7459,6 +7459,32 @@ func TestStandupPage_StatGrid(t *testing.T) {
 	}
 }
 
+func TestStandupPage_QuickActions(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issues: []dolt.Issue{
+			{ID: "su-qa1", Title: "Active item", Status: "in_progress", Priority: 1, Assignee: "aegis/crew/alice", CreatedAt: time.Now().Add(-24 * time.Hour), UpdatedAt: time.Now()},
+			{ID: "su-qa2", Title: "Blocked item", Status: "blocked", Priority: 2, Assignee: "aegis/crew/alice", CreatedAt: time.Now().Add(-48 * time.Hour), UpdatedAt: time.Now()},
+		},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/standup", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	body := w.Body.String()
+	// In-progress items should have close/block/defer buttons
+	if !strings.Contains(body, "briefing-actions") {
+		t.Error("expected quick action buttons in standup")
+	}
+	// Blocked items should have unblock button
+	if !strings.Contains(body, "unblock") {
+		t.Error("expected 'unblock' button for blocked items")
+	}
+}
+
 // ── Momentum Page Tests ──
 
 func TestMomentumPage_NilDataSource(t *testing.T) {
@@ -11190,6 +11216,62 @@ func TestTimelinePage_RigFilter(t *testing.T) {
 	body := w.Body.String()
 	if !strings.Contains(body, "beads_aegis") {
 		t.Error("expected rig filter badge")
+	}
+}
+
+func TestTimelinePage_TypeFilter(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+	}
+	srv := New(ds)
+	for _, typ := range []string{"created", "closed", "comment", "reassigned", "status_change"} {
+		req := httptest.NewRequest("GET", "/timeline?type="+typ, nil)
+		w := httptest.NewRecorder()
+		srv.ServeHTTP(w, req)
+		if w.Code != http.StatusOK {
+			t.Fatalf("GET /timeline?type=%s status = %d, want %d", typ, w.Code, http.StatusOK)
+		}
+		body := w.Body.String()
+		if !strings.Contains(body, "showing "+typ) {
+			t.Errorf("GET /timeline?type=%s should show filter label", typ)
+		}
+	}
+}
+
+func TestTimelinePage_TypeFilterWithRig(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}, {Name: "beads_gastown"}},
+	}
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/timeline?type=created&rig=beads_aegis&window=6h", nil)
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "showing created") {
+		t.Error("expected type filter label")
+	}
+	if !strings.Contains(body, "filter-active") {
+		t.Error("expected active rig filter")
+	}
+}
+
+func TestTimelinePage_RigFilterBadgeBar(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}, {Name: "beads_gastown"}},
+	}
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/timeline", nil)
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "All rigs") {
+		t.Error("expected 'All rigs' badge in rig filter bar")
 	}
 }
 

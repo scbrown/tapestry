@@ -75,6 +75,11 @@
             {{.Issue.Title}}
             <span class="rig-label text-dim">{{rigName .Rig}}</span>
             <time class="text-dim freshness">{{timeAgo .Issue.UpdatedAt}}</time>
+            <span class="briefing-actions">
+              <button class="btn btn-xs" hx-post="/bead/{{lower .Rig}}/{{.Issue.ID}}/status" hx-vals='{"status":"closed"}' hx-swap="outerHTML" hx-target="closest li" hx-confirm="Close {{.Issue.ID}}?">close</button>
+              <button class="btn btn-xs" hx-post="/bead/{{lower .Rig}}/{{.Issue.ID}}/status" hx-vals='{"status":"blocked"}' hx-swap="outerHTML" hx-target="closest li">block</button>
+              <button class="btn btn-xs" hx-post="/bead/{{lower .Rig}}/{{.Issue.ID}}/status" hx-vals='{"status":"deferred"}' hx-swap="outerHTML" hx-target="closest li" hx-confirm="Defer {{.Issue.ID}}?">defer</button>
+            </span>
           </li>
           {{end}}
         </ul>
@@ -91,6 +96,12 @@
             <span class="priority-badge p{{.Issue.Priority}}">P{{.Issue.Priority}}</span>
             {{.Issue.Title}}
             <span class="rig-label text-dim">{{rigName .Rig}}</span>
+            <time class="text-dim freshness">{{timeAgo .Issue.UpdatedAt}}</time>
+            <span class="briefing-actions">
+              <button class="btn btn-xs" hx-post="/bead/{{lower .Rig}}/{{.Issue.ID}}/status" hx-vals='{"status":"in_progress"}' hx-swap="outerHTML" hx-target="closest li">unblock</button>
+              <button class="btn btn-xs" hx-post="/bead/{{lower .Rig}}/{{.Issue.ID}}/status" hx-vals='{"status":"closed"}' hx-swap="outerHTML" hx-target="closest li" hx-confirm="Close {{.Issue.ID}}?">close</button>
+              <button class="btn btn-xs" hx-post="/bead/{{lower .Rig}}/{{.Issue.ID}}/status" hx-vals='{"status":"deferred"}' hx-swap="outerHTML" hx-target="closest li" hx-confirm="Defer {{.Issue.ID}}?">defer</button>
+            </span>
           </li>
           {{end}}
         </ul>
@@ -118,6 +129,11 @@
         {{statusBadge .Issue.Status}}
         {{.Issue.Title}}
         <span class="rig-label text-dim">{{rigName .Rig}}</span>
+        <span class="briefing-actions">
+          {{if ne .Issue.Status "in_progress"}}<button class="btn btn-xs" hx-post="/bead/{{lower .Rig}}/{{.Issue.ID}}/status" hx-vals='{"status":"in_progress"}' hx-swap="outerHTML" hx-target="closest li">start</button>{{end}}
+          <button class="btn btn-xs" hx-post="/bead/{{lower .Rig}}/{{.Issue.ID}}/status" hx-vals='{"status":"closed"}' hx-swap="outerHTML" hx-target="closest li" hx-confirm="Close {{.Issue.ID}}?">close</button>
+          <button class="btn btn-xs" hx-post="/bead/{{lower .Rig}}/{{.Issue.ID}}/status" hx-vals='{"status":"deferred"}' hx-swap="outerHTML" hx-target="closest li" hx-confirm="Defer {{.Issue.ID}}?">defer</button>
+        </span>
       </li>
       {{end}}
     </ul>
