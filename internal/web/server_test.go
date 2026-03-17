@@ -780,6 +780,40 @@ func TestBriefingPage_StaleWork(t *testing.T) {
 	}
 }
 
+func TestBriefingPage_QuickActions(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		counts:    map[string]int{"open": 5, "in_progress": 2, "closed": 10},
+		issues: []dolt.Issue{
+			{ID: "aegis-att1", Title: "Human attention task", Status: "open", Priority: 0, Owner: "stiwi", UpdatedAt: time.Now().Add(-2 * time.Hour)},
+			{ID: "aegis-fly1", Title: "Active flight work", Status: "in_progress", Priority: 1, Assignee: "aegis/crew/arnold", UpdatedAt: time.Now().Add(-1 * time.Hour)},
+		},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/briefing", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /briefing status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	// Needs Attention items should have close/defer buttons
+	if !strings.Contains(body, "attention-item") {
+		t.Error("expected attention-item class on needs-attention list items")
+	}
+	// In Flight items should have close button
+	if !strings.Contains(body, "inflight-item") {
+		t.Error("expected inflight-item class on in-flight list items")
+	}
+	// Both sections should have briefing-actions
+	if count := strings.Count(body, "briefing-actions"); count < 2 {
+		t.Errorf("expected at least 2 briefing-actions spans, got %d", count)
+	}
+}
+
 func TestAgentDetailPage_NilDataSource(t *testing.T) {
 	srv := New(nil)
 	req := httptest.NewRequest("GET", "/agent/arnold", nil)
