@@ -901,6 +901,12 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// POST /batch/label — bulk label add via HTMX
+	if r.Method == http.MethodPost && len(segments) == 2 && segments[0] == "batch" && segments[1] == "label" {
+		s.handleBatchLabel(w, r)
+		return
+	}
+
 	// POST /favorites/lookup — fetch live bead data for pinned favorites
 	if r.Method == http.MethodPost && len(segments) == 2 && segments[0] == "favorites" && segments[1] == "lookup" {
 		s.handleFavoritesLookup(w, r)

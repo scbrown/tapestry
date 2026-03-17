@@ -1693,6 +1693,73 @@ func TestBatchAssignee_Unassign(t *testing.T) {
 	}
 }
 
+func TestBatchLabel(t *testing.T) {
+	ds := &mockDataSource{}
+	srv := New(ds)
+
+	body := "label=urgent&ids[]=beads_aegis/aegis-001&ids[]=beads_aegis/aegis-002"
+	req := httptest.NewRequest("POST", "/batch/label", strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
+	}
+	if !strings.Contains(w.Body.String(), "2 beads labeled") {
+		t.Errorf("response should mention 2 beads labeled, got: %s", w.Body.String())
+	}
+	trigger := w.Header().Get("HX-Trigger")
+	if !strings.Contains(trigger, "showToast") {
+		t.Errorf("missing HX-Trigger header, got: %s", trigger)
+	}
+}
+
+func TestBatchLabel_NoLabel(t *testing.T) {
+	ds := &mockDataSource{}
+	srv := New(ds)
+
+	body := "label=&ids[]=beads_aegis/aegis-001"
+	req := httptest.NewRequest("POST", "/batch/label", strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("status = %d, want %d", w.Code, http.StatusBadRequest)
+	}
+}
+
+func TestBatchLabel_InvalidLabel(t *testing.T) {
+	ds := &mockDataSource{}
+	srv := New(ds)
+
+	body := "label=bad+label&ids[]=beads_aegis/aegis-001"
+	req := httptest.NewRequest("POST", "/batch/label", strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("status = %d, want %d", w.Code, http.StatusBadRequest)
+	}
+}
+
+func TestBatchLabel_NoIds(t *testing.T) {
+	ds := &mockDataSource{}
+	srv := New(ds)
+
+	body := "label=urgent"
+	req := httptest.NewRequest("POST", "/batch/label", strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("status = %d, want %d", w.Code, http.StatusBadRequest)
+	}
+}
+
 func TestParseDescriptionMetadata(t *testing.T) {
 	tests := []struct {
 		name      string

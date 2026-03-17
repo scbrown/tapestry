@@ -1647,6 +1647,65 @@ func (s *Server) handleBatchAssignee(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, `<div class="text-dim">%d beads assigned to %s</div>`, updated, label)
 }
 
+// handleBatchLabel handles POST /batch/label to add a label to multiple beads at once.
+// Expects form fields: ids[] (format: "db/id"), label.
+func (s *Server) handleBatchLabel(w http.ResponseWriter, r *http.Request) {
+	if s.ds == nil {
+		http.Error(w, "no database", http.StatusServiceUnavailable)
+		return
+	}
+
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "bad request", http.StatusBadRequest)
+		return
+	}
+
+	label := strings.TrimSpace(r.FormValue("label"))
+	if label == "" {
+		http.Error(w, "label required", http.StatusBadRequest)
+		return
+	}
+	if len(label) > 50 {
+		label = label[:50]
+	}
+	for _, c := range label {
+		if !((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '-' || c == '_') {
+			http.Error(w, "label must be alphanumeric with dashes/underscores", http.StatusBadRequest)
+			return
+		}
+	}
+
+	ids := r.Form["ids[]"]
+	if len(ids) == 0 {
+		http.Error(w, "no beads specified", http.StatusBadRequest)
+		return
+	}
+	if len(ids) > 100 {
+		http.Error(w, "too many beads (max 100)", http.StatusBadRequest)
+		return
+	}
+
+	ctx := r.Context()
+	updated := 0
+	for _, ref := range ids {
+		parts := strings.SplitN(ref, "/", 2)
+		if len(parts) != 2 {
+			continue
+		}
+		db, id := parts[0], parts[1]
+		if err := s.ds.AddLabel(ctx, db, id, label); err != nil {
+			log.Printf("batch label: %s/%s: %v", db, id, err)
+			continue
+		}
+		updated++
+	}
+
+	escaped := template.HTMLEscapeString(label)
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.Header().Set("HX-Trigger", fmt.Sprintf(`{"showToast":"%d beads labeled '%s'"}`, updated, escaped))
+	fmt.Fprintf(w, `<div class="text-dim">%d beads labeled '%s'</div>`, updated, escaped)
+}
+
 func statusClassName(s string) string {
 	switch s {
 	case "open":
