@@ -1,0 +1,67 @@
+{{define "title"}}Streaks{{end}}
+{{define "content"}}
+<h1>Activity Streaks</h1>
+<p class="subtitle">Agent activity streaks over the last 30 days. A streak is consecutive days with at least one action.</p>
+
+{{if .FilterRig}}<div class="dep-filters"><span class="dep-filter-badge">rig: {{.FilterRig}}</span> <a href="/streaks">clear</a></div>{{end}}
+
+{{if .Err}}<p class="error">{{.Err}}</p>{{end}}
+
+{{if .Agents}}
+<div style="overflow-x:auto">
+<table class="bead-table">
+<thead>
+<tr>
+    <th>#</th>
+    <th>Agent</th>
+    <th>Current Streak</th>
+    <th>Longest Streak</th>
+    <th>Active Days</th>
+    <th>Consistency</th>
+    <th>Last Active</th>
+    <th style="width:20%">Activity</th>
+</tr>
+</thead>
+<tbody>
+{{range $i, $a := .Agents}}
+<tr>
+    <td>{{add1 $i}}</td>
+    <td><a href="/agent/{{.Name}}">{{shortActor .Name}}</a></td>
+    <td>
+        {{if gt .CurrentStreak 0}}
+        <strong style="color:{{if ge .CurrentStreak 7}}var(--green){{else if ge .CurrentStreak 3}}var(--yellow){{else}}var(--foreground){{end}}">{{.CurrentStreak}}d</strong>
+        {{if ge .CurrentStreak 7}} 🔥{{end}}
+        {{else}}
+        <span style="color:var(--comment)">0</span>
+        {{end}}
+    </td>
+    <td>{{.LongestStreak}}d</td>
+    <td>{{.ActiveDays30d}}/30</td>
+    <td>
+        <div style="background:var(--selection);border-radius:4px;height:14px;overflow:hidden;width:100px">
+            <div style="background:{{if ge .ActiveDays30d 20}}var(--green){{else if ge .ActiveDays30d 10}}var(--yellow){{else}}var(--orange){{end}};height:100%;width:{{divf (mulf (itof .ActiveDays30d) 100.0) 30.0}}%;border-radius:4px;min-width:2px"></div>
+        </div>
+    </td>
+    <td style="color:var(--comment);font-size:0.85rem">{{.LastActiveDate}}</td>
+    <td>
+        {{if gt .ActiveDays30d 0}}
+        <div style="display:flex;gap:1px">
+            {{$active := .ActiveDays30d}}
+            {{$total := .TotalDays30d}}
+            <div style="background:var(--green);width:{{divf (mulf (itof $active) 100.0) (itof $total)}}%;min-width:2px;height:14px;border-radius:2px" title="{{$active}} active days"></div>
+            <div style="background:var(--selection);flex:1;height:14px;border-radius:2px" title="{{sub $total $active}} inactive days"></div>
+        </div>
+        {{end}}
+    </td>
+</tr>
+{{end}}
+</tbody>
+</table>
+</div>
+{{else}}
+<p style="color:var(--comment);margin-top:2rem">No agent activity in the last 30 days.</p>
+{{end}}
+
+<p style="color:var(--comment);font-size:0.85rem;margin-top:1rem">Generated {{.GeneratedAt.Format "2006-01-02 15:04"}} &middot; Auto-refresh 300s</p>
+<div hx-get="/streaks{{if .FilterRig}}?rig={{.FilterRig}}{{end}}" hx-trigger="every 300s" hx-target="#content" hx-swap="innerHTML"></div>
+{{end}}

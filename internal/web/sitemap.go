@@ -70,6 +70,7 @@ func (s *Server) handleSitemap(w http.ResponseWriter, r *http.Request) {
 				{"/contributors", "Contributors", "Agent contribution leaderboard: total/closed/open"},
 				{"/swarming", "Swarming", "Multi-agent beads with 2+ agents involved"},
 				{"/impact", "Impact", "Agent impact scores: closures, creations, comments weighted"},
+				{"/streaks", "Streaks", "Agent activity streaks: consecutive active days"},
 			},
 		},
 		{
