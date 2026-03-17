@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 	"net/http"
+	"sort"
 	"sync"
 	"time"
 )
@@ -23,6 +24,8 @@ type burndownData struct {
 	StartOpen   int
 	EndOpen     int
 	Delta       int // EndOpen - StartOpen (negative = progress)
+	Rigs        []string
+	FilterRig   string
 }
 
 func (s *Server) handleBurndown(w http.ResponseWriter, r *http.Request) {
@@ -44,6 +47,18 @@ func (s *Server) handleBurndown(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Build rig list from all DBs, then filter
+	filterRig := r.URL.Query().Get("rig")
+	data.FilterRig = filterRig
+	rigSet := make(map[string]bool)
+	for _, db := range dbs {
+		rigSet[db.Name] = true
+	}
+	for rig := range rigSet {
+		data.Rigs = append(data.Rigs, rig)
+	}
+	sort.Strings(data.Rigs)
+
 	todayStart := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
 	numDays := data.Period
 
@@ -54,6 +69,9 @@ func (s *Server) handleBurndown(w http.ResponseWriter, r *http.Request) {
 	results := make([]dbResult, len(dbs))
 	var wg sync.WaitGroup
 	for i, db := range dbs {
+		if filterRig != "" && db.Name != filterRig {
+			continue
+		}
 		wg.Add(1)
 		go func(i int, dbName string) {
 			defer wg.Done()

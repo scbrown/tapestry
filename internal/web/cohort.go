@@ -3,6 +3,7 @@ package web
 import (
 	"log"
 	"net/http"
+	"sort"
 	"sync"
 	"time"
 
@@ -24,6 +25,8 @@ type cohortData struct {
 	OverallClose   int // overall close rate %
 	TotalCreated   int
 	TotalClosed    int
+	Rigs           []string
+	FilterRig      string
 }
 
 func (s *Server) handleCohort(w http.ResponseWriter, r *http.Request) {
@@ -42,12 +45,28 @@ func (s *Server) handleCohort(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Build rig list from all DBs, then filter
+	filterRig := r.URL.Query().Get("rig")
+	data.FilterRig = filterRig
+	rigSet := make(map[string]bool)
+	for _, db := range dbs {
+		rigSet[db.Name] = true
+	}
+	for rig := range rigSet {
+		data.Rigs = append(data.Rigs, rig)
+	}
+	sort.Strings(data.Rigs)
+
 	type dbResult struct {
+		rig    string
 		issues []dolt.Issue
 	}
 	results := make([]dbResult, len(dbs))
 	var wg sync.WaitGroup
 	for i, db := range dbs {
+		if filterRig != "" && db.Name != filterRig {
+			continue
+		}
 		wg.Add(1)
 		go func(i int, dbName string) {
 			defer wg.Done()
@@ -56,7 +75,7 @@ func (s *Server) handleCohort(w http.ResponseWriter, r *http.Request) {
 				log.Printf("cohort: %s: %v", dbName, err)
 				return
 			}
-			results[i] = dbResult{issues: issues}
+			results[i] = dbResult{rig: dbName, issues: issues}
 		}(i, db.Name)
 	}
 	wg.Wait()

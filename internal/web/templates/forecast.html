@@ -1,7 +1,16 @@
 {{define "title"}}Forecast{{end}}
 {{define "content"}}
-<div class="forecast-page" hx-get="/forecast" hx-trigger="every 120s" hx-select=".forecast-page" hx-swap="outerHTML">
+<div class="forecast-page" hx-get="/forecast{{if .FilterRig}}?rig={{.FilterRig}}{{end}}" hx-trigger="every 120s" hx-select=".forecast-page" hx-swap="outerHTML">
   <h1>Forecast <time class="text-dim">{{.GeneratedAt.Format "Jan 02, 2006 15:04"}}</time></h1>
+
+  {{if gt (len .Rigs) 1}}
+  <div class="dep-filters" style="margin-bottom:0.5rem">
+    <a href="/forecast" class="badge {{if not .FilterRig}}filter-active{{end}}">All rigs</a>
+    {{range .Rigs}}
+    <a href="/forecast?rig={{.}}" class="badge {{if eq . $.FilterRig}}filter-active{{end}}">{{rigName .}}</a>
+    {{end}}
+  </div>
+  {{end}}
 
   {{/* ── Current State ── */}}
   <div class="stat-grid" style="margin-bottom:1.5rem">
