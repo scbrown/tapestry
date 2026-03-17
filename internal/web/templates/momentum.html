@@ -1,7 +1,16 @@
 {{define "title"}}Momentum{{end}}
 {{define "content"}}
-<div class="momentum-page" hx-get="/momentum" hx-trigger="every 120s" hx-select=".momentum-page" hx-swap="outerHTML">
+<div class="momentum-page" hx-get="/momentum{{if .FilterRig}}?rig={{.FilterRig}}{{end}}" hx-trigger="every 120s" hx-select=".momentum-page" hx-swap="outerHTML">
   <h1>Momentum <time class="text-dim">{{formatDateTime .GeneratedAt}}</time></h1>
+
+  {{if gt (len .Rigs) 1}}
+  <div class="dep-filters" style="margin-bottom:0.75rem">
+    <a href="/momentum" class="badge {{if not .FilterRig}}filter-active{{end}}">All rigs</a>
+    {{range .Rigs}}
+    <a href="/momentum?rig={{.}}" class="badge {{if eq . $.FilterRig}}filter-active{{end}}">{{rigName .}}</a>
+    {{end}}
+  </div>
+  {{end}}
 
   {{if .Err}}
   <div class="error">{{.Err}}</div>

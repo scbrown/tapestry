@@ -32,6 +32,8 @@ type gapType struct {
 
 type gapsData struct {
 	GeneratedAt time.Time
+	FilterRig   string
+	Rigs        []string
 
 	// Rigs with no recent updates
 	StaleRigs []gapRig
@@ -50,7 +52,8 @@ type gapsData struct {
 
 func (s *Server) handleGaps(w http.ResponseWriter, r *http.Request) {
 	now := time.Now()
-	data := gapsData{GeneratedAt: now}
+	filterRig := r.URL.Query().Get("rig")
+	data := gapsData{GeneratedAt: now, FilterRig: filterRig}
 
 	if s.ds == nil {
 		s.render(w, r, "gaps", data)
@@ -67,6 +70,11 @@ func (s *Server) handleGaps(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	for _, db := range dbs {
+		data.Rigs = append(data.Rigs, db.Name)
+	}
+	sort.Strings(data.Rigs)
+
 	type rigStats struct {
 		name       string
 		open       int
@@ -81,6 +89,9 @@ func (s *Server) handleGaps(w http.ResponseWriter, r *http.Request) {
 	var wg sync.WaitGroup
 
 	for i, db := range dbs {
+		if filterRig != "" && db.Name != filterRig {
+			continue
+		}
 		wg.Add(1)
 		go func(idx int, dbName string) {
 			defer wg.Done()

@@ -25,6 +25,8 @@ type chainNode struct {
 
 type chainsData struct {
 	GeneratedAt time.Time
+	FilterRig   string
+	Rigs        []string
 
 	// Longest chains
 	LongestChains []chainInfo
@@ -52,7 +54,8 @@ type blockerInfo struct {
 
 func (s *Server) handleChains(w http.ResponseWriter, r *http.Request) {
 	now := time.Now()
-	data := chainsData{GeneratedAt: now}
+	filterRig := r.URL.Query().Get("rig")
+	data := chainsData{GeneratedAt: now, FilterRig: filterRig}
 
 	if s.ds == nil {
 		s.render(w, r, "chains", data)
@@ -70,6 +73,11 @@ func (s *Server) handleChains(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	for _, db := range dbs {
+		data.Rigs = append(data.Rigs, db.Name)
+	}
+	sort.Strings(data.Rigs)
+
 	// Collect all dependency edges and issues across databases
 	type edge struct {
 		from string // issue that depends (child)
@@ -85,6 +93,9 @@ func (s *Server) handleChains(w http.ResponseWriter, r *http.Request) {
 	var wg sync.WaitGroup
 
 	for _, db := range dbs {
+		if filterRig != "" && db.Name != filterRig {
+			continue
+		}
 		wg.Add(1)
 		go func(dbName string) {
 			defer wg.Done()

@@ -1,7 +1,16 @@
 {{define "title"}}Decisions{{if .Filter}} ({{.Filter}}){{end}}{{end}}
 {{define "content"}}
-<div class="decisions-page" hx-get="/decisions{{if .Filter}}?filter={{.Filter}}{{end}}" hx-trigger="every 60s" hx-select=".decisions-page" hx-swap="outerHTML">
+<div class="decisions-page" hx-get="/decisions{{if or .Filter .FilterRig}}?{{end}}{{if .Filter}}filter={{.Filter}}{{end}}{{if and .Filter .FilterRig}}&{{end}}{{if .FilterRig}}rig={{.FilterRig}}{{end}}" hx-trigger="every 60s" hx-select=".decisions-page" hx-swap="outerHTML">
   <h1>Decisions</h1>
+
+  {{if gt (len .Rigs) 1}}
+  <div class="dep-filters" style="margin-bottom:0.75rem">
+    <a href="/decisions{{if .Filter}}?filter={{.Filter}}{{end}}" class="badge {{if not .FilterRig}}filter-active{{end}}">All rigs</a>
+    {{range .Rigs}}
+    <a href="/decisions?{{if $.Filter}}filter={{$.Filter}}&{{end}}rig={{.}}" class="badge {{if eq . $.FilterRig}}filter-active{{end}}">{{rigName .}}</a>
+    {{end}}
+  </div>
+  {{end}}
 
   <div class="stats-grid" style="grid-template-columns: repeat(4, 1fr);">
     <div class="stat-card">

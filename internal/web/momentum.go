@@ -5,6 +5,7 @@ import (
 	"log"
 	"math"
 	"net/http"
+	"sort"
 	"sync"
 	"time"
 
@@ -20,21 +21,23 @@ type momentumSignal struct {
 
 type momentumData struct {
 	GeneratedAt time.Time
+	FilterRig   string
+	Rigs        []string
 	Signals     []momentumSignal
 
 	// Raw metrics for display
-	ClosedThisWeek int
-	ClosedLastWeek int
+	ClosedThisWeek  int
+	ClosedLastWeek  int
 	CreatedThisWeek int
 	CreatedLastWeek int
-	VelocityDelta  int // this week - last week
-	BlockedCount   int
-	ActiveCount    int
-	BlockerRatio   float64 // blocked / (active+blocked)
-	StaleCount     int
-	OpenCount      int
-	StalePct       float64 // stale / open
-	NetFlowWeek    int     // created - closed this week
+	VelocityDelta   int // this week - last week
+	BlockedCount    int
+	ActiveCount     int
+	BlockerRatio    float64 // blocked / (active+blocked)
+	StaleCount      int
+	OpenCount       int
+	StalePct        float64 // stale / open
+	NetFlowWeek     int     // created - closed this week
 
 	Err string
 }
@@ -45,7 +48,8 @@ func (s *Server) handleMomentum(w http.ResponseWriter, r *http.Request) {
 	thisWeekStart := todayStart.AddDate(0, 0, -7)
 	lastWeekStart := thisWeekStart.AddDate(0, 0, -7)
 
-	data := momentumData{GeneratedAt: now}
+	filterRig := r.URL.Query().Get("rig")
+	data := momentumData{GeneratedAt: now, FilterRig: filterRig}
 
 	if s.ds == nil {
 		s.render(w, r, "momentum", data)
@@ -62,6 +66,11 @@ func (s *Server) handleMomentum(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	for _, db := range dbs {
+		data.Rigs = append(data.Rigs, db.Name)
+	}
+	sort.Strings(data.Rigs)
+
 	type dbResult struct {
 		closedThisWeek  int
 		closedLastWeek  int
@@ -77,6 +86,9 @@ func (s *Server) handleMomentum(w http.ResponseWriter, r *http.Request) {
 	results := make([]dbResult, len(dbs))
 	var wg sync.WaitGroup
 	for i, db := range dbs {
+		if filterRig != "" && db.Name != filterRig {
+			continue
+		}
 		wg.Add(1)
 		go func(i int, dbName string) {
 			defer wg.Done()

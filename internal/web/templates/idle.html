@@ -1,8 +1,17 @@
 {{define "title"}}Idle Agents{{end}}
 {{define "content"}}
-<div class="idle-page" hx-get="/idle" hx-trigger="every 120s" hx-select=".idle-page" hx-swap="outerHTML">
+<div class="idle-page" hx-get="/idle{{if .FilterRig}}?rig={{.FilterRig}}{{end}}" hx-trigger="every 120s" hx-select=".idle-page" hx-swap="outerHTML">
   <h1>Idle Agents <time class="text-dim">{{formatDateTime .GeneratedAt}}</time></h1>
   <p class="text-dim">Agents with no bead updates in {{.ThresholdDays}}+ days.</p>
+
+  {{if gt (len .Rigs) 1}}
+  <div class="dep-filters" style="margin-bottom:0.75rem">
+    <a href="/idle" class="badge {{if not .FilterRig}}filter-active{{end}}">All rigs</a>
+    {{range .Rigs}}
+    <a href="/idle?rig={{.}}" class="badge {{if eq . $.FilterRig}}filter-active{{end}}">{{rigName .}}</a>
+    {{end}}
+  </div>
+  {{end}}
 
   {{if .Err}}
   <div class="error">{{.Err}}</div>

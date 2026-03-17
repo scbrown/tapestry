@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"sort"
 	"sync"
 	"time"
 
@@ -20,6 +21,8 @@ type signal struct {
 
 type signalsData struct {
 	GeneratedAt time.Time
+	FilterRig   string
+	Rigs        []string
 
 	Signals []signal
 
@@ -40,7 +43,8 @@ type signalsData struct {
 
 func (s *Server) handleSignals(w http.ResponseWriter, r *http.Request) {
 	now := time.Now()
-	data := signalsData{GeneratedAt: now}
+	filterRig := r.URL.Query().Get("rig")
+	data := signalsData{GeneratedAt: now, FilterRig: filterRig}
 
 	if s.ds == nil {
 		s.render(w, r, "signals", data)
@@ -58,6 +62,11 @@ func (s *Server) handleSignals(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	for _, db := range dbs {
+		data.Rigs = append(data.Rigs, db.Name)
+	}
+	sort.Strings(data.Rigs)
+
 	weekAgo := now.Add(-7 * 24 * time.Hour)
 	staleThreshold := now.Add(-14 * 24 * time.Hour)
 
@@ -65,6 +74,9 @@ func (s *Server) handleSignals(w http.ResponseWriter, r *http.Request) {
 	var wg sync.WaitGroup
 
 	for _, db := range dbs {
+		if filterRig != "" && db.Name != filterRig {
+			continue
+		}
 		wg.Add(1)
 		go func(dbName string) {
 			defer wg.Done()

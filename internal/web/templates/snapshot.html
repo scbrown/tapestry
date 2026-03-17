@@ -1,7 +1,16 @@
 {{define "title"}}Snapshot{{end}}
 {{define "content"}}
-<div class="snapshot-page" hx-get="/snapshot" hx-trigger="every 60s" hx-select=".snapshot-page" hx-swap="outerHTML">
+<div class="snapshot-page" hx-get="/snapshot{{if .FilterRig}}?rig={{.FilterRig}}{{end}}" hx-trigger="every 60s" hx-select=".snapshot-page" hx-swap="outerHTML">
   <h1>System Snapshot <time class="text-dim">{{formatDateTime .GeneratedAt}}</time></h1>
+
+  {{if gt (len .Rigs) 1}}
+  <div class="dep-filters" style="margin-bottom:0.75rem">
+    <a href="/snapshot" class="badge {{if not .FilterRig}}filter-active{{end}}">All rigs</a>
+    {{range .Rigs}}
+    <a href="/snapshot?rig={{.}}" class="badge {{if eq . $.FilterRig}}filter-active{{end}}">{{rigName .}}</a>
+    {{end}}
+  </div>
+  {{end}}
 
   {{if .Err}}
   <div class="error">{{.Err}}</div>

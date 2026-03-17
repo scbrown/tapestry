@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 	"net/http"
+	"sort"
 	"sync"
 	"time"
 
@@ -12,6 +13,8 @@ import (
 
 type snapshotData struct {
 	GeneratedAt time.Time
+	FilterRig   string
+	Rigs        []string
 
 	// Counts
 	TotalOpen   int
@@ -45,7 +48,8 @@ type snapshotData struct {
 
 func (s *Server) handleSnapshot(w http.ResponseWriter, r *http.Request) {
 	now := time.Now()
-	data := snapshotData{GeneratedAt: now}
+	filterRig := r.URL.Query().Get("rig")
+	data := snapshotData{GeneratedAt: now, FilterRig: filterRig}
 
 	if s.ds == nil {
 		s.render(w, r, "snapshot", data)
@@ -62,6 +66,11 @@ func (s *Server) handleSnapshot(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	for _, db := range dbs {
+		data.Rigs = append(data.Rigs, db.Name)
+	}
+	sort.Strings(data.Rigs)
+
 	weekAgo := now.Add(-7 * 24 * time.Hour)
 	staleThreshold := now.Add(-14 * 24 * time.Hour)
 	activeAgents := make(map[string]bool)
@@ -71,6 +80,9 @@ func (s *Server) handleSnapshot(w http.ResponseWriter, r *http.Request) {
 	var wg sync.WaitGroup
 
 	for _, db := range dbs {
+		if filterRig != "" && db.Name != filterRig {
+			continue
+		}
 		wg.Add(1)
 		go func(dbName string) {
 			defer wg.Done()

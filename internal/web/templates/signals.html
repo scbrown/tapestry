@@ -1,8 +1,17 @@
 {{define "title"}}Signals{{end}}
 {{define "content"}}
-<div class="signals-page" hx-get="/signals" hx-trigger="every 60s" hx-select=".signals-page" hx-swap="outerHTML">
+<div class="signals-page" hx-get="/signals{{if .FilterRig}}?rig={{.FilterRig}}{{end}}" hx-trigger="every 60s" hx-select=".signals-page" hx-swap="outerHTML">
   <h1>Health Signals <time class="text-dim">{{formatDateTime .GeneratedAt}}</time></h1>
   <p class="text-dim">Cross-cutting system health indicators at a glance.</p>
+
+  {{if gt (len .Rigs) 1}}
+  <div class="dep-filters" style="margin-bottom:0.75rem">
+    <a href="/signals" class="badge {{if not .FilterRig}}filter-active{{end}}">All rigs</a>
+    {{range .Rigs}}
+    <a href="/signals?rig={{.}}" class="badge {{if eq . $.FilterRig}}filter-active{{end}}">{{rigName .}}</a>
+    {{end}}
+  </div>
+  {{end}}
 
   {{if .Err}}
   <div class="error">{{.Err}}</div>

@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 	"net/http"
+	"sort"
 	"strconv"
 	"sync"
 	"time"
@@ -22,6 +23,8 @@ type comparePeriod struct {
 
 type compareData struct {
 	GeneratedAt time.Time
+	FilterRig   string
+	Rigs        []string
 	PeriodA     comparePeriod
 	PeriodB     comparePeriod
 
@@ -94,10 +97,20 @@ func (s *Server) handleCompare(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	filterRig := r.URL.Query().Get("rig")
+	data.FilterRig = filterRig
+	for _, db := range dbs {
+		data.Rigs = append(data.Rigs, db.Name)
+	}
+	sort.Strings(data.Rigs)
+
 	var mu sync.Mutex
 	var wg sync.WaitGroup
 
 	for _, db := range dbs {
+		if filterRig != "" && db.Name != filterRig {
+			continue
+		}
 		wg.Add(1)
 		go func(dbName string) {
 			defer wg.Done()
@@ -152,6 +165,9 @@ func (s *Server) handleCompare(w http.ResponseWriter, r *http.Request) {
 		// AgentActivityInRange may only count open issue assignments
 		// Use Issues query as fallback for agent data
 		for _, db := range dbs {
+			if filterRig != "" && db.Name != filterRig {
+				continue
+			}
 			issues, err := s.ds.Issues(ctx, db.Name, dolt.IssueFilter{Status: "closed", Limit: 1000})
 			if err != nil {
 				continue

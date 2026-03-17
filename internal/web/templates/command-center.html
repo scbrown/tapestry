@@ -1,6 +1,14 @@
 {{define "title"}}Command Center{{end}}
 {{define "content"}}
-<div class="cc" hx-get="/command-center" hx-trigger="every 30s" hx-target="#content" hx-swap="innerHTML">
+<div class="cc" hx-get="/command-center{{if .FilterRig}}?rig={{.FilterRig}}{{end}}" hx-trigger="every 30s" hx-target="#content" hx-swap="innerHTML">
+  {{if gt (len .Rigs) 1}}
+  <div class="dep-filters" style="margin-bottom:0.75rem">
+    <a href="/command-center" class="badge {{if not .FilterRig}}filter-active{{end}}">All rigs</a>
+    {{range .Rigs}}
+    <a href="/command-center?rig={{.}}" class="badge {{if eq . $.FilterRig}}filter-active{{end}}">{{rigName .}}</a>
+    {{end}}
+  </div>
+  {{end}}
   <div class="cc-header">
     <div class="cc-title">
       <h1>Command Center</h1>

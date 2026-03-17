@@ -1,7 +1,16 @@
 {{define "title"}}Stats{{end}}
 {{define "content"}}
-<div class="stats-page" hx-get="/stats" hx-trigger="every 60s" hx-select=".stats-page" hx-swap="outerHTML">
+<div class="stats-page" hx-get="/stats{{if .FilterRig}}?rig={{.FilterRig}}{{end}}" hx-trigger="every 60s" hx-select=".stats-page" hx-swap="outerHTML">
   <h1>System Stats</h1>
+
+  {{if gt (len .AllRigs) 1}}
+  <div class="dep-filters" style="margin-bottom:0.75rem">
+    <a href="/stats" class="badge {{if not .FilterRig}}filter-active{{end}}">All rigs</a>
+    {{range .AllRigs}}
+    <a href="/stats?rig={{.}}" class="badge {{if eq . $.FilterRig}}filter-active{{end}}">{{rigName .}}</a>
+    {{end}}
+  </div>
+  {{end}}
 
   <div class="briefing-grid">
     <section class="briefing-card">

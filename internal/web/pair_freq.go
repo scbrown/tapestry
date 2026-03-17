@@ -19,6 +19,8 @@ type labelPair struct {
 
 type pairFreqData struct {
 	GeneratedAt time.Time
+	FilterRig   string
+	Rigs        []string
 
 	Pairs      []labelPair
 	TotalPairs int
@@ -29,7 +31,8 @@ type pairFreqData struct {
 
 func (s *Server) handlePairFreq(w http.ResponseWriter, r *http.Request) {
 	now := time.Now()
-	data := pairFreqData{GeneratedAt: now}
+	filterRig := r.URL.Query().Get("rig")
+	data := pairFreqData{GeneratedAt: now, FilterRig: filterRig}
 
 	if s.ds == nil {
 		s.render(w, r, "pair-freq", data)
@@ -47,6 +50,11 @@ func (s *Server) handlePairFreq(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	for _, db := range dbs {
+		data.Rigs = append(data.Rigs, db.Name)
+	}
+	sort.Strings(data.Rigs)
+
 	// Collect all issue -> labels mappings
 	pairCounts := make(map[string]int) // "labelA|labelB" -> count
 	labelFreq := make(map[string]int)  // label -> number of pairings
@@ -55,6 +63,9 @@ func (s *Server) handlePairFreq(w http.ResponseWriter, r *http.Request) {
 	var wg sync.WaitGroup
 
 	for _, db := range dbs {
+		if filterRig != "" && db.Name != filterRig {
+			continue
+		}
 		wg.Add(1)
 		go func(dbName string) {
 			defer wg.Done()

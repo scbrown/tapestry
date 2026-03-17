@@ -21,6 +21,8 @@ type agentWorkGroup struct {
 
 type commandCenterData struct {
 	GeneratedAt      time.Time
+	FilterRig        string
+	Rigs             []string
 	InProgressCount  int
 	OpenCount        int
 	ClosedToday      int
@@ -39,7 +41,8 @@ func (s *Server) handleCommandCenter(w http.ResponseWriter, r *http.Request) {
 	todayEnd := todayStart.AddDate(0, 0, 1)
 	yesterday := now.Add(-24 * time.Hour)
 
-	data := commandCenterData{GeneratedAt: now}
+	filterRig := r.URL.Query().Get("rig")
+	data := commandCenterData{GeneratedAt: now, FilterRig: filterRig}
 
 	if s.ds == nil {
 		s.render(w, r, "command-center", data)
@@ -56,6 +59,11 @@ func (s *Server) handleCommandCenter(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	for _, db := range dbs {
+		data.Rigs = append(data.Rigs, db.Name)
+	}
+	sort.Strings(data.Rigs)
+
 	type ccDBResult struct {
 		openCount       int
 		inProgressCount int
@@ -71,6 +79,9 @@ func (s *Server) handleCommandCenter(w http.ResponseWriter, r *http.Request) {
 	results := make([]ccDBResult, len(dbs))
 	var wg sync.WaitGroup
 	for i, db := range dbs {
+		if filterRig != "" && db.Name != filterRig {
+			continue
+		}
 		wg.Add(1)
 		go func(i int, dbName string) {
 			defer wg.Done()

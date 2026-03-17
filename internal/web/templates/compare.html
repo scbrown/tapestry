@@ -1,13 +1,22 @@
 {{define "title"}}Compare{{end}}
 {{define "content"}}
-<div class="compare-page" hx-get="/compare?days={{.Days}}" hx-trigger="every 120s" hx-select=".compare-page" hx-swap="outerHTML">
+<div class="compare-page" hx-get="/compare?days={{.Days}}{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" hx-trigger="every 120s" hx-select=".compare-page" hx-swap="outerHTML">
   <h1>Period Comparison <time class="text-dim">{{formatDateTime .GeneratedAt}}</time></h1>
   <p class="text-dim">Comparing {{.Days}}-day periods. Current vs previous.</p>
 
+  {{if gt (len .Rigs) 1}}
+  <div class="dep-filters" style="margin-bottom:0.75rem">
+    <a href="/compare?days={{.Days}}" class="badge {{if not .FilterRig}}filter-active{{end}}">All rigs</a>
+    {{range .Rigs}}
+    <a href="/compare?days={{$.Days}}&rig={{.}}" class="badge {{if eq . $.FilterRig}}filter-active{{end}}">{{rigName .}}</a>
+    {{end}}
+  </div>
+  {{end}}
+
   <div class="dep-filters" style="margin-bottom:1rem">
-    <a href="/compare?days=7" class="badge {{if eq .Days 7}}badge-active{{end}}">7 days</a>
-    <a href="/compare?days=14" class="badge {{if eq .Days 14}}badge-active{{end}}">14 days</a>
-    <a href="/compare?days=30" class="badge {{if eq .Days 30}}badge-active{{end}}">30 days</a>
+    <a href="/compare?days=7{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" class="badge {{if eq .Days 7}}badge-active{{end}}">7 days</a>
+    <a href="/compare?days=14{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" class="badge {{if eq .Days 14}}badge-active{{end}}">14 days</a>
+    <a href="/compare?days=30{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" class="badge {{if eq .Days 30}}badge-active{{end}}">30 days</a>
   </div>
 
   {{if .Err}}

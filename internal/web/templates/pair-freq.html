@@ -1,8 +1,17 @@
 {{define "title"}}Label Pairs{{end}}
 {{define "content"}}
-<div class="pair-freq-page" hx-get="/pair-freq" hx-trigger="every 300s" hx-select=".pair-freq-page" hx-swap="outerHTML">
+<div class="pair-freq-page" hx-get="/pair-freq{{if .FilterRig}}?rig={{.FilterRig}}{{end}}" hx-trigger="every 300s" hx-select=".pair-freq-page" hx-swap="outerHTML">
   <h1>Label Co-Occurrence <time class="text-dim">{{formatDateTime .GeneratedAt}}</time></h1>
   <p class="text-dim">Which labels frequently appear together on the same bead.</p>
+
+  {{if gt (len .Rigs) 1}}
+  <div class="dep-filters" style="margin-bottom:0.75rem">
+    <a href="/pair-freq" class="badge {{if not .FilterRig}}filter-active{{end}}">All rigs</a>
+    {{range .Rigs}}
+    <a href="/pair-freq?rig={{.}}" class="badge {{if eq . $.FilterRig}}filter-active{{end}}">{{rigName .}}</a>
+    {{end}}
+  </div>
+  {{end}}
 
   {{if .Err}}
   <div class="error">{{.Err}}</div>

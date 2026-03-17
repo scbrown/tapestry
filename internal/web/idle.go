@@ -21,6 +21,8 @@ type idleAgent struct {
 
 type idleData struct {
 	GeneratedAt time.Time
+	FilterRig   string
+	Rigs        []string
 
 	// Agents idle for 3+ days
 	IdleAgents []idleAgent
@@ -37,7 +39,8 @@ type idleData struct {
 
 func (s *Server) handleIdle(w http.ResponseWriter, r *http.Request) {
 	now := time.Now()
-	data := idleData{GeneratedAt: now, ThresholdDays: 3}
+	filterRig := r.URL.Query().Get("rig")
+	data := idleData{GeneratedAt: now, FilterRig: filterRig, ThresholdDays: 3}
 
 	if s.ds == nil {
 		s.render(w, r, "idle", data)
@@ -55,6 +58,11 @@ func (s *Server) handleIdle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	for _, db := range dbs {
+		data.Rigs = append(data.Rigs, db.Name)
+	}
+	sort.Strings(data.Rigs)
+
 	threshold := now.Add(-time.Duration(data.ThresholdDays) * 24 * time.Hour)
 
 	agentData := make(map[string]*idleAgent)
@@ -62,6 +70,9 @@ func (s *Server) handleIdle(w http.ResponseWriter, r *http.Request) {
 	var wg sync.WaitGroup
 
 	for _, db := range dbs {
+		if filterRig != "" && db.Name != filterRig {
+			continue
+		}
 		wg.Add(1)
 		go func(dbName string) {
 			defer wg.Done()

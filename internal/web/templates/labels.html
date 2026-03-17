@@ -1,14 +1,23 @@
 {{define "title"}}Labels{{end}}
 
 {{define "content"}}
-<div class="labels-view" hx-get="/labels{{if .Filter}}?label={{.Filter}}{{end}}" hx-trigger="every 120s" hx-select=".labels-view" hx-swap="outerHTML">
+<div class="labels-view" hx-get="/labels{{if or .Filter .FilterRig}}?{{end}}{{if .Filter}}label={{.Filter}}{{end}}{{if and .Filter .FilterRig}}&{{end}}{{if .FilterRig}}rig={{.FilterRig}}{{end}}" hx-trigger="every 120s" hx-select=".labels-view" hx-swap="outerHTML">
   <h1>Labels</h1>
+
+  {{if gt (len .Rigs) 1}}
+  <div class="dep-filters" style="margin-bottom:0.75rem">
+    <a href="/labels{{if .Filter}}?label={{.Filter}}{{end}}" class="badge {{if not .FilterRig}}filter-active{{end}}">All rigs</a>
+    {{range .Rigs}}
+    <a href="/labels?{{if $.Filter}}label={{$.Filter}}&{{end}}rig={{.}}" class="badge {{if eq . $.FilterRig}}filter-active{{end}}">{{rigName .}}</a>
+    {{end}}
+  </div>
+  {{end}}
 
   {{if .Err}}
   <div class="error">{{.Err}}</div>
   {{else}}
 
-  <div class="results-meta">{{.Total}} distinct labels across all rigs</div>
+  <div class="results-meta">{{.Total}} distinct labels{{if .FilterRig}} in {{rigName .FilterRig}}{{else}} across all rigs{{end}}</div>
 
   {{if .Labels}}
   <div class="label-cloud">

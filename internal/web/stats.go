@@ -22,6 +22,8 @@ type rigStats struct {
 
 type statsData struct {
 	GeneratedAt time.Time
+	FilterRig   string
+	AllRigs     []string
 	Rigs        []rigStats
 	TotalOpen   int
 	TotalActive int
@@ -40,7 +42,8 @@ type statsData struct {
 }
 
 func (s *Server) handleStats(w http.ResponseWriter, r *http.Request) {
-	data := statsData{GeneratedAt: time.Now()}
+	filterRig := r.URL.Query().Get("rig")
+	data := statsData{GeneratedAt: time.Now(), FilterRig: filterRig}
 
 	if s.ds == nil {
 		s.render(w, r, "stats", data)
@@ -54,6 +57,11 @@ func (s *Server) handleStats(w http.ResponseWriter, r *http.Request) {
 		s.render(w, r, "stats", data)
 		return
 	}
+
+	for _, db := range dbs {
+		data.AllRigs = append(data.AllRigs, db.Name)
+	}
+	sort.Strings(data.AllRigs)
 
 	now := time.Now()
 	sevenDaysAgo := now.AddDate(0, 0, -7)
@@ -73,6 +81,9 @@ func (s *Server) handleStats(w http.ResponseWriter, r *http.Request) {
 	var wg sync.WaitGroup
 
 	for i, db := range dbs {
+		if filterRig != "" && db.Name != filterRig {
+			continue
+		}
 		wg.Add(1)
 		go func(idx int, dbName string) {
 			defer wg.Done()

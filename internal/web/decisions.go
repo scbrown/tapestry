@@ -37,6 +37,8 @@ type DecisionView struct {
 }
 
 type decisionsData struct {
+	FilterRig string
+	Rigs      []string
 	Decisions []DecisionView
 	Filter    string // pending, decided, expired, "" (all)
 	Total     int
@@ -47,6 +49,7 @@ type decisionsData struct {
 
 func (s *Server) handleDecisions(w http.ResponseWriter, r *http.Request) {
 	filter := r.URL.Query().Get("filter")
+	filterRig := r.URL.Query().Get("rig")
 
 	if s.ds == nil {
 		s.render(w, r, "decisions", decisionsData{})
@@ -62,6 +65,12 @@ func (s *Server) handleDecisions(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	var rigs []string
+	for _, db := range dbs {
+		rigs = append(rigs, db.Name)
+	}
+	sort.Strings(rigs)
+
 	type decDBResult struct {
 		decisions []DecisionView
 	}
@@ -69,6 +78,9 @@ func (s *Server) handleDecisions(w http.ResponseWriter, r *http.Request) {
 	results := make([]decDBResult, len(dbs))
 	var wg sync.WaitGroup
 	for i, db := range dbs {
+		if filterRig != "" && db.Name != filterRig {
+			continue
+		}
 		wg.Add(1)
 		go func(i int, dbName string) {
 			defer wg.Done()
@@ -140,6 +152,8 @@ func (s *Server) handleDecisions(w http.ResponseWriter, r *http.Request) {
 	}
 
 	s.render(w, r, "decisions", decisionsData{
+		FilterRig: filterRig,
+		Rigs:      rigs,
 		Decisions: allDecisions,
 		Filter:    filter,
 		Total:     pending + decided + expired,

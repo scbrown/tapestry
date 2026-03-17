@@ -1,8 +1,17 @@
 {{define "title"}}Freshness{{end}}
 {{define "content"}}
-<div class="freshness-page" hx-get="/freshness" hx-trigger="every 120s" hx-select=".freshness-page" hx-swap="outerHTML">
+<div class="freshness-page" hx-get="/freshness{{if .FilterRig}}?rig={{.FilterRig}}{{end}}" hx-trigger="every 120s" hx-select=".freshness-page" hx-swap="outerHTML">
   <h1>Data Freshness <time class="text-dim">{{formatDateTime .GeneratedAt}}</time></h1>
   <p class="text-dim">How recently each database has been updated.</p>
+
+  {{if gt (len .Rigs) 1}}
+  <div class="dep-filters" style="margin-bottom:0.75rem">
+    <a href="/freshness" class="badge {{if not .FilterRig}}filter-active{{end}}">All rigs</a>
+    {{range .Rigs}}
+    <a href="/freshness?rig={{.}}" class="badge {{if eq . $.FilterRig}}filter-active{{end}}">{{rigName .}}</a>
+    {{end}}
+  </div>
+  {{end}}
 
   {{if .Err}}
   <div class="error">{{.Err}}</div>
