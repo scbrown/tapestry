@@ -40,6 +40,7 @@
         <th>Pri</th>
         <th>Agents</th>
         <th>Comments</th>
+        <th>Actions</th>
       </tr>
     </thead>
     <tbody>
@@ -48,12 +49,26 @@
         <td><a href="/bead/{{.DB}}/{{.ID}}">{{.ID}}</a></td>
         <td>{{.Title}}</td>
         <td>{{statusBadge .Status}}</td>
-        <td>{{priorityLabel .Priority}}</td>
+        <td id="pri-{{.ID}}" class="bead-priority-inline"><span class="badge {{priorityClass .Priority}}">{{priorityLabel .Priority}}</span>
+          <span class="priority-edit triage-btn-group">
+            <button class="btn btn-xs priority-p0" hx-post="/bead/{{.DB}}/{{.ID}}/priority" hx-vals='{"priority":"0"}' hx-target="#pri-{{.ID}}" hx-swap="innerHTML">P0</button>
+            <button class="btn btn-xs priority-p1" hx-post="/bead/{{.DB}}/{{.ID}}/priority" hx-vals='{"priority":"1"}' hx-target="#pri-{{.ID}}" hx-swap="innerHTML">P1</button>
+            <button class="btn btn-xs priority-p2" hx-post="/bead/{{.DB}}/{{.ID}}/priority" hx-vals='{"priority":"2"}' hx-target="#pri-{{.ID}}" hx-swap="innerHTML">P2</button>
+            <button class="btn btn-xs priority-p3" hx-post="/bead/{{.DB}}/{{.ID}}/priority" hx-vals='{"priority":"3"}' hx-target="#pri-{{.ID}}" hx-swap="innerHTML">P3</button>
+          </span>
+        </td>
         <td>
           {{range $i, $a := .Agents}}{{if $i}}, {{end}}<a href="/agent/{{$a}}">{{shortActor $a}}</a>{{end}}
           <span class="text-dim">({{.AgentCount}})</span>
         </td>
         <td>{{.Comments}}</td>
+        <td class="actions-cell">
+          <span class="briefing-actions">
+            {{if eq .Status "open"}}<button class="btn btn-xs" hx-post="/bead/{{.DB}}/{{.ID}}/status" hx-vals='{"status":"in_progress"}' hx-swap="outerHTML" hx-target="closest tr">start</button>{{end}}
+            {{if ne .Status "closed"}}<button class="btn btn-xs" hx-post="/bead/{{.DB}}/{{.ID}}/status" hx-vals='{"status":"closed"}' hx-swap="outerHTML" hx-target="closest tr" hx-confirm="Close {{.ID}}?">close</button>{{end}}
+            {{if ne .Status "deferred"}}<button class="btn btn-xs" hx-post="/bead/{{.DB}}/{{.ID}}/status" hx-vals='{"status":"deferred"}' hx-swap="outerHTML" hx-target="closest tr" hx-confirm="Defer {{.ID}}?">defer</button>{{end}}
+          </span>
+        </td>
       </tr>
       {{end}}
     </tbody>
