@@ -11837,6 +11837,34 @@ func TestFavoritesPage(t *testing.T) {
 	}
 }
 
+func TestFavoritesPage_BatchBarAndQuickActions(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/favorites", nil)
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /favorites status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	checks := []struct{ name, want string }{
+		{"batch bar", "batch-bar-fav"},
+		{"batch priority", "batch-priority"},
+		{"favBatchAction function", "favBatchAction"},
+		{"favBatchPriority function", "favBatchPriority"},
+		{"favRemoveSelected function", "favRemoveSelected"},
+		{"favSetPriority function", "favSetPriority"},
+		{"favSetStatus function", "favSetStatus"},
+		{"favToggleAll function", "favToggleAll"},
+		{"inline priority class", "bead-priority-inline"},
+		{"priority edit buttons", "priority-edit"},
+	}
+	for _, c := range checks {
+		if !strings.Contains(body, c.want) {
+			t.Errorf("expected %s (%s) in favorites page", c.name, c.want)
+		}
+	}
+}
+
 func TestFavoritesPage_HTMXPartial(t *testing.T) {
 	srv := New(nil)
 	req := httptest.NewRequest("GET", "/favorites", nil)

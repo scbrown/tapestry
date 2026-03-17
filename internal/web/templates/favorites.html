@@ -9,6 +9,18 @@
     <button class="btn btn-xs" onclick="addFavorite()" style="margin-left:0.5rem">Add</button>
   </div>
 
+  <div class="batch-bar" id="batch-bar-fav" style="display:none">
+    <span class="batch-count">0 selected</span>
+    <button class="btn btn-xs" onclick="favBatchAction('in_progress')">start</button>
+    <button class="btn btn-xs" onclick="favBatchAction('closed')">close</button>
+    <button class="btn btn-xs" onclick="favBatchAction('deferred')">defer</button>
+    <select class="btn btn-xs batch-priority" onchange="favBatchPriority(this.value);this.selectedIndex=0">
+      <option value="">set priority...</option>
+      <option value="0">P0</option><option value="1">P1</option><option value="2">P2</option><option value="3">P3</option><option value="4">P4</option>
+    </select>
+    <button class="btn btn-xs" onclick="favRemoveSelected()">remove selected</button>
+  </div>
+
   <div id="fav-list">
     <p class="text-dim">Loading favorites...</p>
   </div>
@@ -68,29 +80,103 @@ function statusBadge(s) {
   var cls = 'status-' + (s === 'open' ? 'open' : s === 'in_progress' ? 'progress' : s === 'closed' ? 'closed' : 'other');
   return '<span class="badge ' + cls + '">' + s + '</span>';
 }
+function favUpdateBar() {
+  var checked = document.querySelectorAll('.fav-cb:checked');
+  var bar = document.getElementById('batch-bar-fav');
+  if (bar) {
+    bar.style.display = checked.length > 0 ? 'flex' : 'none';
+    bar.querySelector('.batch-count').textContent = checked.length + ' selected';
+  }
+}
+function favToggleAll(master) {
+  document.querySelectorAll('.fav-cb').forEach(function(cb) { cb.checked = master.checked; });
+  favUpdateBar();
+}
+function favBatchAction(status) {
+  var checked = document.querySelectorAll('.fav-cb:checked');
+  if (!checked.length) return;
+  if (!confirm(status.charAt(0).toUpperCase()+status.slice(1)+' '+checked.length+' beads?')) return;
+  var form = new FormData();
+  form.append('status', status);
+  checked.forEach(function(cb) {
+    form.append('ids[]', cb.getAttribute('data-rig')+'/'+cb.getAttribute('data-id'));
+  });
+  fetch('/batch/status', {method:'POST', body:form}).then(function() {
+    document.body.dispatchEvent(new CustomEvent('showToast', {detail: checked.length+' beads '+status}));
+    renderFavorites();
+  });
+}
+function favBatchPriority(pri) {
+  if (pri === '') return;
+  var checked = document.querySelectorAll('.fav-cb:checked');
+  if (!checked.length) return;
+  if (!confirm('Set '+checked.length+' beads to P'+pri+'?')) return;
+  var form = new FormData();
+  form.append('priority', pri);
+  checked.forEach(function(cb) { form.append('ids[]', cb.getAttribute('data-rig')+'/'+cb.getAttribute('data-id')); });
+  fetch('/batch/priority', {method:'POST', body:form}).then(function() {
+    document.body.dispatchEvent(new CustomEvent('showToast', {detail: checked.length+' beads set to P'+pri}));
+    renderFavorites();
+  });
+}
+function favRemoveSelected() {
+  var checked = document.querySelectorAll('.fav-cb:checked');
+  if (!checked.length) return;
+  if (!confirm('Remove '+checked.length+' from favorites?')) return;
+  var favs = getFavorites();
+  checked.forEach(function(cb) {
+    var db = cb.getAttribute('data-rig'), id = cb.getAttribute('data-id');
+    favs = favs.filter(function(f) { return !(f.db === db && f.id === id); });
+  });
+  saveFavorites(favs);
+  renderFavorites();
+}
+function favSetPriority(db, id, pri) {
+  var form = new FormData();
+  form.append('priority', pri);
+  fetch('/bead/' + db + '/' + id + '/priority', {method:'POST', body:form}).then(function() {
+    document.body.dispatchEvent(new CustomEvent('showToast', {detail: id+' set to P'+pri}));
+    renderFavorites();
+  });
+}
+function favSetStatus(db, id, status) {
+  if (status === 'closed' || status === 'deferred') {
+    if (!confirm(status.charAt(0).toUpperCase()+status.slice(1)+' '+id+'?')) return;
+  }
+  var form = new FormData();
+  form.append('status', status);
+  fetch('/bead/' + db + '/' + id + '/status', {method:'POST', body:form}).then(function() {
+    document.body.dispatchEvent(new CustomEvent('showToast', {detail: id+' '+status}));
+    renderFavorites();
+  });
+}
 function renderFavorites() {
   var favs = getFavorites();
   var el = document.getElementById('fav-list');
   if (!favs.length) {
     el.innerHTML = '<p class="text-dim">No favorites yet. Add a bead URL above or click the star on any bead detail page.</p>';
+    favUpdateBar();
     return;
   }
-  // Render skeleton immediately
-  var html = '<table class="bead-table"><thead><tr><th></th><th>Bead</th><th>Title</th><th>Pri</th><th>Status</th><th>Assignee</th><th></th></tr></thead><tbody>';
+  var html = '<div class="table-wrap"><table class="bead-table"><thead><tr>';
+  html += '<th><input type="checkbox" onchange="favToggleAll(this)"></th>';
+  html += '<th></th><th>Bead</th><th>Title</th><th>Pri</th><th>Status</th><th>Assignee</th><th>Actions</th><th></th>';
+  html += '</tr></thead><tbody>';
   favs.forEach(function(f, i) {
-    html += '<tr id="fav-row-' + i + '">';
+    html += '<tr id="fav-row-' + i + '" data-db="' + f.db + '" data-id="' + f.id + '">';
+    html += '<td><input type="checkbox" class="fav-cb" data-rig="' + f.db + '" data-id="' + f.id + '" onchange="favUpdateBar()"></td>';
     html += '<td class="text-dim" style="white-space:nowrap"><button class="btn btn-xs" onclick="moveFavorite(\'' + f.db + '\',\'' + f.id + '\',-1)" title="Move up">&uarr;</button> <button class="btn btn-xs" onclick="moveFavorite(\'' + f.db + '\',\'' + f.id + '\',1)" title="Move down">&darr;</button></td>';
     html += '<td><a href="/bead/' + f.db + '/' + f.id + '">' + f.id + '</a></td>';
     html += '<td class="fav-title text-dim">loading...</td>';
     html += '<td class="fav-pri"></td>';
     html += '<td class="fav-status"></td>';
     html += '<td class="fav-assignee text-dim"></td>';
+    html += '<td class="fav-actions"></td>';
     html += '<td><button class="btn btn-xs" onclick="removeFavorite(\'' + f.db + '\',\'' + f.id + '\')">remove</button></td>';
     html += '</tr>';
   });
-  html += '</tbody></table>';
+  html += '</tbody></table></div>';
   el.innerHTML = html;
-  // Fetch live data
   fetch('/favorites/lookup', {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
@@ -103,18 +189,41 @@ function renderFavorites() {
       var priCell = row.querySelector('.fav-pri');
       var statusCell = row.querySelector('.fav-status');
       var assigneeCell = row.querySelector('.fav-assignee');
+      var actionsCell = row.querySelector('.fav-actions');
       if (b.found) {
         titleCell.textContent = b.title;
         titleCell.classList.remove('text-dim');
-        priCell.innerHTML = '<span class="badge ' + (priClass[b.priority] || 'priority-p3') + '">' + (priLabel[b.priority] || 'P?') + '</span>';
+        // Inline priority with hover-reveal edit buttons
+        var priHtml = '<span class="bead-priority-inline">';
+        priHtml += '<span class="badge ' + (priClass[b.priority] || 'priority-p3') + '">' + (priLabel[b.priority] || 'P?') + '</span>';
+        priHtml += '<span class="priority-edit triage-btn-group">';
+        for (var p = 0; p <= 4; p++) {
+          priHtml += '<button class="btn btn-xs priority-p' + p + '" onclick="favSetPriority(\'' + b.db + '\',\'' + b.id + '\',' + p + ')">P' + p + '</button>';
+        }
+        priHtml += '</span></span>';
+        priCell.innerHTML = priHtml;
         statusCell.innerHTML = statusBadge(b.status);
         assigneeCell.textContent = b.assignee || '';
+        // Quick action buttons based on current status
+        var actions = '';
+        if (b.status === 'open') {
+          actions += '<button class="btn btn-xs" onclick="favSetStatus(\'' + b.db + '\',\'' + b.id + '\',\'in_progress\')">start</button> ';
+          actions += '<button class="btn btn-xs" onclick="favSetStatus(\'' + b.db + '\',\'' + b.id + '\',\'closed\')">close</button> ';
+          actions += '<button class="btn btn-xs" onclick="favSetStatus(\'' + b.db + '\',\'' + b.id + '\',\'deferred\')">defer</button>';
+        } else if (b.status === 'in_progress') {
+          actions += '<button class="btn btn-xs" onclick="favSetStatus(\'' + b.db + '\',\'' + b.id + '\',\'closed\')">close</button> ';
+          actions += '<button class="btn btn-xs" onclick="favSetStatus(\'' + b.db + '\',\'' + b.id + '\',\'deferred\')">defer</button>';
+        } else if (b.status === 'closed') {
+          actions += '<button class="btn btn-xs" onclick="favSetStatus(\'' + b.db + '\',\'' + b.id + '\',\'open\')">reopen</button>';
+        } else if (b.status === 'deferred') {
+          actions += '<button class="btn btn-xs" onclick="favSetStatus(\'' + b.db + '\',\'' + b.id + '\',\'open\')">reopen</button>';
+        }
+        actionsCell.innerHTML = actions;
       } else {
         titleCell.textContent = '(not found)';
       }
     });
   }).catch(function() {
-    // Silently degrade — skeleton stays with "loading..."
     document.querySelectorAll('.fav-title').forEach(function(el) {
       if (el.textContent === 'loading...') el.textContent = '(offline)';
     });
