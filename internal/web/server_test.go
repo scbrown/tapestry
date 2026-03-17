@@ -545,6 +545,34 @@ func TestCommitsPage_NoForgejo(t *testing.T) {
 	}
 }
 
+func TestCommitsPage_HTMXPartial(t *testing.T) {
+	srv := &Server{forgejo: nil}
+	srv.parseTemplates()
+	req := httptest.NewRequest("GET", "/commits", nil)
+	req.Header.Set("HX-Request", "true")
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("HTMX GET /commits status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if strings.Contains(body, "<!DOCTYPE html>") {
+		t.Error("HTMX commits should return partial, not full page")
+	}
+}
+
+func TestCommitsPage_SearchForm(t *testing.T) {
+	srv := &Server{forgejo: nil}
+	srv.parseTemplates()
+	req := httptest.NewRequest("GET", "/commits", nil)
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+	body := w.Body.String()
+	if !strings.Contains(body, "Commits") {
+		t.Error("expected 'Commits' heading")
+	}
+}
+
 func TestExtractBeadIDs(t *testing.T) {
 	tests := []struct {
 		msg  string
@@ -806,6 +834,78 @@ func TestCommandCenter_WithData(t *testing.T) {
 		if !strings.Contains(body, check) {
 			t.Errorf("body missing %q", check)
 		}
+	}
+}
+
+func TestCommandCenter_HTMXPartial(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/command-center", nil)
+	req.Header.Set("HX-Request", "true")
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("HTMX GET /command-center status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if strings.Contains(body, "<!DOCTYPE html>") {
+		t.Error("HTMX command-center should return partial, not full page")
+	}
+}
+
+func TestCommandCenter_RigFilter(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}, {Name: "beads_hq"}},
+		counts:    map[string]int{"open": 5, "in_progress": 2},
+	}
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/command-center?rig=beads_aegis", nil)
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /command-center?rig status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Command Center") {
+		t.Error("expected 'Command Center' heading")
+	}
+	if !strings.Contains(body, "filter-active") {
+		t.Error("expected active rig filter badge")
+	}
+}
+
+func TestCommandCenter_AutoRefresh(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/command-center", nil)
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+	body := w.Body.String()
+	if !strings.Contains(body, "hx-trigger") {
+		t.Error("expected auto-refresh hx-trigger on command center")
+	}
+}
+
+func TestCommandCenter_FleetStats(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		counts:    map[string]int{"open": 10, "in_progress": 3, "closed": 50},
+		closed:    5,
+	}
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/command-center", nil)
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /command-center status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "fleet-stat") {
+		t.Error("expected fleet-stat elements")
+	}
+	if !strings.Contains(body, "active") {
+		t.Error("expected 'active' fleet stat label")
+	}
+	if !strings.Contains(body, "open") {
+		t.Error("expected 'open' fleet stat label")
 	}
 }
 
