@@ -75,7 +75,15 @@
           <td class="text-dim">{{.Rig}}</td>
           <td {{if gt .IdleDays 14}}style="color:var(--red)"{{else if gt .IdleDays 7}}style="color:var(--orange)"{{end}}>{{.IdleDays}}d</td>
           <td class="text-dim">{{.AgeDays}}d</td>
-          <td class="text-dim">{{if .Issue.Assignee}}{{shortActor .Issue.Assignee}}{{else if .Issue.Owner}}{{shortActor .Issue.Owner}}{{else}}—{{end}}</td>
+          <td>
+            <select class="triage-assign" hx-post="/bead/{{.Rig}}/{{.Issue.ID}}/assign" hx-swap="outerHTML" hx-target="closest tr" name="assignee">
+              <option value="">—</option>
+              {{$cur := .Issue.Assignee}}
+              {{range $.Assignees}}
+              <option value="{{.}}" {{if eq . $cur}}selected{{end}}>{{shortActor .}}</option>
+              {{end}}
+            </select>
+          </td>
           <td>
             <button class="btn-sm btn-close"
               hx-post="/bead/{{.Rig}}/{{.Issue.ID}}/status" hx-vals='{"status":"closed"}'

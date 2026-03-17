@@ -5153,3 +5153,55 @@ func TestStalePage_AssigneeDropdown(t *testing.T) {
 		t.Error("expected assign POST endpoint in dropdown")
 	}
 }
+
+func TestParkingLotPage_AssigneeDropdown(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issues: []dolt.Issue{
+			{ID: "pk1", Title: "Parked", Status: "in_progress", Priority: 1,
+				Assignee:  "alice",
+				UpdatedAt: time.Now().Add(-10 * 24 * time.Hour),
+				CreatedAt: time.Now().Add(-20 * 24 * time.Hour)},
+		},
+		assignees: []string{"alice", "bob"},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/parking-lot", nil)
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "triage-assign") {
+		t.Error("expected assignee dropdown on parking-lot page")
+	}
+}
+
+func TestDeferredPage_AssigneeDropdown(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issues: []dolt.Issue{
+			{ID: "df1", Title: "Deferred", Status: "deferred", Priority: 2,
+				Assignee:  "bob",
+				UpdatedAt: time.Now().Add(-5 * 24 * time.Hour),
+				CreatedAt: time.Now().Add(-10 * 24 * time.Hour)},
+		},
+		assignees: []string{"alice", "bob"},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/deferred", nil)
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "triage-assign") {
+		t.Error("expected assignee dropdown on deferred page")
+	}
+}

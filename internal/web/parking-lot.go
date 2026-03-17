@@ -26,6 +26,7 @@ type parkingData struct {
 	ByAssignee  map[string]int
 	Rigs        []string
 	FilterRig   string
+	Assignees   []string
 }
 
 func (s *Server) handleParkingLot(w http.ResponseWriter, r *http.Request) {
@@ -45,8 +46,9 @@ func (s *Server) handleParkingLot(w http.ResponseWriter, r *http.Request) {
 	}
 
 	type dbResult struct {
-		rig    string
-		issues []dolt.Issue
+		rig       string
+		issues    []dolt.Issue
+		assignees []string
 	}
 	results := make([]dbResult, len(dbs))
 	var wg sync.WaitGroup
@@ -59,7 +61,8 @@ func (s *Server) handleParkingLot(w http.ResponseWriter, r *http.Request) {
 				log.Printf("parking-lot: %s: %v", dbName, err)
 				return
 			}
-			results[i] = dbResult{rig: dbName, issues: issues}
+			assignees, _ := s.ds.DistinctAssignees(ctx, dbName)
+			results[i] = dbResult{rig: dbName, issues: issues, assignees: assignees}
 		}(i, db.Name)
 	}
 	wg.Wait()
@@ -133,6 +136,20 @@ func (s *Server) handleParkingLot(w http.ResponseWriter, r *http.Request) {
 		}
 		data.MedianIdle = idles[len(idles)/2]
 	}
+
+	// Collect distinct assignees for reassign dropdown
+	assigneeSet := make(map[string]bool)
+	for _, r := range results {
+		for _, a := range r.assignees {
+			if a != "" {
+				assigneeSet[a] = true
+			}
+		}
+	}
+	for a := range assigneeSet {
+		data.Assignees = append(data.Assignees, a)
+	}
+	sort.Strings(data.Assignees)
 
 	s.render(w, r, "parking-lot", data)
 }
