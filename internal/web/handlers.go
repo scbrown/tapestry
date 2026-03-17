@@ -83,10 +83,12 @@ type pageLink struct {
 }
 
 type searchData struct {
-	Query     string
-	Issues    []dolt.Issue
-	Assignees []string
-	Err       string
+	Query        string
+	Issues       []dolt.Issue
+	Assignees    []string
+	Err          string
+	FilterStatus string
+	FilterPri    string
 }
 
 func (s *Server) handleIndex(w http.ResponseWriter, r *http.Request) {
@@ -493,7 +495,9 @@ func (s *Server) handleBeadList(w http.ResponseWriter, r *http.Request) {
 // handleSearch serves the /search endpoint.
 func (s *Server) handleSearch(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query().Get("q")
-	data := searchData{Query: q}
+	filterStatus := r.URL.Query().Get("status")
+	filterPri := r.URL.Query().Get("pri")
+	data := searchData{Query: q, FilterStatus: filterStatus, FilterPri: filterPri}
 
 	if s.ds == nil || q == "" {
 		s.render(w, r, "search", data)
@@ -537,7 +541,18 @@ func (s *Server) handleSearch(w http.ResponseWriter, r *http.Request) {
 
 	assigneeSet := make(map[string]bool)
 	for _, r := range results {
-		data.Issues = append(data.Issues, r.issues...)
+		for _, iss := range r.issues {
+			if filterStatus != "" && iss.Status != filterStatus {
+				continue
+			}
+			if filterPri != "" {
+				p, err := strconv.Atoi(filterPri)
+				if err == nil && iss.Priority != p {
+					continue
+				}
+			}
+			data.Issues = append(data.Issues, iss)
+		}
 		for _, a := range r.assignees {
 			if a != "" {
 				assigneeSet[a] = true

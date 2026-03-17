@@ -8,8 +8,23 @@
   <div class="error">{{.Err}}</div>
   {{end}}
 
-  <form action="/search" method="get" class="search-form">
-    <input type="search" name="q" value="{{.Query}}" placeholder="Search by title or description..." autofocus>
+  <form action="/search" method="get" class="search-form" style="display:flex;gap:0.5rem;flex-wrap:wrap;align-items:center">
+    <input type="search" name="q" value="{{.Query}}" placeholder="Search by title or description..." autofocus style="flex:1;min-width:200px">
+    <select name="status" style="padding:0.3rem;background:var(--current-line);color:var(--foreground);border:1px solid var(--comment);border-radius:4px">
+      <option value="">Any status</option>
+      <option value="open"{{if eq .FilterStatus "open"}} selected{{end}}>Open</option>
+      <option value="in_progress"{{if eq .FilterStatus "in_progress"}} selected{{end}}>In Progress</option>
+      <option value="closed"{{if eq .FilterStatus "closed"}} selected{{end}}>Closed</option>
+      <option value="deferred"{{if eq .FilterStatus "deferred"}} selected{{end}}>Deferred</option>
+    </select>
+    <select name="pri" style="padding:0.3rem;background:var(--current-line);color:var(--foreground);border:1px solid var(--comment);border-radius:4px">
+      <option value="">Any priority</option>
+      <option value="0"{{if eq .FilterPri "0"}} selected{{end}}>P0</option>
+      <option value="1"{{if eq .FilterPri "1"}} selected{{end}}>P1</option>
+      <option value="2"{{if eq .FilterPri "2"}} selected{{end}}>P2</option>
+      <option value="3"{{if eq .FilterPri "3"}} selected{{end}}>P3</option>
+    </select>
+    <button type="submit" class="btn btn-xs">Search</button>
   </form>
 
   {{if .Query}}
