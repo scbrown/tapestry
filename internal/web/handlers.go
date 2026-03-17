@@ -86,9 +86,13 @@ type searchData struct {
 	Query        string
 	Issues       []dolt.Issue
 	Assignees    []string
+	Rigs         []string
 	Err          string
 	FilterStatus string
 	FilterPri    string
+	FilterRig    string
+	FilterType   string
+	SortBy       string
 }
 
 func (s *Server) handleIndex(w http.ResponseWriter, r *http.Request) {
@@ -497,9 +501,27 @@ func (s *Server) handleSearch(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query().Get("q")
 	filterStatus := r.URL.Query().Get("status")
 	filterPri := r.URL.Query().Get("pri")
-	data := searchData{Query: q, FilterStatus: filterStatus, FilterPri: filterPri}
+	filterRig := r.URL.Query().Get("rig")
+	filterType := r.URL.Query().Get("type")
+	sortBy := r.URL.Query().Get("sort")
+	data := searchData{
+		Query:        q,
+		FilterStatus: filterStatus,
+		FilterPri:    filterPri,
+		FilterRig:    filterRig,
+		FilterType:   filterType,
+		SortBy:       sortBy,
+	}
 
 	if s.ds == nil || q == "" {
+		if s.ds != nil {
+			// Populate rigs for filter even with no query
+			if dbs, err := s.databases(r.Context()); err == nil {
+				for _, db := range dbs {
+					data.Rigs = append(data.Rigs, db.Name)
+				}
+			}
+		}
 		s.render(w, r, "search", data)
 		return
 	}
@@ -513,18 +535,33 @@ func (s *Server) handleSearch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	for _, db := range dbs {
+		data.Rigs = append(data.Rigs, db.Name)
+	}
+
+	// Filter databases if rig filter is set
+	searchDbs := dbs
+	if filterRig != "" {
+		searchDbs = nil
+		for _, db := range dbs {
+			if db.Name == filterRig {
+				searchDbs = append(searchDbs, db)
+			}
+		}
+	}
+
 	type searchResult struct {
 		issues    []dolt.Issue
 		assignees []string
 	}
-	results := make([]searchResult, len(dbs))
+	results := make([]searchResult, len(searchDbs))
 	var wg sync.WaitGroup
-	for i, db := range dbs {
+	for i, db := range searchDbs {
 		wg.Add(1)
 		go func(i int, dbName string) {
 			defer wg.Done()
 			var r searchResult
-			issues, err := s.ds.SearchIssues(ctx, dbName, q, 20)
+			issues, err := s.ds.SearchIssues(ctx, dbName, q, 50)
 			if err != nil {
 				results[i] = r
 				return
@@ -551,6 +588,9 @@ func (s *Server) handleSearch(w http.ResponseWriter, r *http.Request) {
 					continue
 				}
 			}
+			if filterType != "" && iss.Type != filterType {
+				continue
+			}
 			data.Issues = append(data.Issues, iss)
 		}
 		for _, a := range r.assignees {
@@ -563,6 +603,30 @@ func (s *Server) handleSearch(w http.ResponseWriter, r *http.Request) {
 		data.Assignees = append(data.Assignees, a)
 	}
 	sort.Strings(data.Assignees)
+
+	// Sort results
+	switch sortBy {
+	case "priority":
+		sort.Slice(data.Issues, func(i, j int) bool {
+			return data.Issues[i].Priority < data.Issues[j].Priority
+		})
+	case "updated":
+		sort.Slice(data.Issues, func(i, j int) bool {
+			return data.Issues[i].UpdatedAt.After(data.Issues[j].UpdatedAt)
+		})
+	case "created":
+		sort.Slice(data.Issues, func(i, j int) bool {
+			return data.Issues[i].CreatedAt.After(data.Issues[j].CreatedAt)
+		})
+	default:
+		// Default: priority then updated
+		sort.Slice(data.Issues, func(i, j int) bool {
+			if data.Issues[i].Priority != data.Issues[j].Priority {
+				return data.Issues[i].Priority < data.Issues[j].Priority
+			}
+			return data.Issues[i].UpdatedAt.After(data.Issues[j].UpdatedAt)
+		})
+	}
 
 	s.render(w, r, "search", data)
 }

@@ -1158,6 +1158,113 @@ func TestSearch_WithResults(t *testing.T) {
 	}
 }
 
+func TestSearch_RigFilter(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}, {Name: "beads_gastown"}},
+		issues: []dolt.Issue{
+			{ID: "aegis-020", Title: "Found bead", Status: "open", Rig: "beads_aegis", UpdatedAt: time.Now()},
+		},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/search?q=found&rig=beads_aegis", nil)
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "aegis-020") {
+		t.Error("body missing search result")
+	}
+	if !strings.Contains(body, "All rigs") {
+		t.Error("missing rig filter dropdown")
+	}
+}
+
+func TestSearch_TypeFilter(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issues: []dolt.Issue{
+			{ID: "aegis-bug", Title: "A bug", Status: "open", Type: "bug", Rig: "beads_aegis", UpdatedAt: time.Now()},
+			{ID: "aegis-task", Title: "A task", Status: "open", Type: "task", Rig: "beads_aegis", UpdatedAt: time.Now()},
+		},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/search?q=A&type=bug", nil)
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "aegis-bug") {
+		t.Error("body should contain bug result")
+	}
+	if strings.Contains(body, "aegis-task") {
+		t.Error("body should NOT contain task result when filtering by bug type")
+	}
+}
+
+func TestSearch_SortByPriority(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issues: []dolt.Issue{
+			{ID: "aegis-low", Title: "Low pri", Status: "open", Priority: 3, Rig: "beads_aegis", UpdatedAt: time.Now()},
+			{ID: "aegis-high", Title: "High pri", Status: "open", Priority: 0, Rig: "beads_aegis", UpdatedAt: time.Now()},
+		},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/search?q=pri&sort=priority", nil)
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	highIdx := strings.Index(body, "aegis-high")
+	lowIdx := strings.Index(body, "aegis-low")
+	if highIdx < 0 || lowIdx < 0 {
+		t.Fatal("both results should appear")
+	}
+	if highIdx > lowIdx {
+		t.Error("P0 should appear before P3 when sorting by priority")
+	}
+}
+
+func TestSearch_EnhancedBatchBar(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issues: []dolt.Issue{
+			{ID: "aegis-001", Title: "Test bead", Status: "open", Rig: "beads_aegis", UpdatedAt: time.Now()},
+		},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/search?q=test", nil)
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "set priority...") {
+		t.Error("missing batch priority dropdown in search results")
+	}
+	if !strings.Contains(body, "assign to...") {
+		t.Error("missing batch assignee dropdown in search results")
+	}
+	if !strings.Contains(body, "add label...") {
+		t.Error("missing batch label input in search results")
+	}
+}
+
 func TestBeadPage_WithLineage(t *testing.T) {
 	ds := &mockDataSource{
 		issue: &dolt.Issue{

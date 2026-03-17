@@ -16,6 +16,7 @@
       <option value="in_progress"{{if eq .FilterStatus "in_progress"}} selected{{end}}>In Progress</option>
       <option value="closed"{{if eq .FilterStatus "closed"}} selected{{end}}>Closed</option>
       <option value="deferred"{{if eq .FilterStatus "deferred"}} selected{{end}}>Deferred</option>
+      <option value="blocked"{{if eq .FilterStatus "blocked"}} selected{{end}}>Blocked</option>
     </select>
     <select name="pri" style="padding:0.3rem;background:var(--current-line);color:var(--foreground);border:1px solid var(--comment);border-radius:4px">
       <option value="">Any priority</option>
@@ -23,6 +24,25 @@
       <option value="1"{{if eq .FilterPri "1"}} selected{{end}}>P1</option>
       <option value="2"{{if eq .FilterPri "2"}} selected{{end}}>P2</option>
       <option value="3"{{if eq .FilterPri "3"}} selected{{end}}>P3</option>
+      <option value="4"{{if eq .FilterPri "4"}} selected{{end}}>P4</option>
+    </select>
+    {{if gt (len .Rigs) 1}}
+    <select name="rig" style="padding:0.3rem;background:var(--current-line);color:var(--foreground);border:1px solid var(--comment);border-radius:4px">
+      <option value="">All rigs</option>
+      {{range .Rigs}}<option value="{{.}}"{{if eq . $.FilterRig}} selected{{end}}>{{rigName .}}</option>{{end}}
+    </select>
+    {{end}}
+    <select name="type" style="padding:0.3rem;background:var(--current-line);color:var(--foreground);border:1px solid var(--comment);border-radius:4px">
+      <option value="">Any type</option>
+      <option value="bug"{{if eq .FilterType "bug"}} selected{{end}}>Bug</option>
+      <option value="task"{{if eq .FilterType "task"}} selected{{end}}>Task</option>
+      <option value="epic"{{if eq .FilterType "epic"}} selected{{end}}>Epic</option>
+    </select>
+    <select name="sort" style="padding:0.3rem;background:var(--current-line);color:var(--foreground);border:1px solid var(--comment);border-radius:4px">
+      <option value=""{{if eq .SortBy ""}} selected{{end}}>Sort: relevance</option>
+      <option value="priority"{{if eq .SortBy "priority"}} selected{{end}}>Sort: priority</option>
+      <option value="updated"{{if eq .SortBy "updated"}} selected{{end}}>Sort: updated</option>
+      <option value="created"{{if eq .SortBy "created"}} selected{{end}}>Sort: created</option>
     </select>
     <button type="submit" class="btn btn-xs">Search</button>
   </form>
@@ -33,9 +53,18 @@
   {{if .Issues}}
   <div class="batch-bar" id="batch-bar-search" style="display:none">
     <span class="batch-count">0 selected</span>
-    <button class="btn btn-xs" onclick="searchBatchAction('in_progress')">start selected</button>
-    <button class="btn btn-xs" onclick="searchBatchAction('closed')">close selected</button>
-    <button class="btn btn-xs" onclick="searchBatchAction('deferred')">defer selected</button>
+    <button class="btn btn-xs" onclick="searchBatchAction('in_progress')">start</button>
+    <button class="btn btn-xs" onclick="searchBatchAction('closed')">close</button>
+    <button class="btn btn-xs" onclick="searchBatchAction('deferred')">defer</button>
+    <select class="btn btn-xs batch-priority" onchange="searchBatchPriority(this.value);this.selectedIndex=0">
+      <option value="">set priority...</option>
+      <option value="0">P0</option><option value="1">P1</option><option value="2">P2</option><option value="3">P3</option><option value="4">P4</option>
+    </select>
+    <select class="btn btn-xs batch-assign" onchange="searchBatchAssignee(this.value);this.selectedIndex=0">
+      <option value="">assign to...</option>
+      {{range $.Assignees}}<option value="{{.}}">{{shortActor .}}</option>{{end}}
+    </select>
+    <input type="text" class="btn btn-xs batch-label-input" placeholder="add label..." onkeydown="if(event.key==='Enter'){searchBatchLabel(this.value);this.value=''}" style="width:100px">
   </div>
   <div class="table-wrap">
   <table class="bead-table">
@@ -121,6 +150,44 @@
       checked.forEach(function(cb) { cb.closest('tr').remove(); });
       searchUpdateBar();
       document.body.dispatchEvent(new CustomEvent('showToast', {detail: checked.length+' beads '+status}));
+    });
+  }
+  function searchBatchPriority(pri) {
+    if (pri === '') return;
+    var checked = document.querySelectorAll('.search-cb:checked');
+    if (!checked.length) return;
+    if (!confirm('Set '+checked.length+' beads to P'+pri+'?')) return;
+    var form = new FormData();
+    form.append('priority', pri);
+    checked.forEach(function(cb) { form.append('ids[]', cb.getAttribute('data-rig')+'/'+cb.getAttribute('data-id')); });
+    fetch('/batch/priority', {method:'POST', body:form}).then(function() {
+      document.body.dispatchEvent(new CustomEvent('showToast', {detail: checked.length+' beads set to P'+pri}));
+      location.reload();
+    });
+  }
+  function searchBatchAssignee(assignee) {
+    if (assignee === '') return;
+    var checked = document.querySelectorAll('.search-cb:checked');
+    if (!checked.length) return;
+    if (!confirm('Assign '+checked.length+' beads to '+assignee+'?')) return;
+    var form = new FormData();
+    form.append('assignee', assignee);
+    checked.forEach(function(cb) { form.append('ids[]', cb.getAttribute('data-rig')+'/'+cb.getAttribute('data-id')); });
+    fetch('/batch/assignee', {method:'POST', body:form}).then(function() {
+      document.body.dispatchEvent(new CustomEvent('showToast', {detail: checked.length+' beads assigned'}));
+      location.reload();
+    });
+  }
+  function searchBatchLabel(label) {
+    if (!label) return;
+    var checked = document.querySelectorAll('.search-cb:checked');
+    if (!checked.length) return;
+    if (!confirm('Add label "'+label+'" to '+checked.length+' beads?')) return;
+    var form = new FormData();
+    form.append('label', label);
+    checked.forEach(function(cb) { form.append('ids[]', cb.getAttribute('data-rig')+'/'+cb.getAttribute('data-id')); });
+    fetch('/batch/label', {method:'POST', body:form}).then(function() {
+      document.body.dispatchEvent(new CustomEvent('showToast', {detail: checked.length+' beads labeled "'+label+'"'}));
     });
   }
   </script>
