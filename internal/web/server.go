@@ -601,6 +601,10 @@ func (s *Server) parseTemplates() {
 			template.New("").Funcs(funcMap).ParseFS(templateFS,
 				"templates/layout.html", "templates/assignments.html"),
 		),
+		"gaps": template.Must(
+			template.New("").Funcs(funcMap).ParseFS(templateFS,
+				"templates/layout.html", "templates/gaps.html"),
+		),
 	}
 }
 
@@ -834,6 +838,8 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		s.handleSnapshot(w, r)
 	case len(segments) == 1 && segments[0] == "assignments":
 		s.handleAssignments(w, r)
+	case len(segments) == 1 && segments[0] == "gaps":
+		s.handleGaps(w, r)
 	case len(segments) == 1 && segments[0] == "designs":
 		s.handleDesignsList(w, r)
 	case len(segments) == 2 && segments[0] == "designs":

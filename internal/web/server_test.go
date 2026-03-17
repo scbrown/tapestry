@@ -7569,3 +7569,64 @@ func TestAssignmentsPage_QuickActions(t *testing.T) {
 		t.Error("expected quick action buttons with hx-post")
 	}
 }
+
+// ── Gaps tests ──
+
+func TestGapsPage_WithData(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issues: []dolt.Issue{
+			{ID: "g1", Title: "P0 unassigned", Status: "open", Type: "bug", Priority: 0, CreatedAt: time.Now().Add(-5 * 24 * time.Hour), UpdatedAt: time.Now().Add(-8 * 24 * time.Hour)},
+			{ID: "g2", Title: "P1 assigned", Status: "in_progress", Type: "task", Priority: 1, Assignee: "alice", CreatedAt: time.Now().Add(-3 * 24 * time.Hour), UpdatedAt: time.Now()},
+			{ID: "g3", Title: "Untyped item", Status: "open", Priority: 2, CreatedAt: time.Now().Add(-10 * 24 * time.Hour), UpdatedAt: time.Now().Add(-8 * 24 * time.Hour)},
+		},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/gaps", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /gaps status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Coverage Gaps") {
+		t.Error("expected 'Coverage Gaps' heading")
+	}
+	if !strings.Contains(body, "Priority Coverage") {
+		t.Error("expected Priority Coverage section")
+	}
+	if !strings.Contains(body, "Type Coverage") {
+		t.Error("expected Type Coverage section")
+	}
+	if !strings.Contains(body, "Unassigned") {
+		t.Error("expected Unassigned stat")
+	}
+}
+
+func TestGapsPage_NilDS(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/gaps", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /gaps nil ds status = %d, want %d", w.Code, http.StatusOK)
+	}
+}
+
+func TestGapsPage_AutoRefresh(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/gaps", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	body := w.Body.String()
+	if !strings.Contains(body, `hx-trigger="every 120s"`) {
+		t.Error("expected 120s auto-refresh on gaps page")
+	}
+}

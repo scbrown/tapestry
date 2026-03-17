@@ -1,0 +1,112 @@
+{{define "title"}}Gaps{{end}}
+{{define "content"}}
+<div class="gaps-page" hx-get="/gaps" hx-trigger="every 120s" hx-select=".gaps-page" hx-swap="outerHTML">
+  <h1>Coverage Gaps <time class="text-dim">{{formatDateTime .GeneratedAt}}</time></h1>
+
+  {{if .Err}}
+  <div class="error">{{.Err}}</div>
+  {{else}}
+
+  {{/* ── Summary Stats ── */}}
+  <div class="stat-grid" style="margin-bottom:1.5rem">
+    <div class="stat">
+      <span class="stat-value">{{.TotalOpen}}</span>
+      <span class="stat-label">Open items</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value {{if gt .TotalUnassigned 20}}warn{{end}}">{{.TotalUnassigned}}</span>
+      <span class="stat-label"><a href="/triage">Unassigned</a></span>
+    </div>
+    <div class="stat">
+      <span class="stat-value {{if gt .UnassignedHighPri 0}}warn{{end}}">{{.UnassignedHighPri}}</span>
+      <span class="stat-label">Unassigned P0+P1</span>
+    </div>
+  </div>
+
+  {{/* ── Stale Rigs ── */}}
+  <section style="margin-bottom:2rem">
+    <h2>Stale Rigs <span class="text-dim">(no updates in 7+ days)</span></h2>
+    {{if not .StaleRigs}}
+    <p class="text-dim">All rigs have recent activity.</p>
+    {{else}}
+    <table>
+      <thead>
+        <tr><th>Rig</th><th>Open beads</th><th>Last update</th><th>Stale (days)</th></tr>
+      </thead>
+      <tbody>
+        {{range .StaleRigs}}
+        <tr>
+          <td><a href="/beads?rig={{.Name}}">{{rigName .Name}}</a></td>
+          <td>{{.Open}}</td>
+          <td>{{formatDate .LastUpdate}}</td>
+          <td class="warn"><strong>{{.StaleDays}}d</strong></td>
+        </tr>
+        {{end}}
+      </tbody>
+    </table>
+    {{end}}
+  </section>
+
+  {{/* ── Priority Coverage ── */}}
+  <section style="margin-bottom:2rem">
+    <h2>Priority Coverage</h2>
+    {{if not .PriorityGaps}}
+    <p class="text-dim">No open items with priorities.</p>
+    {{else}}
+    <table>
+      <thead>
+        <tr><th>Priority</th><th>Open</th><th>Unassigned</th><th>Gap</th></tr>
+      </thead>
+      <tbody>
+        {{range .PriorityGaps}}
+        <tr>
+          <td><span class="badge {{priorityClass .Priority}}">P{{.Priority}}</span></td>
+          <td>{{.Open}}</td>
+          <td>{{if gt .Unassigned 0}}<span class="warn">{{.Unassigned}}</span>{{else}}0{{end}}</td>
+          <td>
+            {{if gt .Open 0}}
+            <div class="overflow-bar-bg" style="width:80px">
+              <div class="overflow-bar-fill {{if and (le .Priority 1) (gt .Unassigned 0)}}hot{{end}}" style="width:{{mulf (divf (itof .Unassigned) (itof .Open)) 100.0}}%"></div>
+            </div>
+            {{end}}
+          </td>
+        </tr>
+        {{end}}
+      </tbody>
+    </table>
+    {{end}}
+  </section>
+
+  {{/* ── Type Coverage ── */}}
+  <section>
+    <h2>Type Coverage</h2>
+    {{if not .TypeGaps}}
+    <p class="text-dim">No open items with types.</p>
+    {{else}}
+    <table>
+      <thead>
+        <tr><th>Type</th><th>Open</th><th>Unassigned</th><th>Gap</th></tr>
+      </thead>
+      <tbody>
+        {{range .TypeGaps}}
+        <tr>
+          <td>{{.Type}}</td>
+          <td>{{.Open}}</td>
+          <td>{{if gt .Unassigned 0}}<span class="warn">{{.Unassigned}}</span>{{else}}0{{end}}</td>
+          <td>
+            {{if gt .Open 0}}
+            <div class="overflow-bar-bg" style="width:80px">
+              <div class="overflow-bar-fill" style="width:{{mulf (divf (itof .Unassigned) (itof .Open)) 100.0}}%"></div>
+            </div>
+            {{end}}
+          </td>
+        </tr>
+        {{end}}
+      </tbody>
+    </table>
+    {{end}}
+  </section>
+
+  {{end}}
+</div>
+{{end}}
