@@ -22,7 +22,9 @@ type outgoingData struct {
 	Newest      []outgoingItem
 	TotalOpen   int
 	MedianAge   int
+	Rigs        []string
 	FilterRig   string
+	Assignees   []string
 	Err         string
 }
 
@@ -44,10 +46,17 @@ func (s *Server) handleOutgoing(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Collect rig names
+	for _, db := range dbs {
+		data.Rigs = append(data.Rigs, db.Name)
+	}
+	sort.Strings(data.Rigs)
+
 	now := time.Now()
 	var allOpen []outgoingItem
 	var mu sync.Mutex
 	var wg sync.WaitGroup
+	assigneeSet := make(map[string]bool)
 
 	for _, db := range dbs {
 		if data.FilterRig != "" && db.Name != data.FilterRig {
@@ -56,6 +65,7 @@ func (s *Server) handleOutgoing(w http.ResponseWriter, r *http.Request) {
 		wg.Add(1)
 		go func(dbName string) {
 			defer wg.Done()
+			assignees, _ := s.ds.DistinctAssignees(ctx, dbName)
 			issues, err := s.ds.Issues(ctx, dbName, dolt.IssueFilter{Limit: 5000})
 			if err != nil {
 				log.Printf("outgoing: %s: %v", dbName, err)
@@ -73,10 +83,18 @@ func (s *Server) handleOutgoing(w http.ResponseWriter, r *http.Request) {
 
 			mu.Lock()
 			allOpen = append(allOpen, items...)
+			for _, a := range assignees {
+				assigneeSet[a] = true
+			}
 			mu.Unlock()
 		}(db.Name)
 	}
 	wg.Wait()
+
+	for a := range assigneeSet {
+		data.Assignees = append(data.Assignees, a)
+	}
+	sort.Strings(data.Assignees)
 
 	data.TotalOpen = len(allOpen)
 

@@ -1,62 +1,144 @@
 {{define "title"}}Oldest & Newest{{end}}
 {{define "content"}}
-<h1>Oldest & Newest Open Beads</h1>
-<p class="subtitle">The 25 oldest and 25 newest open beads. Median age: <strong>{{.MedianAge}}d</strong> across {{.TotalOpen}} open beads.</p>
+<div class="outgoing-page" hx-get="/outgoing{{if .FilterRig}}?rig={{.FilterRig}}{{end}}" hx-trigger="every 300s" hx-select=".outgoing-page" hx-swap="outerHTML">
+  <h1>Oldest & Newest Open Beads <time class="text-dim">{{formatDateTime .GeneratedAt}}</time></h1>
+  <p class="text-dim">The 25 oldest and 25 newest open beads. Median age: <strong>{{.MedianAge}}d</strong> across {{.TotalOpen}} open beads.</p>
 
-{{if .FilterRig}}<div class="dep-filters"><span class="dep-filter-badge">rig: {{.FilterRig}}</span> <a href="/outgoing">clear</a></div>{{end}}
+  {{if gt (len .Rigs) 1}}
+  <div class="dep-filters" style="margin-top:0.5rem;margin-bottom:0.5rem">
+    <a href="/outgoing" class="badge {{if not .FilterRig}}filter-active{{end}}">All rigs</a>
+    {{range .Rigs}}
+    <a href="/outgoing?rig={{.}}" class="badge {{if eq . $.FilterRig}}filter-active{{end}}">{{rigName .}}</a>
+    {{end}}
+  </div>
+  {{end}}
 
-{{if .Err}}<p class="error">{{.Err}}</p>{{end}}
+  {{if .Err}}<div class="error">{{.Err}}</div>{{end}}
 
-<h2>Oldest Open (Top 25)</h2>
-{{if .Oldest}}
-<div style="overflow-x:auto">
-<table class="bead-table">
-<thead>
-<tr><th>Age</th><th>Priority</th><th>Bead</th><th>Status</th><th>Assignee</th><th>Rig</th></tr>
-</thead>
-<tbody>
-{{range .Oldest}}
-<tr>
-    <td><strong style="color:{{if ge .Age 90}}var(--red){{else if ge .Age 30}}var(--orange){{else}}var(--yellow){{end}}">{{.Age}}d</strong></td>
-    <td><span class="{{.Issue.Priority | priorityClass}}">{{.Issue.Priority | priorityLabel}}</span></td>
-    <td><a href="/bead/{{.Rig}}/{{.Issue.ID}}">{{.Issue.Title}}</a></td>
-    <td>{{.Issue.Status}}</td>
-    <td>{{shortActor .Issue.Assignee}}</td>
-    <td style="color:var(--comment)">{{.Rig}}</td>
-</tr>
-{{end}}
-</tbody>
-</table>
+  <h2>Oldest Open (Top 25)</h2>
+  {{if .Oldest}}
+  <div class="batch-bar" id="batch-bar-oldest" style="display:none">
+    <span class="batch-count">0 selected</span>
+    <button class="btn btn-xs" onclick="outgoingBatchAction('oldest','in_progress')">start selected</button>
+    <button class="btn btn-xs" onclick="outgoingBatchAction('oldest','closed')">close selected</button>
+    <button class="btn btn-xs" onclick="outgoingBatchAction('oldest','deferred')">defer selected</button>
+  </div>
+  <div class="table-wrap">
+  <table class="bead-table">
+    <thead>
+      <tr>
+        <th><input type="checkbox" onchange="outgoingToggleAll(this,'oldest')"></th>
+        <th>Age</th>
+        <th>Pri</th>
+        <th>Bead</th>
+        <th>Status</th>
+        <th>Assignee</th>
+        <th>Rig</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{range .Oldest}}
+      <tr>
+        <td><input type="checkbox" class="oldest-cb" data-id="{{.Issue.ID}}" data-rig="{{.Rig}}" onchange="outgoingUpdateBar('oldest')"></td>
+        <td><strong style="color:{{if ge .Age 90}}var(--red){{else if ge .Age 30}}var(--orange){{else}}var(--yellow){{end}}">{{.Age}}d</strong></td>
+        <td id="pri-o-{{.Issue.ID}}" class="bead-priority-inline"><span class="badge {{priorityClass .Issue.Priority}}">{{priorityLabel .Issue.Priority}}</span>
+          <span class="priority-edit triage-btn-group">
+            <button class="btn btn-xs priority-p0" hx-post="/bead/{{.Rig}}/{{.Issue.ID}}/priority" hx-vals='{"priority":"0"}' hx-target="#pri-o-{{.Issue.ID}}" hx-swap="innerHTML">P0</button>
+            <button class="btn btn-xs priority-p1" hx-post="/bead/{{.Rig}}/{{.Issue.ID}}/priority" hx-vals='{"priority":"1"}' hx-target="#pri-o-{{.Issue.ID}}" hx-swap="innerHTML">P1</button>
+            <button class="btn btn-xs priority-p2" hx-post="/bead/{{.Rig}}/{{.Issue.ID}}/priority" hx-vals='{"priority":"2"}' hx-target="#pri-o-{{.Issue.ID}}" hx-swap="innerHTML">P2</button>
+            <button class="btn btn-xs priority-p3" hx-post="/bead/{{.Rig}}/{{.Issue.ID}}/priority" hx-vals='{"priority":"3"}' hx-target="#pri-o-{{.Issue.ID}}" hx-swap="innerHTML">P3</button>
+          </span>
+        </td>
+        <td><a href="/bead/{{.Rig}}/{{.Issue.ID}}">{{.Issue.Title}}</a></td>
+        <td>{{statusBadge .Issue.Status}}</td>
+        <td>
+          <select class="triage-assign" hx-post="/bead/{{.Rig}}/{{.Issue.ID}}/assign" hx-swap="outerHTML" hx-target="closest tr" name="assignee">
+            <option value="">{{if .Issue.Assignee}}{{shortActor .Issue.Assignee}}{{else}}assign...{{end}}</option>
+            {{range $.Assignees}}<option value="{{.}}">{{shortActor .}}</option>{{end}}
+          </select>
+        </td>
+        <td class="text-dim">{{rigName .Rig}}</td>
+        <td class="triage-actions">
+          <div class="triage-btn-group">
+            {{if ne .Issue.Status "in_progress"}}<button class="btn btn-xs" hx-post="/bead/{{.Rig}}/{{.Issue.ID}}/status" hx-vals='{"status":"in_progress"}' hx-swap="outerHTML" hx-target="closest tr">start</button>{{end}}
+            <button class="btn btn-xs" hx-post="/bead/{{.Rig}}/{{.Issue.ID}}/status" hx-vals='{"status":"closed"}' hx-swap="outerHTML" hx-target="closest tr" hx-confirm="Close {{.Issue.ID}}?">close</button>
+            <button class="btn btn-xs" hx-post="/bead/{{.Rig}}/{{.Issue.ID}}/status" hx-vals='{"status":"deferred"}' hx-swap="outerHTML" hx-target="closest tr" hx-confirm="Defer {{.Issue.ID}}?">defer</button>
+          </div>
+        </td>
+      </tr>
+      {{end}}
+    </tbody>
+  </table>
+  </div>
+  {{else}}
+  <p class="text-dim">No open beads.</p>
+  {{end}}
+
+  <h2 style="margin-top:2rem">Newest Open (Top 25)</h2>
+  {{if .Newest}}
+  <div class="batch-bar" id="batch-bar-newest" style="display:none">
+    <span class="batch-count">0 selected</span>
+    <button class="btn btn-xs" onclick="outgoingBatchAction('newest','in_progress')">start selected</button>
+    <button class="btn btn-xs" onclick="outgoingBatchAction('newest','closed')">close selected</button>
+    <button class="btn btn-xs" onclick="outgoingBatchAction('newest','deferred')">defer selected</button>
+  </div>
+  <div class="table-wrap">
+  <table class="bead-table">
+    <thead>
+      <tr>
+        <th><input type="checkbox" onchange="outgoingToggleAll(this,'newest')"></th>
+        <th>Age</th>
+        <th>Pri</th>
+        <th>Bead</th>
+        <th>Status</th>
+        <th>Assignee</th>
+        <th>Rig</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{range .Newest}}
+      <tr>
+        <td><input type="checkbox" class="newest-cb" data-id="{{.Issue.ID}}" data-rig="{{.Rig}}" onchange="outgoingUpdateBar('newest')"></td>
+        <td><strong style="color:{{if le .Age 1}}var(--green){{else if le .Age 7}}var(--cyan){{else}}var(--foreground){{end}}">{{.Age}}d</strong></td>
+        <td id="pri-n-{{.Issue.ID}}" class="bead-priority-inline"><span class="badge {{priorityClass .Issue.Priority}}">{{priorityLabel .Issue.Priority}}</span>
+          <span class="priority-edit triage-btn-group">
+            <button class="btn btn-xs priority-p0" hx-post="/bead/{{.Rig}}/{{.Issue.ID}}/priority" hx-vals='{"priority":"0"}' hx-target="#pri-n-{{.Issue.ID}}" hx-swap="innerHTML">P0</button>
+            <button class="btn btn-xs priority-p1" hx-post="/bead/{{.Rig}}/{{.Issue.ID}}/priority" hx-vals='{"priority":"1"}' hx-target="#pri-n-{{.Issue.ID}}" hx-swap="innerHTML">P1</button>
+            <button class="btn btn-xs priority-p2" hx-post="/bead/{{.Rig}}/{{.Issue.ID}}/priority" hx-vals='{"priority":"2"}' hx-target="#pri-n-{{.Issue.ID}}" hx-swap="innerHTML">P2</button>
+            <button class="btn btn-xs priority-p3" hx-post="/bead/{{.Rig}}/{{.Issue.ID}}/priority" hx-vals='{"priority":"3"}' hx-target="#pri-n-{{.Issue.ID}}" hx-swap="innerHTML">P3</button>
+          </span>
+        </td>
+        <td><a href="/bead/{{.Rig}}/{{.Issue.ID}}">{{.Issue.Title}}</a></td>
+        <td>{{statusBadge .Issue.Status}}</td>
+        <td>
+          <select class="triage-assign" hx-post="/bead/{{.Rig}}/{{.Issue.ID}}/assign" hx-swap="outerHTML" hx-target="closest tr" name="assignee">
+            <option value="">{{if .Issue.Assignee}}{{shortActor .Issue.Assignee}}{{else}}assign...{{end}}</option>
+            {{range $.Assignees}}<option value="{{.}}">{{shortActor .}}</option>{{end}}
+          </select>
+        </td>
+        <td class="text-dim">{{rigName .Rig}}</td>
+        <td class="triage-actions">
+          <div class="triage-btn-group">
+            {{if ne .Issue.Status "in_progress"}}<button class="btn btn-xs" hx-post="/bead/{{.Rig}}/{{.Issue.ID}}/status" hx-vals='{"status":"in_progress"}' hx-swap="outerHTML" hx-target="closest tr">start</button>{{end}}
+            <button class="btn btn-xs" hx-post="/bead/{{.Rig}}/{{.Issue.ID}}/status" hx-vals='{"status":"closed"}' hx-swap="outerHTML" hx-target="closest tr" hx-confirm="Close {{.Issue.ID}}?">close</button>
+            <button class="btn btn-xs" hx-post="/bead/{{.Rig}}/{{.Issue.ID}}/status" hx-vals='{"status":"deferred"}' hx-swap="outerHTML" hx-target="closest tr" hx-confirm="Defer {{.Issue.ID}}?">defer</button>
+          </div>
+        </td>
+      </tr>
+      {{end}}
+    </tbody>
+  </table>
+  </div>
+  {{else}}
+  <p class="text-dim">No open beads.</p>
+  {{end}}
+
+  <script>
+  function outgoingToggleAll(m,section){document.querySelectorAll('.'+section+'-cb').forEach(function(c){c.checked=m.checked});outgoingUpdateBar(section)}
+  function outgoingUpdateBar(section){var c=document.querySelectorAll('.'+section+'-cb:checked'),b=document.getElementById('batch-bar-'+section);if(b){b.style.display=c.length>0?'flex':'none';b.querySelector('.batch-count').textContent=c.length+' selected'}}
+  function outgoingBatchAction(section,s){var c=document.querySelectorAll('.'+section+'-cb:checked');if(!c.length)return;if(!confirm(s.charAt(0).toUpperCase()+s.slice(1)+' '+c.length+' beads?'))return;var f=new FormData();f.append('status',s);c.forEach(function(cb){f.append('ids[]',cb.getAttribute('data-rig')+'/'+cb.getAttribute('data-id'))});fetch('/batch/status',{method:'POST',body:f}).then(function(){c.forEach(function(cb){cb.closest('tr').remove()});outgoingUpdateBar(section);document.body.dispatchEvent(new CustomEvent('showToast',{detail:c.length+' beads '+s}))})}
+  </script>
 </div>
-{{else}}
-<p style="color:var(--comment)">No open beads.</p>
-{{end}}
-
-<h2 style="margin-top:2rem">Newest Open (Top 25)</h2>
-{{if .Newest}}
-<div style="overflow-x:auto">
-<table class="bead-table">
-<thead>
-<tr><th>Age</th><th>Priority</th><th>Bead</th><th>Status</th><th>Assignee</th><th>Rig</th></tr>
-</thead>
-<tbody>
-{{range .Newest}}
-<tr>
-    <td><strong style="color:{{if le .Age 1}}var(--green){{else if le .Age 7}}var(--cyan){{else}}var(--foreground){{end}}">{{.Age}}d</strong></td>
-    <td><span class="{{.Issue.Priority | priorityClass}}">{{.Issue.Priority | priorityLabel}}</span></td>
-    <td><a href="/bead/{{.Rig}}/{{.Issue.ID}}">{{.Issue.Title}}</a></td>
-    <td>{{.Issue.Status}}</td>
-    <td>{{shortActor .Issue.Assignee}}</td>
-    <td style="color:var(--comment)">{{.Rig}}</td>
-</tr>
-{{end}}
-</tbody>
-</table>
-</div>
-{{else}}
-<p style="color:var(--comment)">No open beads.</p>
-{{end}}
-
-<p style="color:var(--comment);font-size:0.85rem;margin-top:1rem">Generated {{.GeneratedAt.Format "2006-01-02 15:04"}} &middot; Auto-refresh 300s</p>
-<div hx-get="/outgoing{{if .FilterRig}}?rig={{.FilterRig}}{{end}}" hx-trigger="every 300s" hx-target="#content" hx-swap="innerHTML"></div>
 {{end}}
