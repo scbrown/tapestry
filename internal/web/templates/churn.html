@@ -49,7 +49,15 @@
           <td><a href="/bead/{{.Rig}}/{{.Issue.ID}}" hx-boost="true">{{.Issue.ID}}</a></td>
           <td>{{.Issue.Title}}</td>
           <td>{{statusBadge .Issue.Status}}</td>
-          <td>{{priorityLabel .Issue.Priority}}</td>
+          <td id="pri-{{.Issue.ID}}" class="bead-priority-inline"><span class="priority-badge p{{.Issue.Priority}}">P{{.Issue.Priority}}</span>
+            <span class="priority-edit triage-btn-group">
+              <button class="btn btn-xs priority-p0" hx-post="/bead/{{.Rig}}/{{.Issue.ID}}/priority" hx-vals='{"priority":"0"}' hx-target="#pri-{{.Issue.ID}}" hx-swap="innerHTML">P0</button>
+              <button class="btn btn-xs priority-p1" hx-post="/bead/{{.Rig}}/{{.Issue.ID}}/priority" hx-vals='{"priority":"1"}' hx-target="#pri-{{.Issue.ID}}" hx-swap="innerHTML">P1</button>
+              <button class="btn btn-xs priority-p2" hx-post="/bead/{{.Rig}}/{{.Issue.ID}}/priority" hx-vals='{"priority":"2"}' hx-target="#pri-{{.Issue.ID}}" hx-swap="innerHTML">P2</button>
+              <button class="btn btn-xs priority-p3" hx-post="/bead/{{.Rig}}/{{.Issue.ID}}/priority" hx-vals='{"priority":"3"}' hx-target="#pri-{{.Issue.ID}}" hx-swap="innerHTML">P3</button>
+              <button class="btn btn-xs priority-p4" hx-post="/bead/{{.Rig}}/{{.Issue.ID}}/priority" hx-vals='{"priority":"4"}' hx-target="#pri-{{.Issue.ID}}" hx-swap="innerHTML">P4</button>
+            </span>
+          </td>
           <td class="text-dim">{{.Rig}}</td>
           <td><strong>{{.Transitions}}</strong></td>
           <td>
