@@ -42,7 +42,7 @@
                 {{range .Assignees}}<option value="{{.}}"{{if eq . $.Issue.Assignee}} selected{{end}}>{{shortActor .}}</option>{{end}}
             </select>
         </span>
-        <span id="bead-labels">{{range .Labels}}<span class="label-removable"><a href="/labels?label={{.}}" class="badge label">{{.}}</a><button class="label-remove-btn" hx-post="/bead/{{$.Database}}/{{$.Issue.ID}}/label/remove" hx-vals='{"label":"{{.}}"}' hx-target="closest .label-removable" hx-swap="outerHTML" title="Remove label">&times;</button></span> {{end}}</span>
+        <span id="bead-labels">{{range .Labels}}<span class="label-removable"><a href="/label/{{.}}" class="badge label">{{.}}</a><button class="label-remove-btn" hx-post="/bead/{{$.Database}}/{{$.Issue.ID}}/label/remove" hx-vals='{"label":"{{.}}"}' hx-target="closest .label-removable" hx-swap="outerHTML" title="Remove label">&times;</button></span> {{end}}</span>
         <form class="label-add-form" hx-post="/bead/{{.Database}}/{{.Issue.ID}}/label" hx-target="#bead-labels" hx-swap="beforeend" hx-on::after-request="this.reset()">
             <input type="text" name="label" placeholder="add label" class="label-input" maxlength="50" pattern="[a-zA-Z0-9_-]+">
             <button type="submit" class="btn btn-xs">+</button>

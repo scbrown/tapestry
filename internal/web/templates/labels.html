@@ -21,7 +21,7 @@
   {{end}}
 
   {{if .Filter}}
-  <h2>Beads labeled "{{.Filter}}"</h2>
+  <h2>Beads labeled "{{.Filter}}" <a href="/label/{{.Filter}}" class="badge" style="font-size:0.8rem;margin-left:0.5rem">detail view</a></h2>
   {{if .Issues}}
   <div class="batch-bar" id="batch-bar-labels" style="display:none">
     <span class="batch-count">0 selected</span>
