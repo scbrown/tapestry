@@ -3,6 +3,7 @@ package web
 import (
 	"log"
 	"net/http"
+	"sort"
 	"sync"
 	"time"
 )
@@ -20,12 +21,14 @@ type heatmapWeek struct {
 }
 
 type heatmapData struct {
-	Weeks    []heatmapWeek
-	MaxDay   int
-	Total    int
-	NumDays  int
-	AvgDay   float64
-	Err      string
+	Weeks     []heatmapWeek
+	MaxDay    int
+	Total     int
+	NumDays   int
+	AvgDay    float64
+	Rigs      []string
+	FilterRig string
+	Err       string
 }
 
 func (s *Server) handleHeatmap(w http.ResponseWriter, r *http.Request) {
@@ -46,17 +49,27 @@ func (s *Server) handleHeatmap(w http.ResponseWriter, r *http.Request) {
 	now := time.Now()
 	todayStart := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
 
+	filterRig := r.URL.Query().Get("rig")
+	var rigs []string
+	for _, db := range dbs {
+		rigs = append(rigs, db.Name)
+	}
+	sort.Strings(rigs)
+
 	type dayResult struct {
 		created int
 		closed  int
 	}
 
-	// Fetch per-day counts across all databases in parallel
+	// Fetch per-day counts across databases in parallel
 	dayResults := make([]dayResult, numDays)
 	var wg sync.WaitGroup
 	var mu sync.Mutex
 
 	for _, db := range dbs {
+		if filterRig != "" && db.Name != filterRig {
+			continue
+		}
 		wg.Add(1)
 		go func(dbName string) {
 			defer wg.Done()
@@ -120,10 +133,12 @@ func (s *Server) handleHeatmap(w http.ResponseWriter, r *http.Request) {
 	}
 
 	s.render(w, r, "heatmap", heatmapData{
-		Weeks:  weeks,
-		MaxDay: maxDay,
-		Total:  total,
-		NumDays: numDays,
-		AvgDay: avgDay,
+		Weeks:     weeks,
+		MaxDay:    maxDay,
+		Total:     total,
+		NumDays:   numDays,
+		AvgDay:    avgDay,
+		Rigs:      rigs,
+		FilterRig: filterRig,
 	})
 }
