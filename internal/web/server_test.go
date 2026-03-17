@@ -1706,6 +1706,179 @@ func TestClosedPage_BatchReopen(t *testing.T) {
 	}
 }
 
+func TestCreatedPage_NilDataSource(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/created", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /created status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Recently Created") {
+		t.Error("expected 'Recently Created' heading")
+	}
+}
+
+func TestCreatedPage_WithData(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issues: []dolt.Issue{
+			{ID: "aegis-cr1", Title: "Fresh bead", Status: "open", Priority: 1, Owner: "aegis/crew/alice", CreatedAt: time.Now().Add(-1 * time.Hour), UpdatedAt: time.Now()},
+			{ID: "aegis-cr2", Title: "Old bead", Status: "open", Priority: 3, Owner: "aegis/crew/bob", CreatedAt: time.Now().Add(-48 * time.Hour), UpdatedAt: time.Now()},
+		},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/created?days=7", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /created status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "aegis-cr1") {
+		t.Error("expected recently created issue ID")
+	}
+	if !strings.Contains(body, "Fresh bead") {
+		t.Error("expected recently created issue title")
+	}
+	if !strings.Contains(body, "alice") {
+		t.Error("expected filer name in output")
+	}
+}
+
+func TestCreatedPage_BatchActions(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issues: []dolt.Issue{
+			{ID: "aegis-cba1", Title: "New item", Status: "open", Priority: 2, Owner: "aegis/crew/bob", CreatedAt: time.Now().Add(-1 * time.Hour), UpdatedAt: time.Now()},
+		},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/created?days=7", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /created status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "batch-bar-created") {
+		t.Error("expected batch bar on created page")
+	}
+	if !strings.Contains(body, "createdToggleDay") {
+		t.Error("expected per-day toggle-all on created page")
+	}
+	if !strings.Contains(body, "createdBatchAction") {
+		t.Error("expected batch action script on created page")
+	}
+}
+
+func TestCreatedPage_HTMXPartial(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/created", nil)
+	req.Header.Set("HX-Request", "true")
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /created (HTMX) status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if strings.Contains(body, "<html") {
+		t.Error("HTMX partial should not include full HTML layout")
+	}
+	if !strings.Contains(body, "Recently Created") {
+		t.Error("expected content in HTMX partial")
+	}
+}
+
+func TestCreatedPage_RigFilter(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{
+			{Name: "beads_aegis"},
+			{Name: "beads_gastown"},
+		},
+		issues: []dolt.Issue{
+			{ID: "rf1", Title: "Aegis bead", Status: "open", Priority: 1, Rig: "beads_aegis", CreatedAt: time.Now().Add(-1 * time.Hour), UpdatedAt: time.Now()},
+		},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/created?days=7&rig=beads_aegis", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /created?rig= status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "FilterRig") || !strings.Contains(body, "beads_aegis") {
+		// Just check the page renders with rig filter
+		if !strings.Contains(body, "Recently Created") {
+			t.Error("expected page content with rig filter")
+		}
+	}
+}
+
+func TestCreatedPage_QuickActions(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issues: []dolt.Issue{
+			{ID: "cqa1", Title: "Actionable", Status: "open", Priority: 2, CreatedAt: time.Now().Add(-1 * time.Hour), UpdatedAt: time.Now()},
+		},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/created?days=7", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /created status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "in_progress") {
+		t.Error("expected start button on created page")
+	}
+	if !strings.Contains(body, "hx-post=") {
+		t.Error("expected HTMX quick actions on created page")
+	}
+}
+
+func TestCreatedPage_InlinePriority(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issues: []dolt.Issue{
+			{ID: "cip1", Title: "Priority test", Status: "open", Priority: 2, CreatedAt: time.Now().Add(-1 * time.Hour), UpdatedAt: time.Now()},
+		},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/created?days=7", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /created status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "bead-priority-inline") {
+		t.Error("expected inline priority editing on created page")
+	}
+}
+
 func TestStalePage_NilDataSource(t *testing.T) {
 	srv := New(nil)
 	req := httptest.NewRequest("GET", "/stale", nil)

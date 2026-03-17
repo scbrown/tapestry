@@ -1,0 +1,145 @@
+{{define "title"}}Recently Created{{end}}
+
+{{define "content"}}
+<div class="created-view" hx-get="/created?days={{.Days}}{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" hx-trigger="every 120s" hx-select=".created-view" hx-swap="outerHTML">
+  <h1>Recently Created</h1>
+
+  {{if .Err}}
+  <div class="error">{{.Err}}</div>
+  {{else}}
+
+  <div class="filter-bar">
+    <form hx-get="/created" hx-target="#content" hx-push-url="true">
+      <label for="f-days">Time window:</label>
+      <select name="days" id="f-days" onchange="this.form.requestSubmit()">
+        <option value="1" {{if eq .Days 1}}selected{{end}}>Last 24h</option>
+        <option value="3" {{if eq .Days 3}}selected{{end}}>Last 3 days</option>
+        <option value="7" {{if eq .Days 7}}selected{{end}}>Last 7 days</option>
+        <option value="14" {{if eq .Days 14}}selected{{end}}>Last 14 days</option>
+        <option value="30" {{if eq .Days 30}}selected{{end}}>Last 30 days</option>
+      </select>
+    </form>
+  </div>
+
+  {{if gt (len .Rigs) 1}}
+  <div class="dep-filters" style="margin-top:0.5rem">
+    <a href="/created?days={{.Days}}" class="badge {{if not .FilterRig}}filter-active{{end}}">All rigs</a>
+    {{range .Rigs}}
+    <a href="/created?days={{$.Days}}&rig={{.}}" class="badge {{if eq . $.FilterRig}}filter-active{{end}}">{{rigName .}}</a>
+    {{end}}
+  </div>
+  {{end}}
+
+  <div class="results-meta">{{.Total}} beads created in the last {{.Days}} days{{if .FilterRig}} in {{rigName .FilterRig}}{{end}}</div>
+
+  {{if .TopFilers}}
+  <details class="created-filers" style="margin:0.75rem 0">
+    <summary class="text-dim">Filed by ({{len .TopFilers}} agents)</summary>
+    <div class="stat-grid" style="margin-top:0.5rem">
+      {{range .TopFilers}}
+      <div class="stat">
+        <span class="stat-value">{{.Count}}</span>
+        <span class="stat-label">{{shortActor .Name}}</span>
+      </div>
+      {{end}}
+    </div>
+  </details>
+  {{end}}
+
+  {{if .ByDay}}
+  <div class="batch-bar" id="batch-bar-created" style="display:none">
+    <span class="batch-count">0 selected</span>
+    <button class="btn btn-xs" onclick="createdBatchAction('closed')">close selected</button>
+    <button class="btn btn-xs" onclick="createdBatchAction('deferred')">defer selected</button>
+  </div>
+  {{range .ByDay}}
+  <div class="created-day-group">
+    <h2 class="closed-day-header">{{.Date}} <span class="text-dim">({{.Count}})</span></h2>
+    <div class="table-wrap">
+    <table class="bead-table">
+      <thead>
+        <tr>
+          <th><input type="checkbox" onchange="createdToggleDay(this)"></th>
+          <th>Rig</th>
+          <th>ID</th>
+          <th>Title</th>
+          <th>Pri</th>
+          <th>Status</th>
+          <th>Type</th>
+          <th>Filed by</th>
+          <th>Created</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {{range .Entries}}
+        <tr>
+          <td><input type="checkbox" class="created-cb" data-id="{{.Issue.ID}}" data-rig="{{lower .Rig}}" onchange="createdUpdateBar()"></td>
+          <td><span class="rig-label">{{rigName .Rig}}</span></td>
+          <td><a href="/bead/{{lower .Rig}}/{{.Issue.ID}}" hx-boost="true">{{.Issue.ID}}</a></td>
+          <td>{{.Issue.Title}}</td>
+          <td id="pri-c-{{.Issue.ID}}" class="bead-priority-inline"><span class="priority-badge p{{.Issue.Priority}}">P{{.Issue.Priority}}</span>
+            <span class="priority-edit triage-btn-group">
+              <button class="btn btn-xs priority-p0" hx-post="/bead/{{lower .Rig}}/{{.Issue.ID}}/priority" hx-vals='{"priority":"0"}' hx-target="#pri-c-{{.Issue.ID}}" hx-swap="innerHTML">P0</button>
+              <button class="btn btn-xs priority-p1" hx-post="/bead/{{lower .Rig}}/{{.Issue.ID}}/priority" hx-vals='{"priority":"1"}' hx-target="#pri-c-{{.Issue.ID}}" hx-swap="innerHTML">P1</button>
+              <button class="btn btn-xs priority-p2" hx-post="/bead/{{lower .Rig}}/{{.Issue.ID}}/priority" hx-vals='{"priority":"2"}' hx-target="#pri-c-{{.Issue.ID}}" hx-swap="innerHTML">P2</button>
+              <button class="btn btn-xs priority-p3" hx-post="/bead/{{lower .Rig}}/{{.Issue.ID}}/priority" hx-vals='{"priority":"3"}' hx-target="#pri-c-{{.Issue.ID}}" hx-swap="innerHTML">P3</button>
+              <button class="btn btn-xs priority-p4" hx-post="/bead/{{lower .Rig}}/{{.Issue.ID}}/priority" hx-vals='{"priority":"4"}' hx-target="#pri-c-{{.Issue.ID}}" hx-swap="innerHTML">P4</button>
+            </span>
+          </td>
+          <td>{{statusBadge .Issue.Status}}</td>
+          <td>{{.Issue.Type}}</td>
+          <td>{{shortActor .Issue.Owner}}</td>
+          <td>{{timeAgo .Issue.CreatedAt}}</td>
+          <td class="triage-actions">
+            {{if eq .Issue.Status "open"}}
+            <button class="btn btn-xs" hx-post="/bead/{{lower .Rig}}/{{.Issue.ID}}/status" hx-vals='{"status":"in_progress"}' hx-swap="outerHTML" hx-target="closest tr">start</button>
+            {{end}}
+            <button class="btn btn-xs" hx-post="/bead/{{lower .Rig}}/{{.Issue.ID}}/status" hx-vals='{"status":"closed"}' hx-swap="outerHTML" hx-target="closest tr" hx-confirm="Close {{.Issue.ID}}?">close</button>
+            <button class="btn btn-xs" hx-post="/bead/{{lower .Rig}}/{{.Issue.ID}}/status" hx-vals='{"status":"deferred"}' hx-swap="outerHTML" hx-target="closest tr" hx-confirm="Defer {{.Issue.ID}}?">defer</button>
+          </td>
+        </tr>
+        {{end}}
+      </tbody>
+    </table>
+    </div>
+  </div>
+  {{end}}
+  <script>
+  function createdToggleDay(master) {
+    var tbody = master.closest('table').querySelector('tbody');
+    tbody.querySelectorAll('.created-cb').forEach(function(cb) { cb.checked = master.checked; });
+    createdUpdateBar();
+  }
+  function createdUpdateBar() {
+    var checked = document.querySelectorAll('.created-cb:checked');
+    var bar = document.getElementById('batch-bar-created');
+    if (bar) {
+      bar.style.display = checked.length > 0 ? 'flex' : 'none';
+      bar.querySelector('.batch-count').textContent = checked.length + ' selected';
+    }
+  }
+  function createdBatchAction(status) {
+    var checked = document.querySelectorAll('.created-cb:checked');
+    if (!checked.length) return;
+    var label = status === 'closed' ? 'Close' : 'Defer';
+    if (!confirm(label+' '+checked.length+' beads?')) return;
+    var form = new FormData();
+    form.append('status', status);
+    checked.forEach(function(cb) {
+      form.append('ids[]', cb.getAttribute('data-rig')+'/'+cb.getAttribute('data-id'));
+    });
+    fetch('/batch/status', {method:'POST', body:form}).then(function() {
+      checked.forEach(function(cb) { cb.closest('tr').remove(); });
+      createdUpdateBar();
+      document.body.dispatchEvent(new CustomEvent('showToast', {detail: checked.length+' beads '+status}));
+    });
+  }
+  </script>
+  {{else}}
+  <p class="empty">No beads created in this time window.</p>
+  {{end}}
+
+  {{end}}
+</div>
+{{end}}
