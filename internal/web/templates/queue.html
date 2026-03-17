@@ -39,7 +39,15 @@
       <tr>
         <td class="text-dim">{{add1 $i}}</td>
         <td><a href="/bead/{{lower $item.Rig}}/{{$item.Issue.ID}}" hx-boost="true">{{$item.Issue.ID}}</a></td>
-        <td id="pri-{{$item.Issue.ID}}"><span class="priority-badge p{{$item.Issue.Priority}}">P{{$item.Issue.Priority}}</span></td>
+        <td id="pri-{{$item.Issue.ID}}" class="bead-priority-inline"><span class="priority-badge p{{$item.Issue.Priority}}">P{{$item.Issue.Priority}}</span>
+          <span class="priority-edit triage-btn-group">
+            <button class="btn btn-xs priority-p0" hx-post="/bead/{{lower $item.Rig}}/{{$item.Issue.ID}}/priority" hx-vals='{"priority":"0"}' hx-target="#pri-{{$item.Issue.ID}}" hx-swap="innerHTML">P0</button>
+            <button class="btn btn-xs priority-p1" hx-post="/bead/{{lower $item.Rig}}/{{$item.Issue.ID}}/priority" hx-vals='{"priority":"1"}' hx-target="#pri-{{$item.Issue.ID}}" hx-swap="innerHTML">P1</button>
+            <button class="btn btn-xs priority-p2" hx-post="/bead/{{lower $item.Rig}}/{{$item.Issue.ID}}/priority" hx-vals='{"priority":"2"}' hx-target="#pri-{{$item.Issue.ID}}" hx-swap="innerHTML">P2</button>
+            <button class="btn btn-xs priority-p3" hx-post="/bead/{{lower $item.Rig}}/{{$item.Issue.ID}}/priority" hx-vals='{"priority":"3"}' hx-target="#pri-{{$item.Issue.ID}}" hx-swap="innerHTML">P3</button>
+            <button class="btn btn-xs priority-p4" hx-post="/bead/{{lower $item.Rig}}/{{$item.Issue.ID}}/priority" hx-vals='{"priority":"4"}' hx-target="#pri-{{$item.Issue.ID}}" hx-swap="innerHTML">P4</button>
+          </span>
+        </td>
         <td>{{if $item.Issue.Type}}<span class="badge">{{$item.Issue.Type}}</span>{{else}}—{{end}}</td>
         <td>{{$item.Issue.Title}}</td>
         <td>{{$item.AgeDays}}d</td>
