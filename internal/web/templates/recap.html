@@ -1,13 +1,22 @@
 {{define "title"}}Recap{{end}}
 {{define "content"}}
-<div class="recap-page" hx-get="/recap?date={{.Date.Format "2006-01-02"}}" hx-trigger="every 60s" hx-select=".recap-page" hx-swap="outerHTML">
+<div class="recap-page" hx-get="/recap?date={{.Date.Format "2006-01-02"}}{{if .FilterRig}}&amp;rig={{.FilterRig}}{{end}}" hx-trigger="every 60s" hx-select=".recap-page" hx-swap="outerHTML">
   <h1>Daily Recap <time class="text-dim">{{.GeneratedAt.Format "15:04"}}</time></h1>
 
+  {{if gt (len .Rigs) 1}}
+  <div class="dep-filters" style="margin-bottom:0.5rem">
+    <a href="/recap?date={{.Date.Format "2006-01-02"}}" class="badge {{if not .FilterRig}}filter-active{{end}}">All rigs</a>
+    {{range .Rigs}}
+    <a href="/recap?date={{$.Date.Format "2006-01-02"}}&amp;rig={{.}}" class="badge {{if eq . $.FilterRig}}filter-active{{end}}">{{rigName .}}</a>
+    {{end}}
+  </div>
+  {{end}}
+
   <div class="recap-nav">
-    <a href="/recap?date={{.PrevDate}}" hx-get="/recap?date={{.PrevDate}}" hx-target="#content" hx-push-url="true" class="btn btn-sm">&larr; Previous</a>
+    <a href="/recap?date={{.PrevDate}}{{if .FilterRig}}&amp;rig={{.FilterRig}}{{end}}" hx-get="/recap?date={{.PrevDate}}{{if .FilterRig}}&amp;rig={{.FilterRig}}{{end}}" hx-target="#content" hx-push-url="true" class="btn btn-sm">&larr; Previous</a>
     <span class="recap-date">{{.DateLabel}}</span>
     {{if not .IsToday}}
-    <a href="/recap?date={{.NextDate}}" hx-get="/recap?date={{.NextDate}}" hx-target="#content" hx-push-url="true" class="btn btn-sm">Next &rarr;</a>
+    <a href="/recap?date={{.NextDate}}{{if .FilterRig}}&amp;rig={{.FilterRig}}{{end}}" hx-get="/recap?date={{.NextDate}}{{if .FilterRig}}&amp;rig={{.FilterRig}}{{end}}" hx-target="#content" hx-push-url="true" class="btn btn-sm">Next &rarr;</a>
     {{else}}
     <span class="btn btn-sm btn-disabled">Today</span>
     {{end}}

@@ -35,6 +35,9 @@ type recapData struct {
 	TotalClosed  int
 	TotalActive  int
 	NetChange    int
+
+	Rigs      []string
+	FilterRig string
 }
 
 func (s *Server) handleRecap(w http.ResponseWriter, r *http.Request) {
@@ -79,6 +82,15 @@ func (s *Server) handleRecap(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	filterRig := r.URL.Query().Get("rig")
+	var rigs []string
+	for _, db := range dbs {
+		rigs = append(rigs, db.Name)
+	}
+	sort.Strings(rigs)
+	data.Rigs = rigs
+	data.FilterRig = filterRig
+
 	dayStart := targetDate
 	dayEnd := targetDate.AddDate(0, 0, 1)
 
@@ -91,6 +103,9 @@ func (s *Server) handleRecap(w http.ResponseWriter, r *http.Request) {
 	results := make([]dbResult, len(dbs))
 	var wg sync.WaitGroup
 	for i, db := range dbs {
+		if filterRig != "" && db.Name != filterRig {
+			continue
+		}
 		wg.Add(1)
 		go func(i int, dbName string) {
 			defer wg.Done()

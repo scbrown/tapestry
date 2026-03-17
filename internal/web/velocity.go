@@ -34,6 +34,8 @@ type velocityData struct {
 	AvgCreate   float64
 	AvgClose    float64
 	Agents      []velocityAgent
+	Rigs        []string
+	FilterRig   string
 }
 
 func (s *Server) handleVelocity(w http.ResponseWriter, r *http.Request) {
@@ -68,9 +70,21 @@ func (s *Server) handleVelocity(w http.ResponseWriter, r *http.Request) {
 		agents map[string][2]int // [created, closed]
 	}
 
+	filterRig := r.URL.Query().Get("rig")
+	var rigs []string
+	for _, db := range dbs {
+		rigs = append(rigs, db.Name)
+	}
+	sort.Strings(rigs)
+	data.Rigs = rigs
+	data.FilterRig = filterRig
+
 	results := make([]dbResult, len(dbs))
 	var wg sync.WaitGroup
 	for i, db := range dbs {
+		if filterRig != "" && db.Name != filterRig {
+			continue
+		}
 		wg.Add(1)
 		go func(i int, dbName string) {
 			defer wg.Done()
