@@ -43,7 +43,14 @@
       <tr>
         <td><input type="checkbox" class="dwell-cb" data-id="{{.ID}}" data-rig="{{lower .Rig}}" onchange="dwellUpdateBar()"></td>
         <td><a href="/bead/{{lower .Rig}}/{{.ID}}" hx-boost="true">{{.ID}}</a></td>
-        <td><span class="priority-badge p{{.Priority}}">P{{.Priority}}</span></td>
+        <td id="pri-{{.ID}}" class="bead-priority-inline"><span class="badge {{priorityClass .Priority}}">{{priorityLabel .Priority}}</span>
+          <span class="priority-edit triage-btn-group">
+            <button class="btn btn-xs priority-p0" hx-post="/bead/{{lower .Rig}}/{{.ID}}/priority" hx-vals='{"priority":"0"}' hx-target="#pri-{{.ID}}" hx-swap="innerHTML">P0</button>
+            <button class="btn btn-xs priority-p1" hx-post="/bead/{{lower .Rig}}/{{.ID}}/priority" hx-vals='{"priority":"1"}' hx-target="#pri-{{.ID}}" hx-swap="innerHTML">P1</button>
+            <button class="btn btn-xs priority-p2" hx-post="/bead/{{lower .Rig}}/{{.ID}}/priority" hx-vals='{"priority":"2"}' hx-target="#pri-{{.ID}}" hx-swap="innerHTML">P2</button>
+            <button class="btn btn-xs priority-p3" hx-post="/bead/{{lower .Rig}}/{{.ID}}/priority" hx-vals='{"priority":"3"}' hx-target="#pri-{{.ID}}" hx-swap="innerHTML">P3</button>
+          </span>
+        </td>
         <td>{{statusBadge .Status}}</td>
         <td>{{.Title}}</td>
         <td>

@@ -62,7 +62,14 @@
       {{range .Items}}
       <tr>
         <td><input type="checkbox" class="ready-cb" data-id="{{.ID}}" data-rig="{{.DB}}" onchange="readyUpdateBar()"></td>
-        <td>{{priorityLabel .Priority}}</td>
+        <td id="pri-{{.ID}}" class="bead-priority-inline"><span class="badge {{priorityClass .Priority}}">{{priorityLabel .Priority}}</span>
+          <span class="priority-edit triage-btn-group">
+            <button class="btn btn-xs priority-p0" hx-post="/bead/{{.DB}}/{{.ID}}/priority" hx-vals='{"priority":"0"}' hx-target="#pri-{{.ID}}" hx-swap="innerHTML">P0</button>
+            <button class="btn btn-xs priority-p1" hx-post="/bead/{{.DB}}/{{.ID}}/priority" hx-vals='{"priority":"1"}' hx-target="#pri-{{.ID}}" hx-swap="innerHTML">P1</button>
+            <button class="btn btn-xs priority-p2" hx-post="/bead/{{.DB}}/{{.ID}}/priority" hx-vals='{"priority":"2"}' hx-target="#pri-{{.ID}}" hx-swap="innerHTML">P2</button>
+            <button class="btn btn-xs priority-p3" hx-post="/bead/{{.DB}}/{{.ID}}/priority" hx-vals='{"priority":"3"}' hx-target="#pri-{{.ID}}" hx-swap="innerHTML">P3</button>
+          </span>
+        </td>
         <td><a href="/bead/{{.DB}}/{{.ID}}">{{.ID}}</a></td>
         <td>{{.Title}}</td>
         <td><span class="badge">{{.Type}}</span></td>
