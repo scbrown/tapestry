@@ -23,6 +23,7 @@ type rescheduleData struct {
 	Total       int
 	Rigs        []string
 	FilterRig   string
+	Assignees   []string
 }
 
 func (s *Server) handleReschedules(w http.ResponseWriter, r *http.Request) {
@@ -52,8 +53,9 @@ func (s *Server) handleReschedules(w http.ResponseWriter, r *http.Request) {
 
 	// Fetch all non-closed issues from each DB
 	type dbResult struct {
-		rig    string
-		issues []dolt.Issue
+		rig       string
+		issues    []dolt.Issue
+		assignees []string
 	}
 	results := make([]dbResult, len(dbs))
 	var wg sync.WaitGroup
@@ -64,6 +66,7 @@ func (s *Server) handleReschedules(w http.ResponseWriter, r *http.Request) {
 		wg.Add(1)
 		go func(idx int, dbName string) {
 			defer wg.Done()
+			assignees, _ := s.ds.DistinctAssignees(ctx, dbName)
 			// Get deferred issues — these are the most likely reschedule candidates
 			deferred, err := s.ds.Issues(ctx, dbName, dolt.IssueFilter{Status: "deferred", Limit: 5000})
 			if err != nil {
@@ -80,10 +83,22 @@ func (s *Server) handleReschedules(w http.ResponseWriter, r *http.Request) {
 			}
 			all := append(deferred, open...)
 			all = append(all, prog...)
-			results[idx] = dbResult{rig: dbName, issues: all}
+			results[idx] = dbResult{rig: dbName, issues: all, assignees: assignees}
 		}(i, db.Name)
 	}
 	wg.Wait()
+
+	// Collect assignees from all DBs
+	assigneeSet := make(map[string]bool)
+	for _, r := range results {
+		for _, a := range r.assignees {
+			assigneeSet[a] = true
+		}
+	}
+	for a := range assigneeSet {
+		data.Assignees = append(data.Assignees, a)
+	}
+	sort.Strings(data.Assignees)
 
 	// Check status history for each issue — count times it went to "deferred"
 	var mu sync.Mutex

@@ -59,6 +59,7 @@
         <td>{{rigName .Rig}}</td>
         <td class="actions-cell">
           {{if eq .Epic.Status "open"}}
+          <button class="btn btn-xs" hx-post="/bead/{{lower .Rig}}/{{.Epic.ID}}/status" hx-vals='{"status":"in_progress"}' hx-swap="outerHTML" hx-target="closest tr">start</button>
           <button class="btn btn-xs" hx-post="/bead/{{lower .Rig}}/{{.Epic.ID}}/status" hx-vals='{"status":"closed"}' hx-swap="outerHTML" hx-target="closest tr" hx-confirm="Close {{.Epic.ID}}?">close</button>
           <button class="btn btn-xs" hx-post="/bead/{{lower .Rig}}/{{.Epic.ID}}/status" hx-vals='{"status":"deferred"}' hx-swap="outerHTML" hx-target="closest tr" hx-confirm="Defer {{.Epic.ID}}?">defer</button>
           {{else if eq .Epic.Status "in_progress"}}

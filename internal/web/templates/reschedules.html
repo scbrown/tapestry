@@ -21,36 +21,71 @@
   </div>
 
   {{if .Items}}
+  <div class="batch-bar" id="batch-bar-resched" style="display:none">
+    <span class="batch-count">0 selected</span>
+    <button class="btn btn-xs" onclick="reschedBatchAction('in_progress')">start selected</button>
+    <button class="btn btn-xs" onclick="reschedBatchAction('closed')">close selected</button>
+    <button class="btn btn-xs" onclick="reschedBatchAction('open')">reopen selected</button>
+  </div>
   <section class="backlog-card">
     <div class="table-wrap">
     <table class="bead-table">
       <thead>
         <tr>
+          <th><input type="checkbox" onchange="reschedToggleAll(this)"></th>
           <th>ID</th>
           <th>Title</th>
           <th>Status</th>
           <th>Pri</th>
+          <th>Assignee</th>
           <th>Rig</th>
           <th>Defers</th>
           <th>Last Deferred</th>
+          <th>Actions</th>
         </tr>
       </thead>
       <tbody>
         {{range .Items}}
         <tr>
+          <td><input type="checkbox" class="resched-cb" data-id="{{.Issue.ID}}" data-rig="{{.Rig}}" onchange="reschedUpdateBar()"></td>
           <td><a href="/bead/{{.Rig}}/{{.Issue.ID}}" hx-boost="true">{{.Issue.ID}}</a></td>
           <td>{{.Issue.Title}}</td>
           <td>{{statusBadge .Issue.Status}}</td>
-          <td><span class="priority-badge p{{.Issue.Priority}}">P{{.Issue.Priority}}</span></td>
+          <td id="pri-{{.Issue.ID}}" class="bead-priority-inline"><span class="badge {{priorityClass .Issue.Priority}}">{{priorityLabel .Issue.Priority}}</span>
+            <span class="priority-edit triage-btn-group">
+              <button class="btn btn-xs priority-p0" hx-post="/bead/{{.Rig}}/{{.Issue.ID}}/priority" hx-vals='{"priority":"0"}' hx-target="#pri-{{.Issue.ID}}" hx-swap="innerHTML">P0</button>
+              <button class="btn btn-xs priority-p1" hx-post="/bead/{{.Rig}}/{{.Issue.ID}}/priority" hx-vals='{"priority":"1"}' hx-target="#pri-{{.Issue.ID}}" hx-swap="innerHTML">P1</button>
+              <button class="btn btn-xs priority-p2" hx-post="/bead/{{.Rig}}/{{.Issue.ID}}/priority" hx-vals='{"priority":"2"}' hx-target="#pri-{{.Issue.ID}}" hx-swap="innerHTML">P2</button>
+              <button class="btn btn-xs priority-p3" hx-post="/bead/{{.Rig}}/{{.Issue.ID}}/priority" hx-vals='{"priority":"3"}' hx-target="#pri-{{.Issue.ID}}" hx-swap="innerHTML">P3</button>
+            </span>
+          </td>
+          <td>
+            <select class="triage-assign" hx-post="/bead/{{.Rig}}/{{.Issue.ID}}/assign" hx-swap="outerHTML" hx-target="closest tr" name="assignee">
+              <option value="">{{if .Issue.Assignee}}{{shortActor .Issue.Assignee}}{{else}}assign...{{end}}</option>
+              {{range $.Assignees}}<option value="{{.}}">{{shortActor .}}</option>{{end}}
+            </select>
+          </td>
           <td class="text-dim">{{.Rig}}</td>
           <td><strong style="color:#ff5555">{{.DeferCount}}×</strong></td>
           <td class="text-dim">{{formatDateTime .LastDefer}}</td>
+          <td class="triage-actions">
+            <div class="triage-btn-group">
+              <button class="btn btn-xs" hx-post="/bead/{{.Rig}}/{{.Issue.ID}}/status" hx-vals='{"status":"in_progress"}' hx-swap="outerHTML" hx-target="closest tr">start</button>
+              <button class="btn btn-xs" hx-post="/bead/{{.Rig}}/{{.Issue.ID}}/status" hx-vals='{"status":"open"}' hx-swap="outerHTML" hx-target="closest tr">reopen</button>
+              <button class="btn btn-xs" hx-post="/bead/{{.Rig}}/{{.Issue.ID}}/status" hx-vals='{"status":"closed"}' hx-swap="outerHTML" hx-target="closest tr" hx-confirm="Close {{.Issue.ID}}?">close</button>
+            </div>
+          </td>
         </tr>
         {{end}}
       </tbody>
     </table>
     </div>
   </section>
+  <script>
+  function reschedToggleAll(m){document.querySelectorAll('.resched-cb').forEach(function(c){c.checked=m.checked});reschedUpdateBar()}
+  function reschedUpdateBar(){var c=document.querySelectorAll('.resched-cb:checked'),b=document.getElementById('batch-bar-resched');if(b){b.style.display=c.length>0?'flex':'none';b.querySelector('.batch-count').textContent=c.length+' selected'}}
+  function reschedBatchAction(s){var c=document.querySelectorAll('.resched-cb:checked');if(!c.length)return;if(!confirm(s.charAt(0).toUpperCase()+s.slice(1)+' '+c.length+' beads?'))return;var f=new FormData();f.append('status',s);c.forEach(function(cb){f.append('ids[]',cb.getAttribute('data-rig')+'/'+cb.getAttribute('data-id'))});fetch('/batch/status',{method:'POST',body:f}).then(function(){c.forEach(function(cb){cb.closest('tr').remove()});reschedUpdateBar();document.body.dispatchEvent(new CustomEvent('showToast',{detail:c.length+' beads '+s}))})}
+  </script>
   {{else}}
   <p class="text-dim">No chronically deferred beads found.</p>
   {{end}}

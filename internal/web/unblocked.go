@@ -24,6 +24,7 @@ type unblockedData struct {
 	Total       int
 	Rigs        []string
 	FilterRig   string
+	Assignees   []string
 }
 
 func (s *Server) handleUnblocked(w http.ResponseWriter, r *http.Request) {
@@ -53,8 +54,9 @@ func (s *Server) handleUnblocked(w http.ResponseWriter, r *http.Request) {
 
 	// Gather open + in_progress issues from each DB
 	type dbResult struct {
-		rig    string
-		issues []dolt.Issue
+		rig       string
+		issues    []dolt.Issue
+		assignees []string
 	}
 	results := make([]dbResult, len(dbs))
 	var wg sync.WaitGroup
@@ -65,6 +67,7 @@ func (s *Server) handleUnblocked(w http.ResponseWriter, r *http.Request) {
 		wg.Add(1)
 		go func(i int, dbName string) {
 			defer wg.Done()
+			assignees, _ := s.ds.DistinctAssignees(ctx, dbName)
 			open, err := s.ds.Issues(ctx, dbName, dolt.IssueFilter{Status: "open", Limit: 5000})
 			if err != nil {
 				log.Printf("unblocked: %s open: %v", dbName, err)
@@ -75,10 +78,22 @@ func (s *Server) handleUnblocked(w http.ResponseWriter, r *http.Request) {
 				log.Printf("unblocked: %s in_progress: %v", dbName, err)
 			}
 			all := append(open, prog...)
-			results[i] = dbResult{rig: dbName, issues: all}
+			results[i] = dbResult{rig: dbName, issues: all, assignees: assignees}
 		}(i, db.Name)
 	}
 	wg.Wait()
+
+	// Collect assignees from all DBs
+	assigneeSet := make(map[string]bool)
+	for _, r := range results {
+		for _, a := range r.assignees {
+			assigneeSet[a] = true
+		}
+	}
+	for a := range assigneeSet {
+		data.Assignees = append(data.Assignees, a)
+	}
+	sort.Strings(data.Assignees)
 
 	// For each issue, check status history for blocked -> non-blocked transition
 	var mu sync.Mutex
