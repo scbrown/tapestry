@@ -2217,6 +2217,84 @@ func TestSprintPage_RigFilter(t *testing.T) {
 	}
 }
 
+func TestSprintPage_AssigneeDropdown(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issues: []dolt.Issue{
+			{ID: "sp-ad1", Title: "Active task", Status: "in_progress", Priority: 1,
+				Assignee: "aegis/crew/arnold",
+				CreatedAt: time.Now().Add(-2 * time.Hour), UpdatedAt: time.Now()},
+		},
+		assignees: []string{"aegis/crew/arnold", "aegis/crew/grant"},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/sprint", nil)
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "triage-assign") {
+		t.Error("expected assignee dropdown (triage-assign class)")
+	}
+	if !strings.Contains(body, "batch-bar") {
+		t.Error("expected batch action bar")
+	}
+}
+
+func TestSearchPage_AssigneeDropdown(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issues: []dolt.Issue{
+			{ID: "s-ad1", Title: "Searchable task", Status: "open", Priority: 1, UpdatedAt: time.Now()},
+		},
+		assignees: []string{"aegis/crew/arnold"},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/search?q=Searchable", nil)
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "triage-assign") {
+		t.Error("expected assignee dropdown (triage-assign class)")
+	}
+	if !strings.Contains(body, "Searchable task") {
+		t.Error("expected search result")
+	}
+}
+
+func TestRecapPage_AssigneeDropdown(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issues: []dolt.Issue{
+			{ID: "r-ad1", Title: "Active recap item", Status: "in_progress", Priority: 1,
+				CreatedAt: time.Now().Add(-1 * time.Hour), UpdatedAt: time.Now()},
+		},
+		assignees: []string{"aegis/crew/arnold"},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/recap", nil)
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "triage-assign") {
+		t.Error("expected assignee dropdown (triage-assign class)")
+	}
+}
+
 func TestStalePage_NilDataSource(t *testing.T) {
 	srv := New(nil)
 	req := httptest.NewRequest("GET", "/stale", nil)
