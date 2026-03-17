@@ -7630,3 +7630,184 @@ func TestGapsPage_AutoRefresh(t *testing.T) {
 		t.Error("expected 120s auto-refresh on gaps page")
 	}
 }
+
+// ── /compare ──
+
+func TestComparePage(t *testing.T) {
+	srv := New(&mockDataSource{})
+	req := httptest.NewRequest("GET", "/compare", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /compare status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Period Comparison") {
+		t.Error("expected 'Period Comparison' heading")
+	}
+	if !strings.Contains(body, "Created") {
+		t.Error("expected Created metric")
+	}
+	if !strings.Contains(body, "Closed") {
+		t.Error("expected Closed metric")
+	}
+	if !strings.Contains(body, "Net growth") {
+		t.Error("expected Net growth metric")
+	}
+}
+
+func TestComparePage_NilDS(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/compare", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /compare nil ds status = %d, want %d", w.Code, http.StatusOK)
+	}
+}
+
+func TestComparePage_DaysParam(t *testing.T) {
+	srv := New(&mockDataSource{})
+	req := httptest.NewRequest("GET", "/compare?days=14", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /compare?days=14 status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "14 days") {
+		t.Error("expected 14-day period display")
+	}
+}
+
+func TestComparePage_AutoRefresh(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/compare", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	body := w.Body.String()
+	if !strings.Contains(body, `hx-trigger="every 120s"`) {
+		t.Error("expected 120s auto-refresh on compare page")
+	}
+}
+
+// ── /chains ──
+
+func TestChainsPage(t *testing.T) {
+	srv := New(&mockDataSource{})
+	req := httptest.NewRequest("GET", "/chains", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /chains status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Dependency Chains") {
+		t.Error("expected 'Dependency Chains' heading")
+	}
+	if !strings.Contains(body, "Chain Stats") {
+		t.Error("expected Chain Stats section")
+	}
+	if !strings.Contains(body, "Total edges") {
+		t.Error("expected Total edges stat")
+	}
+	if !strings.Contains(body, "Max depth") {
+		t.Error("expected Max depth stat")
+	}
+}
+
+func TestChainsPage_NilDS(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/chains", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /chains nil ds status = %d, want %d", w.Code, http.StatusOK)
+	}
+}
+
+func TestChainsPage_AutoRefresh(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/chains", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	body := w.Body.String()
+	if !strings.Contains(body, `hx-trigger="every 300s"`) {
+		t.Error("expected 300s auto-refresh on chains page")
+	}
+}
+
+// ── /wip ──
+
+func TestWIPPage(t *testing.T) {
+	srv := New(&mockDataSource{})
+	req := httptest.NewRequest("GET", "/wip", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /wip status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Work in Progress") {
+		t.Error("expected 'Work in Progress' heading")
+	}
+	if !strings.Contains(body, "Summary") {
+		t.Error("expected Summary section")
+	}
+	if !strings.Contains(body, "Over limit") {
+		t.Error("expected Over limit stat")
+	}
+}
+
+func TestWIPPage_NilDS(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/wip", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /wip nil ds status = %d, want %d", w.Code, http.StatusOK)
+	}
+}
+
+func TestWIPPage_RigFilter(t *testing.T) {
+	srv := New(&mockDataSource{})
+	req := httptest.NewRequest("GET", "/wip?rig=beads_aegis", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /wip?rig status = %d, want %d", w.Code, http.StatusOK)
+	}
+}
+
+func TestWIPPage_AutoRefresh(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/wip", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	body := w.Body.String()
+	if !strings.Contains(body, `hx-trigger="every 60s"`) {
+		t.Error("expected 60s auto-refresh on wip page")
+	}
+}

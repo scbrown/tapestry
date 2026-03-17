@@ -1,0 +1,129 @@
+{{define "title"}}Compare{{end}}
+{{define "content"}}
+<div class="compare-page" hx-get="/compare?days={{.Days}}" hx-trigger="every 120s" hx-select=".compare-page" hx-swap="outerHTML">
+  <h1>Period Comparison <time class="text-dim">{{formatDateTime .GeneratedAt}}</time></h1>
+  <p class="text-dim">Comparing {{.Days}}-day periods. Current vs previous.</p>
+
+  <div class="dep-filters" style="margin-bottom:1rem">
+    <a href="/compare?days=7" class="badge {{if eq .Days 7}}badge-active{{end}}">7 days</a>
+    <a href="/compare?days=14" class="badge {{if eq .Days 14}}badge-active{{end}}">14 days</a>
+    <a href="/compare?days=30" class="badge {{if eq .Days 30}}badge-active{{end}}">30 days</a>
+  </div>
+
+  {{if .Err}}
+  <div class="error">{{.Err}}</div>
+  {{else}}
+
+  {{/* ── Side-by-side metrics ── */}}
+  <table class="bead-table">
+    <thead>
+      <tr>
+        <th>Metric</th>
+        <th>{{.PeriodA.Label}} <span class="text-dim">({{formatDate .PeriodA.Start}} — {{formatDate .PeriodA.End}})</span></th>
+        <th>{{.PeriodB.Label}} <span class="text-dim">({{formatDate .PeriodB.Start}} — {{formatDate .PeriodB.End}})</span></th>
+        <th>Delta</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Created</td>
+        <td>{{.PeriodA.Created}}</td>
+        <td>{{.PeriodB.Created}}</td>
+        <td class="{{if gt .DeltaCreated 0}}warn{{else if lt .DeltaCreated 0}}good{{end}}">
+          {{if gt .DeltaCreated 0}}+{{end}}{{.DeltaCreated}}
+        </td>
+      </tr>
+      <tr>
+        <td>Closed</td>
+        <td>{{.PeriodA.Closed}}</td>
+        <td>{{.PeriodB.Closed}}</td>
+        <td class="{{if gt .DeltaClosed 0}}good{{else if lt .DeltaClosed 0}}warn{{end}}">
+          {{if gt .DeltaClosed 0}}+{{end}}{{.DeltaClosed}}
+        </td>
+      </tr>
+      <tr>
+        <td>Net growth</td>
+        <td class="{{if gt .PeriodA.Net 0}}warn{{else if lt .PeriodA.Net 0}}good{{end}}">
+          {{if gt .PeriodA.Net 0}}+{{end}}{{.PeriodA.Net}}
+        </td>
+        <td class="{{if gt .PeriodB.Net 0}}warn{{else if lt .PeriodB.Net 0}}good{{end}}">
+          {{if gt .PeriodB.Net 0}}+{{end}}{{.PeriodB.Net}}
+        </td>
+        <td class="{{if gt .DeltaNet 0}}warn{{else if lt .DeltaNet 0}}good{{end}}">
+          {{if gt .DeltaNet 0}}+{{end}}{{.DeltaNet}}
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  {{/* ── Visual comparison bars ── */}}
+  <h2 style="margin-top:2rem">Visual Comparison</h2>
+  <div class="briefing-grid">
+    <section class="briefing-card">
+      <h3>Created</h3>
+      <div style="display:flex;gap:0.5rem;align-items:flex-end;height:80px">
+        {{$maxCreated := .PeriodA.Created}}
+        {{if gt .PeriodB.Created $maxCreated}}{{$maxCreated = .PeriodB.Created}}{{end}}
+        <div style="flex:1;text-align:center">
+          <div class="bar bar-created" style="height:{{if gt $maxCreated 0}}{{mulf (divf (itof .PeriodA.Created) (itof $maxCreated)) 100.0}}%{{else}}0{{end}};min-height:2px"></div>
+          <small>{{.PeriodA.Created}}<br>Current</small>
+        </div>
+        <div style="flex:1;text-align:center">
+          <div class="bar bar-open" style="height:{{if gt $maxCreated 0}}{{mulf (divf (itof .PeriodB.Created) (itof $maxCreated)) 100.0}}%{{else}}0{{end}};min-height:2px"></div>
+          <small>{{.PeriodB.Created}}<br>Previous</small>
+        </div>
+      </div>
+    </section>
+    <section class="briefing-card">
+      <h3>Closed</h3>
+      <div style="display:flex;gap:0.5rem;align-items:flex-end;height:80px">
+        {{$maxClosed := .PeriodA.Closed}}
+        {{if gt .PeriodB.Closed $maxClosed}}{{$maxClosed = .PeriodB.Closed}}{{end}}
+        <div style="flex:1;text-align:center">
+          <div class="bar bar-closed" style="height:{{if gt $maxClosed 0}}{{mulf (divf (itof .PeriodA.Closed) (itof $maxClosed)) 100.0}}%{{else}}0{{end}};min-height:2px"></div>
+          <small>{{.PeriodA.Closed}}<br>Current</small>
+        </div>
+        <div style="flex:1;text-align:center">
+          <div class="bar bar-open" style="height:{{if gt $maxClosed 0}}{{mulf (divf (itof .PeriodB.Closed) (itof $maxClosed)) 100.0}}%{{else}}0{{end}};min-height:2px"></div>
+          <small>{{.PeriodB.Closed}}<br>Previous</small>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  {{/* ── Agent activity comparison ── */}}
+  {{if or .TopAgentsA .TopAgentsB}}
+  <h2 style="margin-top:2rem">Agent Activity</h2>
+  <div class="briefing-grid">
+    <section class="briefing-card">
+      <h3>Current Period</h3>
+      {{if .TopAgentsA}}
+      <table class="bead-table" style="font-size:0.85rem">
+        <thead><tr><th>Agent</th><th>Actions</th></tr></thead>
+        <tbody>
+        {{range .TopAgentsA}}
+        <tr><td><a href="/agent/{{.Agent}}">{{shortActor .Agent}}</a></td><td>{{.Count}}</td></tr>
+        {{end}}
+        </tbody>
+      </table>
+      {{else}}<p class="text-dim">No agent data</p>{{end}}
+    </section>
+    <section class="briefing-card">
+      <h3>Previous Period</h3>
+      {{if .TopAgentsB}}
+      <table class="bead-table" style="font-size:0.85rem">
+        <thead><tr><th>Agent</th><th>Actions</th></tr></thead>
+        <tbody>
+        {{range .TopAgentsB}}
+        <tr><td><a href="/agent/{{.Agent}}">{{shortActor .Agent}}</a></td><td>{{.Count}}</td></tr>
+        {{end}}
+        </tbody>
+      </table>
+      {{else}}<p class="text-dim">No agent data</p>{{end}}
+    </section>
+  </div>
+  {{end}}
+
+  {{end}}
+</div>
+{{end}}

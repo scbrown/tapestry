@@ -1,0 +1,92 @@
+{{define "title"}}Chains{{end}}
+{{define "content"}}
+<div class="chains-page" hx-get="/chains" hx-trigger="every 300s" hx-select=".chains-page" hx-swap="outerHTML">
+  <h1>Dependency Chains <time class="text-dim">{{formatDateTime .GeneratedAt}}</time></h1>
+  <p class="text-dim">Longest dependency chains and top blocking beads.</p>
+
+  {{if .Err}}
+  <div class="error">{{.Err}}</div>
+  {{else}}
+
+  {{/* ── Stats ── */}}
+  <div class="briefing-grid">
+    <section class="briefing-card">
+      <h2>Chain Stats</h2>
+      <div class="stat-grid">
+        <div class="stat">
+          <span class="stat-value">{{.TotalDeps}}</span>
+          <span class="stat-label">Total edges</span>
+        </div>
+        <div class="stat">
+          <span class="stat-value {{if gt .MaxDepth 5}}warn{{end}}">{{.MaxDepth}}</span>
+          <span class="stat-label">Max depth</span>
+        </div>
+        <div class="stat">
+          <span class="stat-value">{{printf "%.1f" .AvgDepth}}</span>
+          <span class="stat-label">Avg depth</span>
+        </div>
+        <div class="stat">
+          <span class="stat-value {{if gt .ChainsOver3 0}}warn{{end}}">{{.ChainsOver3}}</span>
+          <span class="stat-label">Chains &gt;3 deep</span>
+        </div>
+        {{if gt .CircularRefs 0}}
+        <div class="stat">
+          <span class="stat-value warn">{{.CircularRefs}}</span>
+          <span class="stat-label">Circular refs</span>
+        </div>
+        {{end}}
+      </div>
+    </section>
+  </div>
+
+  {{/* ── Longest Chains ── */}}
+  {{if .LongestChains}}
+  <h2 style="margin-top:2rem">Longest Chains</h2>
+  {{range .LongestChains}}
+  <div class="briefing-card" style="margin-bottom:1rem">
+    <h3>{{.Length}} links</h3>
+    <div class="chain-path">
+      {{range $i, $node := .Path}}
+      {{if $i}}<span class="text-dim"> → </span>{{end}}
+      <span class="chain-node">
+        {{if $node.DB}}<a href="/bead/{{$node.DB}}/{{$node.ID}}">{{$node.ID}}</a>{{else}}{{$node.ID}}{{end}}
+        {{if $node.Status}}{{statusBadge $node.Status}}{{end}}
+        {{if $node.Title}}<span class="text-dim" style="font-size:0.8rem">{{$node.Title}}</span>{{end}}
+      </span>
+      {{end}}
+    </div>
+  </div>
+  {{end}}
+  {{else}}
+  <p class="text-dim">No dependency chains found.</p>
+  {{end}}
+
+  {{/* ── Top Blockers ── */}}
+  {{if .TopBlockers}}
+  <h2 style="margin-top:2rem">Top Blocking Beads</h2>
+  <p class="text-dim">Beads that the most other beads depend on.</p>
+  <table class="bead-table">
+    <thead>
+      <tr>
+        <th>Bead</th>
+        <th>Title</th>
+        <th>Status</th>
+        <th>Dependents</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{range .TopBlockers}}
+      <tr>
+        <td>{{if .DB}}<a href="/bead/{{.DB}}/{{.ID}}">{{.ID}}</a>{{else}}{{.ID}}{{end}}</td>
+        <td>{{if .Title}}{{.Title}}{{else}}<span class="text-dim">—</span>{{end}}</td>
+        <td>{{if .Status}}{{statusBadge .Status}}{{else}}—{{end}}</td>
+        <td><strong>{{.Dependents}}</strong></td>
+      </tr>
+      {{end}}
+    </tbody>
+  </table>
+  {{end}}
+
+  {{end}}
+</div>
+{{end}}

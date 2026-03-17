@@ -1,0 +1,93 @@
+{{define "title"}}WIP Limits{{end}}
+{{define "content"}}
+<div class="wip-page" hx-get="/wip{{if .FilterRig}}?rig={{.FilterRig}}{{end}}" hx-trigger="every 60s" hx-select=".wip-page" hx-swap="outerHTML">
+  <h1>Work in Progress <time class="text-dim">{{formatDateTime .GeneratedAt}}</time></h1>
+  <p class="text-dim">Active work per agent. WIP limit: {{.WIPLimit}} items.</p>
+
+  {{if .Err}}
+  <div class="error">{{.Err}}</div>
+  {{else}}
+
+  {{/* ── Summary ── */}}
+  <div class="briefing-grid">
+    <section class="briefing-card">
+      <h2>Summary</h2>
+      <div class="stat-grid">
+        <div class="stat">
+          <span class="stat-value">{{len .Agents}}</span>
+          <span class="stat-label">Agents</span>
+        </div>
+        <div class="stat">
+          <span class="stat-value {{if gt .OverCount 0}}warn{{end}}">{{.OverCount}}</span>
+          <span class="stat-label">Over limit</span>
+        </div>
+        <div class="stat">
+          <span class="stat-value">{{printf "%.1f" .AvgWIP}}</span>
+          <span class="stat-label">Avg WIP</span>
+        </div>
+        <div class="stat">
+          <span class="stat-value {{if gt .MaxWIP .WIPLimit}}warn{{end}}">{{.MaxWIP}}</span>
+          <span class="stat-label">Max WIP</span>
+        </div>
+      </div>
+    </section>
+    <section class="briefing-card">
+      <h2>Status Breakdown</h2>
+      <div class="stat-grid">
+        <div class="stat">
+          <span class="stat-value pulse">{{.TotalInProgress}}</span>
+          <span class="stat-label">In progress</span>
+        </div>
+        <div class="stat">
+          <span class="stat-value">{{.TotalBlocked}}</span>
+          <span class="stat-label">Blocked</span>
+        </div>
+        <div class="stat">
+          <span class="stat-value">{{.TotalOpen}}</span>
+          <span class="stat-label">Open (assigned)</span>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  {{/* ── Agent WIP Table ── */}}
+  {{if .Agents}}
+  <h2 style="margin-top:2rem">Per-Agent WIP</h2>
+  <table class="bead-table">
+    <thead>
+      <tr>
+        <th>Agent</th>
+        <th>In Progress</th>
+        <th>Blocked</th>
+        <th>Open</th>
+        <th>Total WIP</th>
+        <th>Load</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{range .Agents}}
+      <tr {{if .OverLimit}}class="row-warn"{{end}}>
+        <td><a href="/agent/{{.Name}}">{{shortActor .Name}}</a></td>
+        <td>{{.InProgress}}</td>
+        <td>{{.Blocked}}</td>
+        <td>{{.Open}}</td>
+        <td><strong>{{.Total}}</strong>{{if .OverLimit}} <span class="warn">⚠</span>{{end}}</td>
+        <td>
+          <div class="inline-bar" style="width:120px">
+            {{$pct := 0}}{{$limit := 8}}
+            {{if gt .Total 0}}
+            <div class="bar {{if .OverLimit}}bar-blocked{{else}}bar-created{{end}}" style="width:{{if gt .Total $limit}}100{{else}}{{mulf (divf (itof .Total) (itof $limit)) 100.0}}{{end}}%;height:12px"></div>
+            {{end}}
+          </div>
+        </td>
+      </tr>
+      {{end}}
+    </tbody>
+  </table>
+  {{else}}
+  <p class="text-dim">No agents with active work found.</p>
+  {{end}}
+
+  {{end}}
+</div>
+{{end}}
