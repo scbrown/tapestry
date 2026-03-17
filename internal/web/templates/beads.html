@@ -80,10 +80,16 @@
     </div>
 
     {{if .Issues}}
+    <div class="batch-bar" id="batch-bar-beads" style="display:none">
+      <span class="batch-count">0 selected</span>
+      <button class="btn btn-xs" onclick="beadsBatchAction('closed')">close selected</button>
+      <button class="btn btn-xs" onclick="beadsBatchAction('deferred')">defer selected</button>
+    </div>
     <div class="table-wrap">
     <table class="bead-table">
       <thead>
         <tr>
+          <th><input type="checkbox" onchange="beadsToggleAll(this)"></th>
           <th>Rig</th>
           <th>ID</th>
           <th>Title</th>
@@ -97,6 +103,7 @@
       <tbody>
         {{range .Issues}}
         <tr>
+          <td><input type="checkbox" class="batch-cb" data-id="{{.ID}}" data-rig="{{lower .Rig}}" onchange="beadsUpdateBar()"></td>
           <td><span class="rig-label">{{rigName .Rig}}</span></td>
           <td><a href="/bead/{{lower .Rig}}/{{.ID}}" hx-boost="true">{{.ID}}</a></td>
           <td>{{.Title}}</td>
@@ -127,6 +134,36 @@
     <p class="empty">No beads found.</p>
     {{end}}
   </div>
+
+  <script>
+  function beadsToggleAll(master) {
+    document.querySelectorAll('.batch-cb').forEach(function(cb) { cb.checked = master.checked; });
+    beadsUpdateBar();
+  }
+  function beadsUpdateBar() {
+    var checked = document.querySelectorAll('.batch-cb:checked');
+    var bar = document.getElementById('batch-bar-beads');
+    if (bar) {
+      bar.style.display = checked.length > 0 ? 'flex' : 'none';
+      bar.querySelector('.batch-count').textContent = checked.length + ' selected';
+    }
+  }
+  function beadsBatchAction(status) {
+    var checked = document.querySelectorAll('.batch-cb:checked');
+    if (!checked.length) return;
+    if (!confirm(status.charAt(0).toUpperCase()+status.slice(1)+' '+checked.length+' beads?')) return;
+    var form = new FormData();
+    form.append('status', status);
+    checked.forEach(function(cb) {
+      form.append('ids[]', cb.getAttribute('data-rig')+'/'+cb.getAttribute('data-id'));
+    });
+    fetch('/batch/status', {method:'POST', body:form}).then(function() {
+      checked.forEach(function(cb) { cb.closest('tr').remove(); });
+      beadsUpdateBar();
+      document.body.dispatchEvent(new CustomEvent('showToast', {detail: checked.length+' beads '+status}));
+    });
+  }
+  </script>
 
   {{end}}
 </div>

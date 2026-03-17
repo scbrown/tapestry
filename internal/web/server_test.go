@@ -476,6 +476,39 @@ func TestBeadsList_WithData(t *testing.T) {
 	}
 }
 
+func TestBeadsList_BatchActions(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issues: []dolt.Issue{
+			{ID: "aegis-b1", Title: "Batch bead 1", Status: "open", Priority: 1, Rig: "beads_aegis", UpdatedAt: time.Now()},
+			{ID: "aegis-b2", Title: "Batch bead 2", Status: "open", Priority: 2, Rig: "beads_aegis", UpdatedAt: time.Now()},
+		},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/beads", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /beads status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "batch-bar-beads") {
+		t.Error("expected batch-bar-beads element for batch actions")
+	}
+	if !strings.Contains(body, `class="batch-cb"`) {
+		t.Error("expected batch checkboxes on bead rows")
+	}
+	if !strings.Contains(body, "close selected") {
+		t.Error("expected 'close selected' batch button")
+	}
+	if !strings.Contains(body, "defer selected") {
+		t.Error("expected 'defer selected' batch button")
+	}
+}
+
 func TestCommitsPage_NoForgejo(t *testing.T) {
 	srv := &Server{forgejo: nil}
 	srv.parseTemplates()
