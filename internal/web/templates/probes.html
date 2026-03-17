@@ -1,0 +1,56 @@
+{{define "title"}}Probes{{end}}
+
+{{define "content"}}
+<div class="probes-view" hx-get="/probes{{if .Filter}}?category={{.Filter}}{{end}}" hx-trigger="every 300s" hx-select=".probes-view" hx-swap="outerHTML">
+  <h1>Probe Findings</h1>
+
+  {{if .Err}}
+  <div class="error">{{.Err}}</div>
+  {{else}}
+
+  <div class="results-meta">{{.Total}} probe reports across {{len .Categories}} categories</div>
+
+  {{if .Filter}}
+  <div class="filter-bar">
+    <a href="/probes" class="btn btn-sm" hx-get="/probes" hx-target="#content" hx-push-url="true">Show all categories</a>
+  </div>
+  {{end}}
+
+  {{if .Categories}}
+  {{range .Categories}}
+  <section class="probe-category">
+    <h2>
+      <a href="/probes?category={{.Name}}" hx-get="/probes?category={{.Name}}" hx-target="#content" hx-push-url="true">{{.Name}}</a>
+      <span class="badge">{{.Count}}</span>
+      {{if not .Latest.IsZero}}<span class="text-muted"> latest: {{timeAgo .Latest}}</span>{{end}}
+    </h2>
+
+    <div class="table-wrap">
+    <table class="bead-table">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Title</th>
+          <th>Summary</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{range .Probes}}
+        <tr>
+          <td class="nowrap">{{if not .Date.IsZero}}{{formatDate .Date}}{{else}}&mdash;{{end}}</td>
+          <td><strong>{{.Title}}</strong></td>
+          <td class="text-muted">{{.Summary}}</td>
+        </tr>
+        {{end}}
+      </tbody>
+    </table>
+    </div>
+  </section>
+  {{end}}
+  {{else}}
+  <p class="empty">No probe findings found.</p>
+  {{end}}
+
+  {{end}}
+</div>
+{{end}}
