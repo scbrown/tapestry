@@ -1,7 +1,7 @@
 {{define "title"}}Dependencies{{end}}
 
 {{define "content"}}
-<div class="deps-view" hx-get="/deps{{if .Filter}}?type={{.Filter}}{{end}}" hx-trigger="every 120s" hx-select=".deps-view" hx-swap="outerHTML">
+<div class="deps-view" hx-get="/deps{{if or .Filter .FilterRig}}?{{end}}{{if .Filter}}type={{.Filter}}{{end}}{{if and .Filter .FilterRig}}&amp;{{end}}{{if .FilterRig}}rig={{.FilterRig}}{{end}}" hx-trigger="every 120s" hx-select=".deps-view" hx-swap="outerHTML">
   <h1>Dependency Graph</h1>
 
   {{if .Err}}
@@ -15,10 +15,19 @@
     {{if .Stats.Other}}&middot; {{.Stats.Other}} other{{end}}
   </div>
 
+  {{if gt (len .Rigs) 1}}
+  <div class="dep-filters" style="margin-bottom:0.5rem">
+    <a href="/deps{{if .Filter}}?type={{.Filter}}{{end}}" class="badge {{if not .FilterRig}}filter-active{{end}}">All rigs</a>
+    {{range .Rigs}}
+    <a href="/deps?rig={{.}}{{if $.Filter}}&amp;type={{$.Filter}}{{end}}" class="badge {{if eq . $.FilterRig}}filter-active{{end}}">{{rigName .}}</a>
+    {{end}}
+  </div>
+  {{end}}
+
   <div class="dep-filters">
-    <a href="/deps" class="badge {{if not .Filter}}filter-active{{end}}">all</a>
-    <a href="/deps?type=depends_on" class="badge {{if eq .Filter "depends_on"}}filter-active{{end}}">depends_on</a>
-    <a href="/deps?type=child_of" class="badge {{if eq .Filter "child_of"}}filter-active{{end}}">child_of</a>
+    <a href="/deps{{if .FilterRig}}?rig={{.FilterRig}}{{end}}" class="badge {{if not .Filter}}filter-active{{end}}">all</a>
+    <a href="/deps?type=depends_on{{if .FilterRig}}&amp;rig={{.FilterRig}}{{end}}" class="badge {{if eq .Filter "depends_on"}}filter-active{{end}}">depends_on</a>
+    <a href="/deps?type=child_of{{if .FilterRig}}&amp;rig={{.FilterRig}}{{end}}" class="badge {{if eq .Filter "child_of"}}filter-active{{end}}">child_of</a>
   </div>
 
   {{range .ByType}}

@@ -22,11 +22,13 @@ type depTypeGroup struct {
 }
 
 type depsData struct {
-	ByType []depTypeGroup
-	Total  int
-	Stats  depStats
-	Filter string
-	Err    string
+	ByType    []depTypeGroup
+	Total     int
+	Stats     depStats
+	Filter    string
+	Rigs      []string
+	FilterRig string
+	Err       string
 }
 
 type depStats struct {
@@ -51,6 +53,7 @@ func (s *Server) handleDeps(w http.ResponseWriter, r *http.Request) {
 	}
 
 	filterType := r.URL.Query().Get("type")
+	filterRig := r.URL.Query().Get("rig")
 
 	type dbResult struct {
 		entries []depEntry
@@ -85,8 +88,28 @@ func (s *Server) handleDeps(w http.ResponseWriter, r *http.Request) {
 	wg.Wait()
 
 	var all []depEntry
+	rigSet := make(map[string]bool)
+	for _, db := range dbs {
+		rigSet[db.Name] = true
+	}
 	for _, r := range results {
 		all = append(all, r.entries...)
+	}
+	var rigs []string
+	for rig := range rigSet {
+		rigs = append(rigs, rig)
+	}
+	sort.Strings(rigs)
+
+	// Apply rig filter
+	if filterRig != "" {
+		filtered := all[:0]
+		for _, e := range all {
+			if e.Rig == filterRig {
+				filtered = append(filtered, e)
+			}
+		}
+		all = filtered
 	}
 
 	sort.Slice(all, func(i, j int) bool {
@@ -134,9 +157,11 @@ func (s *Server) handleDeps(w http.ResponseWriter, r *http.Request) {
 	stats.UniqueIDs = len(uniqueIDs)
 
 	s.render(w, r, "deps", depsData{
-		ByType: byType,
-		Total:  len(all),
-		Stats:  stats,
-		Filter: filterType,
+		ByType:    byType,
+		Total:     len(all),
+		Stats:     stats,
+		Filter:    filterType,
+		Rigs:      rigs,
+		FilterRig: filterRig,
 	})
 }

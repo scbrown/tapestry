@@ -6017,3 +6017,40 @@ func TestCommentsPage_RigFilter(t *testing.T) {
 		t.Error("expected rig filter preserved in auto-refresh URL")
 	}
 }
+
+func TestDepsPage_RigFilter(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}, {Name: "beads_gastown"}},
+	}
+
+	srv := New(ds)
+
+	// Without filter — should show rig filter bar
+	req := httptest.NewRequest("GET", "/deps", nil)
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "All rigs") {
+		t.Error("expected rig filter bar on deps page with multiple rigs")
+	}
+
+	// With rig filter — should preserve in URL
+	req = httptest.NewRequest("GET", "/deps?rig=beads_aegis&type=child_of", nil)
+	w = httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body = w.Body.String()
+	if !strings.Contains(body, "rig=beads_aegis") {
+		t.Error("expected rig filter preserved in auto-refresh URL")
+	}
+	if !strings.Contains(body, "type=child_of") {
+		t.Error("expected type filter preserved alongside rig filter")
+	}
+}
