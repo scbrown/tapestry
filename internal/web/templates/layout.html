@@ -180,6 +180,26 @@
                 if (link) { e.preventDefault(); link.click(); }
                 return;
             }
+            // Action shortcuts on selected row
+            if (kbSelectedRow >= 0) {
+                var row = rows[kbSelectedRow];
+                if (e.key === 's') {
+                    var startBtn = row.querySelector('button[hx-vals*="in_progress"]');
+                    if (startBtn) { e.preventDefault(); startBtn.click(); kbSelectRow(kbSelectedRow); return; }
+                }
+                if (e.key === 'c') {
+                    var closeBtn = row.querySelector('button[hx-vals*="closed"]');
+                    if (closeBtn) { e.preventDefault(); closeBtn.click(); return; }
+                }
+                if (e.key === 'd') {
+                    var deferBtn = row.querySelector('button[hx-vals*="deferred"]');
+                    if (deferBtn) { e.preventDefault(); deferBtn.click(); return; }
+                }
+                if (e.key === 'x') {
+                    var cb = row.querySelector('input[type="checkbox"][class*="-cb"]');
+                    if (cb) { e.preventDefault(); cb.checked = !cb.checked; cb.dispatchEvent(new Event('change')); return; }
+                }
+            }
         }
         // ? for keyboard shortcut help
         if (e.key === '?') {
@@ -197,6 +217,10 @@
               '<dt>Ctrl+K</dt><dd>Quick nav palette</dd>' +
               '<dt>j / k</dt><dd>Navigate table rows</dd>' +
               '<dt>Enter</dt><dd>Open selected bead</dd>' +
+              '<dt>s</dt><dd>Start selected bead</dd>' +
+              '<dt>c</dt><dd>Close selected bead</dd>' +
+              '<dt>d</dt><dd>Defer selected bead</dd>' +
+              '<dt>x</dt><dd>Toggle checkbox on selected row</dd>' +
               '<dt>?</dt><dd>Toggle this help</dd>' +
               '</dl></div>';
             help.addEventListener('click', function(ev) { if (ev.target === help) help.remove(); });
