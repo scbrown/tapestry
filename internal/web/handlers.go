@@ -1547,6 +1547,106 @@ func (s *Server) handleBatchStatus(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, `<div class="text-dim">%d beads updated to %s</div>`, updated, template.HTMLEscapeString(newStatus))
 }
 
+// handleBatchPriority handles POST /batch/priority to update multiple beads at once.
+// Expects form fields: ids[] (format: "db/id"), priority (0-4).
+func (s *Server) handleBatchPriority(w http.ResponseWriter, r *http.Request) {
+	if s.ds == nil {
+		http.Error(w, "no database", http.StatusServiceUnavailable)
+		return
+	}
+
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "bad request", http.StatusBadRequest)
+		return
+	}
+
+	priStr := r.FormValue("priority")
+	pri, err := strconv.Atoi(priStr)
+	if err != nil || pri < 0 || pri > 4 {
+		http.Error(w, "invalid priority (0-4)", http.StatusBadRequest)
+		return
+	}
+
+	ids := r.Form["ids[]"]
+	if len(ids) == 0 {
+		http.Error(w, "no beads specified", http.StatusBadRequest)
+		return
+	}
+	if len(ids) > 100 {
+		http.Error(w, "too many beads (max 100)", http.StatusBadRequest)
+		return
+	}
+
+	ctx := r.Context()
+	updated := 0
+	for _, ref := range ids {
+		parts := strings.SplitN(ref, "/", 2)
+		if len(parts) != 2 {
+			continue
+		}
+		db, id := parts[0], parts[1]
+		if err := s.ds.UpdatePriority(ctx, db, id, pri); err != nil {
+			log.Printf("batch priority: %s/%s: %v", db, id, err)
+			continue
+		}
+		updated++
+	}
+
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.Header().Set("HX-Trigger", fmt.Sprintf(`{"showToast":"%d beads set to P%d"}`, updated, pri))
+	fmt.Fprintf(w, `<div class="text-dim">%d beads updated to P%d</div>`, updated, pri)
+}
+
+// handleBatchAssignee handles POST /batch/assignee to update multiple beads at once.
+// Expects form fields: ids[] (format: "db/id"), assignee.
+func (s *Server) handleBatchAssignee(w http.ResponseWriter, r *http.Request) {
+	if s.ds == nil {
+		http.Error(w, "no database", http.StatusServiceUnavailable)
+		return
+	}
+
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "bad request", http.StatusBadRequest)
+		return
+	}
+
+	assignee := strings.TrimSpace(r.FormValue("assignee"))
+	// Empty assignee is valid (unassign)
+
+	ids := r.Form["ids[]"]
+	if len(ids) == 0 {
+		http.Error(w, "no beads specified", http.StatusBadRequest)
+		return
+	}
+	if len(ids) > 100 {
+		http.Error(w, "too many beads (max 100)", http.StatusBadRequest)
+		return
+	}
+
+	ctx := r.Context()
+	updated := 0
+	for _, ref := range ids {
+		parts := strings.SplitN(ref, "/", 2)
+		if len(parts) != 2 {
+			continue
+		}
+		db, id := parts[0], parts[1]
+		if err := s.ds.UpdateAssignee(ctx, db, id, assignee); err != nil {
+			log.Printf("batch assignee: %s/%s: %v", db, id, err)
+			continue
+		}
+		updated++
+	}
+
+	label := template.HTMLEscapeString(assignee)
+	if label == "" {
+		label = "unassigned"
+	}
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.Header().Set("HX-Trigger", fmt.Sprintf(`{"showToast":"%d beads assigned to %s"}`, updated, label))
+	fmt.Fprintf(w, `<div class="text-dim">%d beads assigned to %s</div>`, updated, label)
+}
+
 func statusClassName(s string) string {
 	switch s {
 	case "open":

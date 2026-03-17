@@ -75,9 +75,17 @@
       <h2>Oldest Open Beads</h2>
       <div class="batch-bar" id="batch-bar-oldest" style="display:none">
         <span class="batch-count">0 selected</span>
-        <button class="btn btn-xs" onclick="backlogBatchAction('in_progress')">start selected</button>
-        <button class="btn btn-xs" onclick="backlogBatchAction('closed')">close selected</button>
-        <button class="btn btn-xs" onclick="backlogBatchAction('deferred')">defer selected</button>
+        <button class="btn btn-xs" onclick="backlogBatchAction('in_progress')">start</button>
+        <button class="btn btn-xs" onclick="backlogBatchAction('closed')">close</button>
+        <button class="btn btn-xs" onclick="backlogBatchAction('deferred')">defer</button>
+        <select class="btn btn-xs batch-priority" onchange="backlogBatchPriority(this.value);this.selectedIndex=0">
+          <option value="">set priority...</option>
+          <option value="0">P0</option><option value="1">P1</option><option value="2">P2</option><option value="3">P3</option><option value="4">P4</option>
+        </select>
+        <select class="btn btn-xs batch-assign" onchange="backlogBatchAssignee(this.value);this.selectedIndex=0">
+          <option value="">assign to...</option>
+          {{range $.Assignees}}<option value="{{.}}">{{shortActor .}}</option>{{end}}
+        </select>
       </div>
       <div class="table-wrap">
       <table class="bead-table">
@@ -155,6 +163,32 @@
       checked.forEach(function(cb) { cb.closest('tr').remove(); });
       backlogUpdateBar();
       document.body.dispatchEvent(new CustomEvent('showToast', {detail: checked.length+' beads '+status}));
+    });
+  }
+  function backlogBatchPriority(pri) {
+    if (pri === '') return;
+    var checked = document.querySelectorAll('.backlog-cb:checked');
+    if (!checked.length) return;
+    if (!confirm('Set '+checked.length+' beads to P'+pri+'?')) return;
+    var form = new FormData();
+    form.append('priority', pri);
+    checked.forEach(function(cb) { form.append('ids[]', cb.getAttribute('data-rig')+'/'+cb.getAttribute('data-id')); });
+    fetch('/batch/priority', {method:'POST', body:form}).then(function() {
+      document.body.dispatchEvent(new CustomEvent('showToast', {detail: checked.length+' beads set to P'+pri}));
+      location.reload();
+    });
+  }
+  function backlogBatchAssignee(assignee) {
+    if (assignee === '') return;
+    var checked = document.querySelectorAll('.backlog-cb:checked');
+    if (!checked.length) return;
+    if (!confirm('Assign '+checked.length+' beads to '+assignee+'?')) return;
+    var form = new FormData();
+    form.append('assignee', assignee);
+    checked.forEach(function(cb) { form.append('ids[]', cb.getAttribute('data-rig')+'/'+cb.getAttribute('data-id')); });
+    fetch('/batch/assignee', {method:'POST', body:form}).then(function() {
+      document.body.dispatchEvent(new CustomEvent('showToast', {detail: checked.length+' beads assigned'}));
+      location.reload();
     });
   }
   </script>

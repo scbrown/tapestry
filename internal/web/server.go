@@ -889,6 +889,18 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// POST /batch/priority — bulk priority update via HTMX
+	if r.Method == http.MethodPost && len(segments) == 2 && segments[0] == "batch" && segments[1] == "priority" {
+		s.handleBatchPriority(w, r)
+		return
+	}
+
+	// POST /batch/assignee — bulk assignee update via HTMX
+	if r.Method == http.MethodPost && len(segments) == 2 && segments[0] == "batch" && segments[1] == "assignee" {
+		s.handleBatchAssignee(w, r)
+		return
+	}
+
 	// POST /favorites/lookup — fetch live bead data for pinned favorites
 	if r.Method == http.MethodPost && len(segments) == 2 && segments[0] == "favorites" && segments[1] == "lookup" {
 		s.handleFavoritesLookup(w, r)

@@ -513,11 +513,17 @@ func TestBeadsList_BatchActions(t *testing.T) {
 	if !strings.Contains(body, `class="batch-cb"`) {
 		t.Error("expected batch checkboxes on bead rows")
 	}
-	if !strings.Contains(body, "close selected") {
-		t.Error("expected 'close selected' batch button")
+	if !strings.Contains(body, "beadsBatchAction('closed')") {
+		t.Error("expected close batch button")
 	}
-	if !strings.Contains(body, "defer selected") {
-		t.Error("expected 'defer selected' batch button")
+	if !strings.Contains(body, "beadsBatchAction('deferred')") {
+		t.Error("expected defer batch button")
+	}
+	if !strings.Contains(body, "set priority...") {
+		t.Error("expected batch priority dropdown")
+	}
+	if !strings.Contains(body, "assign to...") {
+		t.Error("expected batch assignee dropdown")
 	}
 }
 
@@ -1562,6 +1568,128 @@ func TestBatchStatus_NoIds(t *testing.T) {
 
 	if w.Code != http.StatusBadRequest {
 		t.Errorf("status = %d, want %d", w.Code, http.StatusBadRequest)
+	}
+}
+
+func TestBatchPriority(t *testing.T) {
+	ds := &mockDataSource{}
+	srv := New(ds)
+
+	body := "priority=1&ids[]=beads_aegis/aegis-001&ids[]=beads_aegis/aegis-002"
+	req := httptest.NewRequest("POST", "/batch/priority", strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
+	}
+	if !strings.Contains(w.Body.String(), "2 beads updated to P1") {
+		t.Errorf("response should mention 2 beads updated, got: %s", w.Body.String())
+	}
+	trigger := w.Header().Get("HX-Trigger")
+	if !strings.Contains(trigger, "showToast") {
+		t.Errorf("missing HX-Trigger header, got: %s", trigger)
+	}
+}
+
+func TestBatchPriority_InvalidPriority(t *testing.T) {
+	ds := &mockDataSource{}
+	srv := New(ds)
+
+	body := "priority=99&ids[]=beads_aegis/aegis-001"
+	req := httptest.NewRequest("POST", "/batch/priority", strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("status = %d, want %d", w.Code, http.StatusBadRequest)
+	}
+}
+
+func TestBatchPriority_NoIds(t *testing.T) {
+	ds := &mockDataSource{}
+	srv := New(ds)
+
+	body := "priority=1"
+	req := httptest.NewRequest("POST", "/batch/priority", strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("status = %d, want %d", w.Code, http.StatusBadRequest)
+	}
+}
+
+func TestBatchPriority_NoPriority(t *testing.T) {
+	ds := &mockDataSource{}
+	srv := New(ds)
+
+	body := "ids[]=beads_aegis/aegis-001"
+	req := httptest.NewRequest("POST", "/batch/priority", strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("status = %d, want %d", w.Code, http.StatusBadRequest)
+	}
+}
+
+func TestBatchAssignee(t *testing.T) {
+	ds := &mockDataSource{}
+	srv := New(ds)
+
+	body := "assignee=aegis/crew/arnold&ids[]=beads_aegis/aegis-001&ids[]=beads_aegis/aegis-002"
+	req := httptest.NewRequest("POST", "/batch/assignee", strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
+	}
+	if !strings.Contains(w.Body.String(), "2 beads assigned") {
+		t.Errorf("response should mention 2 beads assigned, got: %s", w.Body.String())
+	}
+	trigger := w.Header().Get("HX-Trigger")
+	if !strings.Contains(trigger, "showToast") {
+		t.Errorf("missing HX-Trigger header, got: %s", trigger)
+	}
+}
+
+func TestBatchAssignee_NoIds(t *testing.T) {
+	ds := &mockDataSource{}
+	srv := New(ds)
+
+	body := "assignee=someone"
+	req := httptest.NewRequest("POST", "/batch/assignee", strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("status = %d, want %d", w.Code, http.StatusBadRequest)
+	}
+}
+
+func TestBatchAssignee_Unassign(t *testing.T) {
+	ds := &mockDataSource{}
+	srv := New(ds)
+
+	body := "assignee=&ids[]=beads_aegis/aegis-001"
+	req := httptest.NewRequest("POST", "/batch/assignee", strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d; body: %s", w.Code, http.StatusOK, w.Body.String())
+	}
+	if !strings.Contains(w.Body.String(), "unassigned") {
+		t.Errorf("response should mention unassigned, got: %s", w.Body.String())
 	}
 }
 

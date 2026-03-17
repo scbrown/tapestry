@@ -41,9 +41,17 @@
   {{if .Items}}
   <div class="batch-bar" id="batch-bar-ready" style="display:none">
     <span class="batch-count">0 selected</span>
-    <button class="btn btn-xs" onclick="readyBatchAction('in_progress')">start selected</button>
-    <button class="btn btn-xs" onclick="readyBatchAction('closed')">close selected</button>
-    <button class="btn btn-xs" onclick="readyBatchAction('deferred')">defer selected</button>
+    <button class="btn btn-xs" onclick="readyBatchAction('in_progress')">start</button>
+    <button class="btn btn-xs" onclick="readyBatchAction('closed')">close</button>
+    <button class="btn btn-xs" onclick="readyBatchAction('deferred')">defer</button>
+    <select class="btn btn-xs batch-priority" onchange="readyBatchPriority(this.value);this.selectedIndex=0">
+      <option value="">set priority...</option>
+      <option value="0">P0</option><option value="1">P1</option><option value="2">P2</option><option value="3">P3</option><option value="4">P4</option>
+    </select>
+    <select class="btn btn-xs batch-assign" onchange="readyBatchAssignee(this.value);this.selectedIndex=0">
+      <option value="">assign to...</option>
+      {{range $.Assignees}}<option value="{{.}}">{{shortActor .}}</option>{{end}}
+    </select>
   </div>
   <table class="bead-table">
     <thead>
@@ -96,6 +104,8 @@
   function readyToggleAll(m){document.querySelectorAll('.ready-cb').forEach(function(c){c.checked=m.checked});readyUpdateBar()}
   function readyUpdateBar(){var c=document.querySelectorAll('.ready-cb:checked'),b=document.getElementById('batch-bar-ready');if(b){b.style.display=c.length>0?'flex':'none';b.querySelector('.batch-count').textContent=c.length+' selected'}}
   function readyBatchAction(s){var c=document.querySelectorAll('.ready-cb:checked');if(!c.length)return;if(!confirm(s.charAt(0).toUpperCase()+s.slice(1)+' '+c.length+' beads?'))return;var f=new FormData();f.append('status',s);c.forEach(function(cb){f.append('ids[]',cb.getAttribute('data-rig')+'/'+cb.getAttribute('data-id'))});fetch('/batch/status',{method:'POST',body:f}).then(function(){c.forEach(function(cb){cb.closest('tr').remove()});readyUpdateBar();document.body.dispatchEvent(new CustomEvent('showToast',{detail:c.length+' beads '+s}))})}
+  function readyBatchPriority(p){if(p==='')return;var c=document.querySelectorAll('.ready-cb:checked');if(!c.length)return;if(!confirm('Set '+c.length+' beads to P'+p+'?'))return;var f=new FormData();f.append('priority',p);c.forEach(function(cb){f.append('ids[]',cb.getAttribute('data-rig')+'/'+cb.getAttribute('data-id'))});fetch('/batch/priority',{method:'POST',body:f}).then(function(){document.body.dispatchEvent(new CustomEvent('showToast',{detail:c.length+' beads set to P'+p}));location.reload()})}
+  function readyBatchAssignee(a){if(a==='')return;var c=document.querySelectorAll('.ready-cb:checked');if(!c.length)return;if(!confirm('Assign '+c.length+' beads to '+a+'?'))return;var f=new FormData();f.append('assignee',a);c.forEach(function(cb){f.append('ids[]',cb.getAttribute('data-rig')+'/'+cb.getAttribute('data-id'))});fetch('/batch/assignee',{method:'POST',body:f}).then(function(){document.body.dispatchEvent(new CustomEvent('showToast',{detail:c.length+' beads assigned'}));location.reload()})}
   </script>
   {{else}}
   <p class="text-dim">No ready beads found. Everything is either in progress, blocked, or closed.</p>
