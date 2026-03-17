@@ -1,0 +1,72 @@
+{{define "title"}}Dwell Time{{end}}
+{{define "content"}}
+<div class="dwell-page" hx-get="/dwell{{if .FilterRig}}?rig={{.FilterRig}}{{if ne .Zone "all"}}&zone={{.Zone}}{{end}}{{else}}{{if ne .Zone "all"}}?zone={{.Zone}}{{end}}{{end}}" hx-trigger="every 60s" hx-select=".dwell-page" hx-swap="outerHTML">
+  <h1>Dwell Time <span class="text-dim">({{.Total}} beads)</span></h1>
+  <p class="text-dim">How long open beads have been in their current status — longest first.</p>
+
+  <div class="dep-filters">
+    {{if .Rigs}}
+    <select onchange="location.href='/dwell?rig='+this.value+'{{if ne .Zone "all"}}&zone={{.Zone}}{{end}}'">
+      <option value="">All rigs</option>
+      {{range .Rigs}}<option value="{{.}}" {{if eq . $.FilterRig}}selected{{end}}>{{.}}</option>{{end}}
+    </select>
+    {{end}}
+    <a href="/dwell?zone=all{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" class="badge {{if eq .Zone "all"}}status-open{{end}}">All</a>
+    <a href="/dwell?zone=danger{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" class="badge {{if eq .Zone "danger"}}status-blocked{{end}}">14d+ (danger)</a>
+    <a href="/dwell?zone=warning{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" class="badge {{if eq .Zone "warning"}}status-in_progress{{end}}">7-14d (warning)</a>
+    <a href="/dwell?zone=ok{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" class="badge {{if eq .Zone "ok"}}status-closed{{end}}">&lt;7d (ok)</a>
+  </div>
+
+  {{if .Err}}
+  <div class="error-banner">{{.Err}}</div>
+  {{else if .Items}}
+  <table>
+    <thead>
+      <tr>
+        <th>Bead</th>
+        <th>P</th>
+        <th>Status</th>
+        <th>Title</th>
+        <th>Assignee</th>
+        <th>Dwell</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {{range .Items}}
+      <tr>
+        <td><a href="/bead/{{lower .Rig}}/{{.ID}}" hx-boost="true">{{.ID}}</a></td>
+        <td><span class="priority-badge p{{.Priority}}">P{{.Priority}}</span></td>
+        <td>{{statusBadge .Status}}</td>
+        <td>{{.Title}}</td>
+        <td>{{if .Assignee}}<a href="/agent/{{.Assignee}}">{{shortActor .Assignee}}</a>{{else}}<span class="text-dim">—</span>{{end}}</td>
+        <td>
+          <div class="dwell-bar-container">
+            <div class="dwell-bar {{if ge .DwellPct 80.0}}dwell-danger{{else if ge .DwellPct 50.0}}dwell-warning{{else}}dwell-ok{{end}}" style="width: {{printf "%.0f" .DwellPct}}%"></div>
+            <span class="dwell-label">{{.DwellStr}}</span>
+          </div>
+        </td>
+        <td>
+          <span class="briefing-actions">
+            <button class="btn btn-xs" hx-post="/bead/{{lower .Rig}}/{{.ID}}/status" hx-vals='{"status":"closed"}' hx-swap="outerHTML" hx-target="closest tr" hx-confirm="Close {{.ID}}?">close</button>
+            <button class="btn btn-xs" hx-post="/bead/{{lower .Rig}}/{{.ID}}/status" hx-vals='{"status":"deferred"}' hx-swap="outerHTML" hx-target="closest tr" hx-confirm="Defer {{.ID}}?">defer</button>
+          </span>
+        </td>
+      </tr>
+      {{end}}
+    </tbody>
+  </table>
+  {{else}}
+  <p class="empty">No open beads match this filter.</p>
+  {{end}}
+</div>
+
+<style>
+.dwell-bar-container { position: relative; min-width: 120px; height: 22px; background: var(--bg-secondary, #282a36); border-radius: 3px; }
+.dwell-bar { position: absolute; top: 0; left: 0; height: 100%; border-radius: 3px; opacity: 0.7; }
+.dwell-danger { background: var(--red, #ff5555); }
+.dwell-warning { background: var(--orange, #ffb86c); }
+.dwell-ok { background: var(--green, #50fa7b); }
+.dwell-label { position: relative; z-index: 1; padding: 0 6px; line-height: 22px; font-size: 0.85em; white-space: nowrap; }
+</style>
+{{end}}

@@ -1,0 +1,50 @@
+{{define "title"}}Transfers{{end}}
+{{define "content"}}
+<div class="transfers-page" hx-get="/transfers{{if .FilterRig}}?rig={{.FilterRig}}{{if ne .Window "30d"}}&window={{.Window}}{{end}}{{else}}{{if ne .Window "30d"}}?window={{.Window}}{{end}}{{end}}" hx-trigger="every 60s" hx-select=".transfers-page" hx-swap="outerHTML">
+  <h1>Transfers <span class="text-dim">({{.Total}})</span></h1>
+  <p class="text-dim">Bead reassignments — who handed what to whom.</p>
+
+  <div class="dep-filters">
+    {{if .Rigs}}
+    <select onchange="location.href='/transfers?rig='+this.value+'{{if ne .Window "30d"}}&window={{.Window}}{{end}}'">
+      <option value="">All rigs</option>
+      {{range .Rigs}}<option value="{{.}}" {{if eq . $.FilterRig}}selected{{end}}>{{.}}</option>{{end}}
+    </select>
+    {{end}}
+    <a href="/transfers?window=7d{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" class="badge {{if eq .Window "7d"}}status-open{{end}}">7 days</a>
+    <a href="/transfers?window=30d{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" class="badge {{if eq .Window "30d"}}status-open{{end}}">30 days</a>
+    <a href="/transfers?window=90d{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" class="badge {{if eq .Window "90d"}}status-open{{end}}">90 days</a>
+  </div>
+
+  {{if .Err}}
+  <div class="error-banner">{{.Err}}</div>
+  {{else if .Transfers}}
+  <table>
+    <thead>
+      <tr>
+        <th>When</th>
+        <th>Bead</th>
+        <th>Title</th>
+        <th>From</th>
+        <th></th>
+        <th>To</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{range .Transfers}}
+      <tr>
+        <td><time class="text-dim">{{timeAgo .Timestamp}}</time></td>
+        <td><a href="/bead/{{lower .Rig}}/{{.IssueID}}" hx-boost="true">{{.IssueID}}</a></td>
+        <td>{{.Title}}</td>
+        <td>{{if ne .From "(unassigned)"}}<a href="/agent/{{.From}}">{{shortActor .From}}</a>{{else}}<span class="text-dim">—</span>{{end}}</td>
+        <td class="text-dim">→</td>
+        <td>{{if ne .To "(unassigned)"}}<a href="/agent/{{.To}}">{{shortActor .To}}</a>{{else}}<span class="text-dim">—</span>{{end}}</td>
+      </tr>
+      {{end}}
+    </tbody>
+  </table>
+  {{else}}
+  <p class="empty">No transfers in this time window.</p>
+  {{end}}
+</div>
+{{end}}

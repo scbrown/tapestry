@@ -9734,3 +9734,216 @@ func TestOrphansPage_RigFilter(t *testing.T) {
 		t.Error("expected filter-active badge for rig filter")
 	}
 }
+
+// ── Dwell Page ──────────────────────────────────────────────
+
+func TestDwellPage_NilDataSource(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/dwell", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /dwell status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Dwell Time") {
+		t.Error("expected 'Dwell Time' heading")
+	}
+}
+
+func TestDwellPage_WithData(t *testing.T) {
+	now := time.Now()
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issues: []dolt.Issue{
+			{ID: "dw-1", Title: "Stale bead", Status: "open", Priority: 1, CreatedAt: now.AddDate(0, 0, -30), UpdatedAt: now.AddDate(0, 0, -20)},
+			{ID: "dw-2", Title: "Fresh bead", Status: "in_progress", Priority: 2, CreatedAt: now.AddDate(0, 0, -3), UpdatedAt: now.AddDate(0, 0, -1)},
+			{ID: "dw-3", Title: "Closed bead", Status: "closed", Priority: 3, CreatedAt: now.AddDate(0, 0, -10), UpdatedAt: now},
+		},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/dwell", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /dwell status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Stale bead") {
+		t.Error("expected open bead in dwell results")
+	}
+	if strings.Contains(body, "Closed bead") {
+		t.Error("closed beads should not appear in dwell results")
+	}
+}
+
+func TestDwellPage_HTMXPartial(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/dwell", nil)
+	req.Header.Set("HX-Request", "true")
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("HTMX GET /dwell status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if strings.Contains(body, "<!DOCTYPE html>") {
+		t.Error("HTMX dwell should return partial, not full page")
+	}
+}
+
+func TestDwellPage_RigFilter(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}, {Name: "beads_gastown"}},
+	}
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/dwell?rig=beads_aegis", nil)
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
+	}
+}
+
+func TestDwellPage_ZoneFilter(t *testing.T) {
+	now := time.Now()
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issues: []dolt.Issue{
+			{ID: "dw-old", Title: "Very stale", Status: "open", Priority: 1, UpdatedAt: now.AddDate(0, 0, -30)},
+			{ID: "dw-mid", Title: "Medium stale", Status: "open", Priority: 2, UpdatedAt: now.AddDate(0, 0, -10)},
+			{ID: "dw-new", Title: "Fresh one", Status: "open", Priority: 3, UpdatedAt: now.AddDate(0, 0, -2)},
+		},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/dwell?zone=danger", nil)
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Very stale") {
+		t.Error("danger zone should include 30-day old bead")
+	}
+	if strings.Contains(body, "Fresh one") {
+		t.Error("danger zone should not include 2-day old bead")
+	}
+}
+
+// ── Transfers Page ──────────────────────────────────────────
+
+func TestTransfersPage_NilDataSource(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/transfers", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /transfers status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Transfers") {
+		t.Error("expected 'Transfers' heading")
+	}
+}
+
+func TestTransfersPage_WithData(t *testing.T) {
+	now := time.Now()
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issueDiffs: []dolt.IssueDiffRow{
+			{
+				DiffType:     "modified",
+				ToID:         "t-1",
+				ToTitle:      "Reassigned bead",
+				ToStatus:     "in_progress",
+				FromAssignee: "aegis/crew/arnold",
+				ToAssignee:   "aegis/crew/grant",
+				ToCommitDate: now.AddDate(0, 0, -2),
+			},
+			{
+				DiffType:     "modified",
+				ToID:         "t-2",
+				ToTitle:      "Status change only",
+				ToStatus:     "closed",
+				FromStatus:   "open",
+				FromAssignee: "aegis/crew/arnold",
+				ToAssignee:   "aegis/crew/arnold",
+				ToCommitDate: now.AddDate(0, 0, -1),
+			},
+		},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/transfers", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /transfers status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Reassigned bead") {
+		t.Error("expected reassigned bead in transfers")
+	}
+	if strings.Contains(body, "Status change only") {
+		t.Error("same-assignee changes should not appear as transfers")
+	}
+}
+
+func TestTransfersPage_HTMXPartial(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/transfers", nil)
+	req.Header.Set("HX-Request", "true")
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("HTMX GET /transfers status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if strings.Contains(body, "<!DOCTYPE html>") {
+		t.Error("HTMX transfers should return partial, not full page")
+	}
+}
+
+func TestTransfersPage_RigFilter(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}, {Name: "beads_gastown"}},
+	}
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/transfers?rig=beads_aegis", nil)
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
+	}
+}
+
+func TestTransfersPage_WindowFilter(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+	}
+	srv := New(ds)
+	for _, window := range []string{"7d", "30d", "90d"} {
+		req := httptest.NewRequest("GET", "/transfers?window="+window, nil)
+		w := httptest.NewRecorder()
+		srv.ServeHTTP(w, req)
+		if w.Code != http.StatusOK {
+			t.Fatalf("window=%s status = %d, want %d", window, w.Code, http.StatusOK)
+		}
+	}
+}

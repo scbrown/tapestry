@@ -741,6 +741,14 @@ func (s *Server) parseTemplates() {
 			template.New("").Funcs(funcMap).ParseFS(templateFS,
 				"templates/layout.html", "templates/orphans.html"),
 		),
+		"dwell": template.Must(
+			template.New("").Funcs(funcMap).ParseFS(templateFS,
+				"templates/layout.html", "templates/dwell.html"),
+		),
+		"transfers": template.Must(
+			template.New("").Funcs(funcMap).ParseFS(templateFS,
+				"templates/layout.html", "templates/transfers.html"),
+		),
 	}
 }
 
@@ -1036,6 +1044,10 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		s.handleQuickWins(w, r)
 	case len(segments) == 1 && segments[0] == "orphans":
 		s.handleOrphans(w, r)
+	case len(segments) == 1 && segments[0] == "dwell":
+		s.handleDwell(w, r)
+	case len(segments) == 1 && segments[0] == "transfers":
+		s.handleTransfers(w, r)
 	case len(segments) == 1 && segments[0] == "designs":
 		s.handleDesignsList(w, r)
 	case len(segments) == 2 && segments[0] == "designs":
