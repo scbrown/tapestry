@@ -9657,3 +9657,80 @@ func TestQuickWinsPage_RigFilter(t *testing.T) {
 		t.Error("expected filter-active badge for rig filter")
 	}
 }
+
+// ── /orphans ──
+
+func TestOrphansPage_NilDataSource(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/orphans", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /orphans status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Orphaned Beads") {
+		t.Error("expected 'Orphaned Beads' heading")
+	}
+}
+
+func TestOrphansPage_WithData(t *testing.T) {
+	now := time.Now()
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issues: []dolt.Issue{
+			{ID: "orph-1", Title: "Lonely bead", Status: "open", Priority: 3, CreatedAt: now.AddDate(0, 0, -20), UpdatedAt: now},
+		},
+		// No labels returned (empty slice default)
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/orphans", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /orphans status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Lonely bead") {
+		t.Error("expected orphaned issue title")
+	}
+}
+
+func TestOrphansPage_HTMXPartial(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/orphans", nil)
+	req.Header.Set("HX-Request", "true")
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("HTMX GET /orphans status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if strings.Contains(body, "<!DOCTYPE html>") {
+		t.Error("HTMX orphans should return partial, not full page")
+	}
+}
+
+func TestOrphansPage_RigFilter(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}, {Name: "beads_gastown"}},
+	}
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/orphans?rig=beads_aegis", nil)
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "filter-active") {
+		t.Error("expected filter-active badge for rig filter")
+	}
+}
