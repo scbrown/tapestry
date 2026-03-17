@@ -408,6 +408,20 @@
       }
     }
 
+    // Track recently viewed beads
+    (function(){
+      var path = location.pathname;
+      var m = path.match(/^\/bead\/([^/]+)\/([^/]+)$/);
+      if (m) {
+        var recent = [];
+        try { recent = JSON.parse(localStorage.getItem('tapestry-recent') || '[]'); } catch(e) {}
+        recent = recent.filter(function(r) { return !(r.db === m[1] && r.id === m[2]); });
+        recent.unshift({db: m[1], id: m[2], title: document.title, ts: Date.now()});
+        if (recent.length > 20) recent = recent.slice(0, 20);
+        localStorage.setItem('tapestry-recent', JSON.stringify(recent));
+      }
+    })();
+
     function filterQuickNav(q) {
       var results = document.getElementById('quicknav-results');
       var lower = q.toLowerCase();
@@ -416,6 +430,40 @@
                p.desc.toLowerCase().indexOf(lower) !== -1 ||
                p.path.toLowerCase().indexOf(lower) !== -1;
       });
+      // Include favorited beads
+      if (lower.length > 0) {
+        try {
+          var favs = JSON.parse(localStorage.getItem('tapestry-favorites') || '[]');
+          favs.forEach(function(f) {
+            if (f.id.toLowerCase().indexOf(lower) !== -1) {
+              matches.push({name: f.id, path: '/bead/' + f.db + '/' + f.id, desc: 'Favorite'});
+            }
+          });
+        } catch(e) {}
+      }
+      // Include recently viewed beads
+      if (lower.length > 0) {
+        try {
+          var recent = JSON.parse(localStorage.getItem('tapestry-recent') || '[]');
+          var seen = {};
+          matches.forEach(function(m) { seen[m.path] = true; });
+          recent.forEach(function(r) {
+            var p = '/bead/' + r.db + '/' + r.id;
+            if (!seen[p] && (r.id.toLowerCase().indexOf(lower) !== -1 || (r.title && r.title.toLowerCase().indexOf(lower) !== -1))) {
+              matches.push({name: r.id, path: p, desc: 'Recent'});
+              seen[p] = true;
+            }
+          });
+        } catch(e) {}
+      }
+      // Direct bead ID navigation — if query looks like a bead ID, offer direct link
+      if (lower.length > 3 && lower.match(/^[a-z]+-[a-z0-9]/)) {
+        var directPath = '/bead/' + lower;
+        var alreadyListed = matches.some(function(m) { return m.path.indexOf(lower) !== -1; });
+        if (!alreadyListed) {
+          matches.push({name: q, path: directPath, desc: 'Go to bead (auto-resolve)'});
+        }
+      }
       if (qnSelected >= matches.length) qnSelected = 0;
       results.innerHTML = matches.map(function(p, i) {
         return '<li class="quicknav-item' + (i === qnSelected ? ' selected' : '') +
