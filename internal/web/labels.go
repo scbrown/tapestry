@@ -16,11 +16,12 @@ type labelEntry struct {
 }
 
 type labelsData struct {
-	Labels  []labelEntry
-	Total   int
-	Filter  string // selected label
-	Issues  []labelIssueEntry
-	Err     string
+	Labels    []labelEntry
+	Total     int
+	Filter    string // selected label
+	Issues    []labelIssueEntry
+	Assignees []string
+	Err       string
 }
 
 type labelIssueEntry struct {
@@ -45,8 +46,9 @@ func (s *Server) handleLabels(w http.ResponseWriter, r *http.Request) {
 	}
 
 	type dbResult struct {
-		labels []labelEntry
-		issues []labelIssueEntry
+		labels    []labelEntry
+		issues    []labelIssueEntry
+		assignees []string
 	}
 
 	results := make([]dbResult, len(dbs))
@@ -80,6 +82,7 @@ func (s *Server) handleLabels(w http.ResponseWriter, r *http.Request) {
 						res.issues = append(res.issues, labelIssueEntry{Issue: iss, Rig: dbName})
 					}
 				}
+				res.assignees, _ = s.ds.DistinctAssignees(ctx, dbName)
 			}
 
 			results[i] = res
@@ -90,12 +93,21 @@ func (s *Server) handleLabels(w http.ResponseWriter, r *http.Request) {
 	// Merge labels across rigs by name
 	merged := map[string]int{}
 	var allIssues []labelIssueEntry
+	assigneeSet := make(map[string]bool)
 	for _, r := range results {
 		for _, le := range r.labels {
 			merged[le.Label] += le.Count
 		}
 		allIssues = append(allIssues, r.issues...)
+		for _, a := range r.assignees {
+			assigneeSet[a] = true
+		}
 	}
+	var assignees []string
+	for a := range assigneeSet {
+		assignees = append(assignees, a)
+	}
+	sort.Strings(assignees)
 
 	var labels []labelEntry
 	for label, count := range merged {
@@ -116,9 +128,10 @@ func (s *Server) handleLabels(w http.ResponseWriter, r *http.Request) {
 	})
 
 	s.render(w, r, "labels", labelsData{
-		Labels: labels,
-		Total:  len(labels),
-		Filter: filter,
-		Issues: allIssues,
+		Labels:    labels,
+		Total:     len(labels),
+		Filter:    filter,
+		Issues:    allIssues,
+		Assignees: assignees,
 	})
 }

@@ -1,7 +1,7 @@
 {{define "title"}}Labels{{end}}
 
 {{define "content"}}
-<div class="labels-view" hx-get="/labels" hx-trigger="every 120s" hx-select=".labels-view" hx-swap="outerHTML">
+<div class="labels-view" hx-get="/labels{{if .Filter}}?label={{.Filter}}{{end}}" hx-trigger="every 120s" hx-select=".labels-view" hx-swap="outerHTML">
   <h1>Labels</h1>
 
   {{if .Err}}
@@ -23,10 +23,16 @@
   {{if .Filter}}
   <h2>Beads labeled "{{.Filter}}"</h2>
   {{if .Issues}}
+  <div class="batch-bar" id="batch-bar-labels" style="display:none">
+    <span class="batch-count">0 selected</span>
+    <button class="btn btn-xs" onclick="batchAction('labels','closed')">close selected</button>
+    <button class="btn btn-xs" onclick="batchAction('labels','deferred')">defer selected</button>
+  </div>
   <div class="table-wrap">
   <table class="bead-table">
     <thead>
       <tr>
+        <th><input type="checkbox" onchange="toggleAll(this,'labels')"></th>
         <th>Rig</th>
         <th>ID</th>
         <th>Title</th>
@@ -35,24 +41,77 @@
         <th>Status</th>
         <th>Assignee</th>
         <th>Updated</th>
+        <th>Actions</th>
       </tr>
     </thead>
-    <tbody>
+    <tbody id="tbody-labels">
       {{range .Issues}}
       <tr>
+        <td><input type="checkbox" class="batch-cb" data-section="labels" data-id="{{.Issue.ID}}" data-rig="{{lower .Rig}}" onchange="updateBatchBar('labels')"></td>
         <td><span class="rig-label">{{rigName .Rig}}</span></td>
         <td><a href="/bead/{{lower .Rig}}/{{.Issue.ID}}" hx-boost="true">{{.Issue.ID}}</a></td>
         <td>{{.Issue.Title}}</td>
-        <td>{{priorityLabel .Issue.Priority}}</td>
+        <td id="pri-{{.Issue.ID}}" class="bead-priority-inline"><span class="badge {{priorityClass .Issue.Priority}}">{{priorityLabel .Issue.Priority}}</span>
+          <span class="priority-edit triage-btn-group">
+            <button class="btn btn-xs priority-p0" hx-post="/bead/{{lower .Rig}}/{{.Issue.ID}}/priority" hx-vals='{"priority":"0"}' hx-target="#pri-{{.Issue.ID}}" hx-swap="innerHTML">P0</button>
+            <button class="btn btn-xs priority-p1" hx-post="/bead/{{lower .Rig}}/{{.Issue.ID}}/priority" hx-vals='{"priority":"1"}' hx-target="#pri-{{.Issue.ID}}" hx-swap="innerHTML">P1</button>
+            <button class="btn btn-xs priority-p2" hx-post="/bead/{{lower .Rig}}/{{.Issue.ID}}/priority" hx-vals='{"priority":"2"}' hx-target="#pri-{{.Issue.ID}}" hx-swap="innerHTML">P2</button>
+            <button class="btn btn-xs priority-p3" hx-post="/bead/{{lower .Rig}}/{{.Issue.ID}}/priority" hx-vals='{"priority":"3"}' hx-target="#pri-{{.Issue.ID}}" hx-swap="innerHTML">P3</button>
+            <button class="btn btn-xs priority-p4" hx-post="/bead/{{lower .Rig}}/{{.Issue.ID}}/priority" hx-vals='{"priority":"4"}' hx-target="#pri-{{.Issue.ID}}" hx-swap="innerHTML">P4</button>
+          </span>
+        </td>
         <td>{{.Issue.Type}}</td>
         <td>{{statusBadge .Issue.Status}}</td>
-        <td title="{{.Issue.Assignee}}">{{shortActor .Issue.Assignee}}</td>
+        <td>
+          <select class="triage-assign" hx-post="/bead/{{lower .Rig}}/{{.Issue.ID}}/assign" hx-swap="outerHTML" hx-target="closest tr" name="assignee">
+            <option value="">—</option>
+            {{$cur := .Issue.Assignee}}
+            {{range $.Assignees}}
+            <option value="{{.}}" {{if eq . $cur}}selected{{end}}>{{shortActor .}}</option>
+            {{end}}
+          </select>
+        </td>
         <td>{{timeAgo .Issue.UpdatedAt}}</td>
+        <td class="triage-actions">
+          <div class="triage-btn-group">
+            <button class="btn btn-xs" hx-post="/bead/{{lower .Rig}}/{{.Issue.ID}}/status" hx-vals='{"status":"closed"}' hx-swap="outerHTML" hx-target="closest tr" hx-confirm="Close {{.Issue.ID}}?">close</button>
+            <button class="btn btn-xs" hx-post="/bead/{{lower .Rig}}/{{.Issue.ID}}/status" hx-vals='{"status":"deferred"}' hx-swap="outerHTML" hx-target="closest tr" hx-confirm="Defer {{.Issue.ID}}?">defer</button>
+          </div>
+        </td>
       </tr>
       {{end}}
     </tbody>
   </table>
   </div>
+  <script>
+  function toggleAll(master, section) {
+    document.querySelectorAll('.batch-cb[data-section="'+section+'"]').forEach(function(cb) { cb.checked = master.checked; });
+    updateBatchBar(section);
+  }
+  function updateBatchBar(section) {
+    var checked = document.querySelectorAll('.batch-cb[data-section="'+section+'"]:checked');
+    var bar = document.getElementById('batch-bar-'+section);
+    if (bar) {
+      bar.style.display = checked.length > 0 ? 'flex' : 'none';
+      bar.querySelector('.batch-count').textContent = checked.length + ' selected';
+    }
+  }
+  function batchAction(section, status) {
+    var checked = document.querySelectorAll('.batch-cb[data-section="'+section+'"]:checked');
+    if (!checked.length) return;
+    if (!confirm(status.charAt(0).toUpperCase()+status.slice(1)+' '+checked.length+' beads?')) return;
+    var form = new FormData();
+    form.append('status', status);
+    checked.forEach(function(cb) {
+      form.append('ids[]', cb.getAttribute('data-rig')+'/'+cb.getAttribute('data-id'));
+    });
+    fetch('/batch/status', {method:'POST', body:form}).then(function() {
+      checked.forEach(function(cb) { cb.closest('tr').remove(); });
+      updateBatchBar(section);
+      document.body.dispatchEvent(new CustomEvent('showToast', {detail: checked.length+' beads '+status}));
+    });
+  }
+  </script>
   {{else}}
   <p class="empty">No beads with this label.</p>
   {{end}}

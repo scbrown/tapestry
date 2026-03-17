@@ -5638,3 +5638,233 @@ func TestParkingLotPage_InlinePriority(t *testing.T) {
 		t.Error("expected inline priority editing on parking-lot page")
 	}
 }
+
+func TestWatchlistPage_InlinePriority(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issues: []dolt.Issue{
+			{ID: "wlp1", Title: "P0 critical", Status: "open", Priority: 0, Assignee: "aegis/crew/arnold", UpdatedAt: time.Now(), CreatedAt: time.Now()},
+		},
+		assignees: []string{"aegis/crew/arnold"},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/watchlist", nil)
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "bead-priority-inline") {
+		t.Error("expected inline priority editing on watchlist page")
+	}
+	if !strings.Contains(body, "/priority") {
+		t.Error("expected priority POST endpoint in watchlist template")
+	}
+}
+
+func TestWatchlistPage_BatchActions(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issues: []dolt.Issue{
+			{ID: "wlb1", Title: "P1 item", Status: "open", Priority: 1, UpdatedAt: time.Now(), CreatedAt: time.Now()},
+		},
+		assignees: []string{"aegis/crew/arnold"},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/watchlist", nil)
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "batch-cb") {
+		t.Error("expected batch checkboxes on watchlist page")
+	}
+	if !strings.Contains(body, "batch-bar") {
+		t.Error("expected batch action bar on watchlist page")
+	}
+	if !strings.Contains(body, "batchAction") {
+		t.Error("expected batch action JS on watchlist page")
+	}
+}
+
+func TestEpicsPage_InlinePriority(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issues: []dolt.Issue{
+			{ID: "ep1", Title: "Epic one", Status: "open", Type: "epic", Priority: 1, UpdatedAt: time.Now(), CreatedAt: time.Now()},
+		},
+		assignees: []string{"aegis/crew/arnold"},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/epics", nil)
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "bead-priority-inline") {
+		t.Error("expected inline priority editing on epics page")
+	}
+	if !strings.Contains(body, "/priority") {
+		t.Error("expected priority POST endpoint in epics template")
+	}
+}
+
+func TestEpicsPage_AssigneeDropdown(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issues: []dolt.Issue{
+			{ID: "ep2", Title: "Epic two", Status: "open", Type: "epic", Priority: 1, Assignee: "aegis/crew/arnold", UpdatedAt: time.Now(), CreatedAt: time.Now()},
+		},
+		assignees: []string{"aegis/crew/arnold", "aegis/crew/grant"},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/epics", nil)
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "triage-assign") {
+		t.Error("expected assignee dropdown on epics page")
+	}
+}
+
+func TestEpicsPage_BatchActions(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issues: []dolt.Issue{
+			{ID: "ep3", Title: "Epic three", Status: "open", Type: "epic", Priority: 2, UpdatedAt: time.Now(), CreatedAt: time.Now()},
+		},
+		assignees: []string{"aegis/crew/arnold"},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/epics", nil)
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "batch-cb") {
+		t.Error("expected batch checkboxes on epics page")
+	}
+	if !strings.Contains(body, "batch-bar") {
+		t.Error("expected batch action bar on epics page")
+	}
+}
+
+func TestDuplicatesPage_InlinePriority(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issues: []dolt.Issue{
+			{ID: "dup1", Title: "[AUTO] test alert", Status: "open", Priority: 2, UpdatedAt: time.Now(), CreatedAt: time.Now()},
+			{ID: "dup2", Title: "[AUTO] test alert", Status: "open", Priority: 2, UpdatedAt: time.Now().Add(-time.Hour), CreatedAt: time.Now().Add(-time.Hour)},
+		},
+		assignees: []string{"aegis/crew/arnold"},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/duplicates", nil)
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "bead-priority-inline") {
+		t.Error("expected inline priority editing on duplicates page")
+	}
+}
+
+func TestCommentsPage_FilterPreservation(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		comments: []dolt.Comment{
+			{IssueID: "c1", Author: "aegis/crew/arnold", Body: "test", CreatedAt: time.Now()},
+		},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/comments?author=aegis/crew/arnold", nil)
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, `hx-get="/comments?author=aegis/crew/arnold"`) {
+		t.Error("expected auto-refresh to preserve author filter")
+	}
+}
+
+func TestLabelsPage_FilterPreservation(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		labelCounts: []dolt.LabelCount{{Label: "bug", Count: 3}},
+		issues: []dolt.Issue{
+			{ID: "lb1", Title: "Bug one", Status: "open", Priority: 1, UpdatedAt: time.Now(), CreatedAt: time.Now()},
+		},
+		assignees: []string{"aegis/crew/arnold"},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/labels?label=bug", nil)
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, `hx-get="/labels?label=bug"`) {
+		t.Error("expected auto-refresh to preserve label filter")
+	}
+}
+
+func TestLabelsPage_InlinePriority(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		labelCounts: []dolt.LabelCount{{Label: "bug", Count: 1}},
+		issues: []dolt.Issue{
+			{ID: "lbp1", Title: "Bug with label", Status: "open", Priority: 2, UpdatedAt: time.Now(), CreatedAt: time.Now()},
+		},
+		assignees: []string{"aegis/crew/arnold"},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/labels?label=bug", nil)
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "bead-priority-inline") {
+		t.Error("expected inline priority editing on labels page")
+	}
+	if !strings.Contains(body, "triage-assign") {
+		t.Error("expected assignee dropdown on labels page")
+	}
+	if !strings.Contains(body, "batch-cb") {
+		t.Error("expected batch checkboxes on labels page")
+	}
+}

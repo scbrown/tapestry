@@ -53,7 +53,15 @@
         <tr>
           <td><span class="rig-label">{{rigName $iss.Rig}}</span></td>
           <td><a href="/bead/{{lower $iss.Rig}}/{{$iss.ID}}" hx-boost="true">{{$iss.ID}}</a></td>
-          <td><span class="priority-badge p{{$iss.Priority}}">P{{$iss.Priority}}</span></td>
+          <td id="pri-{{$iss.ID}}" class="bead-priority-inline"><span class="badge {{priorityClass $iss.Priority}}">{{priorityLabel $iss.Priority}}</span>
+            <span class="priority-edit triage-btn-group">
+              <button class="btn btn-xs priority-p0" hx-post="/bead/{{lower $iss.Rig}}/{{$iss.ID}}/priority" hx-vals='{"priority":"0"}' hx-target="#pri-{{$iss.ID}}" hx-swap="innerHTML">P0</button>
+              <button class="btn btn-xs priority-p1" hx-post="/bead/{{lower $iss.Rig}}/{{$iss.ID}}/priority" hx-vals='{"priority":"1"}' hx-target="#pri-{{$iss.ID}}" hx-swap="innerHTML">P1</button>
+              <button class="btn btn-xs priority-p2" hx-post="/bead/{{lower $iss.Rig}}/{{$iss.ID}}/priority" hx-vals='{"priority":"2"}' hx-target="#pri-{{$iss.ID}}" hx-swap="innerHTML">P2</button>
+              <button class="btn btn-xs priority-p3" hx-post="/bead/{{lower $iss.Rig}}/{{$iss.ID}}/priority" hx-vals='{"priority":"3"}' hx-target="#pri-{{$iss.ID}}" hx-swap="innerHTML">P3</button>
+              <button class="btn btn-xs priority-p4" hx-post="/bead/{{lower $iss.Rig}}/{{$iss.ID}}/priority" hx-vals='{"priority":"4"}' hx-target="#pri-{{$iss.ID}}" hx-swap="innerHTML">P4</button>
+            </span>
+          </td>
           <td><span class="badge {{statusClass $iss.Status}}">{{$iss.Status}}</span></td>
           <td>{{$iss.Title}}{{if eq $i 0}} <span class="badge">newest</span>{{end}}</td>
           <td class="text-dim">{{formatDate $iss.CreatedAt}}</td>

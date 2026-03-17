@@ -321,6 +321,7 @@ type epicsData struct {
 	Epics     []epicTree
 	Rigs      []string
 	FilterRig string
+	Assignees []string
 }
 
 func (s *Server) handleEpics(w http.ResponseWriter, r *http.Request) {
@@ -342,7 +343,8 @@ func (s *Server) handleEpics(w http.ResponseWriter, r *http.Request) {
 	}
 
 	type epicsDBResult struct {
-		epics []epicTree
+		epics     []epicTree
+		assignees []string
 	}
 	results := make([]epicsDBResult, len(dbs))
 	var wg sync.WaitGroup
@@ -351,6 +353,7 @@ func (s *Server) handleEpics(w http.ResponseWriter, r *http.Request) {
 		go func(i int, dbName string) {
 			defer wg.Done()
 			var r epicsDBResult
+			r.assignees, _ = s.ds.DistinctAssignees(ctx, dbName)
 
 			epics, err := s.ds.Epics(ctx, dbName)
 			if err != nil {
@@ -398,10 +401,14 @@ func (s *Server) handleEpics(w http.ResponseWriter, r *http.Request) {
 	wg.Wait()
 
 	rigSet := make(map[string]bool)
+	assigneeSet := make(map[string]bool)
 	for _, r := range results {
 		data.Epics = append(data.Epics, r.epics...)
 		for _, e := range r.epics {
 			rigSet[e.Rig] = true
+		}
+		for _, a := range r.assignees {
+			assigneeSet[a] = true
 		}
 	}
 
@@ -409,6 +416,10 @@ func (s *Server) handleEpics(w http.ResponseWriter, r *http.Request) {
 		data.Rigs = append(data.Rigs, rig)
 	}
 	sort.Strings(data.Rigs)
+	for a := range assigneeSet {
+		data.Assignees = append(data.Assignees, a)
+	}
+	sort.Strings(data.Assignees)
 
 	data.FilterRig = r.URL.Query().Get("rig")
 	if data.FilterRig != "" {
