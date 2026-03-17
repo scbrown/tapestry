@@ -32,6 +32,7 @@
           <th>Rig</th>
           <th>Age</th>
           <th>Missing</th>
+          <th>Actions</th>
         </tr>
       </thead>
       <tbody>
@@ -43,6 +44,10 @@
           <td class="text-dim">{{.Rig}}</td>
           <td>{{.Age}}d</td>
           <td class="text-dim">{{.Reason}}</td>
+          <td class="actions-cell">
+            <button class="btn btn-xs" hx-post="/bead/{{.Rig}}/{{.Issue.ID}}/status" hx-vals='{"status":"closed"}' hx-swap="outerHTML" hx-target="closest tr" hx-confirm="Close {{.Issue.ID}}?">close</button>
+            <button class="btn btn-xs" hx-post="/bead/{{.Rig}}/{{.Issue.ID}}/status" hx-vals='{"status":"deferred"}' hx-swap="outerHTML" hx-target="closest tr" hx-confirm="Defer {{.Issue.ID}}?">defer</button>
+          </td>
         </tr>
         {{end}}
       </tbody>

@@ -44,6 +44,7 @@
         <th>Score</th>
         <th>Signal</th>
         <th>Assignee</th>
+        <th>Actions</th>
       </tr>
     </thead>
     <tbody>
@@ -58,6 +59,11 @@
         <td><strong>{{printf "%.0f" $item.Score}}</strong></td>
         <td><span class="text-dim">{{$item.Reason}}</span></td>
         <td>{{if $item.Assignee}}<a href="/agent/{{$item.Assignee}}">{{shortActor $item.Assignee}}</a>{{else}}<span class="text-dim">—</span>{{end}}</td>
+        <td class="actions-cell">
+          {{if eq $item.Status "open"}}<button class="btn btn-xs" hx-post="/bead/{{$item.DB}}/{{$item.ID}}/status" hx-vals='{"status":"in_progress"}' hx-swap="outerHTML" hx-target="closest tr">start</button>{{end}}
+          <button class="btn btn-xs" hx-post="/bead/{{$item.DB}}/{{$item.ID}}/status" hx-vals='{"status":"closed"}' hx-swap="outerHTML" hx-target="closest tr" hx-confirm="Close {{$item.ID}}?">close</button>
+          <button class="btn btn-xs" hx-post="/bead/{{$item.DB}}/{{$item.ID}}/status" hx-vals='{"status":"deferred"}' hx-swap="outerHTML" hx-target="closest tr" hx-confirm="Defer {{$item.ID}}?">defer</button>
+        </td>
       </tr>
       {{end}}
     </tbody>

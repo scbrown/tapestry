@@ -37,6 +37,7 @@
         <th>Assignee</th>
         <th>Reopens</th>
         <th>Last Reopened</th>
+        <th>Actions</th>
       </tr>
     </thead>
     <tbody>
@@ -49,6 +50,11 @@
         <td>{{if .Assignee}}<a href="/agent/{{.Assignee}}">{{shortActor .Assignee}}</a>{{else}}<span class="text-dim">—</span>{{end}}</td>
         <td><strong>{{.Reopens}}</strong></td>
         <td>{{formatDate .LastReopen}}</td>
+        <td class="actions-cell">
+          {{if eq .Status "open"}}<button class="btn btn-xs" hx-post="/bead/{{.DB}}/{{.ID}}/status" hx-vals='{"status":"in_progress"}' hx-swap="outerHTML" hx-target="closest tr">start</button>{{end}}
+          <button class="btn btn-xs" hx-post="/bead/{{.DB}}/{{.ID}}/status" hx-vals='{"status":"closed"}' hx-swap="outerHTML" hx-target="closest tr" hx-confirm="Close {{.ID}}?">close</button>
+          <button class="btn btn-xs" hx-post="/bead/{{.DB}}/{{.ID}}/status" hx-vals='{"status":"deferred"}' hx-swap="outerHTML" hx-target="closest tr" hx-confirm="Defer {{.ID}}?">defer</button>
+        </td>
       </tr>
       {{end}}
     </tbody>

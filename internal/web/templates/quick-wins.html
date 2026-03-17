@@ -33,6 +33,7 @@
           <th>Age</th>
           <th>Complexity</th>
           <th>Assignee</th>
+          <th>Actions</th>
         </tr>
       </thead>
       <tbody>
@@ -49,6 +50,11 @@
             </span>
           </td>
           <td class="text-dim">{{shortActor .Issue.Assignee}}</td>
+          <td class="actions-cell">
+            {{if eq .Issue.Status "open"}}<button class="btn btn-xs" hx-post="/bead/{{.Rig}}/{{.Issue.ID}}/status" hx-vals='{"status":"in_progress"}' hx-swap="outerHTML" hx-target="closest tr">start</button>{{end}}
+            <button class="btn btn-xs" hx-post="/bead/{{.Rig}}/{{.Issue.ID}}/status" hx-vals='{"status":"closed"}' hx-swap="outerHTML" hx-target="closest tr" hx-confirm="Close {{.Issue.ID}}?">close</button>
+            <button class="btn btn-xs" hx-post="/bead/{{.Rig}}/{{.Issue.ID}}/status" hx-vals='{"status":"deferred"}' hx-swap="outerHTML" hx-target="closest tr" hx-confirm="Defer {{.Issue.ID}}?">defer</button>
+          </td>
         </tr>
         {{end}}
       </tbody>

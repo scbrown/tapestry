@@ -40,6 +40,7 @@
         <th>Priority</th>
         <th>Assignee</th>
         <th>Last Updated</th>
+        <th>Actions</th>
       </tr>
     </thead>
     <tbody>
@@ -51,6 +52,11 @@
         <td>{{priorityLabel .Priority}}</td>
         <td>{{if .Assignee}}<a href="/agent/{{.Assignee}}">{{shortActor .Assignee}}</a>{{else}}<span class="text-dim">—</span>{{end}}</td>
         <td>{{formatDate .EscalatedAt}}</td>
+        <td class="actions-cell">
+          {{if eq .Status "open"}}<button class="btn btn-xs" hx-post="/bead/{{.DB}}/{{.ID}}/status" hx-vals='{"status":"in_progress"}' hx-swap="outerHTML" hx-target="closest tr">start</button>{{end}}
+          {{if ne .Status "closed"}}<button class="btn btn-xs" hx-post="/bead/{{.DB}}/{{.ID}}/status" hx-vals='{"status":"closed"}' hx-swap="outerHTML" hx-target="closest tr" hx-confirm="Close {{.ID}}?">close</button>{{end}}
+          {{if ne .Status "deferred"}}<button class="btn btn-xs" hx-post="/bead/{{.DB}}/{{.ID}}/status" hx-vals='{"status":"deferred"}' hx-swap="outerHTML" hx-target="closest tr" hx-confirm="Defer {{.ID}}?">defer</button>{{end}}
+        </td>
       </tr>
       {{end}}
     </tbody>
