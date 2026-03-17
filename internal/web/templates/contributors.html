@@ -40,10 +40,10 @@
         <tr>
           <td class="text-dim">{{add1 $i}}</td>
           <td><a href="/agent/{{$c.Name}}" hx-boost="true">{{shortActor $c.Name}}</a></td>
-          <td><strong>{{$c.Owned}}</strong></td>
-          <td>{{$c.Closed}}</td>
-          <td>{{$c.Open}}</td>
-          <td>{{$c.InProgress}}</td>
+          <td><strong><a href="/beads?assignee={{$c.Name}}">{{$c.Owned}}</a></strong></td>
+          <td><a href="/beads?assignee={{$c.Name}}&amp;status=closed">{{$c.Closed}}</a></td>
+          <td><a href="/beads?assignee={{$c.Name}}&amp;status=open">{{$c.Open}}</a></td>
+          <td><a href="/beads?assignee={{$c.Name}}&amp;status=in_progress">{{$c.InProgress}}</a></td>
           <td>
             {{$c.CloseRate}}%
             <span style="display:inline-block;background:var(--green);height:8px;width:{{$c.CloseRate}}%;max-width:100px;vertical-align:middle;"></span>
