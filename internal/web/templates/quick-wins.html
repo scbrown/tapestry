@@ -21,11 +21,18 @@
   </div>
 
   {{if .Items}}
+  <div class="batch-bar" id="batch-bar-qw" style="display:none">
+    <span class="batch-count">0 selected</span>
+    <button class="btn btn-xs" onclick="qwBatchAction('in_progress')">start selected</button>
+    <button class="btn btn-xs" onclick="qwBatchAction('closed')">close selected</button>
+    <button class="btn btn-xs" onclick="qwBatchAction('deferred')">defer selected</button>
+  </div>
   <section class="backlog-card">
     <div class="table-wrap">
     <table class="bead-table">
       <thead>
         <tr>
+          <th><input type="checkbox" onchange="qwToggleAll(this)"></th>
           <th>Pri</th>
           <th>ID</th>
           <th>Title</th>
@@ -39,6 +46,7 @@
       <tbody>
         {{range .Items}}
         <tr>
+          <td><input type="checkbox" class="qw-cb" data-id="{{.Issue.ID}}" data-rig="{{.Rig}}" onchange="qwUpdateBar()"></td>
           <td id="pri-{{.Issue.ID}}" class="bead-priority-inline"><span class="badge {{priorityClass .Issue.Priority}}">{{priorityLabel .Issue.Priority}}</span>
             <span class="priority-edit triage-btn-group">
               <button class="btn btn-xs priority-p0" hx-post="/bead/{{.Rig}}/{{.Issue.ID}}/priority" hx-vals='{"priority":"0"}' hx-target="#pri-{{.Issue.ID}}" hx-swap="innerHTML">P0</button>
@@ -69,6 +77,11 @@
     </table>
     </div>
   </section>
+  <script>
+  function qwToggleAll(m){document.querySelectorAll('.qw-cb').forEach(function(c){c.checked=m.checked});qwUpdateBar()}
+  function qwUpdateBar(){var c=document.querySelectorAll('.qw-cb:checked'),b=document.getElementById('batch-bar-qw');if(b){b.style.display=c.length>0?'flex':'none';b.querySelector('.batch-count').textContent=c.length+' selected'}}
+  function qwBatchAction(s){var c=document.querySelectorAll('.qw-cb:checked');if(!c.length)return;if(!confirm(s.charAt(0).toUpperCase()+s.slice(1)+' '+c.length+' beads?'))return;var f=new FormData();f.append('status',s);c.forEach(function(cb){f.append('ids[]',cb.getAttribute('data-rig')+'/'+cb.getAttribute('data-id'))});fetch('/batch/status',{method:'POST',body:f}).then(function(){c.forEach(function(cb){cb.closest('tr').remove()});qwUpdateBar();document.body.dispatchEvent(new CustomEvent('showToast',{detail:c.length+' beads '+s}))})}
+  </script>
   {{else}}
   <p class="text-dim">No quick wins found — all open beads have dependencies or high complexity.</p>
   {{end}}

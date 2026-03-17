@@ -39,9 +39,16 @@
   </div>
 
   {{if .Items}}
+  <div class="batch-bar" id="batch-bar-ready" style="display:none">
+    <span class="batch-count">0 selected</span>
+    <button class="btn btn-xs" onclick="readyBatchAction('in_progress')">start selected</button>
+    <button class="btn btn-xs" onclick="readyBatchAction('closed')">close selected</button>
+    <button class="btn btn-xs" onclick="readyBatchAction('deferred')">defer selected</button>
+  </div>
   <table class="bead-table">
     <thead>
       <tr>
+        <th><input type="checkbox" onchange="readyToggleAll(this)"></th>
         <th>Pri</th>
         <th>Bead</th>
         <th>Title</th>
@@ -54,6 +61,7 @@
     <tbody>
       {{range .Items}}
       <tr>
+        <td><input type="checkbox" class="ready-cb" data-id="{{.ID}}" data-rig="{{.DB}}" onchange="readyUpdateBar()"></td>
         <td>{{priorityLabel .Priority}}</td>
         <td><a href="/bead/{{.DB}}/{{.ID}}">{{.ID}}</a></td>
         <td>{{.Title}}</td>
@@ -69,6 +77,11 @@
       {{end}}
     </tbody>
   </table>
+  <script>
+  function readyToggleAll(m){document.querySelectorAll('.ready-cb').forEach(function(c){c.checked=m.checked});readyUpdateBar()}
+  function readyUpdateBar(){var c=document.querySelectorAll('.ready-cb:checked'),b=document.getElementById('batch-bar-ready');if(b){b.style.display=c.length>0?'flex':'none';b.querySelector('.batch-count').textContent=c.length+' selected'}}
+  function readyBatchAction(s){var c=document.querySelectorAll('.ready-cb:checked');if(!c.length)return;if(!confirm(s.charAt(0).toUpperCase()+s.slice(1)+' '+c.length+' beads?'))return;var f=new FormData();f.append('status',s);c.forEach(function(cb){f.append('ids[]',cb.getAttribute('data-rig')+'/'+cb.getAttribute('data-id'))});fetch('/batch/status',{method:'POST',body:f}).then(function(){c.forEach(function(cb){cb.closest('tr').remove()});readyUpdateBar();document.body.dispatchEvent(new CustomEvent('showToast',{detail:c.length+' beads '+s}))})}
+  </script>
   {{else}}
   <p class="text-dim">No ready beads found. Everything is either in progress, blocked, or closed.</p>
   {{end}}

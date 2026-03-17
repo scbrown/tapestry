@@ -16,9 +16,15 @@
   {{if .Err}}
   <div class="error-banner">{{.Err}}</div>
   {{else if .Items}}
+  <div class="batch-bar" id="batch-bar-pending" style="display:none">
+    <span class="batch-count">0 selected</span>
+    <button class="btn btn-xs" onclick="pendingBatchAction('in_progress')">start selected</button>
+    <button class="btn btn-xs" onclick="pendingBatchAction('closed')">close selected</button>
+  </div>
   <table>
     <thead>
       <tr>
+        <th><input type="checkbox" onchange="pendingToggleAll(this)"></th>
         <th>Bead</th>
         <th>P</th>
         <th>Title</th>
@@ -31,6 +37,7 @@
     <tbody>
       {{range .Items}}
       <tr>
+        <td><input type="checkbox" class="pending-cb" data-id="{{.ID}}" data-rig="{{lower .Rig}}" onchange="pendingUpdateBar()"></td>
         <td><a href="/bead/{{lower .Rig}}/{{.ID}}" hx-boost="true">{{.ID}}</a></td>
         <td id="pri-{{.ID}}" class="bead-priority-inline"><span class="badge {{priorityClass .Priority}}">{{priorityLabel .Priority}}</span>
           <span class="priority-edit triage-btn-group">
@@ -58,6 +65,11 @@
       {{end}}
     </tbody>
   </table>
+  <script>
+  function pendingToggleAll(m){document.querySelectorAll('.pending-cb').forEach(function(c){c.checked=m.checked});pendingUpdateBar()}
+  function pendingUpdateBar(){var c=document.querySelectorAll('.pending-cb:checked'),b=document.getElementById('batch-bar-pending');if(b){b.style.display=c.length>0?'flex':'none';b.querySelector('.batch-count').textContent=c.length+' selected'}}
+  function pendingBatchAction(s){var c=document.querySelectorAll('.pending-cb:checked');if(!c.length)return;if(!confirm(s.charAt(0).toUpperCase()+s.slice(1)+' '+c.length+' beads?'))return;var f=new FormData();f.append('status',s);c.forEach(function(cb){f.append('ids[]',cb.getAttribute('data-rig')+'/'+cb.getAttribute('data-id'))});fetch('/batch/status',{method:'POST',body:f}).then(function(){c.forEach(function(cb){cb.closest('tr').remove()});pendingUpdateBar();document.body.dispatchEvent(new CustomEvent('showToast',{detail:c.length+' beads '+s}))})}
+  </script>
   {{else}}
   <p class="empty">Nothing pending — all assigned beads are in progress or all high-pri beads are owned.</p>
   {{end}}

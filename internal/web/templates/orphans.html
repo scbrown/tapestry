@@ -21,11 +21,17 @@
   </div>
 
   {{if .Items}}
+  <div class="batch-bar" id="batch-bar-orphans" style="display:none">
+    <span class="batch-count">0 selected</span>
+    <button class="btn btn-xs" onclick="orphansBatchAction('closed')">close selected</button>
+    <button class="btn btn-xs" onclick="orphansBatchAction('deferred')">defer selected</button>
+  </div>
   <section class="backlog-card">
     <div class="table-wrap">
     <table class="bead-table">
       <thead>
         <tr>
+          <th><input type="checkbox" onchange="orphansToggleAll(this)"></th>
           <th>ID</th>
           <th>Title</th>
           <th>Pri</th>
@@ -38,6 +44,7 @@
       <tbody>
         {{range .Items}}
         <tr>
+          <td><input type="checkbox" class="orphans-cb" data-id="{{.Issue.ID}}" data-rig="{{.Rig}}" onchange="orphansUpdateBar()"></td>
           <td><a href="/bead/{{.Rig}}/{{.Issue.ID}}" hx-boost="true">{{.Issue.ID}}</a></td>
           <td>{{.Issue.Title}}</td>
           <td id="pri-{{.Issue.ID}}" class="bead-priority-inline"><span class="badge {{priorityClass .Issue.Priority}}">{{priorityLabel .Issue.Priority}}</span>
@@ -62,6 +69,11 @@
     </table>
     </div>
   </section>
+  <script>
+  function orphansToggleAll(m){document.querySelectorAll('.orphans-cb').forEach(function(c){c.checked=m.checked});orphansUpdateBar()}
+  function orphansUpdateBar(){var c=document.querySelectorAll('.orphans-cb:checked'),b=document.getElementById('batch-bar-orphans');if(b){b.style.display=c.length>0?'flex':'none';b.querySelector('.batch-count').textContent=c.length+' selected'}}
+  function orphansBatchAction(s){var c=document.querySelectorAll('.orphans-cb:checked');if(!c.length)return;if(!confirm(s.charAt(0).toUpperCase()+s.slice(1)+' '+c.length+' beads?'))return;var f=new FormData();f.append('status',s);c.forEach(function(cb){f.append('ids[]',cb.getAttribute('data-rig')+'/'+cb.getAttribute('data-id'))});fetch('/batch/status',{method:'POST',body:f}).then(function(){c.forEach(function(cb){cb.closest('tr').remove()});orphansUpdateBar();document.body.dispatchEvent(new CustomEvent('showToast',{detail:c.length+' beads '+s}))})}
+  </script>
   {{else}}
   <p class="text-dim">No orphaned beads found.</p>
   {{end}}

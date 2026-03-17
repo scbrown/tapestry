@@ -36,10 +36,16 @@
   </div>
 
   {{if .Items}}
+  <div class="batch-bar" id="batch-bar-risks" style="display:none;margin-top:1rem">
+    <span class="batch-count">0 selected</span>
+    <button class="btn btn-xs" onclick="risksBatchAction('closed')">close selected</button>
+    <button class="btn btn-xs" onclick="risksBatchAction('deferred')">defer selected</button>
+  </div>
   <div class="table-wrap" style="margin-top:1rem">
   <table class="bead-table">
     <thead>
       <tr>
+        <th><input type="checkbox" onchange="risksToggleAll(this)"></th>
         <th>Sev</th>
         <th>Rig</th>
         <th>ID</th>
@@ -55,6 +61,7 @@
     <tbody>
       {{range .Items}}
       <tr class="risk-{{.Severity}}">
+        <td><input type="checkbox" class="risks-cb" data-id="{{.Issue.ID}}" data-rig="{{lower .Rig}}" onchange="risksUpdateBar()"></td>
         <td>
           {{if eq .Severity "critical"}}<span class="badge" style="background:#ff5555;color:#282a36">CRIT</span>
           {{else if eq .Severity "warning"}}<span class="badge" style="background:#ffb86c;color:#282a36">WARN</span>
@@ -86,6 +93,11 @@
   {{end}}
 </div>
 
+<script>
+function risksToggleAll(m){document.querySelectorAll('.risks-cb').forEach(function(c){c.checked=m.checked});risksUpdateBar()}
+function risksUpdateBar(){var c=document.querySelectorAll('.risks-cb:checked'),b=document.getElementById('batch-bar-risks');if(b){b.style.display=c.length>0?'flex':'none';b.querySelector('.batch-count').textContent=c.length+' selected'}}
+function risksBatchAction(s){var c=document.querySelectorAll('.risks-cb:checked');if(!c.length)return;if(!confirm(s.charAt(0).toUpperCase()+s.slice(1)+' '+c.length+' risk beads?'))return;var f=new FormData();f.append('status',s);c.forEach(function(cb){f.append('ids[]',cb.getAttribute('data-rig')+'/'+cb.getAttribute('data-id'))});fetch('/batch/status',{method:'POST',body:f}).then(function(){c.forEach(function(cb){cb.closest('tr').remove()});risksUpdateBar();document.body.dispatchEvent(new CustomEvent('showToast',{detail:c.length+' risk beads '+s}))})}
+</script>
 <style>
 .risk-critical { border-left: 3px solid #ff5555; }
 .risk-warning { border-left: 3px solid #ffb86c; }

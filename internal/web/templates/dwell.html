@@ -20,9 +20,15 @@
   {{if .Err}}
   <div class="error-banner">{{.Err}}</div>
   {{else if .Items}}
+  <div class="batch-bar" id="batch-bar-dwell" style="display:none">
+    <span class="batch-count">0 selected</span>
+    <button class="btn btn-xs" onclick="dwellBatchAction('closed')">close selected</button>
+    <button class="btn btn-xs" onclick="dwellBatchAction('deferred')">defer selected</button>
+  </div>
   <table>
     <thead>
       <tr>
+        <th><input type="checkbox" onchange="dwellToggleAll(this)"></th>
         <th>Bead</th>
         <th>P</th>
         <th>Status</th>
@@ -35,6 +41,7 @@
     <tbody>
       {{range .Items}}
       <tr>
+        <td><input type="checkbox" class="dwell-cb" data-id="{{.ID}}" data-rig="{{lower .Rig}}" onchange="dwellUpdateBar()"></td>
         <td><a href="/bead/{{lower .Rig}}/{{.ID}}" hx-boost="true">{{.ID}}</a></td>
         <td><span class="priority-badge p{{.Priority}}">P{{.Priority}}</span></td>
         <td>{{statusBadge .Status}}</td>
@@ -61,6 +68,11 @@
   {{end}}
 </div>
 
+<script>
+function dwellToggleAll(m){document.querySelectorAll('.dwell-cb').forEach(function(c){c.checked=m.checked});dwellUpdateBar()}
+function dwellUpdateBar(){var c=document.querySelectorAll('.dwell-cb:checked'),b=document.getElementById('batch-bar-dwell');if(b){b.style.display=c.length>0?'flex':'none';b.querySelector('.batch-count').textContent=c.length+' selected'}}
+function dwellBatchAction(s){var c=document.querySelectorAll('.dwell-cb:checked');if(!c.length)return;if(!confirm(s.charAt(0).toUpperCase()+s.slice(1)+' '+c.length+' beads?'))return;var f=new FormData();f.append('status',s);c.forEach(function(cb){f.append('ids[]',cb.getAttribute('data-rig')+'/'+cb.getAttribute('data-id'))});fetch('/batch/status',{method:'POST',body:f}).then(function(){c.forEach(function(cb){cb.closest('tr').remove()});dwellUpdateBar();document.body.dispatchEvent(new CustomEvent('showToast',{detail:c.length+' beads '+s}))})}
+</script>
 <style>
 .dwell-bar-container { position: relative; min-width: 120px; height: 22px; background: var(--bg-secondary, #282a36); border-radius: 3px; }
 .dwell-bar { position: absolute; top: 0; left: 0; height: 100%; border-radius: 3px; opacity: 0.7; }
