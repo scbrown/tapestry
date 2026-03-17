@@ -7811,3 +7811,107 @@ func TestWIPPage_AutoRefresh(t *testing.T) {
 		t.Error("expected 60s auto-refresh on wip page")
 	}
 }
+
+// ── /swarming ──
+
+func TestSwarmingPage(t *testing.T) {
+	srv := New(&mockDataSource{})
+	req := httptest.NewRequest("GET", "/swarming", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /swarming status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Swarming Beads") {
+		t.Error("expected 'Swarming Beads' heading")
+	}
+	if !strings.Contains(body, "Swarm Metrics") {
+		t.Error("expected Swarm Metrics section")
+	}
+}
+
+func TestSwarmingPage_NilDS(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/swarming", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /swarming nil ds status = %d, want %d", w.Code, http.StatusOK)
+	}
+}
+
+func TestSwarmingPage_AutoRefresh(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/swarming", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	body := w.Body.String()
+	if !strings.Contains(body, `hx-trigger="every 120s"`) {
+		t.Error("expected 120s auto-refresh on swarming page")
+	}
+}
+
+func TestSwarmingPage_RigFilter(t *testing.T) {
+	srv := New(&mockDataSource{})
+	req := httptest.NewRequest("GET", "/swarming?rig=beads_aegis", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /swarming?rig status = %d, want %d", w.Code, http.StatusOK)
+	}
+}
+
+// ── /signals ──
+
+func TestSignalsPage(t *testing.T) {
+	srv := New(&mockDataSource{})
+	req := httptest.NewRequest("GET", "/signals", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /signals status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Health Signals") {
+		t.Error("expected 'Health Signals' heading")
+	}
+	if !strings.Contains(body, "Raw Metrics") {
+		t.Error("expected Raw Metrics section")
+	}
+}
+
+func TestSignalsPage_NilDS(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/signals", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /signals nil ds status = %d, want %d", w.Code, http.StatusOK)
+	}
+}
+
+func TestSignalsPage_AutoRefresh(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/signals", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	body := w.Body.String()
+	if !strings.Contains(body, `hx-trigger="every 60s"`) {
+		t.Error("expected 60s auto-refresh on signals page")
+	}
+}

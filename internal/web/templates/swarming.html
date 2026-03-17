@@ -1,0 +1,67 @@
+{{define "title"}}Swarming{{end}}
+{{define "content"}}
+<div class="swarming-page" hx-get="/swarming{{if .FilterRig}}?rig={{.FilterRig}}{{end}}" hx-trigger="every 120s" hx-select=".swarming-page" hx-swap="outerHTML">
+  <h1>Swarming Beads <time class="text-dim">{{formatDateTime .GeneratedAt}}</time></h1>
+  <p class="text-dim">Open beads where 2+ agents have been involved (assigned or commented).</p>
+
+  {{if .Err}}
+  <div class="error">{{.Err}}</div>
+  {{else}}
+
+  {{/* ── Stats ── */}}
+  <div class="briefing-grid">
+    <section class="briefing-card">
+      <h2>Swarm Metrics</h2>
+      <div class="stat-grid">
+        <div class="stat">
+          <span class="stat-value">{{.TotalSwarmed}}</span>
+          <span class="stat-label">Multi-agent beads</span>
+        </div>
+        <div class="stat">
+          <span class="stat-value">{{.MaxAgents}}</span>
+          <span class="stat-label">Max agents on one bead</span>
+        </div>
+        <div class="stat">
+          <span class="stat-value">{{printf "%.1f" .AvgAgents}}</span>
+          <span class="stat-label">Avg agents</span>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  {{/* ── Swarm Table ── */}}
+  {{if .SwarmBeads}}
+  <table class="bead-table">
+    <thead>
+      <tr>
+        <th>Bead</th>
+        <th>Title</th>
+        <th>Status</th>
+        <th>Pri</th>
+        <th>Agents</th>
+        <th>Comments</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{range .SwarmBeads}}
+      <tr>
+        <td><a href="/bead/{{.DB}}/{{.ID}}">{{.ID}}</a></td>
+        <td>{{.Title}}</td>
+        <td>{{statusBadge .Status}}</td>
+        <td>{{priorityLabel .Priority}}</td>
+        <td>
+          {{range $i, $a := .Agents}}{{if $i}}, {{end}}<a href="/agent/{{$a}}">{{shortActor $a}}</a>{{end}}
+          <span class="text-dim">({{.AgentCount}})</span>
+        </td>
+        <td>{{.Comments}}</td>
+      </tr>
+      {{end}}
+    </tbody>
+  </table>
+  {{else}}
+  <p class="text-dim">No multi-agent beads found.</p>
+  {{end}}
+
+  {{end}}
+</div>
+{{end}}

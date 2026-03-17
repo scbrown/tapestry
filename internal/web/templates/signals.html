@@ -1,0 +1,48 @@
+{{define "title"}}Signals{{end}}
+{{define "content"}}
+<div class="signals-page" hx-get="/signals" hx-trigger="every 60s" hx-select=".signals-page" hx-swap="outerHTML">
+  <h1>Health Signals <time class="text-dim">{{formatDateTime .GeneratedAt}}</time></h1>
+  <p class="text-dim">Cross-cutting system health indicators at a glance.</p>
+
+  {{if .Err}}
+  <div class="error">{{.Err}}</div>
+  {{else}}
+
+  {{/* ── Traffic Light Grid ── */}}
+  {{if .Signals}}
+  <div class="briefing-grid">
+    {{range .Signals}}
+    <section class="briefing-card">
+      <h2>
+        {{if eq .Status "green"}}&#x1f7e2;{{else if eq .Status "yellow"}}&#x1f7e1;{{else}}&#x1f534;{{end}}
+        {{.Name}}
+      </h2>
+      <div class="stat">
+        <span class="stat-value {{if eq .Status "red"}}warn{{else if eq .Status "green"}}good{{end}}">{{.Value}}</span>
+      </div>
+      <p class="text-dim" style="font-size:0.85rem;margin-top:0.5rem">{{.Detail}}</p>
+    </section>
+    {{end}}
+  </div>
+  {{end}}
+
+  {{/* ── Raw Metrics ── */}}
+  <h2 style="margin-top:2rem">Raw Metrics</h2>
+  <table class="bead-table" style="max-width:400px">
+    <tbody>
+      <tr><td>Open (total)</td><td><strong>{{.OpenCount}}</strong></td></tr>
+      <tr><td>In progress</td><td>{{.InProgressCount}}</td></tr>
+      <tr><td>Blocked</td><td>{{.BlockedCount}}</td></tr>
+      <tr><td>Deferred</td><td>{{.DeferredCount}}</td></tr>
+      <tr><td>P0 open</td><td>{{.P0Count}}</td></tr>
+      <tr><td>P1 open</td><td>{{.P1Count}}</td></tr>
+      <tr><td>Stale (14d+)</td><td>{{.StaleCount}}</td></tr>
+      <tr><td>Unassigned</td><td>{{.UnassignedCount}}</td></tr>
+      <tr><td>Created (7d)</td><td>{{.CreatedWeek}}</td></tr>
+      <tr><td>Closed (7d)</td><td>{{.ClosedWeek}}</td></tr>
+    </tbody>
+  </table>
+
+  {{end}}
+</div>
+{{end}}
