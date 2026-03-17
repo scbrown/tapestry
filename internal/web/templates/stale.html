@@ -24,10 +24,16 @@
   <div class="results-meta">{{.Total}} in-progress/hooked beads not updated in {{.Days}}+ days</div>
 
   {{if .Entries}}
+  <div class="batch-bar" id="batch-bar-stale" style="display:none">
+    <span class="batch-count">0 selected</span>
+    <button class="btn btn-xs" onclick="staleBatchAction('closed')">close selected</button>
+    <button class="btn btn-xs" onclick="staleBatchAction('deferred')">defer selected</button>
+  </div>
   <div class="table-wrap">
   <table class="bead-table">
     <thead>
       <tr>
+        <th><input type="checkbox" onchange="staleToggleAll(this)"></th>
         <th>Rig</th>
         <th>ID</th>
         <th>Title</th>
@@ -42,6 +48,7 @@
     <tbody>
       {{range .Entries}}
       <tr>
+        <td><input type="checkbox" class="stale-cb" data-id="{{.Issue.ID}}" data-rig="{{lower .Rig}}" onchange="staleUpdateBar()"></td>
         <td><span class="rig-label">{{rigName .Rig}}</span></td>
         <td><a href="/bead/{{lower .Rig}}/{{.Issue.ID}}" hx-boost="true">{{.Issue.ID}}</a></td>
         <td>{{.Issue.Title}}</td>
@@ -61,6 +68,35 @@
     </tbody>
   </table>
   </div>
+  <script>
+  function staleToggleAll(master) {
+    document.querySelectorAll('.stale-cb').forEach(function(cb) { cb.checked = master.checked; });
+    staleUpdateBar();
+  }
+  function staleUpdateBar() {
+    var checked = document.querySelectorAll('.stale-cb:checked');
+    var bar = document.getElementById('batch-bar-stale');
+    if (bar) {
+      bar.style.display = checked.length > 0 ? 'flex' : 'none';
+      bar.querySelector('.batch-count').textContent = checked.length + ' selected';
+    }
+  }
+  function staleBatchAction(status) {
+    var checked = document.querySelectorAll('.stale-cb:checked');
+    if (!checked.length) return;
+    if (!confirm(status.charAt(0).toUpperCase()+status.slice(1)+' '+checked.length+' stale beads?')) return;
+    var form = new FormData();
+    form.append('status', status);
+    checked.forEach(function(cb) {
+      form.append('ids[]', cb.getAttribute('data-rig')+'/'+cb.getAttribute('data-id'));
+    });
+    fetch('/batch/status', {method:'POST', body:form}).then(function() {
+      checked.forEach(function(cb) { cb.closest('tr').remove(); });
+      staleUpdateBar();
+      document.body.dispatchEvent(new CustomEvent('showToast', {detail: checked.length+' stale beads '+status}));
+    });
+  }
+  </script>
   {{else}}
   <p class="empty">No stale work found. Everything is moving.</p>
   {{end}}
