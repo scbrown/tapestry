@@ -8255,3 +8255,113 @@ func TestFreshnessPage_AutoRefresh(t *testing.T) {
 		t.Error("expected 120s auto-refresh on freshness page")
 	}
 }
+
+// ── /complexity ──
+
+func TestComplexityPage(t *testing.T) {
+	srv := New(&mockDataSource{})
+	req := httptest.NewRequest("GET", "/complexity", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /complexity status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Bead Complexity") {
+		t.Error("expected 'Bead Complexity' heading")
+	}
+}
+
+func TestComplexityPage_NilDS(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/complexity", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /complexity nil ds status = %d, want %d", w.Code, http.StatusOK)
+	}
+}
+
+func TestComplexityPage_AutoRefresh(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/complexity", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	body := w.Body.String()
+	if !strings.Contains(body, `hx-trigger="every 300s"`) {
+		t.Error("expected 300s auto-refresh on complexity page")
+	}
+}
+
+func TestComplexityPage_RigFilter(t *testing.T) {
+	srv := New(&mockDataSource{})
+	req := httptest.NewRequest("GET", "/complexity?rig=aegis", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /complexity?rig=aegis status = %d, want %d", w.Code, http.StatusOK)
+	}
+}
+
+// ── /label-matrix ──
+
+func TestLabelMatrixPage(t *testing.T) {
+	srv := New(&mockDataSource{})
+	req := httptest.NewRequest("GET", "/label-matrix", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /label-matrix status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Label") && !strings.Contains(body, "Matrix") {
+		t.Error("expected label matrix heading")
+	}
+}
+
+func TestLabelMatrixPage_NilDS(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/label-matrix", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /label-matrix nil ds status = %d, want %d", w.Code, http.StatusOK)
+	}
+}
+
+func TestLabelMatrixPage_AutoRefresh(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/label-matrix", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	body := w.Body.String()
+	if !strings.Contains(body, `hx-trigger="every 300s"`) {
+		t.Error("expected 300s auto-refresh on label-matrix page")
+	}
+}
+
+func TestLabelMatrixPage_RigFilter(t *testing.T) {
+	srv := New(&mockDataSource{})
+	req := httptest.NewRequest("GET", "/label-matrix?rig=aegis", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /label-matrix?rig=aegis status = %d, want %d", w.Code, http.StatusOK)
+	}
+}

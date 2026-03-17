@@ -1,0 +1,74 @@
+{{define "title"}}Complexity{{end}}
+{{define "content"}}
+<div class="complexity-page" hx-get="/complexity{{if .FilterRig}}?rig={{.FilterRig}}{{end}}" hx-trigger="every 300s" hx-select=".complexity-page" hx-swap="outerHTML">
+  <h1>Bead Complexity <time class="text-dim">{{formatDateTime .GeneratedAt}}</time></h1>
+  <p class="text-dim">Open beads ranked by complexity score (deps &times; 3 + comments &times; 2 + description size). Top 50 shown.</p>
+
+  {{if .Rigs}}<div class="dep-filters" style="margin-top:0.5rem">
+    <a href="/complexity" class="badge {{if not .FilterRig}}filter-active{{end}}">All rigs</a>
+    {{range .Rigs}}<a href="/complexity?rig={{.}}" class="badge {{if eq . $.FilterRig}}filter-active{{end}}">{{.}}</a>
+    {{end}}
+  </div>{{end}}
+
+  {{if .Err}}
+  <div class="error">{{.Err}}</div>
+  {{else}}
+
+  <div class="briefing-grid">
+    <section class="briefing-card">
+      <h2>Distribution ({{.TotalBeads}} open beads)</h2>
+      <div class="stat-grid">
+        <div class="stat">
+          <span class="stat-value" style="color:var(--danger)">{{.HighComplexity}}</span>
+          <span class="stat-label">High (10+)</span>
+        </div>
+        <div class="stat">
+          <span class="stat-value" style="color:var(--warning)">{{.MedComplexity}}</span>
+          <span class="stat-label">Medium (5-9)</span>
+        </div>
+        <div class="stat">
+          <span class="stat-value" style="color:var(--success)">{{.LowComplexity}}</span>
+          <span class="stat-label">Low (&lt;5)</span>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  {{if .Items}}
+  <table class="bead-table">
+    <thead>
+      <tr>
+        <th>Score</th>
+        <th>Bead</th>
+        <th>Title</th>
+        <th>Status</th>
+        <th>Pri</th>
+        <th>Assignee</th>
+        <th>Deps</th>
+        <th>Comments</th>
+        <th>Desc</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{range .Items}}
+      <tr>
+        <td><strong{{if ge .Score 10}} style="color:var(--danger)"{{else if ge .Score 5}} style="color:var(--warning)"{{else}} style="color:var(--success)"{{end}}>{{.Score}}</strong></td>
+        <td><a href="/bead/{{.DB}}/{{.ID}}">{{.ID}}</a></td>
+        <td>{{.Title}}</td>
+        <td>{{statusBadge .Status}}</td>
+        <td>{{priorityLabel .Priority}}</td>
+        <td>{{shortActor .Assignee}}</td>
+        <td>{{.DepCount}}</td>
+        <td>{{.CommentCount}}</td>
+        <td>{{.DescLen}}</td>
+      </tr>
+      {{end}}
+    </tbody>
+  </table>
+  {{else}}
+  <p class="text-dim">No open beads found.</p>
+  {{end}}
+
+  {{end}}
+</div>
+{{end}}

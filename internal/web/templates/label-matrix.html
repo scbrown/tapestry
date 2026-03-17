@@ -1,0 +1,62 @@
+{{define "title"}}Label Matrix{{end}}
+{{define "content"}}
+<div class="label-matrix-page" hx-get="/label-matrix{{if .FilterRig}}?rig={{.FilterRig}}{{end}}" hx-trigger="every 300s" hx-select=".label-matrix-page" hx-swap="outerHTML">
+  <h1>Label &times; Status Matrix <time class="text-dim">{{formatDateTime .GeneratedAt}}</time></h1>
+  <p class="text-dim">Heatmap of labels by bead status. Top 50 labels by total count.</p>
+
+  {{if .Rigs}}<div class="dep-filters" style="margin-top:0.5rem">
+    <a href="/label-matrix" class="badge {{if not .FilterRig}}filter-active{{end}}">All rigs</a>
+    {{range .Rigs}}<a href="/label-matrix?rig={{.}}" class="badge {{if eq . $.FilterRig}}filter-active{{end}}">{{.}}</a>
+    {{end}}
+  </div>{{end}}
+
+  {{if .Err}}
+  <div class="error">{{.Err}}</div>
+  {{else}}
+
+  {{if .Rows}}
+  <table class="bead-table">
+    <thead>
+      <tr>
+        <th>Label</th>
+        <th>Open</th>
+        <th>In Progress</th>
+        <th>Blocked</th>
+        <th>Closed</th>
+        <th>Deferred</th>
+        <th>Total</th>
+        <th>Distribution</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{range .Rows}}
+      <tr>
+        <td><a href="/labels?label={{.Label}}">{{.Label}}</a></td>
+        <td{{if gt .Open 0}} style="background:rgba(80,250,123,0.15)"{{end}}>{{.Open}}</td>
+        <td{{if gt .InProg 0}} style="background:rgba(139,233,253,0.15)"{{end}}>{{.InProg}}</td>
+        <td{{if gt .Blocked 0}} style="background:rgba(255,85,85,0.15)"{{end}}>{{.Blocked}}</td>
+        <td{{if gt .Closed 0}} style="background:rgba(98,114,164,0.15)"{{end}}>{{.Closed}}</td>
+        <td{{if gt .Deferred 0}} style="background:rgba(241,250,140,0.15)"{{end}}>{{.Deferred}}</td>
+        <td><strong>{{.Total}}</strong></td>
+        <td style="min-width:120px">
+          {{if gt $.MaxTotal 0}}
+          <div style="display:flex;height:14px;border-radius:3px;overflow:hidden;background:rgba(255,255,255,0.05)">
+            {{if gt .Open 0}}<div style="width:{{divf (mulf (itof .Open) 100.0) (itof $.MaxTotal)}}%;background:var(--success)" title="open: {{.Open}}"></div>{{end}}
+            {{if gt .InProg 0}}<div style="width:{{divf (mulf (itof .InProg) 100.0) (itof $.MaxTotal)}}%;background:var(--info)" title="in_progress: {{.InProg}}"></div>{{end}}
+            {{if gt .Blocked 0}}<div style="width:{{divf (mulf (itof .Blocked) 100.0) (itof $.MaxTotal)}}%;background:var(--danger)" title="blocked: {{.Blocked}}"></div>{{end}}
+            {{if gt .Closed 0}}<div style="width:{{divf (mulf (itof .Closed) 100.0) (itof $.MaxTotal)}}%;background:var(--text-muted)" title="closed: {{.Closed}}"></div>{{end}}
+            {{if gt .Deferred 0}}<div style="width:{{divf (mulf (itof .Deferred) 100.0) (itof $.MaxTotal)}}%;background:var(--warning)" title="deferred: {{.Deferred}}"></div>{{end}}
+          </div>
+          {{end}}
+        </td>
+      </tr>
+      {{end}}
+    </tbody>
+  </table>
+  {{else}}
+  <p class="text-dim">No labeled beads found.</p>
+  {{end}}
+
+  {{end}}
+</div>
+{{end}}
