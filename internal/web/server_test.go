@@ -34,6 +34,7 @@ type mockDataSource struct {
 	achievementUnlocks []dolt.AchievementUnlock
 	labels          []string
 	assignees       []string
+	recentComments  []dolt.Comment
 	err             error
 }
 
@@ -199,7 +200,7 @@ func (m *mockDataSource) CountByAssigneeStatus(_ context.Context, _ string) ([]d
 }
 
 func (m *mockDataSource) RecentComments(_ context.Context, _ string, _ int) ([]dolt.Comment, error) {
-	return nil, m.err
+	return m.recentComments, m.err
 }
 
 func TestIndexRendersMonthly(t *testing.T) {
@@ -3584,6 +3585,53 @@ func TestCommentsPage_HTMX(t *testing.T) {
 	body := w.Body.String()
 	if strings.Contains(body, "<!DOCTYPE html>") {
 		t.Error("HTMX comments should return partial, not full page")
+	}
+}
+
+func TestCommentsPage_AuthorFilter(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		recentComments: []dolt.Comment{
+			{IssueID: "c1", Author: "aegis/crew/alice", Body: "Alice comment", CreatedAt: time.Now()},
+			{IssueID: "c2", Author: "aegis/crew/bob", Body: "Bob comment", CreatedAt: time.Now().Add(-time.Hour)},
+		},
+	}
+
+	srv := New(ds)
+
+	// Test unfiltered — should show both + filter bar
+	req := httptest.NewRequest("GET", "/comments", nil)
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /comments status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Alice comment") {
+		t.Error("expected alice comment in unfiltered view")
+	}
+	if !strings.Contains(body, "Bob comment") {
+		t.Error("expected bob comment in unfiltered view")
+	}
+	if !strings.Contains(body, "dep-filters") {
+		t.Error("expected author filter bar")
+	}
+
+	// Test filtered by author
+	req2 := httptest.NewRequest("GET", "/comments?author=aegis/crew/alice", nil)
+	w2 := httptest.NewRecorder()
+	srv.ServeHTTP(w2, req2)
+
+	if w2.Code != http.StatusOK {
+		t.Fatalf("GET /comments?author status = %d, want %d", w2.Code, http.StatusOK)
+	}
+	body2 := w2.Body.String()
+	if !strings.Contains(body2, "Alice comment") {
+		t.Error("expected alice comment in filtered view")
+	}
+	if strings.Contains(body2, "Bob comment") {
+		t.Error("bob comment should be hidden when filtering by alice")
 	}
 }
 

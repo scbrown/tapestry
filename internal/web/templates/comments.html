@@ -10,6 +10,15 @@
     </div>
   </div>
 
+  {{if .Authors}}
+  <div class="dep-filters" style="margin-bottom:1rem">
+    <a href="/comments" class="badge {{if not .FilterAuthor}}filter-active{{end}}" hx-get="/comments" hx-target="#content" hx-push-url="true">All</a>
+    {{range .Authors}}
+    <a href="/comments?author={{.}}" class="badge {{if eq . $.FilterAuthor}}filter-active{{end}}" hx-get="/comments?author={{.}}" hx-target="#content" hx-push-url="true">{{shortActor .}}</a>
+    {{end}}
+  </div>
+  {{end}}
+
   {{if .Comments}}
   <section class="backlog-card">
     <div class="table-wrap">

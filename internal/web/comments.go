@@ -19,9 +19,11 @@ type commentEntry struct {
 }
 
 type commentsData struct {
-	GeneratedAt time.Time
-	Comments    []commentEntry
-	Total       int
+	GeneratedAt  time.Time
+	Comments     []commentEntry
+	Total        int
+	Authors      []string // distinct authors for filter
+	FilterAuthor string   // currently selected author filter
 }
 
 func (s *Server) handleComments(w http.ResponseWriter, r *http.Request) {
@@ -80,6 +82,31 @@ func (s *Server) handleComments(w http.ResponseWriter, r *http.Request) {
 	// Cap at 100
 	if len(data.Comments) > 100 {
 		data.Comments = data.Comments[:100]
+	}
+
+	// Collect distinct authors for filter
+	authorSet := make(map[string]bool)
+	for _, c := range data.Comments {
+		if c.Author != "" {
+			authorSet[c.Author] = true
+		}
+	}
+	for a := range authorSet {
+		data.Authors = append(data.Authors, a)
+	}
+	sort.Strings(data.Authors)
+
+	// Apply author filter if specified
+	filterAuthor := r.URL.Query().Get("author")
+	if filterAuthor != "" {
+		data.FilterAuthor = filterAuthor
+		filtered := data.Comments[:0]
+		for _, c := range data.Comments {
+			if c.Author == filterAuthor {
+				filtered = append(filtered, c)
+			}
+		}
+		data.Comments = filtered
 	}
 
 	data.Total = len(data.Comments)
