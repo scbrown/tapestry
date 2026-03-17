@@ -38,6 +38,7 @@ type recapData struct {
 
 	Rigs      []string
 	FilterRig string
+	Assignees []string
 }
 
 func (s *Server) handleRecap(w http.ResponseWriter, r *http.Request) {
@@ -95,9 +96,10 @@ func (s *Server) handleRecap(w http.ResponseWriter, r *http.Request) {
 	dayEnd := targetDate.AddDate(0, 0, 1)
 
 	type dbResult struct {
-		created []recapItem
-		closed  []recapItem
-		active  []recapItem
+		created   []recapItem
+		closed    []recapItem
+		active    []recapItem
+		assignees []string
 	}
 
 	results := make([]dbResult, len(dbs))
@@ -111,6 +113,7 @@ func (s *Server) handleRecap(w http.ResponseWriter, r *http.Request) {
 			defer wg.Done()
 			var r dbResult
 			rig := rigDisplayName(dbName)
+			r.assignees, _ = s.ds.DistinctAssignees(ctx, dbName)
 
 			// Get all issues updated on this day (captures closed + status changes)
 			updated, err := s.ds.Issues(ctx, dbName, dolt.IssueFilter{
@@ -158,6 +161,20 @@ func (s *Server) handleRecap(w http.ResponseWriter, r *http.Request) {
 		}(i, db.Name)
 	}
 	wg.Wait()
+
+	// Collect assignees
+	assigneeSet := make(map[string]bool)
+	for _, r := range results {
+		for _, a := range r.assignees {
+			if a != "" {
+				assigneeSet[a] = true
+			}
+		}
+	}
+	for a := range assigneeSet {
+		data.Assignees = append(data.Assignees, a)
+	}
+	sort.Strings(data.Assignees)
 
 	// Aggregate
 	data.CreatedByAgent = make(map[string]int)
