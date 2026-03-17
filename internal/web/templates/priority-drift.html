@@ -1,0 +1,71 @@
+{{define "title"}}Priority Drift{{end}}
+{{define "content"}}
+<div class="priority-drift-page" hx-get="/priority-drift{{if .FilterRig}}?rig={{.FilterRig}}{{end}}" hx-trigger="every 60s" hx-select=".priority-drift-page" hx-swap="outerHTML">
+  <h1>Priority Drift</h1>
+  <p class="text-dim">Active work distribution by priority — stale count flags drifting priorities.</p>
+
+  <div class="dep-filters">
+    {{if .Rigs}}
+    <select onchange="location.href='/priority-drift?rig='+this.value">
+      <option value="">All rigs</option>
+      {{range .Rigs}}<option value="{{.}}" {{if eq . $.FilterRig}}selected{{end}}>{{.}}</option>{{end}}
+    </select>
+    {{end}}
+  </div>
+
+  {{if .Err}}
+  <div class="error-banner">{{.Err}}</div>
+  {{else if .Buckets}}
+  <table>
+    <thead>
+      <tr>
+        <th>Priority</th>
+        <th>Open</th>
+        <th>Active</th>
+        <th>Blocked</th>
+        <th>Stale (7d+)</th>
+        <th>Total</th>
+        <th>Health</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{range .Buckets}}
+      <tr>
+        <td><span class="priority-badge p{{.Priority}}">P{{.Priority}}</span></td>
+        <td>{{.Open}}</td>
+        <td>{{.Active}}</td>
+        <td>{{.Blocked}}</td>
+        <td>{{if gt .Stale 0}}<span class="text-warn">{{.Stale}}</span>{{else}}0{{end}}</td>
+        <td><strong>{{.Total}}</strong></td>
+        <td>
+          {{if and (le .Priority 1) (gt .Stale 0)}}<span class="badge load-overloaded">drift</span>
+          {{else if and (le .Priority 2) (gt .Blocked 2)}}<span class="badge load-busy">blocked</span>
+          {{else if eq .Active 0}}<span class="badge load-idle">idle</span>
+          {{else}}<span class="badge load-balanced">ok</span>
+          {{end}}
+        </td>
+      </tr>
+      {{end}}
+    </tbody>
+  </table>
+
+  <div class="briefing-grid" style="margin-top:1.5rem">
+    {{range .Buckets}}
+    <section class="briefing-card">
+      <h2>P{{.Priority}} Distribution</h2>
+      <div style="display:flex; gap:4px; height:24px; margin-top:0.5rem">
+        {{if gt .Active 0}}<div style="flex:{{.Active}}; background:var(--green,#50fa7b); border-radius:3px" title="{{.Active}} active"></div>{{end}}
+        {{if gt .Open 0}}<div style="flex:{{.Open}}; background:var(--cyan,#8be9fd); border-radius:3px" title="{{.Open}} open"></div>{{end}}
+        {{if gt .Blocked 0}}<div style="flex:{{.Blocked}}; background:var(--red,#ff5555); border-radius:3px" title="{{.Blocked}} blocked"></div>{{end}}
+      </div>
+      <div class="text-dim" style="margin-top:0.25rem; font-size:0.85em">
+        {{.Active}} active / {{.Open}} open / {{.Blocked}} blocked
+      </div>
+    </section>
+    {{end}}
+  </div>
+  {{else}}
+  <p class="empty">No priority data available.</p>
+  {{end}}
+</div>
+{{end}}

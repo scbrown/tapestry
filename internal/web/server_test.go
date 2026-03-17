@@ -10306,3 +10306,70 @@ func TestStatusFlowPage_WindowFilter(t *testing.T) {
 		}
 	}
 }
+
+// ── Priority Drift Page ──────────────────────────────────────
+
+func TestPriorityDriftPage_NilDataSource(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/priority-drift", nil)
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /priority-drift status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Priority Drift") {
+		t.Error("expected 'Priority Drift' heading")
+	}
+}
+
+func TestPriorityDriftPage_WithData(t *testing.T) {
+	now := time.Now()
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issues: []dolt.Issue{
+			{ID: "pd-1", Title: "P0 urgent", Status: "open", Priority: 0, UpdatedAt: now.AddDate(0, 0, -10)},
+			{ID: "pd-2", Title: "P1 active", Status: "in_progress", Priority: 1, UpdatedAt: now},
+			{ID: "pd-3", Title: "P2 open", Status: "open", Priority: 2, UpdatedAt: now.AddDate(0, 0, -2)},
+		},
+	}
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/priority-drift", nil)
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /priority-drift status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "P0") {
+		t.Error("expected P0 priority in results")
+	}
+}
+
+func TestPriorityDriftPage_HTMXPartial(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/priority-drift", nil)
+	req.Header.Set("HX-Request", "true")
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("HTMX GET /priority-drift status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if strings.Contains(body, "<!DOCTYPE html>") {
+		t.Error("HTMX priority-drift should return partial, not full page")
+	}
+}
+
+func TestPriorityDriftPage_RigFilter(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}, {Name: "beads_gastown"}},
+	}
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/priority-drift?rig=beads_aegis", nil)
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
+	}
+}

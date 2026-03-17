@@ -769,6 +769,10 @@ func (s *Server) parseTemplates() {
 			template.New("").Funcs(funcMap).ParseFS(templateFS,
 				"templates/layout.html", "templates/status-flow.html"),
 		),
+		"priority-drift": template.Must(
+			template.New("").Funcs(funcMap).ParseFS(templateFS,
+				"templates/layout.html", "templates/priority-drift.html"),
+		),
 	}
 }
 
@@ -1078,6 +1082,8 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		s.handleLabelAge(w, r)
 	case len(segments) == 1 && segments[0] == "status-flow":
 		s.handleStatusFlow(w, r)
+	case len(segments) == 1 && segments[0] == "priority-drift":
+		s.handlePriorityDrift(w, r)
 	case len(segments) == 1 && segments[0] == "designs":
 		s.handleDesignsList(w, r)
 	case len(segments) == 2 && segments[0] == "designs":
