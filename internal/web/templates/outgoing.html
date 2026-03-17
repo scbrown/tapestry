@@ -1,0 +1,62 @@
+{{define "title"}}Oldest & Newest{{end}}
+{{define "content"}}
+<h1>Oldest & Newest Open Beads</h1>
+<p class="subtitle">The 25 oldest and 25 newest open beads. Median age: <strong>{{.MedianAge}}d</strong> across {{.TotalOpen}} open beads.</p>
+
+{{if .FilterRig}}<div class="dep-filters"><span class="dep-filter-badge">rig: {{.FilterRig}}</span> <a href="/outgoing">clear</a></div>{{end}}
+
+{{if .Err}}<p class="error">{{.Err}}</p>{{end}}
+
+<h2>Oldest Open (Top 25)</h2>
+{{if .Oldest}}
+<div style="overflow-x:auto">
+<table class="bead-table">
+<thead>
+<tr><th>Age</th><th>Priority</th><th>Bead</th><th>Status</th><th>Assignee</th><th>Rig</th></tr>
+</thead>
+<tbody>
+{{range .Oldest}}
+<tr>
+    <td><strong style="color:{{if ge .Age 90}}var(--red){{else if ge .Age 30}}var(--orange){{else}}var(--yellow){{end}}">{{.Age}}d</strong></td>
+    <td><span class="{{.Issue.Priority | priorityClass}}">{{.Issue.Priority | priorityLabel}}</span></td>
+    <td><a href="/bead/{{.Rig}}/{{.Issue.ID}}">{{.Issue.Title}}</a></td>
+    <td>{{.Issue.Status}}</td>
+    <td>{{shortActor .Issue.Assignee}}</td>
+    <td style="color:var(--comment)">{{.Rig}}</td>
+</tr>
+{{end}}
+</tbody>
+</table>
+</div>
+{{else}}
+<p style="color:var(--comment)">No open beads.</p>
+{{end}}
+
+<h2 style="margin-top:2rem">Newest Open (Top 25)</h2>
+{{if .Newest}}
+<div style="overflow-x:auto">
+<table class="bead-table">
+<thead>
+<tr><th>Age</th><th>Priority</th><th>Bead</th><th>Status</th><th>Assignee</th><th>Rig</th></tr>
+</thead>
+<tbody>
+{{range .Newest}}
+<tr>
+    <td><strong style="color:{{if le .Age 1}}var(--green){{else if le .Age 7}}var(--cyan){{else}}var(--foreground){{end}}">{{.Age}}d</strong></td>
+    <td><span class="{{.Issue.Priority | priorityClass}}">{{.Issue.Priority | priorityLabel}}</span></td>
+    <td><a href="/bead/{{.Rig}}/{{.Issue.ID}}">{{.Issue.Title}}</a></td>
+    <td>{{.Issue.Status}}</td>
+    <td>{{shortActor .Issue.Assignee}}</td>
+    <td style="color:var(--comment)">{{.Rig}}</td>
+</tr>
+{{end}}
+</tbody>
+</table>
+</div>
+{{else}}
+<p style="color:var(--comment)">No open beads.</p>
+{{end}}
+
+<p style="color:var(--comment);font-size:0.85rem;margin-top:1rem">Generated {{.GeneratedAt.Format "2006-01-02 15:04"}} &middot; Auto-refresh 300s</p>
+<div hx-get="/outgoing{{if .FilterRig}}?rig={{.FilterRig}}{{end}}" hx-trigger="every 300s" hx-target="#content" hx-swap="innerHTML"></div>
+{{end}}

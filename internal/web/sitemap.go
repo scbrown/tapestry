@@ -137,6 +137,7 @@ func (s *Server) handleSitemap(w http.ResponseWriter, r *http.Request) {
 				{"/rigs", "Rigs", "Per-rig status breakdown"},
 				{"/inventory", "Inventory", "Bead counts by status/type/rig"},
 				{"/backlog", "Backlog", "Age distribution histogram with median/mean/P90"},
+				{"/outgoing", "Oldest & Newest", "25 oldest and 25 newest open beads with median age"},
 				{"/age-breakdown", "Age Breakdown", "Open bead age distribution by band"},
 				{"/priority-drift", "Priority Drift", "Priority health: open/active/blocked/stale per priority"},
 				{"/stats", "Stats", "System-wide stats: totals, 7/30-day flow, per-rig breakdown"},

@@ -10870,3 +10870,72 @@ func TestRatiosPage_RigFilter(t *testing.T) {
 		t.Error("expected rig filter badge")
 	}
 }
+
+// --- Outgoing page tests ---
+
+func TestOutgoingPage_NilDataSource(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/outgoing", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /outgoing status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Oldest") {
+		t.Error("expected 'Oldest' heading")
+	}
+}
+
+func TestOutgoingPage_WithData(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		counts:    map[string]int{"open": 5},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/outgoing", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /outgoing status = %d, want %d", w.Code, http.StatusOK)
+	}
+}
+
+func TestOutgoingPage_HTMXPartial(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/outgoing", nil)
+	req.Header.Set("HX-Request", "true")
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("HTMX GET /outgoing status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if strings.Contains(body, "<!DOCTYPE html>") {
+		t.Error("HTMX outgoing should return partial, not full page")
+	}
+}
+
+func TestOutgoingPage_RigFilter(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}, {Name: "beads_gastown"}},
+	}
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/outgoing?rig=beads_aegis", nil)
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "beads_aegis") {
+		t.Error("expected rig filter badge")
+	}
+}
