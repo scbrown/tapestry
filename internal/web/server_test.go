@@ -3924,3 +3924,132 @@ func TestParkingLotPage_HTMX(t *testing.T) {
 		t.Error("HTMX parking-lot should return partial, not full page")
 	}
 }
+
+// --- Cohort page tests ---
+
+func TestCohortPage_NilDataSource(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/cohort", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /cohort status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Cohort Analysis") {
+		t.Error("expected 'Cohort Analysis' heading")
+	}
+}
+
+func TestCohortPage_WithData(t *testing.T) {
+	now := time.Now()
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issues: []dolt.Issue{
+			{ID: "co1", Title: "Recent open", Status: "open", CreatedAt: now.AddDate(0, 0, -3), UpdatedAt: now},
+			{ID: "co2", Title: "Recent closed", Status: "closed", CreatedAt: now.AddDate(0, 0, -5), UpdatedAt: now.AddDate(0, 0, -1)},
+			{ID: "co3", Title: "Old closed", Status: "closed", CreatedAt: now.AddDate(0, 0, -20), UpdatedAt: now.AddDate(0, 0, -15)},
+		},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/cohort", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /cohort status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Weekly Cohorts") {
+		t.Error("expected 'Weekly Cohorts' section")
+	}
+	if !strings.Contains(body, "Overall Close Rate") {
+		t.Error("expected overall close rate stat")
+	}
+}
+
+func TestCohortPage_HTMX(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/cohort", nil)
+	req.Header.Set("HX-Request", "true")
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("HTMX GET /cohort status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if strings.Contains(body, "<!DOCTYPE html>") {
+		t.Error("HTMX cohort should return partial, not full page")
+	}
+}
+
+// --- Workload page tests ---
+
+func TestWorkloadPage_NilDataSource(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/workload", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /workload status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Workload Balance") {
+		t.Error("expected 'Workload Balance' heading")
+	}
+}
+
+func TestWorkloadPage_WithData(t *testing.T) {
+	now := time.Now()
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issues: []dolt.Issue{
+			{ID: "w1", Title: "Open bug", Status: "open", Priority: 0, Assignee: "agent/alpha", CreatedAt: now, UpdatedAt: now},
+			{ID: "w2", Title: "In progress", Status: "in_progress", Priority: 1, Assignee: "agent/alpha", CreatedAt: now, UpdatedAt: now},
+			{ID: "w3", Title: "Blocked", Status: "blocked", Priority: 2, Assignee: "agent/beta", CreatedAt: now, UpdatedAt: now},
+			{ID: "w4", Title: "Closed", Status: "closed", Priority: 1, Assignee: "agent/alpha", CreatedAt: now, UpdatedAt: now},
+		},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/workload", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /workload status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "alpha") {
+		t.Error("expected agent/alpha in workload table")
+	}
+	if !strings.Contains(body, "beta") {
+		t.Error("expected agent/beta in workload table")
+	}
+}
+
+func TestWorkloadPage_HTMX(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/workload", nil)
+	req.Header.Set("HX-Request", "true")
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("HTMX GET /workload status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if strings.Contains(body, "<!DOCTYPE html>") {
+		t.Error("HTMX workload should return partial, not full page")
+	}
+}

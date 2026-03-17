@@ -507,6 +507,14 @@ func (s *Server) parseTemplates() {
 			template.New("").Funcs(funcMap).ParseFS(templateFS,
 				"templates/layout.html", "templates/parking-lot.html"),
 		),
+		"cohort": template.Must(
+			template.New("").Funcs(funcMap).ParseFS(templateFS,
+				"templates/layout.html", "templates/cohort.html"),
+		),
+		"workload": template.Must(
+			template.New("").Funcs(funcMap).ParseFS(templateFS,
+				"templates/layout.html", "templates/workload.html"),
+		),
 	}
 }
 
@@ -702,6 +710,10 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		s.handleChurn(w, r)
 	case len(segments) == 1 && segments[0] == "parking-lot":
 		s.handleParkingLot(w, r)
+	case len(segments) == 1 && segments[0] == "cohort":
+		s.handleCohort(w, r)
+	case len(segments) == 1 && segments[0] == "workload":
+		s.handleWorkload(w, r)
 	case len(segments) == 1 && segments[0] == "heatmap":
 		s.handleHeatmap(w, r)
 	case len(segments) == 1 && segments[0] == "homelab":

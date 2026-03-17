@@ -1,0 +1,72 @@
+{{define "title"}}Workload{{end}}
+{{define "content"}}
+<div class="backlog-page" hx-get="/workload" hx-trigger="every 60s" hx-select=".backlog-page" hx-swap="outerHTML">
+  <h1>Workload Balance <time class="text-dim">{{.GeneratedAt.Format "Jan 02, 2006 15:04"}}</time></h1>
+  <p class="text-dim">Active workload per agent — open, in-progress, and blocked items (excludes deferred and closed).</p>
+
+  <div class="backlog-stats">
+    <div class="stat">
+      <span class="stat-value accent">{{.TotalWork}}</span>
+      <span class="stat-label">Total Active</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value">{{printf "%.1f" .AvgLoad}}</span>
+      <span class="stat-label">Avg Load</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value">{{.MaxLoad}}</span>
+      <span class="stat-label">Max Load</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value">{{.MinLoad}}</span>
+      <span class="stat-label">Min Load</span>
+    </div>
+  </div>
+
+  {{if .Agents}}
+  <section class="backlog-card">
+    <div class="table-wrap">
+    <table class="bead-table">
+      <thead>
+        <tr>
+          <th>Agent</th>
+          <th>Active</th>
+          <th>Open</th>
+          <th>In Progress</th>
+          <th>Blocked</th>
+          <th>Deferred</th>
+          <th>High Pri</th>
+          <th style="width:25%;">Load</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{range .Agents}}
+        <tr>
+          <td><a href="/agent/{{.Name}}" hx-boost="true">{{shortActor .Name}}</a></td>
+          <td><strong>{{.Total}}</strong></td>
+          <td>{{.Open}}</td>
+          <td>{{.InProgress}}</td>
+          <td {{if gt .Blocked 0}}style="color:var(--red)"{{end}}>{{.Blocked}}</td>
+          <td class="text-dim">{{.Deferred}}</td>
+          <td {{if gt .HighPri 3}}style="color:var(--orange)"{{end}}>{{.HighPri}}</td>
+          <td>
+            {{if $.MaxLoad}}
+            <div style="display:flex;align-items:center;gap:4px;">
+              <div style="flex:1;background:var(--surface1);height:14px;border-radius:3px;overflow:hidden;">
+                <div style="background:{{if gt .Total (len $.Agents)}}var(--orange){{else}}var(--purple){{end}};height:100%;width:{{divf (mulf (itof .Total) 100.0) (itof $.MaxLoad)}}%;"></div>
+              </div>
+            </div>
+            {{end}}
+          </td>
+        </tr>
+        {{end}}
+      </tbody>
+    </table>
+    </div>
+  </section>
+  {{else}}
+  <p class="text-dim">No assigned work found.</p>
+  {{end}}
+
+</div>
+{{end}}

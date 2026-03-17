@@ -1,0 +1,64 @@
+{{define "title"}}Cohort Analysis{{end}}
+{{define "content"}}
+<div class="backlog-page" hx-get="/cohort" hx-trigger="every 120s" hx-select=".backlog-page" hx-swap="outerHTML">
+  <h1>Cohort Analysis <time class="text-dim">{{.GeneratedAt.Format "Jan 02, 2006 15:04"}}</time></h1>
+  <p class="text-dim">Beads grouped by creation week. How quickly does each cohort get resolved?</p>
+
+  <div class="backlog-stats">
+    <div class="stat">
+      <span class="stat-value accent">{{.OverallClose}}%</span>
+      <span class="stat-label">Overall Close Rate</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value">{{.TotalCreated}}</span>
+      <span class="stat-label">Created ({{.WeekCount}}wk)</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value" style="color:var(--green)">{{.TotalClosed}}</span>
+      <span class="stat-label">Closed</span>
+    </div>
+  </div>
+
+  {{if .Weeks}}
+  <section class="backlog-card">
+    <h2>Weekly Cohorts</h2>
+    <div class="table-wrap">
+    <table class="bead-table">
+      <thead>
+        <tr>
+          <th>Week Created</th>
+          <th>Total</th>
+          <th>Closed</th>
+          <th>Still Open</th>
+          <th>Close Rate</th>
+          <th style="width:30%;">Progress</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{range .Weeks}}
+        <tr>
+          <td>{{.WeekLabel}}</td>
+          <td><strong>{{.Total}}</strong></td>
+          <td style="color:var(--green)">{{.Closed}}</td>
+          <td {{if gt .Open 0}}style="color:var(--orange)"{{end}}>{{.Open}}</td>
+          <td>{{.CloseRate}}%</td>
+          <td>
+            <div style="display:flex;align-items:center;gap:4px;">
+              <div style="flex:1;background:var(--surface1);height:16px;border-radius:3px;overflow:hidden;">
+                <div style="background:var(--green);height:100%;width:{{.CloseRate}}%;"></div>
+              </div>
+              <span class="text-dim" style="font-size:0.8em;">{{.CloseRate}}%</span>
+            </div>
+          </td>
+        </tr>
+        {{end}}
+      </tbody>
+    </table>
+    </div>
+  </section>
+  {{else}}
+  <p class="text-dim">No cohort data available.</p>
+  {{end}}
+
+</div>
+{{end}}
