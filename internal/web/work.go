@@ -56,6 +56,8 @@ type workData struct {
 	Repos      []repoSection
 	Priorities []prioritySection
 	Agents     []agentSection
+	Rigs       []string
+	FilterRig  string
 }
 
 func (s *Server) handleWork(w http.ResponseWriter, r *http.Request) {
@@ -197,6 +199,29 @@ func (s *Server) handleWork(w http.ResponseWriter, r *http.Request) {
 		}(i, db.Name)
 	}
 	wg.Wait()
+
+	// Collect rigs and apply rig filter
+	rigSet := make(map[string]bool)
+	for _, r := range results {
+		if len(r.epics) > 0 || len(r.tasks) > 0 {
+			rigSet[r.rigName] = true
+		}
+	}
+	for rig := range rigSet {
+		data.Rigs = append(data.Rigs, rig)
+	}
+	sort.Strings(data.Rigs)
+
+	data.FilterRig = r.URL.Query().Get("rig")
+	if data.FilterRig != "" {
+		filtered := results[:0]
+		for _, res := range results {
+			if res.rigName == data.FilterRig {
+				filtered = append(filtered, res)
+			}
+		}
+		results = filtered
+	}
 
 	if mode == "repo" {
 		for _, r := range results {

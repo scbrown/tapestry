@@ -1,31 +1,40 @@
 {{define "title"}}Work{{end}}
 {{define "content"}}
-<div class="work-page" hx-get="/work" hx-trigger="every 120s" hx-select=".work-page" hx-swap="outerHTML">
+<div class="work-page" hx-get="/work?mode={{.Mode}}{{if .ShowClosed}}&closed=1{{end}}{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" hx-trigger="every 120s" hx-select=".work-page" hx-swap="outerHTML">
   <div class="work-header">
     <h1>Work</h1>
     <div class="work-controls">
       <div class="mode-toggle">
-        <a href="/work?mode=repo{{if .ShowClosed}}&closed=1{{end}}"
+        <a href="/work?mode=repo{{if .ShowClosed}}&closed=1{{end}}{{if .FilterRig}}&rig={{.FilterRig}}{{end}}"
            class="mode-btn{{if eq .Mode "repo"}} active{{end}}"
-           hx-get="/work?mode=repo{{if .ShowClosed}}&closed=1{{end}}"
+           hx-get="/work?mode=repo{{if .ShowClosed}}&closed=1{{end}}{{if .FilterRig}}&rig={{.FilterRig}}{{end}}"
            hx-target="#content" hx-push-url="true">By Repo</a>
-        <a href="/work?mode=priority{{if .ShowClosed}}&closed=1{{end}}"
+        <a href="/work?mode=priority{{if .ShowClosed}}&closed=1{{end}}{{if .FilterRig}}&rig={{.FilterRig}}{{end}}"
            class="mode-btn{{if eq .Mode "priority"}} active{{end}}"
-           hx-get="/work?mode=priority{{if .ShowClosed}}&closed=1{{end}}"
+           hx-get="/work?mode=priority{{if .ShowClosed}}&closed=1{{end}}{{if .FilterRig}}&rig={{.FilterRig}}{{end}}"
            hx-target="#content" hx-push-url="true">By Priority</a>
-        <a href="/work?mode=agent{{if .ShowClosed}}&closed=1{{end}}"
+        <a href="/work?mode=agent{{if .ShowClosed}}&closed=1{{end}}{{if .FilterRig}}&rig={{.FilterRig}}{{end}}"
            class="mode-btn{{if eq .Mode "agent"}} active{{end}}"
-           hx-get="/work?mode=agent{{if .ShowClosed}}&closed=1{{end}}"
+           hx-get="/work?mode=agent{{if .ShowClosed}}&closed=1{{end}}{{if .FilterRig}}&rig={{.FilterRig}}{{end}}"
            hx-target="#content" hx-push-url="true">By Agent</a>
       </div>
       <label class="closed-toggle">
         <input type="checkbox" {{if .ShowClosed}}checked{{end}}
-               hx-get="/work?mode={{.Mode}}{{if not .ShowClosed}}&closed=1{{end}}"
+               hx-get="/work?mode={{.Mode}}{{if not .ShowClosed}}&closed=1{{end}}{{if .FilterRig}}&rig={{.FilterRig}}{{end}}"
                hx-target="#content" hx-push-url="true">
         show closed
       </label>
     </div>
   </div>
+
+  {{if gt (len .Rigs) 1}}
+  <div class="dep-filters" style="margin-bottom:0.75rem">
+    <a href="/work?mode={{.Mode}}{{if .ShowClosed}}&closed=1{{end}}" class="badge {{if not .FilterRig}}filter-active{{end}}">All rigs</a>
+    {{range .Rigs}}
+    <a href="/work?mode={{$.Mode}}{{if $.ShowClosed}}&closed=1{{end}}&rig={{.}}" class="badge {{if eq . $.FilterRig}}filter-active{{end}}">{{rigName .}}</a>
+    {{end}}
+  </div>
+  {{end}}
 
   <div class="work-count">{{.TotalCount}} items</div>
 

@@ -142,12 +142,24 @@ func (s *Server) handleFunnel(w http.ResponseWriter, r *http.Request) {
 	}
 	wg.Wait()
 
-	// Aggregate
+	// Collect rigs and apply filter
+	rigSet := make(map[string]bool)
+	for idx, r := range results {
+		if r.totalFiled > 0 {
+			rigSet[dbs[idx].Name] = true
+		}
+	}
+
+	data.FilterRig = r.URL.Query().Get("rig")
+
+	// Aggregate (with optional rig filter)
 	var totalFiled, assigned, started, closed, blocked, deferred int
 	var allOpenAges, allProgressAges, allClosedAges []int
-	rigSet := make(map[string]bool)
 
 	for idx, r := range results {
+		if data.FilterRig != "" && dbs[idx].Name != data.FilterRig {
+			continue
+		}
 		totalFiled += r.totalFiled
 		assigned += r.assigned
 		started += r.started
@@ -157,9 +169,6 @@ func (s *Server) handleFunnel(w http.ResponseWriter, r *http.Request) {
 		allOpenAges = append(allOpenAges, r.openAges...)
 		allProgressAges = append(allProgressAges, r.progressAges...)
 		allClosedAges = append(allClosedAges, r.closedAges...)
-		if r.totalFiled > 0 {
-			rigSet[dbs[idx].Name] = true
-		}
 	}
 
 	data.Total = totalFiled

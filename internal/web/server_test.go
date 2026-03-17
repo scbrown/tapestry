@@ -682,6 +682,74 @@ func TestWorkPage_AgentMode(t *testing.T) {
 	}
 }
 
+func TestWorkPage_RigFilter(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{
+			{Name: "beads_aegis"},
+			{Name: "beads_gastown"},
+		},
+		issues: []dolt.Issue{
+			{ID: "aegis-rf1", Title: "Aegis filtered task", Status: "open", Priority: 1, Type: "task", UpdatedAt: time.Now()},
+		},
+	}
+
+	srv := New(ds)
+
+	// With rig filter
+	req := httptest.NewRequest("GET", "/work?rig=beads_aegis", nil)
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /work?rig=beads_aegis status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "All rigs") {
+		t.Errorf("body missing rig filter badges")
+	}
+	if !strings.Contains(body, "filter-active") {
+		t.Errorf("body missing active filter indicator")
+	}
+
+	// Without rig filter — should show all rigs badge bar
+	req2 := httptest.NewRequest("GET", "/work", nil)
+	w2 := httptest.NewRecorder()
+	srv.ServeHTTP(w2, req2)
+
+	if w2.Code != http.StatusOK {
+		t.Fatalf("GET /work status = %d, want %d", w2.Code, http.StatusOK)
+	}
+	body2 := w2.Body.String()
+	if !strings.Contains(body2, "All rigs") {
+		t.Errorf("unfiltered body missing rig filter badges")
+	}
+}
+
+func TestFunnelPage_RigFilter(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{
+			{Name: "beads_aegis"},
+			{Name: "beads_gastown"},
+		},
+		issues: []dolt.Issue{
+			{ID: "aegis-fun1", Title: "Funnel task", Status: "open", Priority: 1, Type: "task", CreatedAt: time.Now(), UpdatedAt: time.Now()},
+		},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/funnel?rig=beads_aegis", nil)
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /funnel?rig=beads_aegis status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Conversion Funnel") {
+		t.Errorf("body missing page title")
+	}
+}
+
 func TestCommandCenter_NilDataSource(t *testing.T) {
 	srv := New(nil)
 	req := httptest.NewRequest("GET", "/command-center", nil)

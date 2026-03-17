@@ -1,7 +1,16 @@
 {{define "title"}}Funnel{{end}}
 {{define "content"}}
-<div class="funnel-page" hx-get="/funnel" hx-trigger="every 120s" hx-select=".funnel-page" hx-swap="outerHTML">
+<div class="funnel-page" hx-get="/funnel{{if .FilterRig}}?rig={{.FilterRig}}{{end}}" hx-trigger="every 120s" hx-select=".funnel-page" hx-swap="outerHTML">
   <h1>Conversion Funnel <time class="text-dim">{{formatDateTime .GeneratedAt}}</time></h1>
+
+  {{if gt (len .Rigs) 1}}
+  <div class="dep-filters" style="margin-bottom:0.75rem">
+    <a href="/funnel" class="badge {{if not .FilterRig}}filter-active{{end}}">All rigs</a>
+    {{range .Rigs}}
+    <a href="/funnel?rig={{.}}" class="badge {{if eq . $.FilterRig}}filter-active{{end}}">{{rigName .}}</a>
+    {{end}}
+  </div>
+  {{end}}
 
   {{if .Err}}
   <div class="error">{{.Err}}</div>
