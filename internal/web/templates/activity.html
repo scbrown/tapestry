@@ -20,10 +20,16 @@
   </div>
 
   {{if .Entries}}
+  <div class="batch-bar" id="batch-bar-activity" style="display:none">
+    <span class="batch-count">0 selected</span>
+    <button class="btn btn-xs" onclick="activityBatchAction('closed')">close selected</button>
+    <button class="btn btn-xs" onclick="activityBatchAction('deferred')">defer selected</button>
+  </div>
   <div class="table-wrap">
   <table class="bead-table">
     <thead>
       <tr>
+        <th><input type="checkbox" onchange="activityToggleAll(this)"></th>
         <th>Updated</th>
         <th>Rig</th>
         <th>ID</th>
@@ -37,6 +43,7 @@
     <tbody>
       {{range .Entries}}
       <tr>
+        <td>{{if or (eq .Issue.Status "open") (eq .Issue.Status "in_progress")}}<input type="checkbox" class="activity-cb" data-id="{{.Issue.ID}}" data-rig="{{lower .Rig}}" onchange="activityUpdateBar()">{{end}}</td>
         <td title="{{formatDateTime .Issue.UpdatedAt}}">{{timeAgo .Issue.UpdatedAt}}</td>
         <td><span class="rig-label">{{rigName .Rig}}</span></td>
         <td><a href="/bead/{{lower .Rig}}/{{.Issue.ID}}" hx-boost="true">{{.Issue.ID}}</a></td>
@@ -60,6 +67,35 @@
     </tbody>
   </table>
   </div>
+  <script>
+  function activityToggleAll(master) {
+    document.querySelectorAll('.activity-cb').forEach(function(cb) { cb.checked = master.checked; });
+    activityUpdateBar();
+  }
+  function activityUpdateBar() {
+    var checked = document.querySelectorAll('.activity-cb:checked');
+    var bar = document.getElementById('batch-bar-activity');
+    if (bar) {
+      bar.style.display = checked.length > 0 ? 'flex' : 'none';
+      bar.querySelector('.batch-count').textContent = checked.length + ' selected';
+    }
+  }
+  function activityBatchAction(status) {
+    var checked = document.querySelectorAll('.activity-cb:checked');
+    if (!checked.length) return;
+    if (!confirm(status.charAt(0).toUpperCase()+status.slice(1)+' '+checked.length+' beads?')) return;
+    var form = new FormData();
+    form.append('status', status);
+    checked.forEach(function(cb) {
+      form.append('ids[]', cb.getAttribute('data-rig')+'/'+cb.getAttribute('data-id'));
+    });
+    fetch('/batch/status', {method:'POST', body:form}).then(function() {
+      checked.forEach(function(cb) { cb.closest('tr').remove(); });
+      activityUpdateBar();
+      document.body.dispatchEvent(new CustomEvent('showToast', {detail: checked.length+' beads '+status}));
+    });
+  }
+  </script>
   {{else}}
   <p class="empty">No activity in the last {{.Hours}} hours.</p>
   {{end}}

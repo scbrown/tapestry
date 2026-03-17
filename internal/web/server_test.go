@@ -2012,6 +2012,35 @@ func TestActivityPage_WithData(t *testing.T) {
 	}
 }
 
+func TestActivityPage_BatchActions(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issues: []dolt.Issue{
+			{ID: "abatch1", Title: "Open work", Status: "open", Priority: 2, UpdatedAt: time.Now()},
+		},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/activity?hours=24", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /activity status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "batch-bar-activity") {
+		t.Error("expected batch bar on activity page")
+	}
+	if !strings.Contains(body, "activityToggleAll") {
+		t.Error("expected batch toggle-all on activity page")
+	}
+	if !strings.Contains(body, "activityBatchAction") {
+		t.Error("expected batch action script on activity page")
+	}
+}
+
 func TestOwnersPage_NilDataSource(t *testing.T) {
 	srv := New(nil)
 	req := httptest.NewRequest("GET", "/owners", nil)
