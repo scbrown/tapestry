@@ -1,0 +1,95 @@
+{{define "title"}}Calendar{{end}}
+{{define "content"}}
+<div class="calendar-page" hx-get="/calendar{{calQueryParam .Year (fmtMonthInt .Month) .FilterRig}}" hx-trigger="every 120s" hx-select=".calendar-page" hx-swap="outerHTML">
+  <h1>Activity Calendar <time class="text-dim">{{.MonthName}} {{.Year}}</time></h1>
+
+  {{if .Err}}
+  <div class="error">{{.Err}}</div>
+  {{else}}
+
+  {{/* ── Rig Filter ── */}}
+  {{if .Rigs}}
+  <div class="dep-filters" style="margin-bottom:1rem">
+    <a href="/calendar?year={{.Year}}&month={{fmtMonthInt .Month}}" class="badge {{if not .FilterRig}}active{{end}}">all rigs</a>
+    {{range .Rigs}}
+    <a href="/calendar?year={{$.Year}}&month={{fmtMonthInt $.Month}}&rig={{.}}" class="badge {{if eq . $.FilterRig}}active{{end}}">{{rigName .}}</a>
+    {{end}}
+  </div>
+  {{end}}
+
+  {{/* ── Month Navigation ── */}}
+  <div style="display:flex; gap:1rem; align-items:center; margin-bottom:1rem">
+    <a href="/calendar{{calQueryParam .PrevYear .PrevMonth .FilterRig}}">&larr; prev</a>
+    <strong>{{.MonthName}} {{.Year}}</strong>
+    {{if .HasNext}}<a href="/calendar{{calQueryParam .NextYear .NextMonth .FilterRig}}">next &rarr;</a>{{end}}
+  </div>
+
+  {{/* ── Summary Stats ── */}}
+  <div class="stat-grid" style="margin-bottom:1rem">
+    <div class="stat">
+      <span class="stat-value">{{.TotalCreate}}</span>
+      <span class="stat-label">Created</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value accent">{{.TotalClose}}</span>
+      <span class="stat-label">Closed</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value {{if gt (sub .TotalCreate .TotalClose) 0}}warn{{end}}">{{sub .TotalCreate .TotalClose}}</span>
+      <span class="stat-label">Net change</span>
+    </div>
+  </div>
+
+  {{/* ── Calendar Grid ── */}}
+  <table class="cal-grid">
+    <thead>
+      <tr>
+        <th>Sun</th><th>Mon</th><th>Tue</th><th>Wed</th><th>Thu</th><th>Fri</th><th>Sat</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{range .Weeks}}
+      <tr>
+        {{range .Days}}
+        <td class="cal-cell {{if not .InMonth}}cal-outside{{end}} {{calIntensity .Created $.MaxDay}}">
+          <div class="cal-date">{{.Date.Day}}</div>
+          {{if and .InMonth (or (gt .Created 0) (gt .Closed 0))}}
+          <div class="cal-counts">
+            {{if gt .Created 0}}<span class="cal-created">+{{.Created}}</span>{{end}}
+            {{if gt .Closed 0}}<span class="cal-closed">-{{.Closed}}</span>{{end}}
+          </div>
+          {{end}}
+        </td>
+        {{end}}
+      </tr>
+      {{end}}
+    </tbody>
+  </table>
+
+  <div class="cal-legend" style="margin-top:0.5rem">
+    <span class="text-dim">Intensity:</span>
+    <span class="badge cal-cool">low</span>
+    <span class="badge cal-mild">medium</span>
+    <span class="badge cal-warm">high</span>
+    <span class="badge cal-hot">peak</span>
+  </div>
+
+  {{end}}
+</div>
+
+<style>
+.cal-grid { width:100%; border-collapse:collapse; table-layout:fixed; }
+.cal-grid th { text-align:center; padding:4px; font-size:0.85em; color:var(--comment,#6272a4); }
+.cal-cell { border:1px solid var(--border,#44475a); padding:4px 6px; vertical-align:top; min-height:60px; height:60px; }
+.cal-outside { opacity:0.3; }
+.cal-date { font-weight:600; font-size:0.85em; margin-bottom:2px; }
+.cal-counts { font-size:0.8em; display:flex; gap:4px; }
+.cal-created { color:var(--green,#50fa7b); }
+.cal-closed { color:var(--purple,#bd93f9); }
+.cal-cool { background:rgba(80,250,123,0.1) !important; }
+.cal-mild { background:rgba(80,250,123,0.25) !important; }
+.cal-warm { background:rgba(255,184,108,0.3) !important; }
+.cal-hot { background:rgba(255,85,85,0.25) !important; }
+.cal-legend { display:flex; gap:0.5rem; align-items:center; }
+</style>
+{{end}}

@@ -7148,3 +7148,259 @@ func TestFunnelPage_AutoRefresh(t *testing.T) {
 		t.Error("expected 120s auto-refresh on funnel page")
 	}
 }
+
+// ── Overflow tests ──
+
+func TestOverflowPage_WithData(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issues: []dolt.Issue{
+			{ID: "o1", Title: "Bug 1", Status: "open", Priority: 0, Assignee: "alice", CreatedAt: time.Now().Add(-30 * 24 * time.Hour), UpdatedAt: time.Now()},
+			{ID: "o2", Title: "Bug 2", Status: "in_progress", Priority: 1, Assignee: "alice", CreatedAt: time.Now().Add(-5 * 24 * time.Hour), UpdatedAt: time.Now()},
+			{ID: "o3", Title: "Bug 3", Status: "blocked", Priority: 2, Assignee: "alice", CreatedAt: time.Now().Add(-10 * 24 * time.Hour), UpdatedAt: time.Now()},
+			{ID: "o4", Title: "Task 1", Status: "open", Priority: 3, Assignee: "bob", CreatedAt: time.Now().Add(-2 * 24 * time.Hour), UpdatedAt: time.Now()},
+		},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/overflow", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /overflow status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Agent Overload") {
+		t.Error("expected 'Agent Overload' heading")
+	}
+	if !strings.Contains(body, "alice") {
+		t.Error("expected agent 'alice' in results")
+	}
+	if !strings.Contains(body, "bob") {
+		t.Error("expected agent 'bob' in results")
+	}
+	if !strings.Contains(body, "Score") {
+		t.Error("expected Score column header")
+	}
+}
+
+func TestOverflowPage_NilDS(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/overflow", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /overflow nil ds status = %d, want %d", w.Code, http.StatusOK)
+	}
+}
+
+func TestOverflowPage_RigFilter(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}, {Name: "beads_gastown"}},
+		issues: []dolt.Issue{
+			{ID: "o1", Title: "Task", Status: "open", Priority: 2, Assignee: "alice", CreatedAt: time.Now().Add(-5 * 24 * time.Hour), UpdatedAt: time.Now()},
+		},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/overflow?rig=beads_aegis", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /overflow?rig status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "active") {
+		t.Error("expected rig filter badge to be active")
+	}
+}
+
+func TestOverflowPage_AutoRefresh(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/overflow", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	body := w.Body.String()
+	if !strings.Contains(body, `hx-trigger="every 60s"`) {
+		t.Error("expected 60s auto-refresh on overflow page")
+	}
+}
+
+// ── Calendar tests ──
+
+func TestCalendarPage_WithData(t *testing.T) {
+	now := time.Now()
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issues: []dolt.Issue{
+			{ID: "c1", Title: "Recent item", Status: "open", Priority: 2, CreatedAt: now.Add(-2 * 24 * time.Hour), UpdatedAt: now},
+			{ID: "c2", Title: "Closed item", Status: "closed", Priority: 1, CreatedAt: now.Add(-10 * 24 * time.Hour), UpdatedAt: now.Add(-1 * 24 * time.Hour)},
+		},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/calendar", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /calendar status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Activity Calendar") {
+		t.Error("expected 'Activity Calendar' heading")
+	}
+	if !strings.Contains(body, "Sun") {
+		t.Error("expected day-of-week headers")
+	}
+	if !strings.Contains(body, "Created") {
+		t.Error("expected Created stat")
+	}
+	if !strings.Contains(body, "prev") {
+		t.Error("expected prev month navigation")
+	}
+}
+
+func TestCalendarPage_NilDS(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/calendar", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /calendar nil ds status = %d, want %d", w.Code, http.StatusOK)
+	}
+}
+
+func TestCalendarPage_MonthParam(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issues:    []dolt.Issue{},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/calendar?year=2026&month=1", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /calendar with params status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "January") {
+		t.Error("expected January in calendar for month=1")
+	}
+	if !strings.Contains(body, "2026") {
+		t.Error("expected year 2026 in calendar")
+	}
+}
+
+func TestCalendarPage_AutoRefresh(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/calendar", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	body := w.Body.String()
+	if !strings.Contains(body, `hx-trigger="every 120s"`) {
+		t.Error("expected 120s auto-refresh on calendar page")
+	}
+}
+
+// ── Debt tests ──
+
+func TestDebtPage_WithData(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issues: []dolt.Issue{
+			{ID: "d1", Title: "Old bug", Status: "open", Type: "bug", Priority: 1, Assignee: "alice", CreatedAt: time.Now().Add(-30 * 24 * time.Hour), UpdatedAt: time.Now()},
+			{ID: "d2", Title: "New task", Status: "open", Type: "task", Priority: 2, CreatedAt: time.Now().Add(-2 * 24 * time.Hour), UpdatedAt: time.Now()},
+			{ID: "d3", Title: "Deferred thing", Status: "deferred", Type: "task", Priority: 3, CreatedAt: time.Now().Add(-60 * 24 * time.Hour), UpdatedAt: time.Now()},
+		},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/debt", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /debt status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Tech Debt") {
+		t.Error("expected 'Tech Debt' heading")
+	}
+	if !strings.Contains(body, "Bug ratio") {
+		t.Error("expected Bug ratio stat")
+	}
+	if !strings.Contains(body, "Aging Bugs") {
+		t.Error("expected Aging Bugs section")
+	}
+	if !strings.Contains(body, "Deferred Pile") {
+		t.Error("expected Deferred Pile section")
+	}
+	if !strings.Contains(body, "Old bug") {
+		t.Error("expected old bug item in aging bugs list")
+	}
+	if !strings.Contains(body, "Deferred thing") {
+		t.Error("expected deferred item in deferred pile")
+	}
+}
+
+func TestDebtPage_NilDS(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/debt", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /debt nil ds status = %d, want %d", w.Code, http.StatusOK)
+	}
+}
+
+func TestDebtPage_RigFilter(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issues: []dolt.Issue{
+			{ID: "d1", Title: "Bug", Status: "open", Type: "bug", Priority: 2, CreatedAt: time.Now().Add(-20 * 24 * time.Hour), UpdatedAt: time.Now()},
+		},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/debt?rig=beads_aegis", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /debt?rig status = %d, want %d", w.Code, http.StatusOK)
+	}
+}
+
+func TestDebtPage_AutoRefresh(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/debt", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	body := w.Body.String()
+	if !strings.Contains(body, `hx-trigger="every 120s"`) {
+		t.Error("expected 120s auto-refresh on debt page")
+	}
+}

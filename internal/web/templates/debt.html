@@ -1,0 +1,124 @@
+{{define "title"}}Tech Debt{{end}}
+{{define "content"}}
+<div class="debt-page" hx-get="/debt{{if .FilterRig}}?rig={{.FilterRig}}{{end}}" hx-trigger="every 120s" hx-select=".debt-page" hx-swap="outerHTML">
+  <h1>Tech Debt Signals <time class="text-dim">{{formatDateTime .GeneratedAt}}</time></h1>
+
+  {{if .Err}}
+  <div class="error">{{.Err}}</div>
+  {{else}}
+
+  {{/* ── Rig Filter ── */}}
+  {{if .Rigs}}
+  <div class="dep-filters" style="margin-bottom:1rem">
+    <a href="/debt" class="badge {{if not .FilterRig}}active{{end}}">all rigs</a>
+    {{range .Rigs}}
+    <a href="/debt?rig={{.}}" class="badge {{if eq . $.FilterRig}}active{{end}}">{{rigName .}}</a>
+    {{end}}
+  </div>
+  {{end}}
+
+  {{/* ── Health Indicators ── */}}
+  <div class="stat-grid" style="margin-bottom:1.5rem">
+    <div class="stat">
+      <span class="stat-value">{{.TotalOpen}}</span>
+      <span class="stat-label">Open items</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value {{if gt .BugPct 40}}warn{{end}}">{{.BugPct}}%</span>
+      <span class="stat-label">Bug ratio ({{.BugCount}} bugs)</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value {{if gt .DeferPct 30}}warn{{end}}">{{.DeferPct}}%</span>
+      <span class="stat-label">Deferred ({{.DeferCount}})</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value">{{.TaskCount}}</span>
+      <span class="stat-label">Tasks</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value">{{.EpicCount}}</span>
+      <span class="stat-label">Epics</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value {{if gt .UntypedCount 10}}warn{{end}}">{{.UntypedCount}}</span>
+      <span class="stat-label">Untyped</span>
+    </div>
+  </div>
+
+  {{/* ── Old Bugs ── */}}
+  <section style="margin-bottom:2rem">
+    <h2>Aging Bugs <span class="text-dim">(open &gt; 14 days)</span></h2>
+    {{if not .OldBugs}}
+    <p class="text-dim">No aging bugs. Nice!</p>
+    {{else}}
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Title</th>
+          <th>Pri</th>
+          <th>Age</th>
+          <th>Assignee</th>
+          <th>Status</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {{range .OldBugs}}
+        <tr>
+          <td><a href="/bead/{{.DB}}/{{.ID}}">{{.ID}}</a></td>
+          <td class="truncate" style="max-width:300px">{{.Title}}</td>
+          <td>{{if ge .Priority 0}}<span class="badge {{priorityClass .Priority}}">P{{.Priority}}</span>{{end}}</td>
+          <td><strong>{{.AgeDays}}d</strong></td>
+          <td>{{shortActor .Assignee}}</td>
+          <td>{{statusBadge .Status}}</td>
+          <td>
+            <button class="btn-sm" hx-post="/bead/{{.DB}}/{{.ID}}/status" hx-vals='{"status":"closed"}' hx-swap="none" hx-on::after-request="this.closest('tr').remove()">close</button>
+            <button class="btn-sm" hx-post="/bead/{{.DB}}/{{.ID}}/status" hx-vals='{"status":"deferred"}' hx-swap="none" hx-on::after-request="this.closest('tr').remove()">defer</button>
+          </td>
+        </tr>
+        {{end}}
+      </tbody>
+    </table>
+    {{end}}
+  </section>
+
+  {{/* ── Deferred Pile ── */}}
+  <section>
+    <h2>Deferred Pile <span class="text-dim">(longest-deferred items)</span></h2>
+    {{if not .DeferredPile}}
+    <p class="text-dim">No deferred items.</p>
+    {{else}}
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Title</th>
+          <th>Pri</th>
+          <th>Age</th>
+          <th>Assignee</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {{range .DeferredPile}}
+        <tr>
+          <td><a href="/bead/{{.DB}}/{{.ID}}">{{.ID}}</a></td>
+          <td class="truncate" style="max-width:300px">{{.Title}}</td>
+          <td>{{if ge .Priority 0}}<span class="badge {{priorityClass .Priority}}">P{{.Priority}}</span>{{end}}</td>
+          <td><strong>{{.AgeDays}}d</strong></td>
+          <td>{{shortActor .Assignee}}</td>
+          <td>
+            <button class="btn-sm" hx-post="/bead/{{.DB}}/{{.ID}}/status" hx-vals='{"status":"open"}' hx-swap="none" hx-on::after-request="this.closest('tr').remove()">reopen</button>
+            <button class="btn-sm" hx-post="/bead/{{.DB}}/{{.ID}}/status" hx-vals='{"status":"closed"}' hx-swap="none" hx-on::after-request="this.closest('tr').remove()">close</button>
+          </td>
+        </tr>
+        {{end}}
+      </tbody>
+    </table>
+    {{end}}
+  </section>
+
+  {{end}}
+</div>
+{{end}}

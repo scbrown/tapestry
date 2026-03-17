@@ -1,0 +1,67 @@
+{{define "title"}}Overflow{{end}}
+{{define "content"}}
+<div class="overflow-page" hx-get="/overflow{{if .FilterRig}}?rig={{.FilterRig}}{{end}}" hx-trigger="every 60s" hx-select=".overflow-page" hx-swap="outerHTML">
+  <h1>Agent Overload <time class="text-dim">{{formatDateTime .GeneratedAt}}</time></h1>
+
+  {{if .Err}}
+  <div class="error">{{.Err}}</div>
+  {{else}}
+
+  {{/* ── Rig Filter ── */}}
+  {{if .Rigs}}
+  <div class="dep-filters" style="margin-bottom:1rem">
+    <a href="/overflow" class="badge {{if not .FilterRig}}active{{end}}">all rigs</a>
+    {{range .Rigs}}
+    <a href="/overflow?rig={{.}}" class="badge {{if eq . $.FilterRig}}active{{end}}">{{rigName .}}</a>
+    {{end}}
+  </div>
+  {{end}}
+
+  {{if not .Agents}}
+  <p class="text-dim">No assigned open beads found.</p>
+  {{else}}
+
+  <table>
+    <thead>
+      <tr>
+        <th>Agent</th>
+        <th>Open</th>
+        <th>Blocked</th>
+        <th>P0+P1</th>
+        <th>Oldest (days)</th>
+        <th>Score</th>
+        <th>Load</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{range .Agents}}
+      <tr class="{{if ge .Score $.Threshold}}overflow-hot{{end}}">
+        <td><a href="/agent/{{.Name}}">{{shortActor .Name}}</a></td>
+        <td>{{.OpenCount}}</td>
+        <td>{{if gt .BlockedCnt 0}}<span class="warn">{{.BlockedCnt}}</span>{{else}}0{{end}}</td>
+        <td>{{if gt .HighPriCnt 0}}<span class="accent">{{.HighPriCnt}}</span>{{else}}0{{end}}</td>
+        <td>{{.OldestDays}}</td>
+        <td><strong>{{.Score}}</strong></td>
+        <td>
+          <div class="overflow-bar-bg">
+            <div class="overflow-bar-fill {{if ge .Score $.Threshold}}hot{{end}}" style="width:{{if gt .Score 50}}100{{else}}{{mulf (divf (itof .Score) 50.0) 100.0}}{{end}}%"></div>
+          </div>
+        </td>
+      </tr>
+      {{end}}
+    </tbody>
+  </table>
+
+  <p class="text-dim" style="margin-top:0.5rem">Score = open + (high-pri × 2) + blocked. Highlighted above {{.Threshold}}.</p>
+
+  {{end}}
+  {{end}}
+</div>
+
+<style>
+.overflow-hot { background:rgba(255,85,85,0.08); }
+.overflow-bar-bg { width:120px; height:14px; background:var(--bg-card,#282a36); border-radius:3px; overflow:hidden; border:1px solid var(--border,#44475a); display:inline-block; vertical-align:middle; }
+.overflow-bar-fill { height:100%; background:var(--green,#50fa7b); border-radius:3px 0 0 3px; transition:width 0.3s; }
+.overflow-bar-fill.hot { background:var(--red,#ff5555); }
+</style>
+{{end}}

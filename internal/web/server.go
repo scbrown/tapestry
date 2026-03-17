@@ -252,6 +252,32 @@ var funcMap = template.FuncMap{
 	"add1": func(i int) int {
 		return i + 1
 	},
+	"calIntensity": func(count, max int) string {
+		if count == 0 || max == 0 {
+			return ""
+		}
+		ratio := float64(count) / float64(max)
+		switch {
+		case ratio > 0.75:
+			return "cal-hot"
+		case ratio > 0.5:
+			return "cal-warm"
+		case ratio > 0.25:
+			return "cal-mild"
+		default:
+			return "cal-cool"
+		}
+	},
+	"calQueryParam": func(year, month int, rig string) string {
+		q := fmt.Sprintf("?year=%d&month=%d", year, month)
+		if rig != "" {
+			q += "&rig=" + rig
+		}
+		return q
+	},
+	"fmtMonthInt": func(m time.Month) int {
+		return int(m)
+	},
 }
 
 // Option configures the server.
@@ -555,6 +581,18 @@ func (s *Server) parseTemplates() {
 			template.New("").Funcs(funcMap).ParseFS(templateFS,
 				"templates/layout.html", "templates/funnel.html"),
 		),
+		"overflow": template.Must(
+			template.New("").Funcs(funcMap).ParseFS(templateFS,
+				"templates/layout.html", "templates/overflow.html"),
+		),
+		"calendar": template.Must(
+			template.New("").Funcs(funcMap).ParseFS(templateFS,
+				"templates/layout.html", "templates/calendar.html"),
+		),
+		"debt": template.Must(
+			template.New("").Funcs(funcMap).ParseFS(templateFS,
+				"templates/layout.html", "templates/debt.html"),
+		),
 	}
 }
 
@@ -778,6 +816,12 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		s.handleRisks(w, r)
 	case len(segments) == 1 && segments[0] == "funnel":
 		s.handleFunnel(w, r)
+	case len(segments) == 1 && segments[0] == "overflow":
+		s.handleOverflow(w, r)
+	case len(segments) == 1 && segments[0] == "calendar":
+		s.handleCalendar(w, r)
+	case len(segments) == 1 && segments[0] == "debt":
+		s.handleDebt(w, r)
 	case len(segments) == 1 && segments[0] == "designs":
 		s.handleDesignsList(w, r)
 	case len(segments) == 2 && segments[0] == "designs":
