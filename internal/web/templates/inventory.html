@@ -33,7 +33,7 @@
       <tbody>
         {{range .ByStatus}}
         <tr>
-          <td>{{statusBadge .Status}}</td>
+          <td><a href="/beads?status={{.Status}}">{{statusBadge .Status}}</a></td>
           <td>{{.Count}}</td>
           <td>
             {{if $.TotalBeads}}
@@ -57,7 +57,7 @@
       <tbody>
         {{range .ByType}}
         <tr>
-          <td>{{.Type}}</td>
+          <td><a href="/beads?type={{.Type}}">{{.Type}}</a></td>
           <td>{{.Count}}</td>
           <td>
             {{if $.TotalBeads}}
@@ -81,10 +81,10 @@
       <tbody>
         {{range .ByRig}}
         <tr>
-          <td>{{rigName .Rig}}</td>
+          <td><a href="/beads?rig={{.Rig}}">{{rigName .Rig}}</a></td>
           <td>{{.Total}}</td>
-          <td>{{.Open}}</td>
-          <td>{{.Closed}}</td>
+          <td><a href="/beads?rig={{.Rig}}&amp;status=open">{{.Open}}</a></td>
+          <td><a href="/beads?rig={{.Rig}}&amp;status=closed">{{.Closed}}</a></td>
         </tr>
         {{end}}
       </tbody>
