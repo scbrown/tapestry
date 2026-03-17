@@ -1,0 +1,78 @@
+{{define "title"}}Ready{{end}}
+{{define "content"}}
+<div class="ready-page" hx-get="/ready{{if .FilterRig}}?rig={{.FilterRig}}{{end}}" hx-trigger="every 60s" hx-select=".ready-page" hx-swap="outerHTML">
+  <h1>Ready to Work <time class="text-dim">{{formatDateTime .GeneratedAt}}</time></h1>
+  <p class="text-dim">Open beads with no active blockers, sorted by priority then age. Top 100.</p>
+
+  {{if .Rigs}}<div class="dep-filters" style="margin-top:0.5rem">
+    <a href="/ready" class="badge {{if not .FilterRig}}filter-active{{end}}">All rigs</a>
+    {{range .Rigs}}<a href="/ready?rig={{.}}" class="badge {{if eq . $.FilterRig}}filter-active{{end}}">{{.}}</a>
+    {{end}}
+  </div>{{end}}
+
+  {{if .Err}}
+  <div class="error">{{.Err}}</div>
+  {{else}}
+
+  <div class="briefing-grid">
+    <section class="briefing-card">
+      <h2>{{.TotalReady}} Ready</h2>
+      <div class="stat-grid">
+        <div class="stat">
+          <span class="stat-value" style="color:var(--danger)">{{.P0}}</span>
+          <span class="stat-label">P0</span>
+        </div>
+        <div class="stat">
+          <span class="stat-value" style="color:var(--orange)">{{.P1}}</span>
+          <span class="stat-label">P1</span>
+        </div>
+        <div class="stat">
+          <span class="stat-value" style="color:var(--warning)">{{.P2}}</span>
+          <span class="stat-label">P2</span>
+        </div>
+        <div class="stat">
+          <span class="stat-value" style="color:var(--text-muted)">{{.P3}}</span>
+          <span class="stat-label">P3+</span>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  {{if .Items}}
+  <table class="bead-table">
+    <thead>
+      <tr>
+        <th>Pri</th>
+        <th>Bead</th>
+        <th>Title</th>
+        <th>Type</th>
+        <th>Assignee</th>
+        <th>Age</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{range .Items}}
+      <tr>
+        <td>{{priorityLabel .Priority}}</td>
+        <td><a href="/bead/{{.DB}}/{{.ID}}">{{.ID}}</a></td>
+        <td>{{.Title}}</td>
+        <td><span class="badge">{{.Type}}</span></td>
+        <td>{{if .Assignee}}{{shortActor .Assignee}}{{else}}<span class="text-dim">-</span>{{end}}</td>
+        <td>{{.AgeDays}}d</td>
+        <td>
+          <button class="btn btn-xs" hx-post="/bead/{{.DB}}/{{.ID}}/status" hx-vals='{"status":"in_progress"}' hx-swap="outerHTML" hx-target="closest tr">start</button>
+          <button class="btn btn-xs" hx-post="/bead/{{.DB}}/{{.ID}}/status" hx-vals='{"status":"closed"}' hx-swap="outerHTML" hx-target="closest tr" hx-confirm="Close {{.ID}}?">close</button>
+          <button class="btn btn-xs" hx-post="/bead/{{.DB}}/{{.ID}}/status" hx-vals='{"status":"deferred"}' hx-swap="outerHTML" hx-target="closest tr" hx-confirm="Defer {{.ID}}?">defer</button>
+        </td>
+      </tr>
+      {{end}}
+    </tbody>
+  </table>
+  {{else}}
+  <p class="text-dim">No ready beads found. Everything is either in progress, blocked, or closed.</p>
+  {{end}}
+
+  {{end}}
+</div>
+{{end}}

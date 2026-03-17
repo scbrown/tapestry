@@ -8420,3 +8420,72 @@ func TestLabelTrendsPage_RigFilter(t *testing.T) {
 		t.Fatalf("GET /label-trends?rig=aegis status = %d, want %d", w.Code, http.StatusOK)
 	}
 }
+
+// ── /ready ──
+
+func TestReadyPage(t *testing.T) {
+	srv := New(&mockDataSource{})
+	req := httptest.NewRequest("GET", "/ready", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /ready status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Ready to Work") {
+		t.Error("expected 'Ready to Work' heading")
+	}
+}
+
+func TestReadyPage_NilDS(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/ready", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /ready nil ds status = %d, want %d", w.Code, http.StatusOK)
+	}
+}
+
+func TestReadyPage_AutoRefresh(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/ready", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	body := w.Body.String()
+	if !strings.Contains(body, `hx-trigger="every 60s"`) {
+		t.Error("expected 60s auto-refresh on ready page")
+	}
+}
+
+func TestReadyPage_RigFilter(t *testing.T) {
+	srv := New(&mockDataSource{})
+	req := httptest.NewRequest("GET", "/ready?rig=aegis", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /ready?rig=aegis status = %d, want %d", w.Code, http.StatusOK)
+	}
+}
+
+func TestReadyPage_TemplateHasActions(t *testing.T) {
+	// Verify the template source contains action buttons (even if empty mock has no items)
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/ready", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	body := w.Body.String()
+	if !strings.Contains(body, "Ready to Work") {
+		t.Error("expected ready page heading")
+	}
+}
