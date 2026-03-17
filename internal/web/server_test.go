@@ -6157,3 +6157,118 @@ func TestMatrixPage_RigFilter(t *testing.T) {
 		t.Error("expected filter-active badge for selected rig")
 	}
 }
+
+func TestSLAPage_RigFilter(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}, {Name: "beads_gastown"}},
+		issues: []dolt.Issue{
+			{ID: "s1", Title: "SLA item", Status: "open", Priority: 1, CreatedAt: time.Now().Add(-48 * time.Hour)},
+		},
+	}
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/sla?rig=beads_aegis", nil)
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, `rig=beads_aegis`) {
+		t.Error("expected rig filter preserved in auto-refresh URL")
+	}
+	if !strings.Contains(body, "filter-active") {
+		t.Error("expected filter-active badge")
+	}
+}
+
+func TestCycleTimePage_RigFilter(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}, {Name: "beads_gastown"}},
+		issues: []dolt.Issue{
+			{ID: "c1", Title: "Cycle item", Status: "closed", CreatedAt: time.Now().Add(-72 * time.Hour), UpdatedAt: time.Now()},
+		},
+	}
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/cycle-time?rig=beads_aegis", nil)
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, `rig=beads_aegis`) {
+		t.Error("expected rig filter preserved in auto-refresh URL")
+	}
+	if !strings.Contains(body, "filter-active") {
+		t.Error("expected filter-active badge")
+	}
+}
+
+func TestResponseTimePage_RigFilter(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}, {Name: "beads_gastown"}},
+		issues: []dolt.Issue{
+			{ID: "r1", Title: "Response item", Status: "in_progress", CreatedAt: time.Now().Add(-2 * time.Hour), UpdatedAt: time.Now()},
+		},
+	}
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/response-time?rig=beads_aegis", nil)
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, `rig=beads_aegis`) {
+		t.Error("expected rig filter preserved in auto-refresh URL")
+	}
+	if !strings.Contains(body, "filter-active") {
+		t.Error("expected filter-active badge")
+	}
+}
+
+func TestNetFlowPage_RigFilter(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}, {Name: "beads_gastown"}},
+		issues: []dolt.Issue{
+			{ID: "n1", Title: "Net flow item", Status: "open", CreatedAt: time.Now().Add(-24 * time.Hour)},
+		},
+	}
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/net-flow?rig=beads_aegis", nil)
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, `rig=beads_aegis`) {
+		t.Error("expected rig filter preserved in auto-refresh URL")
+	}
+	if !strings.Contains(body, "filter-active") {
+		t.Error("expected filter-active badge")
+	}
+}
+
+func TestResolutionRatePage_RigFilter(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}, {Name: "beads_gastown"}},
+		issues: []dolt.Issue{
+			{ID: "rr1", Title: "Resolution item", Status: "closed", CreatedAt: time.Now().Add(-48 * time.Hour), UpdatedAt: time.Now()},
+		},
+	}
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/resolution-rate?rig=beads_aegis", nil)
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, `rig=beads_aegis`) {
+		t.Error("expected rig filter preserved in auto-refresh URL")
+	}
+	if !strings.Contains(body, "filter-active") {
+		t.Error("expected filter-active badge")
+	}
+}

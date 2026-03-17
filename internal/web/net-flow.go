@@ -3,6 +3,7 @@ package web
 import (
 	"log"
 	"net/http"
+	"sort"
 	"sync"
 	"time"
 
@@ -25,6 +26,8 @@ type netFlowData struct {
 	DayCount    int
 	MaxOpen     int
 	MinOpen     int
+	Rigs        []string
+	FilterRig   string
 }
 
 func (s *Server) handleNetFlow(w http.ResponseWriter, r *http.Request) {
@@ -44,6 +47,7 @@ func (s *Server) handleNetFlow(w http.ResponseWriter, r *http.Request) {
 	}
 
 	type dbResult struct {
+		rig    string
 		issues []dolt.Issue
 	}
 	results := make([]dbResult, len(dbs))
@@ -57,10 +61,23 @@ func (s *Server) handleNetFlow(w http.ResponseWriter, r *http.Request) {
 				log.Printf("net-flow: %s: %v", dbName, err)
 				return
 			}
-			results[i] = dbResult{issues: issues}
+			results[i] = dbResult{rig: dbName, issues: issues}
 		}(i, db.Name)
 	}
 	wg.Wait()
+
+	filterRig := r.URL.Query().Get("rig")
+	rigSet := make(map[string]bool)
+	for _, r := range results {
+		if len(r.issues) > 0 {
+			rigSet[r.rig] = true
+		}
+	}
+	for rig := range rigSet {
+		data.Rigs = append(data.Rigs, rig)
+	}
+	sort.Strings(data.Rigs)
+	data.FilterRig = filterRig
 
 	// Build daily buckets for last 30 days
 	now := time.Now()
@@ -73,6 +90,9 @@ func (s *Server) handleNetFlow(w http.ResponseWriter, r *http.Request) {
 	// Count beads that existed before the window (baseline)
 	baseline := 0
 	for _, r := range results {
+		if filterRig != "" && r.rig != filterRig {
+			continue
+		}
 		for _, iss := range r.issues {
 			if iss.CreatedAt.Before(startDate) && (iss.Status != "closed" || !iss.UpdatedAt.Before(startDate)) {
 				baseline++

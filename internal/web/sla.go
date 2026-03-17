@@ -29,11 +29,13 @@ type slaItem struct {
 }
 
 type slaData struct {
-	Breached []slaItem
-	AtRisk   []slaItem // >75% of SLA consumed
-	OnTrack  int
-	Total    int
-	Err      string
+	Breached  []slaItem
+	AtRisk    []slaItem // >75% of SLA consumed
+	OnTrack   int
+	Total     int
+	Rigs      []string
+	FilterRig string
+	Err       string
 }
 
 func (s *Server) handleSLA(w http.ResponseWriter, r *http.Request) {
@@ -51,6 +53,7 @@ func (s *Server) handleSLA(w http.ResponseWriter, r *http.Request) {
 	}
 
 	type dbResult struct {
+		rig    string
 		issues []dolt.Issue
 	}
 
@@ -75,10 +78,23 @@ func (s *Server) handleSLA(w http.ResponseWriter, r *http.Request) {
 					active = append(active, iss)
 				}
 			}
-			results[i] = dbResult{issues: active}
+			results[i] = dbResult{rig: dbName, issues: active}
 		}(i, db.Name)
 	}
 	wg.Wait()
+
+	filterRig := r.URL.Query().Get("rig")
+	rigSet := make(map[string]bool)
+	for _, r := range results {
+		if len(r.issues) > 0 {
+			rigSet[r.rig] = true
+		}
+	}
+	var rigs []string
+	for rig := range rigSet {
+		rigs = append(rigs, rig)
+	}
+	sort.Strings(rigs)
 
 	now := time.Now()
 	var breached, atRisk []slaItem
@@ -86,6 +102,9 @@ func (s *Server) handleSLA(w http.ResponseWriter, r *http.Request) {
 	total := 0
 
 	for _, r := range results {
+		if filterRig != "" && r.rig != filterRig {
+			continue
+		}
 		for _, iss := range r.issues {
 			target, ok := slaTargets[iss.Priority]
 			if !ok {
@@ -123,9 +142,11 @@ func (s *Server) handleSLA(w http.ResponseWriter, r *http.Request) {
 	})
 
 	s.render(w, r, "sla", slaData{
-		Breached: breached,
-		AtRisk:   atRisk,
-		OnTrack:  onTrack,
-		Total:    total,
+		Breached:  breached,
+		AtRisk:    atRisk,
+		OnTrack:   onTrack,
+		Total:     total,
+		Rigs:      rigs,
+		FilterRig: filterRig,
 	})
 }

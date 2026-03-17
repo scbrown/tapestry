@@ -1,12 +1,21 @@
 {{define "title"}}SLA{{end}}
 
 {{define "content"}}
-<div class="sla-view" hx-get="/sla" hx-trigger="every 120s" hx-select=".sla-view" hx-swap="outerHTML">
+<div class="sla-view" hx-get="/sla{{if .FilterRig}}?rig={{.FilterRig}}{{end}}" hx-trigger="every 120s" hx-select=".sla-view" hx-swap="outerHTML">
   <h1>SLA Tracker</h1>
 
   {{if .Err}}
   <div class="error">{{.Err}}</div>
   {{else}}
+
+  {{if gt (len .Rigs) 1}}
+  <div class="dep-filters" style="margin-bottom:0.5rem">
+    <a href="/sla" class="badge {{if not .FilterRig}}filter-active{{end}}">All rigs</a>
+    {{range .Rigs}}
+    <a href="/sla?rig={{.}}" class="badge {{if eq . $.FilterRig}}filter-active{{end}}">{{rigName .}}</a>
+    {{end}}
+  </div>
+  {{end}}
 
   <div class="sla-summary">
     <div class="stat">

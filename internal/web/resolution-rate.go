@@ -3,6 +3,7 @@ package web
 import (
 	"log"
 	"net/http"
+	"sort"
 	"sync"
 	"time"
 
@@ -27,6 +28,8 @@ type resolutionData struct {
 	FastestTitle string
 	FastestHours int
 	FastestRig   string
+	Rigs         []string
+	FilterRig    string
 }
 
 func (s *Server) handleResolutionRate(w http.ResponseWriter, r *http.Request) {
@@ -71,8 +74,24 @@ func (s *Server) handleResolutionRate(w http.ResponseWriter, r *http.Request) {
 	}
 	wg.Wait()
 
+	filterRig := r.URL.Query().Get("rig")
+	rigSet := make(map[string]bool)
+	for _, r := range results {
+		if len(r.issues) > 0 {
+			rigSet[r.rig] = true
+		}
+	}
+	for rig := range rigSet {
+		data.Rigs = append(data.Rigs, rig)
+	}
+	sort.Strings(data.Rigs)
+	data.FilterRig = filterRig
+
 	var items []closedIssue
 	for _, r := range results {
+		if filterRig != "" && r.rig != filterRig {
+			continue
+		}
 		for _, iss := range r.issues {
 			hours := int(iss.UpdatedAt.Sub(iss.CreatedAt).Hours())
 			if hours < 0 {

@@ -36,6 +36,8 @@ type responseTimeData struct {
 	P90Mins        float64
 	Total          int
 	NeverPickedUp  int
+	Rigs           []string
+	FilterRig      string
 }
 
 func (s *Server) handleResponseTime(w http.ResponseWriter, r *http.Request) {
@@ -81,12 +83,28 @@ func (s *Server) handleResponseTime(w http.ResponseWriter, r *http.Request) {
 	}
 	wg.Wait()
 
+	filterRig := r.URL.Query().Get("rig")
+	rigSet := make(map[string]bool)
+	for _, r := range results {
+		if len(r.issues) > 0 {
+			rigSet[r.rig] = true
+		}
+	}
+	for rig := range rigSet {
+		data.Rigs = append(data.Rigs, rig)
+	}
+	sort.Strings(data.Rigs)
+	data.FilterRig = filterRig
+
 	// For issues that have been picked up, compute response time as:
 	// time from creation to when status first changed to in_progress/hooked
 	var durations []float64
 	priorityDurations := map[int][]float64{}
 
 	for _, r := range results {
+		if filterRig != "" && r.rig != filterRig {
+			continue
+		}
 		for _, iss := range r.issues {
 			if iss.Status == "open" {
 				data.NeverPickedUp++

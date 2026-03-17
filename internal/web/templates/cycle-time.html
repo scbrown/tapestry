@@ -1,7 +1,16 @@
 {{define "title"}}Cycle Time{{end}}
 {{define "content"}}
-<div class="backlog-page" hx-get="/cycle-time" hx-trigger="every 120s" hx-select=".backlog-page" hx-swap="outerHTML">
+<div class="backlog-page" hx-get="/cycle-time{{if .FilterRig}}?rig={{.FilterRig}}{{end}}" hx-trigger="every 120s" hx-select=".backlog-page" hx-swap="outerHTML">
   <h1>Cycle Time Analytics <time class="text-dim">{{.GeneratedAt.Format "Jan 02, 2006 15:04"}}</time></h1>
+
+  {{if gt (len .Rigs) 1}}
+  <div class="dep-filters" style="margin-bottom:0.5rem">
+    <a href="/cycle-time" class="badge {{if not .FilterRig}}filter-active{{end}}">All rigs</a>
+    {{range .Rigs}}
+    <a href="/cycle-time?rig={{.}}" class="badge {{if eq . $.FilterRig}}filter-active{{end}}">{{rigName .}}</a>
+    {{end}}
+  </div>
+  {{end}}
 
   {{if eq .TotalClosed 0}}
   <p class="empty">No closed beads to analyze.</p>

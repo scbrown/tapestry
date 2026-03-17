@@ -1,8 +1,17 @@
 {{define "title"}}Resolution Rate{{end}}
 {{define "content"}}
-<div class="backlog-page" hx-get="/resolution-rate" hx-trigger="every 120s" hx-select=".backlog-page" hx-swap="outerHTML">
+<div class="backlog-page" hx-get="/resolution-rate{{if .FilterRig}}?rig={{.FilterRig}}{{end}}" hx-trigger="every 120s" hx-select=".backlog-page" hx-swap="outerHTML">
   <h1>Resolution Rate <time class="text-dim">{{.GeneratedAt.Format "Jan 02, 2006 15:04"}}</time></h1>
   <p class="text-dim">How quickly do closed beads get resolved? Distribution by time-to-close.</p>
+
+  {{if gt (len .Rigs) 1}}
+  <div class="dep-filters" style="margin-bottom:0.5rem">
+    <a href="/resolution-rate" class="badge {{if not .FilterRig}}filter-active{{end}}">All rigs</a>
+    {{range .Rigs}}
+    <a href="/resolution-rate?rig={{.}}" class="badge {{if eq . $.FilterRig}}filter-active{{end}}">{{rigName .}}</a>
+    {{end}}
+  </div>
+  {{end}}
 
   <div class="backlog-stats">
     <div class="stat">

@@ -57,6 +57,8 @@ type cycleTimeData struct {
 	Weekly      []weeklyCycleTime
 	Fastest     []cycleTimeItem
 	Slowest     []cycleTimeItem
+	Rigs        []string
+	FilterRig   string
 }
 
 func (s *Server) handleCycleTime(w http.ResponseWriter, r *http.Request) {
@@ -77,6 +79,7 @@ func (s *Server) handleCycleTime(w http.ResponseWriter, r *http.Request) {
 
 	// Fetch closed issues from all databases
 	type dbResult struct {
+		rig    string
 		issues []dolt.Issue
 	}
 	results := make([]dbResult, len(dbs))
@@ -93,14 +96,30 @@ func (s *Server) handleCycleTime(w http.ResponseWriter, r *http.Request) {
 				log.Printf("cycle-time: %s: %v", dbName, err)
 				return
 			}
-			results[i] = dbResult{issues: issues}
+			results[i] = dbResult{rig: dbName, issues: issues}
 		}(i, db.Name)
 	}
 	wg.Wait()
 
+	filterRig := r.URL.Query().Get("rig")
+	rigSet := make(map[string]bool)
+	for _, r := range results {
+		if len(r.issues) > 0 {
+			rigSet[r.rig] = true
+		}
+	}
+	for rig := range rigSet {
+		data.Rigs = append(data.Rigs, rig)
+	}
+	sort.Strings(data.Rigs)
+	data.FilterRig = filterRig
+
 	// Compute cycle times
 	var items []cycleTimeItem
 	for i, r := range results {
+		if filterRig != "" && r.rig != filterRig {
+			continue
+		}
 		for _, iss := range r.issues {
 			if iss.UpdatedAt.IsZero() || iss.CreatedAt.IsZero() {
 				continue

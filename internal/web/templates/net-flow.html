@@ -1,8 +1,17 @@
 {{define "title"}}Net Flow{{end}}
 {{define "content"}}
-<div class="backlog-page" hx-get="/net-flow" hx-trigger="every 120s" hx-select=".backlog-page" hx-swap="outerHTML">
+<div class="backlog-page" hx-get="/net-flow{{if .FilterRig}}?rig={{.FilterRig}}{{end}}" hx-trigger="every 120s" hx-select=".backlog-page" hx-swap="outerHTML">
   <h1>Net Flow <time class="text-dim">{{.GeneratedAt.Format "Jan 02, 2006 15:04"}}</time></h1>
   <p class="text-dim">30-day open bead count trend — is the backlog growing or shrinking?</p>
+
+  {{if gt (len .Rigs) 1}}
+  <div class="dep-filters" style="margin-bottom:0.5rem">
+    <a href="/net-flow" class="badge {{if not .FilterRig}}filter-active{{end}}">All rigs</a>
+    {{range .Rigs}}
+    <a href="/net-flow?rig={{.}}" class="badge {{if eq . $.FilterRig}}filter-active{{end}}">{{rigName .}}</a>
+    {{end}}
+  </div>
+  {{end}}
 
   <div class="backlog-stats">
     <div class="stat">
