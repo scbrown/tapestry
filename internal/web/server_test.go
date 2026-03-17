@@ -5467,3 +5467,30 @@ func TestWatchlistPage_AssigneeDropdown(t *testing.T) {
 		t.Error("expected assignee dropdown on watchlist page")
 	}
 }
+
+func TestKanbanPage_RigFilter(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}, {Name: "beads_gastown"}},
+		issues: []dolt.Issue{
+			{ID: "k1", Title: "Card one", Status: "open", Priority: 1, UpdatedAt: time.Now()},
+		},
+	}
+
+	srv := New(ds)
+
+	// Test with rig filter preserves URL param
+	req := httptest.NewRequest("GET", "/kanban?rig=beads_aegis", nil)
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /kanban?rig= status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, `rig=beads_aegis`) {
+		t.Error("expected rig filter preserved in auto-refresh URL")
+	}
+	if !strings.Contains(body, "Kanban Board") {
+		t.Error("expected kanban board heading")
+	}
+}

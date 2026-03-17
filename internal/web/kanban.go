@@ -25,9 +25,11 @@ type kanbanColumn struct {
 }
 
 type kanbanData struct {
-	Columns []kanbanColumn
-	Total   int
-	Err     string
+	Columns   []kanbanColumn
+	Total     int
+	Rigs      []string
+	FilterRig string
+	Err       string
 }
 
 var kanbanStatuses = []string{"open", "in_progress", "hooked", "blocked"}
@@ -69,11 +71,28 @@ func (s *Server) handleKanban(w http.ResponseWriter, r *http.Request) {
 	}
 	wg.Wait()
 
+	// Collect rigs and apply filter
+	filterRig := r.URL.Query().Get("rig")
+	rigSet := make(map[string]bool)
+	for _, r := range results {
+		for _, iss := range r.issues {
+			rigSet[iss.Rig] = true
+		}
+	}
+	var rigs []string
+	for rig := range rigSet {
+		rigs = append(rigs, rig)
+	}
+	sort.Strings(rigs)
+
 	// Build columns by status
 	byStatus := map[string][]kanbanCard{}
 	total := 0
 	for _, r := range results {
 		for _, iss := range r.issues {
+			if filterRig != "" && iss.Rig != filterRig {
+				continue
+			}
 			found := false
 			for _, s := range kanbanStatuses {
 				if iss.Status == s {
@@ -116,7 +135,9 @@ func (s *Server) handleKanban(w http.ResponseWriter, r *http.Request) {
 	}
 
 	s.render(w, r, "kanban", kanbanData{
-		Columns: columns,
-		Total:   total,
+		Columns:   columns,
+		Total:     total,
+		Rigs:      rigs,
+		FilterRig: filterRig,
 	})
 }

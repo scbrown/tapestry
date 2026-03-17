@@ -1,14 +1,23 @@
 {{define "title"}}Kanban{{end}}
 
 {{define "content"}}
-<div class="kanban-view" hx-get="/kanban" hx-trigger="every 60s" hx-select=".kanban-view" hx-swap="outerHTML">
+<div class="kanban-view" hx-get="/kanban{{if .FilterRig}}?rig={{.FilterRig}}{{end}}" hx-trigger="every 60s" hx-select=".kanban-view" hx-swap="outerHTML">
   <h1>Kanban Board</h1>
 
   {{if .Err}}
   <div class="error">{{.Err}}</div>
   {{else}}
 
-  <div class="results-meta">{{.Total}} active beads</div>
+  {{if gt (len .Rigs) 1}}
+  <div class="dep-filters" style="margin-bottom:0.5rem">
+    <a href="/kanban" class="badge {{if not .FilterRig}}filter-active{{end}}">All rigs</a>
+    {{range .Rigs}}
+    <a href="/kanban?rig={{.}}" class="badge {{if eq . $.FilterRig}}filter-active{{end}}">{{rigName .}}</a>
+    {{end}}
+  </div>
+  {{end}}
+
+  <div class="results-meta">{{.Total}} active beads{{if .FilterRig}} in {{rigName .FilterRig}}{{end}}</div>
 
   <div class="kanban-board">
     {{range .Columns}}
