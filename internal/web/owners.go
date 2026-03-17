@@ -20,8 +20,10 @@ type ownerRow struct {
 }
 
 type ownersData struct {
-	Rows []ownerRow
-	Err  string
+	Rows      []ownerRow
+	Rigs      []string
+	FilterRig string
+	Err       string
 }
 
 func (s *Server) handleOwners(w http.ResponseWriter, r *http.Request) {
@@ -39,6 +41,7 @@ func (s *Server) handleOwners(w http.ResponseWriter, r *http.Request) {
 	}
 
 	type dbResult struct {
+		rig    string
 		issues []dolt.Issue
 	}
 
@@ -53,13 +56,29 @@ func (s *Server) handleOwners(w http.ResponseWriter, r *http.Request) {
 				log.Printf("owners %s: %v", dbName, err)
 				return
 			}
-			results[i] = dbResult{issues: issues}
+			results[i] = dbResult{rig: dbName, issues: issues}
 		}(i, db.Name)
 	}
 	wg.Wait()
 
+	filterRig := r.URL.Query().Get("rig")
+	rigSet := make(map[string]bool)
+	for _, r := range results {
+		if len(r.issues) > 0 {
+			rigSet[r.rig] = true
+		}
+	}
+	var rigs []string
+	for rig := range rigSet {
+		rigs = append(rigs, rig)
+	}
+	sort.Strings(rigs)
+
 	byOwner := map[string]*ownerRow{}
 	for _, r := range results {
+		if filterRig != "" && r.rig != filterRig {
+			continue
+		}
 		for _, issue := range r.issues {
 			owner := issue.Owner
 			if owner == "" {
@@ -100,5 +119,5 @@ func (s *Server) handleOwners(w http.ResponseWriter, r *http.Request) {
 		return rows[i].Total > rows[j].Total
 	})
 
-	s.render(w, r, "owners", ownersData{Rows: rows})
+	s.render(w, r, "owners", ownersData{Rows: rows, Rigs: rigs, FilterRig: filterRig})
 }

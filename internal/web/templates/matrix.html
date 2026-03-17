@@ -1,14 +1,23 @@
 {{define "title"}}Matrix{{end}}
 
 {{define "content"}}
-<div class="matrix-view" hx-get="/matrix" hx-trigger="every 120s" hx-select=".matrix-view" hx-swap="outerHTML">
+<div class="matrix-view" hx-get="/matrix{{if .FilterRig}}?rig={{.FilterRig}}{{end}}" hx-trigger="every 120s" hx-select=".matrix-view" hx-swap="outerHTML">
   <h1>Assignee / Status Matrix</h1>
 
   {{if .Err}}
   <div class="error">{{.Err}}</div>
   {{else}}
 
-  <div class="results-meta">{{.GrandTot}} beads across {{len .Rows}} assignees</div>
+  {{if gt (len .Rigs) 1}}
+  <div class="dep-filters" style="margin-bottom:0.5rem">
+    <a href="/matrix" class="badge {{if not .FilterRig}}filter-active{{end}}">All rigs</a>
+    {{range .Rigs}}
+    <a href="/matrix?rig={{.}}" class="badge {{if eq . $.FilterRig}}filter-active{{end}}">{{rigName .}}</a>
+    {{end}}
+  </div>
+  {{end}}
+
+  <div class="results-meta">{{.GrandTot}} beads across {{len .Rows}} assignees{{if .FilterRig}} in {{rigName .FilterRig}}{{end}}</div>
 
   {{if .Rows}}
   <div class="table-wrap">

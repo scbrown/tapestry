@@ -20,9 +20,11 @@ type typeRow struct {
 }
 
 type typesData struct {
-	Rows     []typeRow
-	GrandTot int
-	Err      string
+	Rows      []typeRow
+	GrandTot  int
+	Rigs      []string
+	FilterRig string
+	Err       string
 }
 
 func (s *Server) handleTypes(w http.ResponseWriter, r *http.Request) {
@@ -40,6 +42,7 @@ func (s *Server) handleTypes(w http.ResponseWriter, r *http.Request) {
 	}
 
 	type dbResult struct {
+		rig    string
 		issues []dolt.Issue
 	}
 
@@ -54,13 +57,29 @@ func (s *Server) handleTypes(w http.ResponseWriter, r *http.Request) {
 				log.Printf("types %s: %v", dbName, err)
 				return
 			}
-			results[i] = dbResult{issues: issues}
+			results[i] = dbResult{rig: dbName, issues: issues}
 		}(i, db.Name)
 	}
 	wg.Wait()
 
+	filterRig := r.URL.Query().Get("rig")
+	rigSet := make(map[string]bool)
+	for _, r := range results {
+		if len(r.issues) > 0 {
+			rigSet[r.rig] = true
+		}
+	}
+	var rigs []string
+	for rig := range rigSet {
+		rigs = append(rigs, rig)
+	}
+	sort.Strings(rigs)
+
 	byType := map[string]*typeRow{}
 	for _, r := range results {
+		if filterRig != "" && r.rig != filterRig {
+			continue
+		}
 		for _, issue := range r.issues {
 			t := issue.Type
 			if t == "" {
@@ -111,7 +130,9 @@ func (s *Server) handleTypes(w http.ResponseWriter, r *http.Request) {
 	})
 
 	s.render(w, r, "types", typesData{
-		Rows:     rows,
-		GrandTot: grandTotal,
+		Rows:      rows,
+		GrandTot:  grandTotal,
+		Rigs:      rigs,
+		FilterRig: filterRig,
 	})
 }

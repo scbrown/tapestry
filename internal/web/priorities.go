@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"sort"
 	"sync"
 
 	"github.com/scbrown/tapestry/internal/dolt"
@@ -22,9 +23,11 @@ type priorityRow struct {
 }
 
 type prioritiesData struct {
-	Rows     []priorityRow
-	GrandTot int
-	Err      string
+	Rows      []priorityRow
+	GrandTot  int
+	Rigs      []string
+	FilterRig string
+	Err       string
 }
 
 func (s *Server) handlePriorities(w http.ResponseWriter, r *http.Request) {
@@ -42,6 +45,7 @@ func (s *Server) handlePriorities(w http.ResponseWriter, r *http.Request) {
 	}
 
 	type dbResult struct {
+		rig    string
 		counts []dolt.PriorityStatusCount
 	}
 
@@ -56,14 +60,30 @@ func (s *Server) handlePriorities(w http.ResponseWriter, r *http.Request) {
 				log.Printf("priorities %s: %v", dbName, err)
 				return
 			}
-			results[i] = dbResult{counts: counts}
+			results[i] = dbResult{rig: dbName, counts: counts}
 		}(i, db.Name)
 	}
 	wg.Wait()
 
-	// Aggregate across all databases
+	filterRig := r.URL.Query().Get("rig")
+	rigSet := make(map[string]bool)
+	for _, r := range results {
+		if len(r.counts) > 0 {
+			rigSet[r.rig] = true
+		}
+	}
+	var rigs []string
+	for rig := range rigSet {
+		rigs = append(rigs, rig)
+	}
+	sort.Strings(rigs)
+
+	// Aggregate across databases (filtered by rig if set)
 	byPri := map[int]*priorityRow{}
 	for _, r := range results {
+		if filterRig != "" && r.rig != filterRig {
+			continue
+		}
 		for _, c := range r.counts {
 			row, ok := byPri[c.Priority]
 			if !ok {
@@ -107,7 +127,9 @@ func (s *Server) handlePriorities(w http.ResponseWriter, r *http.Request) {
 	}
 
 	s.render(w, r, "priorities", prioritiesData{
-		Rows:     rows,
-		GrandTot: grandTotal,
+		Rows:      rows,
+		GrandTot:  grandTotal,
+		Rigs:      rigs,
+		FilterRig: filterRig,
 	})
 }

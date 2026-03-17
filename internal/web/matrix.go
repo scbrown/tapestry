@@ -21,11 +21,13 @@ type matrixRow struct {
 }
 
 type matrixData struct {
-	Rows     []matrixRow
-	Statuses []string
-	GrandTot int
-	MaxCell  int // largest single cell value (for heat scaling)
-	Err      string
+	Rows      []matrixRow
+	Statuses  []string
+	GrandTot  int
+	MaxCell   int // largest single cell value (for heat scaling)
+	Rigs      []string
+	FilterRig string
+	Err       string
 }
 
 func (s *Server) handleMatrix(w http.ResponseWriter, r *http.Request) {
@@ -43,6 +45,7 @@ func (s *Server) handleMatrix(w http.ResponseWriter, r *http.Request) {
 	}
 
 	type dbResult struct {
+		rig    string
 		counts []dolt.AssigneeStatusCount
 	}
 
@@ -57,15 +60,31 @@ func (s *Server) handleMatrix(w http.ResponseWriter, r *http.Request) {
 				log.Printf("matrix %s: %v", dbName, err)
 				return
 			}
-			results[i] = dbResult{counts: counts}
+			results[i] = dbResult{rig: dbName, counts: counts}
 		}(i, db.Name)
 	}
 	wg.Wait()
 
-	// Aggregate across all databases
+	filterRig := r.URL.Query().Get("rig")
+	rigSet := make(map[string]bool)
+	for _, r := range results {
+		if len(r.counts) > 0 {
+			rigSet[r.rig] = true
+		}
+	}
+	var rigs []string
+	for rig := range rigSet {
+		rigs = append(rigs, rig)
+	}
+	sort.Strings(rigs)
+
+	// Aggregate across databases (filtered by rig if set)
 	byAssignee := map[string]*matrixRow{}
 	statusSet := map[string]bool{}
 	for _, r := range results {
+		if filterRig != "" && r.rig != filterRig {
+			continue
+		}
 		for _, c := range r.counts {
 			row, ok := byAssignee[c.Assignee]
 			if !ok {
@@ -115,9 +134,11 @@ func (s *Server) handleMatrix(w http.ResponseWriter, r *http.Request) {
 	})
 
 	s.render(w, r, "matrix", matrixData{
-		Rows:     rows,
-		Statuses: statuses,
-		GrandTot: grandTotal,
-		MaxCell:  maxCell,
+		Rows:      rows,
+		Statuses:  statuses,
+		GrandTot:  grandTotal,
+		MaxCell:   maxCell,
+		Rigs:      rigs,
+		FilterRig: filterRig,
 	})
 }

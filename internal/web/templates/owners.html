@@ -1,12 +1,21 @@
 {{define "title"}}Owners{{end}}
 
 {{define "content"}}
-<div class="owners-view" hx-get="/owners" hx-trigger="every 120s" hx-select=".owners-view" hx-swap="outerHTML">
+<div class="owners-view" hx-get="/owners{{if .FilterRig}}?rig={{.FilterRig}}{{end}}" hx-trigger="every 120s" hx-select=".owners-view" hx-swap="outerHTML">
   <h1>Workload by Owner</h1>
 
   {{if .Err}}
   <div class="error">{{.Err}}</div>
   {{else}}
+
+  {{if gt (len .Rigs) 1}}
+  <div class="dep-filters" style="margin-bottom:0.5rem">
+    <a href="/owners" class="badge {{if not .FilterRig}}filter-active{{end}}">All rigs</a>
+    {{range .Rigs}}
+    <a href="/owners?rig={{.}}" class="badge {{if eq . $.FilterRig}}filter-active{{end}}">{{rigName .}}</a>
+    {{end}}
+  </div>
+  {{end}}
 
   {{if .Rows}}
   <div class="table-wrap">

@@ -1,14 +1,23 @@
 {{define "title"}}Priorities{{end}}
 
 {{define "content"}}
-<div class="priorities-view" hx-get="/priorities" hx-trigger="every 120s" hx-select=".priorities-view" hx-swap="outerHTML">
+<div class="priorities-view" hx-get="/priorities{{if .FilterRig}}?rig={{.FilterRig}}{{end}}" hx-trigger="every 120s" hx-select=".priorities-view" hx-swap="outerHTML">
   <h1>Priority Distribution</h1>
 
   {{if .Err}}
   <div class="error">{{.Err}}</div>
   {{else}}
 
-  <div class="results-meta">{{.GrandTot}} beads across all rigs</div>
+  {{if gt (len .Rigs) 1}}
+  <div class="dep-filters" style="margin-bottom:0.5rem">
+    <a href="/priorities" class="badge {{if not .FilterRig}}filter-active{{end}}">All rigs</a>
+    {{range .Rigs}}
+    <a href="/priorities?rig={{.}}" class="badge {{if eq . $.FilterRig}}filter-active{{end}}">{{rigName .}}</a>
+    {{end}}
+  </div>
+  {{end}}
+
+  <div class="results-meta">{{.GrandTot}} beads {{if .FilterRig}}in {{rigName .FilterRig}}{{else}}across all rigs{{end}}</div>
 
   {{if .Rows}}
   <div class="priority-bars">
