@@ -74,8 +74,13 @@
         <td>{{timeAgo .Issue.UpdatedAt}}</td>
         <td class="triage-actions">
           <div class="triage-btn-group">
+            {{if eq .Issue.Status "closed"}}
+            <button class="btn btn-xs" hx-post="/bead/{{lower .Rig}}/{{.Issue.ID}}/status" hx-vals='{"status":"open"}' hx-swap="outerHTML" hx-target="closest tr" hx-confirm="Reopen {{.Issue.ID}}?">reopen</button>
+            {{else}}
+            {{if ne .Issue.Status "in_progress"}}<button class="btn btn-xs" hx-post="/bead/{{lower .Rig}}/{{.Issue.ID}}/status" hx-vals='{"status":"in_progress"}' hx-swap="outerHTML" hx-target="closest tr">start</button>{{end}}
             <button class="btn btn-xs" hx-post="/bead/{{lower .Rig}}/{{.Issue.ID}}/status" hx-vals='{"status":"closed"}' hx-swap="outerHTML" hx-target="closest tr" hx-confirm="Close {{.Issue.ID}}?">close</button>
             <button class="btn btn-xs" hx-post="/bead/{{lower .Rig}}/{{.Issue.ID}}/status" hx-vals='{"status":"deferred"}' hx-swap="outerHTML" hx-target="closest tr" hx-confirm="Defer {{.Issue.ID}}?">defer</button>
+            {{end}}
           </div>
         </td>
       </tr>

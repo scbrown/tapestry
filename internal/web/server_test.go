@@ -5868,3 +5868,78 @@ func TestLabelsPage_InlinePriority(t *testing.T) {
 		t.Error("expected batch checkboxes on labels page")
 	}
 }
+
+func TestWatchlistPage_StartButton(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issues: []dolt.Issue{
+			{ID: "wls1", Title: "Open P0", Status: "open", Priority: 0, UpdatedAt: time.Now(), CreatedAt: time.Now()},
+		},
+		assignees: []string{"aegis/crew/arnold"},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/watchlist", nil)
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, `"status":"in_progress"`) {
+		t.Error("expected start button on watchlist page")
+	}
+}
+
+func TestTriagePage_StartButton(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issues: []dolt.Issue{
+			{ID: "trs1", Title: "Untriaged", Status: "open", Priority: 3, UpdatedAt: time.Now(), CreatedAt: time.Now()},
+		},
+		assignees: []string{"aegis/crew/arnold"},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/triage", nil)
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, `"status":"in_progress"`) {
+		t.Error("expected start button on triage page")
+	}
+}
+
+func TestLabelsPage_StartAndReopen(t *testing.T) {
+	ds := &mockDataSource{
+		databases:   []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		labelCounts: []dolt.LabelCount{{Label: "bug", Count: 2}},
+		issues: []dolt.Issue{
+			{ID: "lbs1", Title: "Open bug", Status: "open", Priority: 1, UpdatedAt: time.Now(), CreatedAt: time.Now()},
+			{ID: "lbs2", Title: "Closed bug", Status: "closed", Priority: 2, UpdatedAt: time.Now(), CreatedAt: time.Now()},
+		},
+		assignees: []string{"aegis/crew/arnold"},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/labels?label=bug", nil)
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, `"status":"in_progress"`) {
+		t.Error("expected start button on labels page for open beads")
+	}
+	if !strings.Contains(body, ">reopen<") {
+		t.Error("expected reopen button on labels page for closed beads")
+	}
+}
+
