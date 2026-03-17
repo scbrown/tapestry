@@ -1,6 +1,6 @@
 {{define "title"}}Decisions{{if .Filter}} ({{.Filter}}){{end}}{{end}}
 {{define "content"}}
-<div class="decisions-page">
+<div class="decisions-page" hx-get="/decisions{{if .Filter}}?filter={{.Filter}}{{end}}" hx-trigger="every 60s" hx-select=".decisions-page" hx-swap="outerHTML">
   <h1>Decisions</h1>
 
   <div class="stats-grid" style="grid-template-columns: repeat(4, 1fr);">

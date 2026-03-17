@@ -1,6 +1,6 @@
 {{define "title"}}Designs{{end}}
 {{define "content"}}
-<div class="designs-page">
+<div class="designs-page" hx-get="/designs{{if .Filter}}?filter={{.Filter}}{{end}}" hx-trigger="every 120s" hx-select=".designs-page" hx-swap="outerHTML">
   <h1>Design Docs <span class="text-dim">({{.Total}})</span></h1>
 
   <div class="filters">

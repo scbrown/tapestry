@@ -1,6 +1,6 @@
 {{define "title"}}{{shortActor .Name}}{{end}}
 {{define "content"}}
-<div class="agent-detail">
+<div class="agent-detail" hx-get="/agent/{{.Name}}" hx-trigger="every 60s" hx-select=".agent-detail" hx-swap="outerHTML">
   <h1>{{shortActor .Name}}</h1>
   <p class="agent-full-path text-dim">{{.Name}}</p>
 

@@ -1,6 +1,6 @@
 {{define "title"}}Achievements{{if .Selected}} ({{.Selected}}){{end}}{{end}}
 {{define "content"}}
-<div class="achievements-page">
+<div class="achievements-page" hx-get="/achievements{{if .Selected}}?category={{.Selected}}{{end}}" hx-trigger="every 120s" hx-select=".achievements-page" hx-swap="outerHTML">
   <h1>Achievements</h1>
 
   {{if .Err}}
