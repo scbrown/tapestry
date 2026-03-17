@@ -1,0 +1,147 @@
+{{define "title"}}Weekly Sprint{{end}}
+{{define "content"}}
+<div class="sprint-page" hx-get="/sprint{{if .FilterRig}}?rig={{.FilterRig}}{{end}}" hx-trigger="every 120s" hx-select=".sprint-page" hx-swap="outerHTML">
+  <h1>Weekly Sprint</h1>
+
+  <div class="recap-nav" style="margin-bottom:1rem">
+    <a href="/sprint?week={{.PrevWeek}}" class="btn btn-xs">&laquo; Prev</a>
+    <span class="recap-date-label">{{.WeekLabel}}</span>
+    {{if not .IsThisWeek}}<a href="/sprint?week={{.NextWeek}}" class="btn btn-xs">Next &raquo;</a>{{end}}
+  </div>
+
+  {{if gt (len .Rigs) 1}}
+  <div class="dep-filters" style="margin-bottom:0.75rem">
+    <a href="/sprint?week={{.WeekStart.Format "2006-01-02"}}" class="badge {{if not .FilterRig}}filter-active{{end}}">All rigs</a>
+    {{range .Rigs}}
+    <a href="/sprint?week={{$.WeekStart.Format "2006-01-02"}}&rig={{.}}" class="badge {{if eq . $.FilterRig}}filter-active{{end}}">{{rigName .}}</a>
+    {{end}}
+  </div>
+  {{end}}
+
+  <div class="stat-grid">
+    <div class="stat">
+      <span class="stat-value accent">{{.TotalClosed}}</span>
+      <span class="stat-label">Closed</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value">{{.TotalCreated}}</span>
+      <span class="stat-label">Created</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value">{{.TotalActive}}</span>
+      <span class="stat-label">Active</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value {{if gt .NetChange 0}}text-warn{{else if lt .NetChange 0}}text-ok{{end}}">{{if gt .NetChange 0}}+{{end}}{{.NetChange}}</span>
+      <span class="stat-label">Net change</span>
+    </div>
+  </div>
+
+  {{if or .ClosedByAgent .CreatedByAgent}}
+  <details style="margin:0.75rem 0">
+    <summary class="text-dim">Agent breakdown</summary>
+    <div style="display:flex; gap:2rem; flex-wrap:wrap; margin-top:0.5rem">
+      {{if .ClosedByAgent}}
+      <div>
+        <h3 class="text-dim" style="margin:0 0 0.25rem">Closed by</h3>
+        <div class="stat-grid">
+          {{range $agent, $count := .ClosedByAgent}}
+          <div class="stat"><span class="stat-value">{{$count}}</span><span class="stat-label">{{shortActor $agent}}</span></div>
+          {{end}}
+        </div>
+      </div>
+      {{end}}
+      {{if .CreatedByAgent}}
+      <div>
+        <h3 class="text-dim" style="margin:0 0 0.25rem">Filed by</h3>
+        <div class="stat-grid">
+          {{range $agent, $count := .CreatedByAgent}}
+          <div class="stat"><span class="stat-value">{{$count}}</span><span class="stat-label">{{shortActor $agent}}</span></div>
+          {{end}}
+        </div>
+      </div>
+      {{end}}
+    </div>
+  </details>
+  {{end}}
+
+  {{if .ClosedItems}}
+  <section style="margin-top:1rem">
+    <h2>Closed <span class="text-dim">({{.TotalClosed}})</span></h2>
+    <div class="table-wrap">
+    <table class="bead-table">
+      <thead>
+        <tr><th>Rig</th><th>ID</th><th>Title</th><th>Pri</th><th>Type</th><th>Assignee</th></tr>
+      </thead>
+      <tbody>
+        {{range .ClosedItems}}
+        <tr>
+          <td><span class="rig-label">{{.Rig}}</span></td>
+          <td><a href="/bead/{{lower .Rig}}/{{.Issue.ID}}" hx-boost="true">{{.Issue.ID}}</a></td>
+          <td>{{.Issue.Title}}</td>
+          <td><span class="priority-badge p{{.Issue.Priority}}">P{{.Issue.Priority}}</span></td>
+          <td>{{.Issue.Type}}</td>
+          <td>{{shortActor .Issue.Assignee}}</td>
+        </tr>
+        {{end}}
+      </tbody>
+    </table>
+    </div>
+  </section>
+  {{end}}
+
+  {{if .ActiveItems}}
+  <section style="margin-top:1rem">
+    <h2>Active <span class="text-dim">({{.TotalActive}})</span></h2>
+    <div class="table-wrap">
+    <table class="bead-table">
+      <thead>
+        <tr><th>Rig</th><th>ID</th><th>Title</th><th>Pri</th><th>Status</th><th>Assignee</th></tr>
+      </thead>
+      <tbody>
+        {{range .ActiveItems}}
+        <tr>
+          <td><span class="rig-label">{{.Rig}}</span></td>
+          <td><a href="/bead/{{lower .Rig}}/{{.Issue.ID}}" hx-boost="true">{{.Issue.ID}}</a></td>
+          <td>{{.Issue.Title}}</td>
+          <td><span class="priority-badge p{{.Issue.Priority}}">P{{.Issue.Priority}}</span></td>
+          <td>{{statusBadge .Issue.Status}}</td>
+          <td>{{shortActor .Issue.Assignee}}</td>
+        </tr>
+        {{end}}
+      </tbody>
+    </table>
+    </div>
+  </section>
+  {{end}}
+
+  {{if .CreatedItems}}
+  <section style="margin-top:1rem">
+    <h2>Created <span class="text-dim">({{.TotalCreated}})</span></h2>
+    <div class="table-wrap">
+    <table class="bead-table">
+      <thead>
+        <tr><th>Rig</th><th>ID</th><th>Title</th><th>Pri</th><th>Status</th><th>Filed by</th></tr>
+      </thead>
+      <tbody>
+        {{range .CreatedItems}}
+        <tr>
+          <td><span class="rig-label">{{.Rig}}</span></td>
+          <td><a href="/bead/{{lower .Rig}}/{{.Issue.ID}}" hx-boost="true">{{.Issue.ID}}</a></td>
+          <td>{{.Issue.Title}}</td>
+          <td><span class="priority-badge p{{.Issue.Priority}}">P{{.Issue.Priority}}</span></td>
+          <td>{{statusBadge .Issue.Status}}</td>
+          <td>{{shortActor .Issue.Owner}}</td>
+        </tr>
+        {{end}}
+      </tbody>
+    </table>
+    </div>
+  </section>
+  {{end}}
+
+  {{if and (not .ClosedItems) (not .ActiveItems) (not .CreatedItems)}}
+  <p class="empty">No activity this week.</p>
+  {{end}}
+</div>
+{{end}}

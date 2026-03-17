@@ -1906,6 +1906,118 @@ func TestCreatedPage_AssigneeDropdown(t *testing.T) {
 	}
 }
 
+func TestSprintPage_NilDataSource(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/sprint", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /sprint status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Weekly Sprint") {
+		t.Error("expected 'Weekly Sprint' heading")
+	}
+}
+
+func TestSprintPage_WithData(t *testing.T) {
+	// Use fixed midday time to avoid midnight flakes
+	fixed := time.Date(2026, 3, 11, 12, 0, 0, 0, time.Local) // Wednesday
+	weekParam := "2026-03-09"                                   // Monday of that week
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issues: []dolt.Issue{
+			{ID: "sp1", Title: "Closed this week", Status: "closed", Priority: 1, Assignee: "aegis/crew/alice", CreatedAt: fixed.Add(-48 * time.Hour), UpdatedAt: fixed},
+			{ID: "sp2", Title: "Created this week", Status: "open", Priority: 2, Owner: "aegis/crew/bob", CreatedAt: fixed, UpdatedAt: fixed},
+			{ID: "sp3", Title: "Active this week", Status: "in_progress", Priority: 1, Assignee: "aegis/crew/alice", CreatedAt: fixed.Add(-72 * time.Hour), UpdatedAt: fixed},
+		},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/sprint?week="+weekParam, nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /sprint status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Closed this week") {
+		t.Error("expected closed issue")
+	}
+	if !strings.Contains(body, "Created this week") {
+		t.Error("expected created issue")
+	}
+	if !strings.Contains(body, "Active this week") {
+		t.Error("expected active issue")
+	}
+}
+
+func TestSprintPage_HTMXPartial(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/sprint", nil)
+	req.Header.Set("HX-Request", "true")
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /sprint (HTMX) status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if strings.Contains(body, "<html") {
+		t.Error("HTMX partial should not include full HTML layout")
+	}
+}
+
+func TestSprintPage_WeekNavigation(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/sprint?week=2026-03-02", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /sprint?week= status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Prev") {
+		t.Error("expected Prev navigation link")
+	}
+	if !strings.Contains(body, "Next") {
+		t.Error("expected Next navigation link for past week")
+	}
+}
+
+func TestSprintPage_RigFilter(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{
+			{Name: "beads_aegis"},
+			{Name: "beads_gastown"},
+		},
+		issues: []dolt.Issue{
+			{ID: "srf1", Title: "Aegis sprint bead", Status: "open", Priority: 1, CreatedAt: time.Now().Add(-1 * time.Hour), UpdatedAt: time.Now()},
+		},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/sprint?rig=beads_aegis", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /sprint?rig= status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Weekly Sprint") {
+		t.Error("expected page content with rig filter")
+	}
+}
+
 func TestStalePage_NilDataSource(t *testing.T) {
 	srv := New(nil)
 	req := httptest.NewRequest("GET", "/stale", nil)
