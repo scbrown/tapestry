@@ -53,6 +53,7 @@
   {{/* ── Agent WIP Table ── */}}
   {{if .Agents}}
   <h2 style="margin-top:2rem">Per-Agent WIP</h2>
+  <div class="table-wrap">
   <table class="bead-table">
     <thead>
       <tr>
@@ -84,6 +85,7 @@
       {{end}}
     </tbody>
   </table>
+  </div>
   {{else}}
   <p class="text-dim">No agents with active work found.</p>
   {{end}}

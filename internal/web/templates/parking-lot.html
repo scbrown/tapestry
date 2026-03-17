@@ -107,10 +107,10 @@
               hx-swap="none" hx-on::after-request="this.closest('tr').remove()">start</button>
             <button class="btn-sm btn-close"
               hx-post="/bead/{{.Rig}}/{{.Issue.ID}}/status" hx-vals='{"status":"closed"}'
-              hx-swap="none" hx-on::after-request="this.closest('tr').remove()">close</button>
+              hx-swap="none" hx-on::after-request="this.closest('tr').remove()" hx-confirm="Close {{.Issue.ID}}?">close</button>
             <button class="btn-sm btn-defer"
               hx-post="/bead/{{.Rig}}/{{.Issue.ID}}/status" hx-vals='{"status":"deferred"}'
-              hx-swap="none" hx-on::after-request="this.closest('tr').remove()">defer</button>
+              hx-swap="none" hx-on::after-request="this.closest('tr').remove()" hx-confirm="Defer {{.Issue.ID}}?">defer</button>
           </td>
         </tr>
         {{end}}

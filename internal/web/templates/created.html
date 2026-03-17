@@ -125,6 +125,10 @@
   </div>
   {{end}}
   <script>
+  function toggleAll(master) {
+    document.querySelectorAll('.created-cb').forEach(function(cb) { cb.checked = master.checked; });
+    createdUpdateBar();
+  }
   function createdToggleDay(master) {
     var tbody = master.closest('table').querySelector('tbody');
     tbody.querySelectorAll('.created-cb').forEach(function(cb) { cb.checked = master.checked; });

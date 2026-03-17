@@ -24,6 +24,7 @@
   {{else}}
 
   {{/* ── Side-by-side metrics ── */}}
+  <div class="table-wrap">
   <table class="bead-table">
     <thead>
       <tr>
@@ -64,6 +65,7 @@
       </tr>
     </tbody>
   </table>
+  </div>
 
   {{/* ── Visual comparison bars ── */}}
   <h2 style="margin-top:2rem">Visual Comparison</h2>
@@ -107,6 +109,7 @@
     <section class="briefing-card">
       <h3>Current Period</h3>
       {{if .TopAgentsA}}
+      <div class="table-wrap">
       <table class="bead-table" style="font-size:0.85rem">
         <thead><tr><th>Agent</th><th>Actions</th></tr></thead>
         <tbody>
@@ -115,11 +118,13 @@
         {{end}}
         </tbody>
       </table>
+      </div>
       {{else}}<p class="text-dim">No agent data</p>{{end}}
     </section>
     <section class="briefing-card">
       <h3>Previous Period</h3>
       {{if .TopAgentsB}}
+      <div class="table-wrap">
       <table class="bead-table" style="font-size:0.85rem">
         <thead><tr><th>Agent</th><th>Actions</th></tr></thead>
         <tbody>
@@ -128,6 +133,7 @@
         {{end}}
         </tbody>
       </table>
+      </div>
       {{else}}<p class="text-dim">No agent data</p>{{end}}
     </section>
   </div>

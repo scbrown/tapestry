@@ -86,8 +86,8 @@
           <td>{{statusBadge .Status}}</td>
           <td>
             {{if ne .Status "in_progress"}}<button class="btn-sm" hx-post="/bead/{{.DB}}/{{.ID}}/status" hx-vals='{"status":"in_progress"}' hx-swap="none" hx-on::after-request="this.closest('tr').remove()">start</button>{{end}}
-            <button class="btn-sm" hx-post="/bead/{{.DB}}/{{.ID}}/status" hx-vals='{"status":"closed"}' hx-swap="none" hx-on::after-request="this.closest('tr').remove()">close</button>
-            <button class="btn-sm" hx-post="/bead/{{.DB}}/{{.ID}}/status" hx-vals='{"status":"deferred"}' hx-swap="none" hx-on::after-request="this.closest('tr').remove()">defer</button>
+            <button class="btn-sm" hx-post="/bead/{{.DB}}/{{.ID}}/status" hx-vals='{"status":"closed"}' hx-swap="none" hx-on::after-request="this.closest('tr').remove()" hx-confirm="Close {{.ID}}?">close</button>
+            <button class="btn-sm" hx-post="/bead/{{.DB}}/{{.ID}}/status" hx-vals='{"status":"deferred"}' hx-swap="none" hx-on::after-request="this.closest('tr').remove()" hx-confirm="Defer {{.ID}}?">defer</button>
           </td>
         </tr>
         {{end}}
@@ -136,7 +136,7 @@
           <td>
             <button class="btn-sm" hx-post="/bead/{{.DB}}/{{.ID}}/status" hx-vals='{"status":"in_progress"}' hx-swap="none" hx-on::after-request="this.closest('tr').remove()">start</button>
             <button class="btn-sm" hx-post="/bead/{{.DB}}/{{.ID}}/status" hx-vals='{"status":"open"}' hx-swap="none" hx-on::after-request="this.closest('tr').remove()">reopen</button>
-            <button class="btn-sm" hx-post="/bead/{{.DB}}/{{.ID}}/status" hx-vals='{"status":"closed"}' hx-swap="none" hx-on::after-request="this.closest('tr').remove()">close</button>
+            <button class="btn-sm" hx-post="/bead/{{.DB}}/{{.ID}}/status" hx-vals='{"status":"closed"}' hx-swap="none" hx-on::after-request="this.closest('tr').remove()" hx-confirm="Close {{.ID}}?">close</button>
           </td>
         </tr>
         {{end}}

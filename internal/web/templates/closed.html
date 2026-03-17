@@ -102,6 +102,10 @@
   </div>
   {{end}}
   <script>
+  function toggleAll(master) {
+    document.querySelectorAll('.closed-cb').forEach(function(cb) { cb.checked = master.checked; });
+    closedUpdateBar();
+  }
   function closedToggleDay(master) {
     var tbody = master.closest('table').querySelector('tbody');
     tbody.querySelectorAll('.closed-cb').forEach(function(cb) { cb.checked = master.checked; });

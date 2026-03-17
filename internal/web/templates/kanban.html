@@ -40,9 +40,9 @@
           <div class="kanban-card-actions">
             {{if eq .Status "open"}}
             <button class="btn btn-xs" hx-post="/bead/{{lower .Rig}}/{{.ID}}/status" hx-vals='{"status":"in_progress"}' hx-swap="outerHTML" hx-target="closest .kanban-card" title="Start">&#9654;</button>
-            <button class="btn btn-xs" hx-post="/bead/{{lower .Rig}}/{{.ID}}/status" hx-vals='{"status":"closed"}' hx-swap="outerHTML" hx-target="closest .kanban-card" title="Close">&times;</button>
+            <button class="btn btn-xs" hx-post="/bead/{{lower .Rig}}/{{.ID}}/status" hx-vals='{"status":"closed"}' hx-swap="outerHTML" hx-target="closest .kanban-card" title="Close" hx-confirm="Close {{.ID}}?">&times;</button>
             {{else if eq .Status "in_progress"}}
-            <button class="btn btn-xs" hx-post="/bead/{{lower .Rig}}/{{.ID}}/status" hx-vals='{"status":"closed"}' hx-swap="outerHTML" hx-target="closest .kanban-card" title="Close">&times;</button>
+            <button class="btn btn-xs" hx-post="/bead/{{lower .Rig}}/{{.ID}}/status" hx-vals='{"status":"closed"}' hx-swap="outerHTML" hx-target="closest .kanban-card" title="Close" hx-confirm="Close {{.ID}}?">&times;</button>
             {{else if eq .Status "blocked"}}
             <button class="btn btn-xs" hx-post="/bead/{{lower .Rig}}/{{.ID}}/status" hx-vals='{"status":"open"}' hx-swap="outerHTML" hx-target="closest .kanban-card" title="Unblock">&#8635;</button>
             {{end}}
