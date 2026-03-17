@@ -23,6 +23,7 @@ type pendingData struct {
 	Total       int
 	Rigs        []string
 	FilterRig   string
+	Assignees   []string
 	Err         string
 }
 
@@ -55,7 +56,8 @@ func (s *Server) handlePending(w http.ResponseWriter, r *http.Request) {
 	now := time.Now()
 
 	type dbResult struct {
-		items []pendingItem
+		items     []pendingItem
+		assignees []string
 	}
 	results := make([]dbResult, len(dbs))
 	var wg sync.WaitGroup
@@ -67,6 +69,7 @@ func (s *Server) handlePending(w http.ResponseWriter, r *http.Request) {
 		wg.Add(1)
 		go func(idx int, dbName string) {
 			defer wg.Done()
+			assignees, _ := s.ds.DistinctAssignees(ctx, dbName)
 			issues, err := s.ds.Issues(ctx, dbName, dolt.IssueFilter{Limit: 5000})
 			if err != nil {
 				log.Printf("pending: issues %s: %v", dbName, err)
@@ -102,15 +105,23 @@ func (s *Server) handlePending(w http.ResponseWriter, r *http.Request) {
 					Age:    formatDwell(now.Sub(iss.UpdatedAt)),
 				})
 			}
-			results[idx] = dbResult{items: items}
+			results[idx] = dbResult{items: items, assignees: assignees}
 		}(i, db.Name)
 	}
 	wg.Wait()
 
 	var all []pendingItem
+	assigneeSet := make(map[string]bool)
 	for _, r := range results {
 		all = append(all, r.items...)
+		for _, a := range r.assignees {
+			assigneeSet[a] = true
+		}
 	}
+	for a := range assigneeSet {
+		data.Assignees = append(data.Assignees, a)
+	}
+	sort.Strings(data.Assignees)
 
 	// Sort by priority then age
 	sort.Slice(all, func(i, j int) bool {

@@ -26,6 +26,7 @@ type risksData struct {
 	Info        int
 	Rigs        []string
 	FilterRig   string
+	Assignees   []string
 	Err         string
 }
 
@@ -47,7 +48,8 @@ func (s *Server) handleRisks(w http.ResponseWriter, r *http.Request) {
 	}
 
 	type dbResult struct {
-		items []riskItem
+		items     []riskItem
+		assignees []string
 	}
 
 	staleThreshold := now.AddDate(0, 0, -7)
@@ -60,6 +62,7 @@ func (s *Server) handleRisks(w http.ResponseWriter, r *http.Request) {
 		go func(i int, dbName string) {
 			defer wg.Done()
 			var r dbResult
+			r.assignees, _ = s.ds.DistinctAssignees(ctx, dbName)
 
 			issues, err := s.ds.Issues(ctx, dbName, dolt.IssueFilter{Limit: 500})
 			if err != nil {
@@ -124,8 +127,12 @@ func (s *Server) handleRisks(w http.ResponseWriter, r *http.Request) {
 	// Aggregate and deduplicate (prefer higher severity)
 	seen := make(map[string]int) // issue ID -> index in items
 	rigSet := make(map[string]bool)
+	assigneeSet := make(map[string]bool)
 
 	for _, r := range results {
+		for _, a := range r.assignees {
+			assigneeSet[a] = true
+		}
 		for _, item := range r.items {
 			rigSet[item.Rig] = true
 			key := item.Rig + "/" + item.Issue.ID
@@ -146,6 +153,12 @@ func (s *Server) handleRisks(w http.ResponseWriter, r *http.Request) {
 		data.Rigs = append(data.Rigs, rig)
 	}
 	sort.Strings(data.Rigs)
+
+	// Build assignee list
+	for a := range assigneeSet {
+		data.Assignees = append(data.Assignees, a)
+	}
+	sort.Strings(data.Assignees)
 
 	// Apply rig filter
 	filterRig := r.URL.Query().Get("rig")

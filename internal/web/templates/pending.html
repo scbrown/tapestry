@@ -48,7 +48,15 @@
           </span>
         </td>
         <td>{{.Title}}</td>
-        <td>{{if .Assignee}}<a href="/agent/{{.Assignee}}">{{shortActor .Assignee}}</a>{{else}}<span class="text-dim">unassigned</span>{{end}}</td>
+        <td>
+          <select class="triage-assign" hx-post="/bead/{{lower .Rig}}/{{.ID}}/assign" hx-swap="outerHTML" hx-target="closest tr" name="assignee">
+            <option value="">—</option>
+            {{$cur := .Assignee}}
+            {{range $.Assignees}}
+            <option value="{{.}}" {{if eq . $cur}}selected{{end}}>{{shortActor .}}</option>
+            {{end}}
+          </select>
+        </td>
         <td>
           {{if eq .Reason "assigned-not-started"}}<span class="badge status-open">not started</span>
           {{else if eq .Reason "high-pri-open"}}<span class="badge status-blocked">unassigned P0/P1</span>

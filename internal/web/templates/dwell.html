@@ -46,7 +46,15 @@
         <td><span class="priority-badge p{{.Priority}}">P{{.Priority}}</span></td>
         <td>{{statusBadge .Status}}</td>
         <td>{{.Title}}</td>
-        <td>{{if .Assignee}}<a href="/agent/{{.Assignee}}">{{shortActor .Assignee}}</a>{{else}}<span class="text-dim">—</span>{{end}}</td>
+        <td>
+          <select class="triage-assign" hx-post="/bead/{{lower .Rig}}/{{.ID}}/assign" hx-swap="outerHTML" hx-target="closest tr" name="assignee">
+            <option value="">—</option>
+            {{$cur := .Assignee}}
+            {{range $.Assignees}}
+            <option value="{{.}}" {{if eq . $cur}}selected{{end}}>{{shortActor .}}</option>
+            {{end}}
+          </select>
+        </td>
         <td>
           <div class="dwell-bar-container">
             <div class="dwell-bar {{if ge .DwellPct 80.0}}dwell-danger{{else if ge .DwellPct 50.0}}dwell-warning{{else}}dwell-ok{{end}}" style="width: {{printf "%.0f" .DwellPct}}%"></div>

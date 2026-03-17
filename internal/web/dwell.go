@@ -26,6 +26,7 @@ type dwellData struct {
 	Rigs        []string
 	FilterRig   string
 	Zone        string // "all", "danger" (14d+), "warning" (7-14d), "ok" (<7d)
+	Assignees   []string
 	Err         string
 }
 
@@ -63,7 +64,8 @@ func (s *Server) handleDwell(w http.ResponseWriter, r *http.Request) {
 	now := time.Now()
 
 	type dbResult struct {
-		items []dwellItem
+		items     []dwellItem
+		assignees []string
 	}
 	results := make([]dbResult, len(dbs))
 	var wg sync.WaitGroup
@@ -75,6 +77,7 @@ func (s *Server) handleDwell(w http.ResponseWriter, r *http.Request) {
 		wg.Add(1)
 		go func(idx int, dbName string) {
 			defer wg.Done()
+			assignees, _ := s.ds.DistinctAssignees(ctx, dbName)
 			issues, err := s.ds.Issues(ctx, dbName, dolt.IssueFilter{Limit: 5000})
 			if err != nil {
 				log.Printf("dwell: issues %s: %v", dbName, err)
@@ -112,15 +115,23 @@ func (s *Server) handleDwell(w http.ResponseWriter, r *http.Request) {
 					DwellStr: formatDwell(dwell),
 				})
 			}
-			results[idx] = dbResult{items: items}
+			results[idx] = dbResult{items: items, assignees: assignees}
 		}(i, db.Name)
 	}
 	wg.Wait()
 
 	var all []dwellItem
+	assigneeSet := make(map[string]bool)
 	for _, r := range results {
 		all = append(all, r.items...)
+		for _, a := range r.assignees {
+			assigneeSet[a] = true
+		}
 	}
+	for a := range assigneeSet {
+		data.Assignees = append(data.Assignees, a)
+	}
+	sort.Strings(data.Assignees)
 
 	// Sort by dwell time descending (longest first)
 	sort.Slice(all, func(i, j int) bool {

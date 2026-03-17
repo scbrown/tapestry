@@ -36,6 +36,7 @@ type readyData struct {
 
 	Rigs      []string
 	FilterRig string
+	Assignees []string
 	Err       string
 }
 
@@ -75,6 +76,8 @@ func (s *Server) handleReady(w http.ResponseWriter, r *http.Request) {
 		wg.Add(1)
 		go func(dbName string) {
 			defer wg.Done()
+
+			assignees, _ := s.ds.DistinctAssignees(ctx, dbName)
 
 			// Get blocked issues
 			blocked, err := s.ds.BlockedIssues(ctx, dbName)
@@ -119,10 +122,24 @@ func (s *Server) handleReady(w http.ResponseWriter, r *http.Request) {
 
 			mu.Lock()
 			data.Items = append(data.Items, items...)
+			for _, a := range assignees {
+				data.Assignees = append(data.Assignees, a)
+			}
 			mu.Unlock()
 		}(db.Name)
 	}
 	wg.Wait()
+
+	// Deduplicate and sort assignees
+	assigneeSet := make(map[string]bool)
+	for _, a := range data.Assignees {
+		assigneeSet[a] = true
+	}
+	data.Assignees = data.Assignees[:0]
+	for a := range assigneeSet {
+		data.Assignees = append(data.Assignees, a)
+	}
+	sort.Strings(data.Assignees)
 
 	// Sort by priority then age (oldest first within same priority)
 	sort.Slice(data.Items, func(i, j int) bool {
