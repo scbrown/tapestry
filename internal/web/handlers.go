@@ -1166,7 +1166,12 @@ type agentRow struct {
 }
 
 type agentsData struct {
-	Agents []agentRow
+	Agents       []agentRow
+	TotalAgents  int
+	TotalActive  int
+	TotalClosed  int
+	TotalOpen    int
+	TotalBlocked int
 }
 
 func (s *Server) handleAgents(w http.ResponseWriter, r *http.Request) {
@@ -1248,6 +1253,14 @@ func (s *Server) handleAgents(w http.ResponseWriter, r *http.Request) {
 		}
 		return data.Agents[i].LastActive.After(data.Agents[j].LastActive)
 	})
+
+	// Compute summary stats
+	data.TotalAgents = len(data.Agents)
+	for _, a := range data.Agents {
+		data.TotalActive += a.InProgress
+		data.TotalClosed += a.Closed
+		data.TotalOpen += a.Open
+	}
 
 	s.render(w, r, "agents", data)
 }

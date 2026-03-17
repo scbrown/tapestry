@@ -3,7 +3,14 @@
 <h1>Changelog <small style="color:var(--comment)">({{.TotalClosed}} closed in 8 weeks)</small></h1>
 <p class="subtitle">What shipped, organized by week. Most recent first.</p>
 
-{{if .FilterRig}}<div class="dep-filters"><span class="dep-filter-badge">rig: {{.FilterRig}}</span> <a href="/changelog">clear</a></div>{{end}}
+{{if gt (len .Rigs) 1}}
+<div class="dep-filters" style="margin-bottom:0.75rem">
+    <a href="/changelog" class="badge {{if not .FilterRig}}filter-active{{end}}">All rigs</a>
+    {{range .Rigs}}
+    <a href="/changelog?rig={{.}}" class="badge {{if eq . $.FilterRig}}filter-active{{end}}">{{rigName .}}</a>
+    {{end}}
+</div>
+{{end}}
 
 {{if .Err}}<p class="error">{{.Err}}</p>{{end}}
 

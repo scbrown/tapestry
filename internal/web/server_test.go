@@ -37,6 +37,7 @@ type mockDataSource struct {
 	recentComments  []dolt.Comment
 	issueDiffs      []dolt.IssueDiffRow
 	commentDiffs    []dolt.CommentDiffRow
+	agents          []dolt.AgentStats
 	err             error
 }
 
@@ -89,7 +90,7 @@ func (m *mockDataSource) BlockedIssues(_ context.Context, _ string) ([]dolt.Bloc
 }
 
 func (m *mockDataSource) AgentActivity(_ context.Context, _ string) ([]dolt.AgentStats, error) {
-	return nil, m.err
+	return m.agents, m.err
 }
 
 func (m *mockDataSource) Decisions(_ context.Context, _ string) ([]dolt.Issue, error) {
@@ -985,6 +986,39 @@ func TestAgentsPage_NilDataSource(t *testing.T) {
 	body := w.Body.String()
 	if !strings.Contains(body, "Agents") {
 		t.Error("expected 'Agents' heading")
+	}
+}
+
+func TestAgentsPage_SummaryStats(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		agents: []dolt.AgentStats{
+			{Name: "aegis/crew/alice", Owned: 10, Closed: 5, Open: 3, InProgress: 2},
+			{Name: "aegis/crew/bob", Owned: 8, Closed: 3, Open: 4, InProgress: 1},
+		},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/agents", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /agents status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "stat-grid") {
+		t.Error("expected summary stat grid")
+	}
+	if !strings.Contains(body, "Active items") {
+		t.Error("expected 'Active items' label")
+	}
+	if !strings.Contains(body, "Total closed") {
+		t.Error("expected 'Total closed' label")
+	}
+	if !strings.Contains(body, "completion rate") {
+		t.Error("expected completion rate progress bar")
 	}
 }
 

@@ -30,6 +30,7 @@ type changelogData struct {
 	WeekCount   int
 	TotalClosed int
 	FilterRig   string
+	Rigs        []string
 	Err         string
 }
 
@@ -93,6 +94,14 @@ func (s *Server) handleChangelog(w http.ResponseWriter, r *http.Request) {
 		}(db.Name)
 	}
 	wg.Wait()
+
+	// Build rig list
+	var rigNames []string
+	for _, db := range dbs {
+		rigNames = append(rigNames, db.Name)
+	}
+	sort.Strings(rigNames)
+	data.Rigs = rigNames
 
 	// Group by week (Monday start)
 	weekMap := map[string]*changelogWeek{}

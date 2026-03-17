@@ -1,8 +1,28 @@
 {{define "title"}}Agents{{end}}
 {{define "content"}}
 <div class="agents-page" hx-get="/agents" hx-trigger="every 60s" hx-select=".agents-page" hx-swap="outerHTML">
-  <h1>Agents</h1>
+  <h1>Agents <small style="color:var(--comment)">({{.TotalAgents}})</small></h1>
+
   {{if .Agents}}
+  <div class="stat-grid" style="margin-bottom:1rem">
+    <div class="stat">
+      <span class="stat-value">{{.TotalAgents}}</span>
+      <span class="stat-label">Agents</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value pulse">{{.TotalActive}}</span>
+      <span class="stat-label">Active items</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value accent">{{.TotalClosed}}</span>
+      <span class="stat-label">Total closed</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value">{{.TotalOpen}}</span>
+      <span class="stat-label">Total open</span>
+    </div>
+  </div>
+
   <div class="agent-grid">
     {{range .Agents}}
     <a href="/agent/{{.Name}}" class="agent-card">
@@ -14,10 +34,15 @@
         <span class="agent-stat"><strong>{{.Open}}</strong> open</span>
         <span class="agent-stat"><strong>{{.InProgress}}</strong> active</span>
       </div>
-      {{if not .LastActive.IsZero}}
+      {{if or (not .LastActive.IsZero) (gt .TotalHandoffs 0) (gt .Closed 0)}}
       <div class="agent-meta-row">
-        <span class="text-dim">last active {{timeAgo .LastActive}}</span>
+        {{if not .LastActive.IsZero}}<span class="text-dim">last active {{timeAgo .LastActive}}</span>{{end}}
         {{if gt .TotalHandoffs 0}}<span class="text-dim">&middot; {{.TotalHandoffs}} handoffs</span>{{end}}
+      </div>
+      {{end}}
+      {{if gt .Closed 0}}
+      <div style="margin-top:0.5rem;height:4px;background:var(--current-line);border-radius:2px;overflow:hidden">
+        <div style="height:100%;background:var(--green);width:{{if gt .Owned 0}}{{divf (mulf (itof .Closed) 100.0) (itof .Owned)}}%{{else}}0%{{end}};border-radius:2px" title="{{.Closed}}/{{.Owned}} completion rate"></div>
       </div>
       {{end}}
     </a>
