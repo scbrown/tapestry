@@ -8923,3 +8923,184 @@ func TestPacingPage_RigFilter(t *testing.T) {
 		t.Error("expected filter-active badge")
 	}
 }
+
+// ── /agent-velocity ──
+
+func TestAgentVelocityPage_NilDataSource(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/agent-velocity", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /agent-velocity status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Agent Velocity") {
+		t.Error("expected 'Agent Velocity' heading")
+	}
+}
+
+func TestAgentVelocityPage_WithData(t *testing.T) {
+	now := time.Now()
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issues: []dolt.Issue{
+			{ID: "av1", Title: "Closed item", Status: "closed", Assignee: "aegis/crew/arnold", CreatedAt: now.AddDate(0, 0, -5), UpdatedAt: now.AddDate(0, 0, -2)},
+			{ID: "av2", Title: "Another closed", Status: "closed", Assignee: "aegis/crew/arnold", CreatedAt: now.AddDate(0, 0, -10), UpdatedAt: now.AddDate(0, 0, -1)},
+			{ID: "av3", Title: "Grant closed", Status: "closed", Assignee: "aegis/crew/grant", CreatedAt: now.AddDate(0, 0, -8), UpdatedAt: now.AddDate(0, 0, -3)},
+		},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/agent-velocity", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /agent-velocity status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "aegis/crew/arnold") {
+		t.Error("expected agent name in output")
+	}
+}
+
+func TestAgentVelocityPage_HTMXPartial(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/agent-velocity", nil)
+	req.Header.Set("HX-Request", "true")
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("HTMX GET /agent-velocity status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if strings.Contains(body, "<!DOCTYPE html>") {
+		t.Error("HTMX agent-velocity should return partial, not full page")
+	}
+}
+
+func TestAgentVelocityPage_RigFilter(t *testing.T) {
+	now := time.Now()
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}, {Name: "beads_gastown"}},
+		issues: []dolt.Issue{
+			{ID: "av1", Title: "Closed", Status: "closed", Assignee: "aegis/crew/arnold", CreatedAt: now.AddDate(0, 0, -3), UpdatedAt: now.AddDate(0, 0, -1)},
+		},
+	}
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/agent-velocity?rig=beads_aegis", nil)
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, `rig=beads_aegis`) {
+		t.Error("expected rig filter preserved in auto-refresh URL")
+	}
+	if !strings.Contains(body, "filter-active") {
+		t.Error("expected filter-active badge")
+	}
+}
+
+// ── /unblocked ──
+
+func TestUnblockedPage_NilDataSource(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/unblocked", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /unblocked status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Recently Unblocked") {
+		t.Error("expected 'Recently Unblocked' heading")
+	}
+}
+
+func TestUnblockedPage_WithData(t *testing.T) {
+	now := time.Now()
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issues: []dolt.Issue{
+			{ID: "ub1", Title: "Was blocked", Status: "open", Priority: 1, CreatedAt: now.AddDate(0, 0, -20), UpdatedAt: now},
+		},
+		statusHistory: []dolt.StatusTransition{
+			{FromStatus: "", ToStatus: "open", CommitDate: now.AddDate(0, 0, -20)},
+			{FromStatus: "open", ToStatus: "blocked", CommitDate: now.AddDate(0, 0, -15)},
+			{FromStatus: "blocked", ToStatus: "open", CommitDate: now.AddDate(0, 0, -5)},
+		},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/unblocked", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /unblocked status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Was blocked") {
+		t.Error("expected unblocked issue title")
+	}
+	if !strings.Contains(body, "Blocked Days") {
+		t.Error("expected blocked duration column")
+	}
+}
+
+func TestUnblockedPage_HTMXPartial(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/unblocked", nil)
+	req.Header.Set("HX-Request", "true")
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("HTMX GET /unblocked status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if strings.Contains(body, "<!DOCTYPE html>") {
+		t.Error("HTMX unblocked should return partial, not full page")
+	}
+}
+
+func TestUnblockedPage_RigFilter(t *testing.T) {
+	now := time.Now()
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}, {Name: "beads_gastown"}},
+		issues: []dolt.Issue{
+			{ID: "ub1", Title: "Was blocked", Status: "open", Priority: 1, CreatedAt: now.AddDate(0, 0, -10), UpdatedAt: now},
+		},
+		statusHistory: []dolt.StatusTransition{
+			{ToStatus: "open", CommitDate: now.AddDate(0, 0, -10)},
+			{FromStatus: "open", ToStatus: "blocked", CommitDate: now.AddDate(0, 0, -7)},
+			{FromStatus: "blocked", ToStatus: "open", CommitDate: now.AddDate(0, 0, -2)},
+		},
+	}
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/unblocked?rig=beads_aegis", nil)
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, `rig=beads_aegis`) {
+		t.Error("expected rig filter preserved in auto-refresh URL")
+	}
+	if !strings.Contains(body, "filter-active") {
+		t.Error("expected filter-active badge")
+	}
+}

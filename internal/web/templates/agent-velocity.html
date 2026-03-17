@@ -1,0 +1,57 @@
+{{define "title"}}Agent Velocity{{end}}
+{{define "content"}}
+<div class="backlog-page" hx-get="/agent-velocity{{if .FilterRig}}?rig={{.FilterRig}}{{end}}" hx-trigger="every 120s" hx-select=".backlog-page" hx-swap="outerHTML">
+  <h1>Agent Velocity <time class="text-dim">{{.GeneratedAt.Format "Jan 02, 2006 15:04"}}</time></h1>
+  <p class="text-dim">Per-agent close rate over last 4 weeks. Sorted by total closed descending.{{if .FilterRig}} Showing {{rigName .FilterRig}} only.{{end}}</p>
+
+  {{if gt (len .Rigs) 1}}
+  <div class="dep-filters" style="margin-top:0.5rem;margin-bottom:0.5rem">
+    <a href="/agent-velocity" class="badge {{if not .FilterRig}}filter-active{{end}}">All rigs</a>
+    {{range .Rigs}}
+    <a href="/agent-velocity?rig={{.}}" class="badge {{if eq . $.FilterRig}}filter-active{{end}}">{{rigName .}}</a>
+    {{end}}
+  </div>
+  {{end}}
+
+  {{if .Agents}}
+  <section class="backlog-card">
+    <div class="table-wrap">
+    <table class="bead-table">
+      <thead>
+        <tr>
+          <th>Agent</th>
+          <th>{{index .WeekLabels 3}}</th>
+          <th>{{index .WeekLabels 2}}</th>
+          <th>{{index .WeekLabels 1}}</th>
+          <th>{{index .WeekLabels 0}}</th>
+          <th>Total</th>
+          <th>Trend</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{range .Agents}}
+        <tr>
+          <td><a href="/agent/{{.Name}}" hx-boost="true">{{.Name}}</a></td>
+          <td>{{index .Weeks 3}}</td>
+          <td>{{index .Weeks 2}}</td>
+          <td>{{index .Weeks 1}}</td>
+          <td>{{index .Weeks 0}}</td>
+          <td><strong>{{.Total}}</strong></td>
+          <td>
+            {{if eq .Trend "up"}}<span style="color:var(--green)">&#9650; up</span>
+            {{else if eq .Trend "down"}}<span style="color:var(--red)">&#9660; down</span>
+            {{else}}<span class="text-dim">&#8212; flat</span>
+            {{end}}
+          </td>
+        </tr>
+        {{end}}
+      </tbody>
+    </table>
+    </div>
+  </section>
+  {{else}}
+  <p class="text-dim">No agent close activity in the last 4 weeks.</p>
+  {{end}}
+
+</div>
+{{end}}
