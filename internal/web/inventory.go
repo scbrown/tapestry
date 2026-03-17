@@ -17,6 +17,8 @@ type inventoryData struct {
 	ByType      []typeCount
 	ByRig       []rigCount
 	RigCount    int
+	Rigs        []string
+	FilterRig   string
 }
 
 type statusCount struct {
@@ -72,11 +74,25 @@ func (s *Server) handleInventory(w http.ResponseWriter, r *http.Request) {
 	}
 	wg.Wait()
 
+	filterRig := r.URL.Query().Get("rig")
+	var rigs []string
+	for _, r := range results {
+		if len(r.issues) > 0 {
+			rigs = append(rigs, r.rig)
+		}
+	}
+	sort.Strings(rigs)
+	data.Rigs = rigs
+	data.FilterRig = filterRig
+
 	statusMap := map[string]int{}
 	typeMap := map[string]int{}
 	rigMap := map[string]*rigCount{}
 
 	for _, r := range results {
+		if filterRig != "" && r.rig != filterRig {
+			continue
+		}
 		rc, ok := rigMap[r.rig]
 		if !ok {
 			rc = &rigCount{Rig: r.rig}
