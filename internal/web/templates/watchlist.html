@@ -1,6 +1,6 @@
 {{define "title"}}Watchlist{{end}}
 {{define "content"}}
-<div class="backlog-page" hx-get="/watchlist" hx-trigger="every 30s" hx-select=".backlog-page" hx-swap="outerHTML">
+<div class="backlog-page" hx-get="/watchlist{{if .FilterRig}}?rig={{.FilterRig}}{{end}}" hx-trigger="every 30s" hx-select=".backlog-page" hx-swap="outerHTML">
   <h1>Watchlist <time class="text-dim">{{.GeneratedAt.Format "Jan 02, 2006 15:04"}}</time></h1>
 
   <div class="backlog-stats">
@@ -13,6 +13,15 @@
       <span class="stat-label">High</span>
     </div>
   </div>
+
+  {{if gt (len .Rigs) 1}}
+  <div class="dep-filters" style="margin-bottom:0.5rem">
+    <a href="/watchlist" class="badge {{if not .FilterRig}}filter-active{{end}}">All rigs</a>
+    {{range .Rigs}}
+    <a href="/watchlist?rig={{.}}" class="badge {{if eq . $.FilterRig}}filter-active{{end}}">{{rigName .}}</a>
+    {{end}}
+  </div>
+  {{end}}
 
   {{if and (eq .TotalP0 0) (eq .TotalP1 0)}}
   <p class="empty">No active P0 or P1 beads. All clear.</p>

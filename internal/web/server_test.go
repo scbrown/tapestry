@@ -5086,3 +5086,42 @@ func TestQueuePage_RigFilter(t *testing.T) {
 		t.Error("expected rig filter preserved in queue auto-refresh URL")
 	}
 }
+
+func TestWatchlistPage_RigFilter(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}, {Name: "beads_gastown"}},
+		issues: []dolt.Issue{
+			{ID: "wl1", Title: "Critical item", Status: "open", Priority: 0,
+				CreatedAt: time.Now().Add(-2 * 24 * time.Hour),
+				UpdatedAt: time.Now().Add(-1 * time.Hour)},
+		},
+	}
+
+	srv := New(ds)
+
+	// Unfiltered — should show rig filter when multiple rigs
+	req := httptest.NewRequest("GET", "/watchlist", nil)
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /watchlist status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "All rigs") {
+		t.Error("expected rig filter badges when multiple rigs have data")
+	}
+
+	// With rig filter
+	req = httptest.NewRequest("GET", "/watchlist?rig=beads_aegis", nil)
+	w = httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /watchlist?rig= status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body = w.Body.String()
+	if !strings.Contains(body, `?rig=beads_aegis`) {
+		t.Error("expected rig filter preserved in watchlist auto-refresh URL")
+	}
+}

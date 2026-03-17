@@ -23,6 +23,8 @@ type watchlistData struct {
 	P1          []watchlistItem
 	TotalP0     int
 	TotalP1     int
+	Rigs        []string
+	FilterRig   string
 }
 
 func (s *Server) handleWatchlist(w http.ResponseWriter, r *http.Request) {
@@ -87,6 +89,42 @@ func (s *Server) handleWatchlist(w http.ResponseWriter, r *http.Request) {
 				data.P1 = append(data.P1, item)
 			}
 		}
+	}
+
+	// Collect distinct rigs for filter
+	rigSet := make(map[string]bool)
+	for _, item := range data.P0 {
+		rigSet[item.Rig] = true
+	}
+	for _, item := range data.P1 {
+		rigSet[item.Rig] = true
+	}
+	var rigs []string
+	for rig := range rigSet {
+		rigs = append(rigs, rig)
+	}
+	sort.Strings(rigs)
+	data.Rigs = rigs
+
+	// Apply rig filter
+	filterRig := r.URL.Query().Get("rig")
+	data.FilterRig = filterRig
+	if filterRig != "" {
+		filtered := data.P0[:0]
+		for _, item := range data.P0 {
+			if item.Rig == filterRig {
+				filtered = append(filtered, item)
+			}
+		}
+		data.P0 = filtered
+
+		filteredP1 := data.P1[:0]
+		for _, item := range data.P1 {
+			if item.Rig == filterRig {
+				filteredP1 = append(filteredP1, item)
+			}
+		}
+		data.P1 = filteredP1
 	}
 
 	// Sort: in_progress first, then by idle time descending (most stale first)
