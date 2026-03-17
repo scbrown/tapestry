@@ -55,10 +55,16 @@
 
   {{if .Entries}}
   <h2>All Blocked Dependencies</h2>
+  <div class="batch-bar" id="batch-bar-blocked" style="display:none">
+    <span class="batch-count">0 selected</span>
+    <button class="btn btn-xs" onclick="blockedBatchAction('closed')">close selected</button>
+    <button class="btn btn-xs" onclick="blockedBatchAction('deferred')">defer selected</button>
+  </div>
   <div class="table-wrap">
   <table class="bead-table">
     <thead>
       <tr>
+        <th><input type="checkbox" onchange="blockedToggleAll(this)"></th>
         <th>Rig</th>
         <th>Blocked</th>
         <th>Title</th>
@@ -67,11 +73,13 @@
         <th>Blocked By</th>
         <th>Blocker Title</th>
         <th>Blocker Status</th>
+        <th>Actions</th>
       </tr>
     </thead>
     <tbody>
       {{range .Entries}}
       <tr>
+        <td><input type="checkbox" class="blocked-cb" data-id="{{.Issue.ID}}" data-rig="{{lower .Rig}}" onchange="blockedUpdateBar()"></td>
         <td><span class="rig-label">{{rigName .Rig}}</span></td>
         <td><a href="/bead/{{lower .Rig}}/{{.Issue.ID}}" hx-boost="true">{{.Issue.ID}}</a></td>
         <td>{{.Issue.Title}}</td>
@@ -96,11 +104,46 @@
         <td><a href="/bead/{{lower .Rig}}/{{.Blocker.ID}}" hx-boost="true">{{.Blocker.ID}}</a></td>
         <td>{{.Blocker.Title}}</td>
         <td>{{statusBadge .Blocker.Status}}</td>
+        <td class="triage-actions">
+          <div class="triage-btn-group">
+            <button class="btn btn-xs" hx-post="/bead/{{lower .Rig}}/{{.Issue.ID}}/status" hx-vals='{"status":"closed"}' hx-swap="outerHTML" hx-target="closest tr" hx-confirm="Close {{.Issue.ID}}?">close</button>
+            <button class="btn btn-xs" hx-post="/bead/{{lower .Rig}}/{{.Issue.ID}}/status" hx-vals='{"status":"deferred"}' hx-swap="outerHTML" hx-target="closest tr" hx-confirm="Defer {{.Issue.ID}}?">defer</button>
+          </div>
+        </td>
       </tr>
       {{end}}
     </tbody>
   </table>
   </div>
+  <script>
+  function blockedToggleAll(master) {
+    document.querySelectorAll('.blocked-cb').forEach(function(cb) { cb.checked = master.checked; });
+    blockedUpdateBar();
+  }
+  function blockedUpdateBar() {
+    var checked = document.querySelectorAll('.blocked-cb:checked');
+    var bar = document.getElementById('batch-bar-blocked');
+    if (bar) {
+      bar.style.display = checked.length > 0 ? 'flex' : 'none';
+      bar.querySelector('.batch-count').textContent = checked.length + ' selected';
+    }
+  }
+  function blockedBatchAction(status) {
+    var checked = document.querySelectorAll('.blocked-cb:checked');
+    if (!checked.length) return;
+    if (!confirm(status.charAt(0).toUpperCase()+status.slice(1)+' '+checked.length+' blocked beads?')) return;
+    var form = new FormData();
+    form.append('status', status);
+    checked.forEach(function(cb) {
+      form.append('ids[]', cb.getAttribute('data-rig')+'/'+cb.getAttribute('data-id'));
+    });
+    fetch('/batch/status', {method:'POST', body:form}).then(function() {
+      checked.forEach(function(cb) { cb.closest('tr').remove(); });
+      blockedUpdateBar();
+      document.body.dispatchEvent(new CustomEvent('showToast', {detail: checked.length+' blocked beads '+status}));
+    });
+  }
+  </script>
   {{else}}
   <p class="empty">No blocked beads. Everything is flowing.</p>
   {{end}}
