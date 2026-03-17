@@ -1,0 +1,94 @@
+{{define "title"}}Label: {{.Label}}{{end}}
+{{define "content"}}
+<div class="backlog-page">
+  <h1>Label: <span class="accent">{{.Label}}</span> <time class="text-dim">{{.GeneratedAt.Format "Jan 02, 2006 15:04"}}</time></h1>
+  <p class="text-dim">All beads tagged with <strong>{{.Label}}</strong>.{{if .FilterRig}} Showing {{rigName .FilterRig}} only.{{end}}</p>
+
+  {{if gt (len .Rigs) 1}}
+  <div class="dep-filters" style="margin-top:0.5rem;margin-bottom:0.5rem">
+    <a href="/label/{{.Label}}" class="badge {{if not .FilterRig}}filter-active{{end}}">All rigs</a>
+    {{range .Rigs}}
+    <a href="/label/{{$.Label}}?rig={{.}}" class="badge {{if eq . $.FilterRig}}filter-active{{end}}">{{rigName .}}</a>
+    {{end}}
+  </div>
+  {{end}}
+
+  <div class="backlog-stats">
+    <div class="stat">
+      <span class="stat-value accent">{{.Stats.Total}}</span>
+      <span class="stat-label">Total</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value" style="color:#50fa7b">{{.Stats.Open}}</span>
+      <span class="stat-label">Open</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value" style="color:#8be9fd">{{.Stats.InProgress}}</span>
+      <span class="stat-label">In Progress</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value" style="color:#ff5555">{{.Stats.Blocked}}</span>
+      <span class="stat-label">Blocked</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value" style="color:#6272a4">{{.Stats.Closed}}</span>
+      <span class="stat-label">Closed</span>
+    </div>
+    {{if .Stats.Deferred}}
+    <div class="stat">
+      <span class="stat-value" style="color:#f1fa8c">{{.Stats.Deferred}}</span>
+      <span class="stat-label">Deferred</span>
+    </div>
+    {{end}}
+  </div>
+
+  {{if .Stats.Total}}
+  <div style="margin:0.75rem 0">
+    <div style="display:flex;height:8px;border-radius:4px;overflow:hidden;background:#44475a">
+      {{if .Stats.Closed}}<div style="width:{{divf (mulf (itof .Stats.Closed) 100.0) (itof .Stats.Total)}}%;background:#6272a4" title="Closed: {{.Stats.Closed}}"></div>{{end}}
+      {{if .Stats.InProgress}}<div style="width:{{divf (mulf (itof .Stats.InProgress) 100.0) (itof .Stats.Total)}}%;background:#8be9fd" title="In Progress: {{.Stats.InProgress}}"></div>{{end}}
+      {{if .Stats.Open}}<div style="width:{{divf (mulf (itof .Stats.Open) 100.0) (itof .Stats.Total)}}%;background:#50fa7b" title="Open: {{.Stats.Open}}"></div>{{end}}
+      {{if .Stats.Blocked}}<div style="width:{{divf (mulf (itof .Stats.Blocked) 100.0) (itof .Stats.Total)}}%;background:#ff5555" title="Blocked: {{.Stats.Blocked}}"></div>{{end}}
+      {{if .Stats.Deferred}}<div style="width:{{divf (mulf (itof .Stats.Deferred) 100.0) (itof .Stats.Total)}}%;background:#f1fa8c" title="Deferred: {{.Stats.Deferred}}"></div>{{end}}
+    </div>
+  </div>
+  {{end}}
+
+  {{range $group := .Groups}}
+  <section class="backlog-card">
+    <h2 style="margin-bottom:0.5rem">{{rigName $group.Rig}} <span class="text-dim">({{$group.Stats.Total}})</span></h2>
+    <div class="table-wrap">
+    <table class="bead-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Title</th>
+          <th>Status</th>
+          <th>Pri</th>
+          <th>Assignee</th>
+          <th>Updated</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{range $group.Issues}}
+        <tr>
+          <td><a href="/bead/{{$group.Rig}}/{{.ID}}" hx-boost="true">{{.ID}}</a></td>
+          <td>{{.Title}}</td>
+          <td>{{statusBadge .Status}}</td>
+          <td><span class="priority-badge p{{.Priority}}">P{{.Priority}}</span></td>
+          <td class="text-dim">{{shortActor .Assignee}}</td>
+          <td class="text-dim">{{formatDateTime .UpdatedAt}}</td>
+        </tr>
+        {{end}}
+      </tbody>
+    </table>
+    </div>
+  </section>
+  {{end}}
+
+  {{if not .Groups}}
+  <p class="text-dim">No beads found with label <strong>{{.Label}}</strong>.</p>
+  {{end}}
+
+</div>
+{{end}}

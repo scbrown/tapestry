@@ -177,3 +177,4 @@ func (s *Server) handlePhase(w http.ResponseWriter, r *http.Request) {
 
 	s.render(w, r, "phase", data)
 }
+

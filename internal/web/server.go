@@ -65,6 +65,8 @@ type DataSource interface {
 	CountByPriorityStatus(ctx context.Context, database string) ([]dolt.PriorityStatusCount, error)
 	CountByAssigneeStatus(ctx context.Context, database string) ([]dolt.AssigneeStatusCount, error)
 	RecentComments(ctx context.Context, database string, limit int) ([]dolt.Comment, error)
+	IssueDiffSince(ctx context.Context, database string, since time.Time) ([]dolt.IssueDiffRow, error)
+	CommentDiffSince(ctx context.Context, database string, since time.Time) ([]dolt.CommentDiffRow, error)
 }
 
 // Server serves the Tapestry web dashboard.
@@ -697,6 +699,18 @@ func (s *Server) parseTemplates() {
 			template.New("").Funcs(funcMap).ParseFS(templateFS,
 				"templates/layout.html", "templates/unblocked.html"),
 		),
+		"audit-log": template.Must(
+			template.New("").Funcs(funcMap).ParseFS(templateFS,
+				"templates/layout.html", "templates/audit-log.html"),
+		),
+		"label-detail": template.Must(
+			template.New("").Funcs(funcMap).ParseFS(templateFS,
+				"templates/layout.html", "templates/label-detail.html"),
+		),
+		"reschedules": template.Must(
+			template.New("").Funcs(funcMap).ParseFS(templateFS,
+				"templates/layout.html", "templates/reschedules.html"),
+		),
 	}
 }
 
@@ -978,6 +992,12 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		s.handleAgentVelocity(w, r)
 	case len(segments) == 1 && segments[0] == "unblocked":
 		s.handleUnblocked(w, r)
+	case len(segments) == 1 && segments[0] == "audit-log":
+		s.handleAuditLog(w, r)
+	case len(segments) == 2 && segments[0] == "label":
+		s.handleLabelDetail(w, r, segments[1])
+	case len(segments) == 1 && segments[0] == "reschedules":
+		s.handleReschedules(w, r)
 	case len(segments) == 1 && segments[0] == "designs":
 		s.handleDesignsList(w, r)
 	case len(segments) == 2 && segments[0] == "designs":

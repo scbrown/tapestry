@@ -35,6 +35,8 @@ type mockDataSource struct {
 	labels          []string
 	assignees       []string
 	recentComments  []dolt.Comment
+	issueDiffs      []dolt.IssueDiffRow
+	commentDiffs    []dolt.CommentDiffRow
 	err             error
 }
 
@@ -201,6 +203,14 @@ func (m *mockDataSource) CountByAssigneeStatus(_ context.Context, _ string) ([]d
 
 func (m *mockDataSource) RecentComments(_ context.Context, _ string, _ int) ([]dolt.Comment, error) {
 	return m.recentComments, m.err
+}
+
+func (m *mockDataSource) IssueDiffSince(_ context.Context, _ string, _ time.Time) ([]dolt.IssueDiffRow, error) {
+	return m.issueDiffs, m.err
+}
+
+func (m *mockDataSource) CommentDiffSince(_ context.Context, _ string, _ time.Time) ([]dolt.CommentDiffRow, error) {
+	return m.commentDiffs, m.err
 }
 
 func TestIndexRendersMonthly(t *testing.T) {
@@ -9102,5 +9112,288 @@ func TestUnblockedPage_RigFilter(t *testing.T) {
 	}
 	if !strings.Contains(body, "filter-active") {
 		t.Error("expected filter-active badge")
+	}
+}
+
+// ── /audit-log ──
+
+func TestAuditLogPage_NilDataSource(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/audit-log", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /audit-log status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Audit Log") {
+		t.Error("expected 'Audit Log' heading")
+	}
+}
+
+func TestAuditLogPage_WithData(t *testing.T) {
+	now := time.Now()
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issueDiffs: []dolt.IssueDiffRow{
+			{DiffType: "added", ToID: "test-1", ToTitle: "New bead", ToStatus: "open", ToCommitDate: now},
+			{DiffType: "modified", ToID: "test-2", ToTitle: "Status change", FromStatus: "open", ToStatus: "closed", ToCommitDate: now.Add(-time.Hour)},
+		},
+		commentDiffs: []dolt.CommentDiffRow{
+			{DiffType: "added", ToIssueID: "test-1", ToAuthor: "aegis/arnold", ToBody: "This is a comment", ToCommitDate: now.Add(-30 * time.Minute)},
+		},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/audit-log", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /audit-log status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "New bead") {
+		t.Error("expected created bead in audit log")
+	}
+	if !strings.Contains(body, "open → closed") {
+		t.Error("expected status change detail")
+	}
+	if !strings.Contains(body, "This is a comment") {
+		t.Error("expected comment in audit log")
+	}
+}
+
+func TestAuditLogPage_HTMXPartial(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/audit-log", nil)
+	req.Header.Set("HX-Request", "true")
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("HTMX GET /audit-log status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if strings.Contains(body, "<!DOCTYPE html>") {
+		t.Error("HTMX audit-log should return partial, not full page")
+	}
+}
+
+func TestAuditLogPage_WindowFilter(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+	}
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/audit-log?window=24h", nil)
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, `window=24h`) {
+		t.Error("expected window parameter preserved in auto-refresh")
+	}
+}
+
+func TestAuditLogPage_RigFilter(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}, {Name: "beads_gastown"}},
+	}
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/audit-log?rig=beads_aegis", nil)
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "filter-active") {
+		t.Error("expected filter-active badge for rig filter")
+	}
+}
+
+// ── /label/{name} ──
+
+func TestLabelDetailPage_NilDataSource(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/label/bug", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /label/bug status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "bug") {
+		t.Error("expected label name in heading")
+	}
+}
+
+func TestLabelDetailPage_WithData(t *testing.T) {
+	now := time.Now()
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issues: []dolt.Issue{
+			{ID: "lbl-1", Title: "Bug fix needed", Status: "open", Priority: 1, CreatedAt: now, UpdatedAt: now},
+			{ID: "lbl-2", Title: "Old bug", Status: "closed", Priority: 2, CreatedAt: now.AddDate(0, -1, 0), UpdatedAt: now},
+		},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/label/bug", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /label/bug status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Bug fix needed") {
+		t.Error("expected issue title in label detail")
+	}
+	if !strings.Contains(body, "Old bug") {
+		t.Error("expected closed issue in label detail")
+	}
+}
+
+func TestLabelDetailPage_HTMXPartial(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/label/improvement", nil)
+	req.Header.Set("HX-Request", "true")
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("HTMX GET /label/improvement status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if strings.Contains(body, "<!DOCTYPE html>") {
+		t.Error("HTMX label-detail should return partial, not full page")
+	}
+}
+
+func TestLabelDetailPage_RigFilter(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}, {Name: "beads_gastown"}},
+		issues: []dolt.Issue{
+			{ID: "lbl-1", Title: "Test", Status: "open", Priority: 2},
+		},
+	}
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/label/bug?rig=beads_aegis", nil)
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "filter-active") {
+		t.Error("expected filter-active badge for rig filter")
+	}
+}
+
+// ── /reschedules ──
+
+func TestReschedulesPage_NilDataSource(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/reschedules", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /reschedules status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Chronic Reschedules") {
+		t.Error("expected 'Chronic Reschedules' heading")
+	}
+}
+
+func TestReschedulesPage_WithData(t *testing.T) {
+	now := time.Now()
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issues: []dolt.Issue{
+			{ID: "rs-1", Title: "Always deferred", Status: "deferred", Priority: 2, CreatedAt: now.AddDate(0, 0, -30), UpdatedAt: now},
+		},
+		statusHistory: []dolt.StatusTransition{
+			{FromStatus: "", ToStatus: "open", CommitDate: now.AddDate(0, 0, -30)},
+			{FromStatus: "open", ToStatus: "deferred", CommitDate: now.AddDate(0, 0, -25)},
+			{FromStatus: "deferred", ToStatus: "open", CommitDate: now.AddDate(0, 0, -20)},
+			{FromStatus: "open", ToStatus: "deferred", CommitDate: now.AddDate(0, 0, -15)},
+			{FromStatus: "deferred", ToStatus: "open", CommitDate: now.AddDate(0, 0, -10)},
+			{FromStatus: "open", ToStatus: "deferred", CommitDate: now.AddDate(0, 0, -5)},
+		},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/reschedules", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /reschedules status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Always deferred") {
+		t.Error("expected deferred issue title")
+	}
+	if !strings.Contains(body, "3×") {
+		t.Error("expected defer count of 3")
+	}
+}
+
+func TestReschedulesPage_HTMXPartial(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/reschedules", nil)
+	req.Header.Set("HX-Request", "true")
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("HTMX GET /reschedules status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if strings.Contains(body, "<!DOCTYPE html>") {
+		t.Error("HTMX reschedules should return partial, not full page")
+	}
+}
+
+func TestReschedulesPage_RigFilter(t *testing.T) {
+	now := time.Now()
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}, {Name: "beads_gastown"}},
+		issues: []dolt.Issue{
+			{ID: "rs-1", Title: "Deferred thing", Status: "deferred", Priority: 2, CreatedAt: now, UpdatedAt: now},
+		},
+		statusHistory: []dolt.StatusTransition{
+			{ToStatus: "open", CommitDate: now.AddDate(0, 0, -20)},
+			{FromStatus: "open", ToStatus: "deferred", CommitDate: now.AddDate(0, 0, -15)},
+			{FromStatus: "deferred", ToStatus: "open", CommitDate: now.AddDate(0, 0, -10)},
+			{FromStatus: "open", ToStatus: "deferred", CommitDate: now.AddDate(0, 0, -5)},
+		},
+	}
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/reschedules?rig=beads_aegis", nil)
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "filter-active") {
+		t.Error("expected filter-active badge for rig filter")
 	}
 }

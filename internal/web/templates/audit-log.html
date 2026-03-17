@@ -1,0 +1,70 @@
+{{define "title"}}Audit Log{{end}}
+{{define "content"}}
+<div class="backlog-page" hx-get="/audit-log?window={{.Window}}{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" hx-trigger="every 60s" hx-select=".backlog-page" hx-swap="outerHTML">
+  <h1>Audit Log <time class="text-dim">{{.GeneratedAt.Format "Jan 02, 2006 15:04"}}</time></h1>
+  <p class="text-dim">All bead changes across the system.{{if .FilterRig}} Showing {{rigName .FilterRig}} only.{{end}}</p>
+
+  <div class="dep-filters" style="margin-top:0.5rem;margin-bottom:0.5rem">
+    <a href="/audit-log?window=24h{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" class="badge {{if eq .Window "24h"}}filter-active{{end}}">24h</a>
+    <a href="/audit-log?window=7d{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" class="badge {{if eq .Window "7d"}}filter-active{{end}}">7d</a>
+    <a href="/audit-log?window=30d{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" class="badge {{if eq .Window "30d"}}filter-active{{end}}">30d</a>
+  </div>
+
+  {{if gt (len .Rigs) 1}}
+  <div class="dep-filters" style="margin-top:0.5rem;margin-bottom:0.5rem">
+    <a href="/audit-log?window={{.Window}}" class="badge {{if not .FilterRig}}filter-active{{end}}">All rigs</a>
+    {{range .Rigs}}
+    <a href="/audit-log?window={{$.Window}}&rig={{.}}" class="badge {{if eq . $.FilterRig}}filter-active{{end}}">{{rigName .}}</a>
+    {{end}}
+  </div>
+  {{end}}
+
+  <div class="backlog-stats">
+    <div class="stat">
+      <span class="stat-value accent">{{.Total}}</span>
+      <span class="stat-label">Events</span>
+    </div>
+  </div>
+
+  {{if .Events}}
+  <section class="backlog-card">
+    <div class="table-wrap">
+    <table class="bead-table">
+      <thead>
+        <tr>
+          <th>Time</th>
+          <th>Kind</th>
+          <th>ID</th>
+          <th>Title</th>
+          <th>Detail</th>
+          <th>Rig</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{range .Events}}
+        <tr>
+          <td class="text-dim" style="white-space:nowrap">{{.Timestamp.Format "Jan 02 15:04"}}</td>
+          <td>
+            {{if eq .Kind "created"}}<span class="badge" style="background:#50fa7b;color:#282a36">created</span>
+            {{else if eq .Kind "status"}}<span class="badge" style="background:#8be9fd;color:#282a36">status</span>
+            {{else if eq .Kind "comment"}}<span class="badge" style="background:#f1fa8c;color:#282a36">comment</span>
+            {{else if eq .Kind "reassign"}}<span class="badge" style="background:#bd93f9;color:#282a36">reassign</span>
+            {{else}}<span class="badge">{{.Kind}}</span>
+            {{end}}
+          </td>
+          <td><a href="/bead/{{.Rig}}/{{.IssueID}}" hx-boost="true">{{.IssueID}}</a></td>
+          <td>{{.Title}}</td>
+          <td class="text-dim">{{.Detail}}</td>
+          <td class="text-dim">{{.Rig}}</td>
+        </tr>
+        {{end}}
+      </tbody>
+    </table>
+    </div>
+  </section>
+  {{else}}
+  <p class="text-dim">No audit events found in the selected window.</p>
+  {{end}}
+
+</div>
+{{end}}

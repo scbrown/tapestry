@@ -1,0 +1,59 @@
+{{define "title"}}Reschedules{{end}}
+{{define "content"}}
+<div class="backlog-page" hx-get="/reschedules{{if .FilterRig}}?rig={{.FilterRig}}{{end}}" hx-trigger="every 120s" hx-select=".backlog-page" hx-swap="outerHTML">
+  <h1>Chronic Reschedules <time class="text-dim">{{.GeneratedAt.Format "Jan 02, 2006 15:04"}}</time></h1>
+  <p class="text-dim">Beads deferred 2+ times — work that keeps getting pushed back.{{if .FilterRig}} Showing {{rigName .FilterRig}} only.{{end}}</p>
+
+  {{if gt (len .Rigs) 1}}
+  <div class="dep-filters" style="margin-top:0.5rem;margin-bottom:0.5rem">
+    <a href="/reschedules" class="badge {{if not .FilterRig}}filter-active{{end}}">All rigs</a>
+    {{range .Rigs}}
+    <a href="/reschedules?rig={{.}}" class="badge {{if eq . $.FilterRig}}filter-active{{end}}">{{rigName .}}</a>
+    {{end}}
+  </div>
+  {{end}}
+
+  <div class="backlog-stats">
+    <div class="stat">
+      <span class="stat-value accent">{{.Total}}</span>
+      <span class="stat-label">Chronically Deferred</span>
+    </div>
+  </div>
+
+  {{if .Items}}
+  <section class="backlog-card">
+    <div class="table-wrap">
+    <table class="bead-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Title</th>
+          <th>Status</th>
+          <th>Pri</th>
+          <th>Rig</th>
+          <th>Defers</th>
+          <th>Last Deferred</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{range .Items}}
+        <tr>
+          <td><a href="/bead/{{.Rig}}/{{.Issue.ID}}" hx-boost="true">{{.Issue.ID}}</a></td>
+          <td>{{.Issue.Title}}</td>
+          <td>{{statusBadge .Issue.Status}}</td>
+          <td><span class="priority-badge p{{.Issue.Priority}}">P{{.Issue.Priority}}</span></td>
+          <td class="text-dim">{{.Rig}}</td>
+          <td><strong style="color:#ff5555">{{.DeferCount}}×</strong></td>
+          <td class="text-dim">{{formatDateTime .LastDefer}}</td>
+        </tr>
+        {{end}}
+      </tbody>
+    </table>
+    </div>
+  </section>
+  {{else}}
+  <p class="text-dim">No chronically deferred beads found.</p>
+  {{end}}
+
+</div>
+{{end}}
