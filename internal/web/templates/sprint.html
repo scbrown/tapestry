@@ -93,14 +93,20 @@
   {{if .ActiveItems}}
   <section style="margin-top:1rem">
     <h2>Active <span class="text-dim">({{.TotalActive}})</span></h2>
+    <div class="batch-bar" id="batch-bar-active" style="display:none">
+      <span class="batch-count">0 selected</span>
+      <button class="btn btn-xs" onclick="sprintBatchAction('active','closed')">close selected</button>
+      <button class="btn btn-xs" onclick="sprintBatchAction('active','deferred')">defer selected</button>
+    </div>
     <div class="table-wrap">
     <table class="bead-table">
       <thead>
-        <tr><th>Rig</th><th>ID</th><th>Title</th><th>Pri</th><th>Status</th><th>Assignee</th><th>Actions</th></tr>
+        <tr><th><input type="checkbox" onchange="sprintToggleAll(this,'active')"></th><th>Rig</th><th>ID</th><th>Title</th><th>Pri</th><th>Status</th><th>Assignee</th><th>Actions</th></tr>
       </thead>
       <tbody>
         {{range .ActiveItems}}
         <tr>
+          <td><input type="checkbox" class="batch-cb" data-section="active" data-id="{{.Issue.ID}}" data-rig="{{lower .Rig}}" onchange="sprintUpdateBar('active')"></td>
           <td><span class="rig-label">{{.Rig}}</span></td>
           <td><a href="/bead/{{lower .Rig}}/{{.Issue.ID}}" hx-boost="true">{{.Issue.ID}}</a></td>
           <td>{{.Issue.Title}}</td>
@@ -134,14 +140,20 @@
   {{if .CreatedItems}}
   <section style="margin-top:1rem">
     <h2>Created <span class="text-dim">({{.TotalCreated}})</span></h2>
+    <div class="batch-bar" id="batch-bar-created" style="display:none">
+      <span class="batch-count">0 selected</span>
+      <button class="btn btn-xs" onclick="sprintBatchAction('created','closed')">close selected</button>
+      <button class="btn btn-xs" onclick="sprintBatchAction('created','deferred')">defer selected</button>
+    </div>
     <div class="table-wrap">
     <table class="bead-table">
       <thead>
-        <tr><th>Rig</th><th>ID</th><th>Title</th><th>Pri</th><th>Status</th><th>Filed by</th></tr>
+        <tr><th><input type="checkbox" onchange="sprintToggleAll(this,'created')"></th><th>Rig</th><th>ID</th><th>Title</th><th>Pri</th><th>Status</th><th>Filed by</th></tr>
       </thead>
       <tbody>
         {{range .CreatedItems}}
         <tr>
+          <td>{{if eq .Issue.Status "open"}}<input type="checkbox" class="batch-cb" data-section="created" data-id="{{.Issue.ID}}" data-rig="{{lower .Rig}}" onchange="sprintUpdateBar('created')">{{end}}</td>
           <td><span class="rig-label">{{.Rig}}</span></td>
           <td><a href="/bead/{{lower .Rig}}/{{.Issue.ID}}" hx-boost="true">{{.Issue.ID}}</a></td>
           <td>{{.Issue.Title}}</td>
@@ -167,4 +179,30 @@
   <p class="empty">No activity this week.</p>
   {{end}}
 </div>
+
+<script>
+function sprintToggleAll(el, section) {
+  document.querySelectorAll('.batch-cb[data-section="'+section+'"]').forEach(function(cb) { cb.checked = el.checked; });
+  sprintUpdateBar(section);
+}
+function sprintUpdateBar(section) {
+  var checked = document.querySelectorAll('.batch-cb[data-section="'+section+'"]:checked');
+  var bar = document.getElementById('batch-bar-'+section);
+  if (bar) {
+    bar.style.display = checked.length > 0 ? 'flex' : 'none';
+    bar.querySelector('.batch-count').textContent = checked.length + ' selected';
+  }
+}
+function sprintBatchAction(section, status) {
+  var checked = document.querySelectorAll('.batch-cb[data-section="'+section+'"]:checked');
+  if (!checked.length) return;
+  if (!confirm(status.charAt(0).toUpperCase()+status.slice(1)+' '+checked.length+' beads?')) return;
+  var ids = [];
+  checked.forEach(function(cb) { ids.push(cb.dataset.rig+'/'+cb.dataset.id); });
+  var body = 'status='+status;
+  ids.forEach(function(id) { body += '&ids[]='+encodeURIComponent(id); });
+  fetch('/batch/status', {method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body:body})
+    .then(function() { location.reload(); });
+}
+</script>
 {{end}}
