@@ -39,6 +39,7 @@ type sprintData struct {
 
 	Rigs      []string
 	FilterRig string
+	Assignees []string
 }
 
 func weekStart(t time.Time) time.Time {
@@ -103,9 +104,10 @@ func (s *Server) handleSprint(w http.ResponseWriter, r *http.Request) {
 	data.FilterRig = filterRig
 
 	type dbResult struct {
-		created []sprintItem
-		closed  []sprintItem
-		active  []sprintItem
+		created   []sprintItem
+		closed    []sprintItem
+		active    []sprintItem
+		assignees []string
 	}
 
 	results := make([]dbResult, len(dbs))
@@ -119,6 +121,8 @@ func (s *Server) handleSprint(w http.ResponseWriter, r *http.Request) {
 			defer wg.Done()
 			var r dbResult
 			rig := rigDisplayName(dbName)
+
+			r.assignees, _ = s.ds.DistinctAssignees(ctx, dbName)
 
 			// Get all issues to filter
 			all, err := s.ds.Issues(ctx, dbName, dolt.IssueFilter{Limit: 2000})
@@ -156,6 +160,20 @@ func (s *Server) handleSprint(w http.ResponseWriter, r *http.Request) {
 		}(i, db.Name)
 	}
 	wg.Wait()
+
+	// Collect assignees
+	assigneeSet := make(map[string]bool)
+	for _, r := range results {
+		for _, a := range r.assignees {
+			if a != "" {
+				assigneeSet[a] = true
+			}
+		}
+	}
+	for a := range assigneeSet {
+		data.Assignees = append(data.Assignees, a)
+	}
+	sort.Strings(data.Assignees)
 
 	// Aggregate
 	data.CreatedByAgent = make(map[string]int)
