@@ -53,13 +53,14 @@ func DefaultConfig() Config {
 	}
 }
 
-// Path returns the config file path (~/.config/tapestry/config.toml).
+// Path returns the config file path ($XDG_CONFIG_HOME/tapestry/config.toml,
+// defaulting to ~/.config/tapestry/config.toml).
 func Path() (string, error) {
-	home, err := os.UserHomeDir()
+	configDir, err := os.UserConfigDir()
 	if err != nil {
-		return "", fmt.Errorf("home dir: %w", err)
+		return "", fmt.Errorf("config dir: %w", err)
 	}
-	return filepath.Join(home, ".config", "tapestry", "config.toml"), nil
+	return filepath.Join(configDir, "tapestry", "config.toml"), nil
 }
 
 // Load reads config from disk, falling back to defaults for missing values.
