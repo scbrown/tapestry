@@ -3,6 +3,7 @@ package web
 import (
 	"log"
 	"net/http"
+	"sort"
 	"sync"
 	"time"
 
@@ -25,6 +26,8 @@ type flowRateData struct {
 	AvgDailyCreate float64
 	AvgDailyClose  float64
 	NetChange      int
+	Rigs           []string // available rigs for filter
+	FilterRig      string   // current rig filter
 }
 
 func (s *Server) handleFlowRate(w http.ResponseWriter, r *http.Request) {
@@ -48,6 +51,7 @@ func (s *Server) handleFlowRate(w http.ResponseWriter, r *http.Request) {
 	cutoff := now.AddDate(0, 0, -30)
 
 	type dbResult struct {
+		rig    string
 		issues []dolt.Issue
 	}
 	results := make([]dbResult, len(dbs))
@@ -61,16 +65,37 @@ func (s *Server) handleFlowRate(w http.ResponseWriter, r *http.Request) {
 				log.Printf("flow-rate: %s: %v", dbName, err)
 				return
 			}
-			results[i] = dbResult{issues: issues}
+			results[i] = dbResult{rig: dbName, issues: issues}
 		}(i, db.Name)
 	}
 	wg.Wait()
+
+	// Collect distinct rigs for filter
+	rigSet := make(map[string]bool)
+	for _, r := range results {
+		if len(r.issues) > 0 {
+			rigSet[r.rig] = true
+		}
+	}
+	var rigs []string
+	for rig := range rigSet {
+		rigs = append(rigs, rig)
+	}
+	sort.Strings(rigs)
+	data.Rigs = rigs
+
+	// Apply rig filter
+	filterRig := r.URL.Query().Get("rig")
+	data.FilterRig = filterRig
 
 	// Count created and closed per day
 	createdByDay := map[string]int{}
 	closedByDay := map[string]int{}
 
 	for _, r := range results {
+		if filterRig != "" && r.rig != filterRig {
+			continue
+		}
 		for _, iss := range r.issues {
 			if iss.CreatedAt.After(cutoff) {
 				day := iss.CreatedAt.Format("2006-01-02")

@@ -3,6 +3,7 @@ package web
 import (
 	"log"
 	"net/http"
+	"sort"
 	"sync"
 	"time"
 
@@ -26,6 +27,8 @@ type ageBreakdownData struct {
 	OldestID    string
 	OldestTitle string
 	OldestRig   string
+	Rigs        []string // available rigs for filter
+	FilterRig   string   // current rig filter
 }
 
 func (s *Server) handleAgeBreakdown(w http.ResponseWriter, r *http.Request) {
@@ -72,9 +75,30 @@ func (s *Server) handleAgeBreakdown(w http.ResponseWriter, r *http.Request) {
 	}
 	wg.Wait()
 
+	// Collect distinct rigs for filter
+	rigSet := make(map[string]bool)
+	for _, r := range results {
+		if len(r.issues) > 0 {
+			rigSet[r.rig] = true
+		}
+	}
+	var rigs []string
+	for rig := range rigSet {
+		rigs = append(rigs, rig)
+	}
+	sort.Strings(rigs)
+	data.Rigs = rigs
+
+	// Apply rig filter
+	filterRig := r.URL.Query().Get("rig")
+	data.FilterRig = filterRig
+
 	now := time.Now()
 	var ages []issueAge
 	for _, r := range results {
+		if filterRig != "" && r.rig != filterRig {
+			continue
+		}
 		for _, iss := range r.issues {
 			age := int(now.Sub(iss.CreatedAt).Hours() / 24)
 			ages = append(ages, issueAge{rig: r.rig, issue: iss, age: age})
