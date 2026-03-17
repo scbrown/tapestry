@@ -50,7 +50,11 @@
             <a href="/stale">stale</a>
             <a href="/backlog">backlog</a>
             <a href="/cycle-time">cycle-time</a>
+            <a href="/throughput">throughput</a>
             <a href="/duplicates">duplicates</a>
+            <a href="/churn">churn</a>
+            <a href="/deferred">deferred</a>
+            <a href="/parking-lot">parking-lot</a>
             <a href="/closed">closed</a>
             <a href="/triage">triage</a>
             <a href="/comments">comments</a>
@@ -223,6 +227,10 @@
       {name:'Inventory', path:'/inventory', desc:'Total bead counts by status, type, and rig'},
       {name:'Response Time', path:'/response-time', desc:'How quickly beads get picked up'},
       {name:'Contributors', path:'/contributors', desc:'Agent contribution leaderboard'},
+      {name:'Deferred', path:'/deferred', desc:'Deferred items with aging info'},
+      {name:'Throughput', path:'/throughput', desc:'12-week created vs closed throughput'},
+      {name:'Churn', path:'/churn', desc:'Beads with frequent status changes'},
+      {name:'Parking Lot', path:'/parking-lot', desc:'Stalled in-progress work'},
       {name:'Homelab', path:'/homelab', desc:'Prometheus + Alertmanager'},
       {name:'Designs', path:'/designs', desc:'Design documents'},
       {name:'Decisions', path:'/decisions', desc:'Decision log'},
