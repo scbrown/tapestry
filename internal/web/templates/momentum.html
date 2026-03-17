@@ -1,0 +1,118 @@
+{{define "title"}}Momentum{{end}}
+{{define "content"}}
+<div class="momentum-page" hx-get="/momentum" hx-trigger="every 120s" hx-select=".momentum-page" hx-swap="outerHTML">
+  <h1>Momentum <time class="text-dim">{{formatDateTime .GeneratedAt}}</time></h1>
+
+  {{if .Err}}
+  <div class="error">{{.Err}}</div>
+  {{else}}
+
+  {{/* ── Signal Cards ── */}}
+  <div class="momentum-signals">
+    {{range .Signals}}
+    <div class="momentum-signal signal-{{.Status}}">
+      <div class="signal-indicator"></div>
+      <div class="signal-body">
+        <div class="signal-name">{{.Name}}</div>
+        <div class="signal-value">{{.Value}}</div>
+        <div class="signal-detail text-dim">{{.Detail}}</div>
+      </div>
+    </div>
+    {{end}}
+  </div>
+
+  {{/* ── Week Comparison ── */}}
+  <div class="briefing-grid" style="margin-top:1.5rem">
+    <section class="briefing-card">
+      <h2>This Week vs Last Week</h2>
+      <div class="table-wrap">
+      <table class="bead-table">
+        <thead>
+          <tr><th></th><th>This Week</th><th>Last Week</th><th>Delta</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Closed</td>
+            <td><strong class="accent">{{.ClosedThisWeek}}</strong></td>
+            <td>{{.ClosedLastWeek}}</td>
+            <td class="{{if gt .VelocityDelta 0}}text-ok{{else if lt .VelocityDelta 0}}text-warn{{end}}">
+              {{if gt .VelocityDelta 0}}+{{end}}{{.VelocityDelta}}
+            </td>
+          </tr>
+          <tr>
+            <td>Created</td>
+            <td>{{.CreatedThisWeek}}</td>
+            <td>{{.CreatedLastWeek}}</td>
+            <td>{{if gt (sub .CreatedThisWeek .CreatedLastWeek) 0}}+{{end}}{{sub .CreatedThisWeek .CreatedLastWeek}}</td>
+          </tr>
+          <tr>
+            <td>Net Flow</td>
+            <td colspan="2"></td>
+            <td class="{{if gt .NetFlowWeek 0}}text-warn{{else if lt .NetFlowWeek 0}}text-ok{{end}}">
+              {{if gt .NetFlowWeek 0}}+{{end}}{{.NetFlowWeek}}
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      </div>
+    </section>
+
+    <section class="briefing-card">
+      <h2>Current State</h2>
+      <div class="stat-grid">
+        <div class="stat">
+          <span class="stat-value">{{.OpenCount}}</span>
+          <span class="stat-label">Open</span>
+        </div>
+        <div class="stat">
+          <span class="stat-value pulse">{{.ActiveCount}}</span>
+          <span class="stat-label">Active</span>
+        </div>
+        <div class="stat">
+          <span class="stat-value warn">{{.BlockedCount}}</span>
+          <span class="stat-label">Blocked</span>
+        </div>
+        <div class="stat">
+          <span class="stat-value {{if gt .StaleCount 20}}warn{{end}}">{{.StaleCount}}</span>
+          <span class="stat-label">Stale (7d+)</span>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  {{end}}
+</div>
+
+<style>
+.momentum-signals {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+.momentum-signal {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 1rem;
+  border-radius: 6px;
+  background: var(--bg-card, #282a36);
+  border: 1px solid var(--border, #44475a);
+}
+.signal-indicator {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  margin-top: 4px;
+  flex-shrink: 0;
+}
+.signal-green .signal-indicator { background: #50fa7b; box-shadow: 0 0 6px #50fa7b44; }
+.signal-yellow .signal-indicator { background: #f1fa8c; box-shadow: 0 0 6px #f1fa8c44; }
+.signal-red .signal-indicator { background: #ff5555; box-shadow: 0 0 6px #ff555544; }
+.signal-name { font-weight: 600; font-size: 0.9em; }
+.signal-value { font-size: 1.4em; font-weight: 700; margin: 0.15rem 0; }
+.signal-detail { font-size: 0.8em; line-height: 1.3; }
+.text-ok { color: #50fa7b; }
+.text-warn { color: #ff5555; }
+</style>
+{{end}}

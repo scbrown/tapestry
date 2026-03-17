@@ -6843,3 +6843,108 @@ func TestStandupPage_StatGrid(t *testing.T) {
 		t.Error("expected 'Active agents' stat label")
 	}
 }
+
+// ── Momentum Page Tests ──
+
+func TestMomentumPage_NilDataSource(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/momentum", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /momentum status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Momentum") {
+		t.Error("expected 'Momentum' heading")
+	}
+}
+
+func TestMomentumPage_WithData(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issues: []dolt.Issue{
+			{ID: "mo1", Title: "Open item", Status: "open", Priority: 2, CreatedAt: time.Now().Add(-24 * time.Hour), UpdatedAt: time.Now().Add(-10 * 24 * time.Hour)},
+			{ID: "mo2", Title: "Active item", Status: "in_progress", Priority: 1, CreatedAt: time.Now().Add(-48 * time.Hour), UpdatedAt: time.Now()},
+			{ID: "mo3", Title: "Blocked item", Status: "blocked", Priority: 1, CreatedAt: time.Now().Add(-72 * time.Hour), UpdatedAt: time.Now()},
+		},
+		counts: map[string]int{"open": 10, "in_progress": 5, "blocked": 2, "closed": 50},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/momentum", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /momentum status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Velocity") {
+		t.Error("expected Velocity signal")
+	}
+	if !strings.Contains(body, "Net Flow") {
+		t.Error("expected Net Flow signal")
+	}
+	if !strings.Contains(body, "Blocker Ratio") {
+		t.Error("expected Blocker Ratio signal")
+	}
+	if !strings.Contains(body, "Staleness") {
+		t.Error("expected Staleness signal")
+	}
+	if !strings.Contains(body, "This Week vs Last Week") {
+		t.Error("expected week comparison table")
+	}
+}
+
+func TestMomentumPage_HTMXPartial(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/momentum", nil)
+	req.Header.Set("HX-Request", "true")
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if strings.Contains(body, "<html") {
+		t.Error("HTMX partial should not include <html> tag")
+	}
+	if !strings.Contains(body, "Momentum") {
+		t.Error("expected momentum content in partial")
+	}
+}
+
+func TestMomentumPage_AutoRefresh(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/momentum", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	body := w.Body.String()
+	if !strings.Contains(body, `hx-trigger="every 120s"`) {
+		t.Error("expected 120s auto-refresh on momentum page")
+	}
+}
+
+func TestMomentumPage_SignalColors(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/momentum", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	body := w.Body.String()
+	if !strings.Contains(body, "signal-indicator") {
+		t.Error("expected signal indicators in momentum page")
+	}
+	if !strings.Contains(body, "momentum-signal") {
+		t.Error("expected momentum-signal cards")
+	}
+}
