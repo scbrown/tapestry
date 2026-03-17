@@ -29,6 +29,7 @@
       <option value="">assign to...</option>
       {{range $.Assignees}}<option value="{{.}}">{{shortActor .}}</option>{{end}}
     </select>
+    <input type="text" class="btn btn-xs batch-label-input" placeholder="add label..." onkeydown="if(event.key==='Enter'){batchLabel('epics',this.value);this.value=''}" style="width:100px">
   </div>
   <div class="table-wrap">
   <table class="bead-table">
@@ -139,6 +140,18 @@
     fetch('/batch/assignee', {method:'POST', body:form}).then(function() {
       document.body.dispatchEvent(new CustomEvent('showToast', {detail: checked.length+' epics assigned'}));
       location.reload();
+    });
+  }
+  function batchLabel(section, label) {
+    if (!label) return;
+    var checked = document.querySelectorAll('.batch-cb[data-section="'+section+'"]:checked');
+    if (!checked.length) return;
+    if (!confirm('Add label "'+label+'" to '+checked.length+' epics?')) return;
+    var form = new FormData();
+    form.append('label', label);
+    checked.forEach(function(cb) { form.append('ids[]', cb.getAttribute('data-rig')+'/'+cb.getAttribute('data-id')); });
+    fetch('/batch/label', {method:'POST', body:form}).then(function() {
+      document.body.dispatchEvent(new CustomEvent('showToast', {detail: checked.length+' epics labeled "'+label+'"'}));
     });
   }
   </script>
