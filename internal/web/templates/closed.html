@@ -83,6 +83,7 @@
           </td>
           <td>{{timeAgo .Issue.UpdatedAt}}</td>
           <td class="triage-actions">
+            <button class="btn btn-xs" hx-post="/bead/{{lower .Rig}}/{{.Issue.ID}}/status" hx-vals='{"status":"in_progress"}' hx-swap="outerHTML" hx-target="closest tr" hx-confirm="Start {{.Issue.ID}}?">start</button>
             <button class="btn btn-xs" hx-post="/bead/{{lower .Rig}}/{{.Issue.ID}}/status" hx-vals='{"status":"open"}' hx-swap="outerHTML" hx-target="closest tr" hx-confirm="Reopen {{.Issue.ID}}?">reopen</button>
           </td>
         </tr>

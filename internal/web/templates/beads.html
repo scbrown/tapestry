@@ -98,6 +98,7 @@
           <th>Status</th>
           <th>Assignee</th>
           <th>Updated</th>
+          <th>Actions</th>
         </tr>
       </thead>
       <tbody>
@@ -118,8 +119,23 @@
           </td>
           <td>{{.Type}}</td>
           <td>{{statusBadge .Status}}</td>
-          <td title="{{.Assignee}}">{{shortActor .Assignee}}</td>
+          <td>
+            <select class="triage-assign" hx-post="/bead/{{lower .Rig}}/{{.ID}}/assign" hx-swap="outerHTML" hx-target="closest tr" name="assignee">
+              <option value="">—</option>
+              {{$cur := .Assignee}}
+              {{range $.Assignees}}
+              <option value="{{.}}" {{if eq . $cur}}selected{{end}}>{{shortActor .}}</option>
+              {{end}}
+            </select>
+          </td>
           <td>{{timeAgo .UpdatedAt}}</td>
+          <td class="triage-actions">
+            <div class="triage-btn-group">
+              {{if ne .Status "in_progress"}}<button class="btn btn-xs" hx-post="/bead/{{lower .Rig}}/{{.ID}}/status" hx-vals='{"status":"in_progress"}' hx-swap="outerHTML" hx-target="closest tr">start</button>{{end}}
+              <button class="btn btn-xs" hx-post="/bead/{{lower .Rig}}/{{.ID}}/status" hx-vals='{"status":"closed"}' hx-swap="outerHTML" hx-target="closest tr" hx-confirm="Close {{.ID}}?">close</button>
+              <button class="btn btn-xs" hx-post="/bead/{{lower .Rig}}/{{.ID}}/status" hx-vals='{"status":"deferred"}' hx-swap="outerHTML" hx-target="closest tr" hx-confirm="Defer {{.ID}}?">defer</button>
+            </div>
+          </td>
         </tr>
         {{end}}
       </tbody>
