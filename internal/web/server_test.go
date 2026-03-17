@@ -2235,8 +2235,11 @@ func TestClosedPage_BatchReopen(t *testing.T) {
 	if !strings.Contains(body, "closedBatchAction") {
 		t.Error("expected batch reopen script on closed page")
 	}
-	if !strings.Contains(body, "reopen selected") {
-		t.Error("expected 'reopen selected' button text")
+	if !strings.Contains(body, "closedBatchAction('open')") {
+		t.Error("expected reopen batch button")
+	}
+	if !strings.Contains(body, "set priority...") {
+		t.Error("expected batch priority dropdown on closed page")
 	}
 }
 
