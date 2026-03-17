@@ -116,6 +116,8 @@
             <a href="/label-age">label-age</a>
             <a href="/status-flow">flow</a>
             <a href="/priority-drift">drift</a>
+            <a href="/pulse">pulse</a>
+            <a href="/sitemap">sitemap</a>
             <span class="nav-sep">|</span>
             <a href="/homelab">homelab</a>
             <a href="/probes">probes</a>
@@ -335,6 +337,22 @@
       {name:'Pacing', path:'/pacing', desc:'Daily close rate vs backlog clearance pacing'},
       {name:'Agent Velocity', path:'/agent-velocity', desc:'Per-agent close rate over last 4 weeks'},
       {name:'Unblocked', path:'/unblocked', desc:'Recently unblocked beads — previously blocked items now open'},
+      {name:'Audit Log', path:'/audit-log', desc:'Global change feed — status changes, creates, comments'},
+      {name:'Reschedules', path:'/reschedules', desc:'Chronic deferral detector — beads deferred 2+ times'},
+      {name:'Retention', path:'/retention', desc:'Time-in-status analytics for closed beads'},
+      {name:'Hot Beads', path:'/dog-pile', desc:'High-activity bead tracker by heat score'},
+      {name:'Quick Wins', path:'/quick-wins', desc:'Low-complexity open beads — easy pickups'},
+      {name:'Orphans', path:'/orphans', desc:'Beads missing owner, assignee, labels, or description'},
+      {name:'Dwell', path:'/dwell', desc:'Per-bead dwell time with zone filters'},
+      {name:'Transfers', path:'/transfers', desc:'Bead reassignment log'},
+      {name:'Load Balance', path:'/load-balance', desc:'Composite agent load scoring'},
+      {name:'Stats', path:'/stats', desc:'System-wide stats — totals, flow, per-rig breakdown'},
+      {name:'Pending', path:'/pending', desc:'Beads awaiting action — assigned-not-started, unassigned'},
+      {name:'Label Age', path:'/label-age', desc:'Median/mean/max age of open beads per label'},
+      {name:'Status Flow', path:'/status-flow', desc:'Status transition frequency analysis'},
+      {name:'Priority Drift', path:'/priority-drift', desc:'Priority health — open/active/blocked/stale per priority'},
+      {name:'Sitemap', path:'/sitemap', desc:'All pages organized by category'},
+      {name:'Pulse', path:'/pulse', desc:'24-hour system pulse — hourly activity breakdown'},
     ];
     var qnSelected = 0;
 

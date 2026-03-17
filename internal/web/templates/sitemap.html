@@ -1,0 +1,23 @@
+{{define "title"}}Sitemap{{end}}
+{{define "content"}}
+<h1>Sitemap <small style="color:var(--comment)">({{.TotalPages}} pages)</small></h1>
+<p class="subtitle">All Tapestry pages organized by category. Press <kbd style="background:var(--selection);padding:0.1rem 0.4rem;border-radius:3px">Ctrl+K</kbd> for quick navigation.</p>
+
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(400px,1fr));gap:1.5rem;margin-top:1rem">
+{{range .Categories}}
+<div style="background:var(--current-line);border-radius:8px;padding:1rem 1.2rem">
+    <h2 style="margin:0 0 0.75rem;font-size:1.1rem;color:var(--purple)">{{.Name}} <small style="color:var(--comment)">({{len .Pages}})</small></h2>
+    <div style="display:flex;flex-direction:column;gap:0.35rem">
+    {{range .Pages}}
+    <a href="{{.Path}}" style="display:flex;justify-content:space-between;align-items:baseline;text-decoration:none;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.15s" onmouseover="this.style.background='var(--selection)'" onmouseout="this.style.background='transparent'">
+        <span style="color:var(--cyan);font-weight:500">{{.Name}}</span>
+        <span style="color:var(--comment);font-size:0.85rem;text-align:right;margin-left:0.5rem">{{.Desc}}</span>
+    </a>
+    {{end}}
+    </div>
+</div>
+{{end}}
+</div>
+
+<p style="margin-top:2rem;color:var(--comment);font-size:0.85rem">Generated {{.GeneratedAt.Format "2006-01-02 15:04"}}</p>
+{{end}}

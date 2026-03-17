@@ -1,0 +1,100 @@
+{{define "title"}}Pulse{{end}}
+{{define "content"}}
+<h1>24-Hour Pulse</h1>
+<p class="subtitle">System activity over the last 24 hours, broken down by hour.</p>
+
+{{if .FilterRig}}<div class="dep-filters"><span class="dep-filter-badge">rig: {{.FilterRig}}</span> <a href="/pulse">clear</a></div>{{end}}
+
+{{if .Err}}<p class="error">{{.Err}}</p>{{end}}
+
+<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin:1rem 0">
+    <div style="background:var(--current-line);padding:1rem;border-radius:8px;text-align:center">
+        <div style="font-size:2rem;font-weight:700;color:var(--green)">{{.TotalCreated}}</div>
+        <div style="color:var(--comment)">Created</div>
+    </div>
+    <div style="background:var(--current-line);padding:1rem;border-radius:8px;text-align:center">
+        <div style="font-size:2rem;font-weight:700;color:var(--purple)">{{.TotalClosed}}</div>
+        <div style="color:var(--comment)">Closed</div>
+    </div>
+    <div style="background:var(--current-line);padding:1rem;border-radius:8px;text-align:center">
+        <div style="font-size:2rem;font-weight:700;color:var(--cyan)">{{.TotalComments}}</div>
+        <div style="color:var(--comment)">Comments</div>
+    </div>
+    <div style="background:var(--current-line);padding:1rem;border-radius:8px;text-align:center">
+        <div style="font-size:2rem;font-weight:700;color:var(--orange)">{{.TotalChanges}}</div>
+        <div style="color:var(--comment)">Status Changes</div>
+    </div>
+</div>
+
+<h2>Hourly Activity</h2>
+<div style="overflow-x:auto">
+<table class="bead-table">
+<thead>
+<tr>
+    <th>Hour</th>
+    <th>Created</th>
+    <th>Closed</th>
+    <th>Comments</th>
+    <th>Changes</th>
+    <th>Total</th>
+    <th style="width:40%">Activity</th>
+</tr>
+</thead>
+<tbody>
+{{range .Hours}}
+<tr{{if eq .Hour $.PeakHour}} style="background:var(--selection)"{{end}}>
+    <td>{{printf "%02d" .Hour}}:00</td>
+    <td>{{if .Created}}<span style="color:var(--green)">+{{.Created}}</span>{{else}}<span style="color:var(--comment)">-</span>{{end}}</td>
+    <td>{{if .Closed}}<span style="color:var(--purple)">{{.Closed}}</span>{{else}}<span style="color:var(--comment)">-</span>{{end}}</td>
+    <td>{{if .Comments}}<span style="color:var(--cyan)">{{.Comments}}</span>{{else}}<span style="color:var(--comment)">-</span>{{end}}</td>
+    <td>{{if .Changes}}<span style="color:var(--orange)">{{.Changes}}</span>{{else}}<span style="color:var(--comment)">-</span>{{end}}</td>
+    <td><strong>{{.Total}}</strong>{{if eq .Hour $.PeakHour}} <span style="color:var(--pink);font-size:0.8rem">peak</span>{{end}}</td>
+    <td>
+        {{if .Total}}
+        <div style="display:flex;gap:1px;height:18px;align-items:end">
+            {{if .Created}}<div style="background:var(--green);width:{{divf (mulf (itof .Created) 100.0) (itof $.PeakCount)}}%;min-width:3px;height:100%;border-radius:2px" title="{{.Created}} created"></div>{{end}}
+            {{if .Closed}}<div style="background:var(--purple);width:{{divf (mulf (itof .Closed) 100.0) (itof $.PeakCount)}}%;min-width:3px;height:100%;border-radius:2px" title="{{.Closed}} closed"></div>{{end}}
+            {{if .Comments}}<div style="background:var(--cyan);width:{{divf (mulf (itof .Comments) 100.0) (itof $.PeakCount)}}%;min-width:3px;height:100%;border-radius:2px" title="{{.Comments}} comments"></div>{{end}}
+            {{if .Changes}}<div style="background:var(--orange);width:{{divf (mulf (itof .Changes) 100.0) (itof $.PeakCount)}}%;min-width:3px;height:100%;border-radius:2px" title="{{.Changes}} changes"></div>{{end}}
+        </div>
+        {{end}}
+    </td>
+</tr>
+{{end}}
+</tbody>
+</table>
+</div>
+
+{{if .Agents}}
+<h2>Agent Activity (24h)</h2>
+<div style="overflow-x:auto">
+<table class="bead-table">
+<thead>
+<tr>
+    <th>Agent</th>
+    <th>Created</th>
+    <th>Closed</th>
+    <th>Comments</th>
+    <th>Changes</th>
+    <th>Total</th>
+</tr>
+</thead>
+<tbody>
+{{range .Agents}}
+<tr>
+    <td><a href="/agent/{{.Name}}">{{shortActor .Name}}</a></td>
+    <td>{{if .Created}}<span style="color:var(--green)">+{{.Created}}</span>{{else}}<span style="color:var(--comment)">-</span>{{end}}</td>
+    <td>{{if .Closed}}<span style="color:var(--purple)">{{.Closed}}</span>{{else}}<span style="color:var(--comment)">-</span>{{end}}</td>
+    <td>{{if .Comments}}<span style="color:var(--cyan)">{{.Comments}}</span>{{else}}<span style="color:var(--comment)">-</span>{{end}}</td>
+    <td>{{if .Changes}}<span style="color:var(--orange)">{{.Changes}}</span>{{else}}<span style="color:var(--comment)">-</span>{{end}}</td>
+    <td><strong>{{.Total}}</strong></td>
+</tr>
+{{end}}
+</tbody>
+</table>
+</div>
+{{end}}
+
+<p style="color:var(--comment);font-size:0.85rem;margin-top:1rem">Generated {{.GeneratedAt.Format "2006-01-02 15:04"}} &middot; Auto-refresh 120s</p>
+<div hx-get="/pulse{{if .FilterRig}}?rig={{.FilterRig}}{{end}}" hx-trigger="every 120s" hx-target="#content" hx-swap="innerHTML"></div>
+{{end}}
