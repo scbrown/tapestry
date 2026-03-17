@@ -4183,3 +4183,67 @@ func TestResolutionRatePage_HTMX(t *testing.T) {
 		t.Error("HTMX resolution-rate should return partial, not full page")
 	}
 }
+
+// --- Net Flow page tests ---
+
+func TestNetFlowPage_NilDataSource(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/net-flow", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /net-flow status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Net Flow") {
+		t.Error("expected 'Net Flow' heading")
+	}
+}
+
+func TestNetFlowPage_WithData(t *testing.T) {
+	now := time.Now()
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issues: []dolt.Issue{
+			{ID: "nf1", Title: "Recent", Status: "open", CreatedAt: now.AddDate(0, 0, -3), UpdatedAt: now},
+			{ID: "nf2", Title: "Old closed", Status: "closed", CreatedAt: now.AddDate(0, 0, -20), UpdatedAt: now.AddDate(0, 0, -10)},
+			{ID: "nf3", Title: "Very old", Status: "open", CreatedAt: now.AddDate(0, -3, 0), UpdatedAt: now.AddDate(0, -2, 0)},
+		},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/net-flow", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /net-flow status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Daily Detail") {
+		t.Error("expected 'Daily Detail' section")
+	}
+	if !strings.Contains(body, "Current Open") {
+		t.Error("expected current open stat")
+	}
+}
+
+func TestNetFlowPage_HTMX(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/net-flow", nil)
+	req.Header.Set("HX-Request", "true")
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("HTMX GET /net-flow status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if strings.Contains(body, "<!DOCTYPE html>") {
+		t.Error("HTMX net-flow should return partial, not full page")
+	}
+}

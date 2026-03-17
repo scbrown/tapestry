@@ -1,0 +1,71 @@
+{{define "title"}}Net Flow{{end}}
+{{define "content"}}
+<div class="backlog-page" hx-get="/net-flow" hx-trigger="every 120s" hx-select=".backlog-page" hx-swap="outerHTML">
+  <h1>Net Flow <time class="text-dim">{{.GeneratedAt.Format "Jan 02, 2006 15:04"}}</time></h1>
+  <p class="text-dim">30-day open bead count trend — is the backlog growing or shrinking?</p>
+
+  <div class="backlog-stats">
+    <div class="stat">
+      <span class="stat-value accent">{{.CurrentOpen}}</span>
+      <span class="stat-label">Current Open</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value">{{.MaxOpen}}</span>
+      <span class="stat-label">Peak</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value">{{.MinOpen}}</span>
+      <span class="stat-label">Low</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value {{if eq .Trend "growing"}}text-red{{else if eq .Trend "shrinking"}}text-green{{end}}">
+        {{if eq .Trend "growing"}}Growing{{else if eq .Trend "shrinking"}}Shrinking{{else}}Stable{{end}}
+      </span>
+      <span class="stat-label">Trend</span>
+    </div>
+  </div>
+
+  {{if .Days}}
+  <section class="backlog-card">
+    <h2>Daily Detail</h2>
+    <div class="table-wrap">
+    <table class="bead-table">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Created</th>
+          <th>Closed</th>
+          <th>Daily Net</th>
+          <th>Total Open</th>
+          <th style="width:25%;">Level</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{range .Days}}
+        <tr>
+          <td>{{.Date}}</td>
+          <td>{{.Created}}</td>
+          <td>{{.Closed}}</td>
+          <td {{if gt .DailyNet 0}}style="color:var(--red)"{{else if lt .DailyNet 0}}style="color:var(--green)"{{end}}>
+            {{if gt .DailyNet 0}}+{{end}}{{.DailyNet}}
+          </td>
+          <td><strong>{{.Net}}</strong></td>
+          <td>
+            {{if $.MaxOpen}}
+            <div style="background:var(--surface1);height:14px;border-radius:3px;overflow:hidden;">
+              <div style="background:var(--purple);height:100%;width:{{divf (mulf (itof .Net) 100.0) (itof $.MaxOpen)}}%;"></div>
+            </div>
+            {{end}}
+          </td>
+        </tr>
+        {{end}}
+      </tbody>
+    </table>
+    </div>
+  </section>
+  {{else}}
+  <p class="text-dim">No flow data available.</p>
+  {{end}}
+
+</div>
+{{end}}
