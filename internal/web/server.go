@@ -507,6 +507,10 @@ func (s *Server) parseTemplates() {
 			template.New("").Funcs(funcMap).ParseFS(templateFS,
 				"templates/layout.html", "templates/parking-lot.html"),
 		),
+		"resolution-rate": template.Must(
+			template.New("").Funcs(funcMap).ParseFS(templateFS,
+				"templates/layout.html", "templates/resolution-rate.html"),
+		),
 		"age-breakdown": template.Must(
 			template.New("").Funcs(funcMap).ParseFS(templateFS,
 				"templates/layout.html", "templates/age-breakdown.html"),
@@ -714,6 +718,8 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		s.handleChurn(w, r)
 	case len(segments) == 1 && segments[0] == "parking-lot":
 		s.handleParkingLot(w, r)
+	case len(segments) == 1 && segments[0] == "resolution-rate":
+		s.handleResolutionRate(w, r)
 	case len(segments) == 1 && segments[0] == "age-breakdown":
 		s.handleAgeBreakdown(w, r)
 	case len(segments) == 1 && segments[0] == "cohort":

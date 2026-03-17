@@ -4120,3 +4120,66 @@ func TestAgeBreakdownPage_HTMX(t *testing.T) {
 		t.Error("HTMX age-breakdown should return partial, not full page")
 	}
 }
+
+// --- Resolution Rate page tests ---
+
+func TestResolutionRatePage_NilDataSource(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/resolution-rate", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /resolution-rate status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Resolution Rate") {
+		t.Error("expected 'Resolution Rate' heading")
+	}
+}
+
+func TestResolutionRatePage_WithData(t *testing.T) {
+	now := time.Now()
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issues: []dolt.Issue{
+			{ID: "rr1", Title: "Quick fix", Status: "closed", CreatedAt: now.AddDate(0, 0, -2), UpdatedAt: now.AddDate(0, 0, -1)},
+			{ID: "rr2", Title: "Slow fix", Status: "closed", CreatedAt: now.AddDate(0, -4, 0), UpdatedAt: now.AddDate(0, 0, -5)},
+		},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/resolution-rate", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /resolution-rate status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Resolution Speed Distribution") {
+		t.Error("expected resolution speed distribution section")
+	}
+	if !strings.Contains(body, "Fastest Resolution") {
+		t.Error("expected fastest resolution section")
+	}
+}
+
+func TestResolutionRatePage_HTMX(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/resolution-rate", nil)
+	req.Header.Set("HX-Request", "true")
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("HTMX GET /resolution-rate status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if strings.Contains(body, "<!DOCTYPE html>") {
+		t.Error("HTMX resolution-rate should return partial, not full page")
+	}
+}

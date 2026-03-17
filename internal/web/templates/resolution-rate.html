@@ -1,0 +1,78 @@
+{{define "title"}}Resolution Rate{{end}}
+{{define "content"}}
+<div class="backlog-page" hx-get="/resolution-rate" hx-trigger="every 120s" hx-select=".backlog-page" hx-swap="outerHTML">
+  <h1>Resolution Rate <time class="text-dim">{{.GeneratedAt.Format "Jan 02, 2006 15:04"}}</time></h1>
+  <p class="text-dim">How quickly do closed beads get resolved? Distribution by time-to-close.</p>
+
+  <div class="backlog-stats">
+    <div class="stat">
+      <span class="stat-value accent">{{.TotalClosed}}</span>
+      <span class="stat-label">Total Closed</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value" style="color:var(--green)">{{.Within7d.Pct}}%</span>
+      <span class="stat-label">&lt; 7 days</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value">{{.MedianHours}}h</span>
+      <span class="stat-label">Mean Time</span>
+    </div>
+  </div>
+
+  {{if gt .TotalClosed 0}}
+  <section class="backlog-card">
+    <h2>Resolution Speed Distribution</h2>
+
+    <div style="margin-bottom:0.5rem;display:flex;align-items:center;gap:1rem;">
+      <span style="min-width:100px;">{{.Within7d.Label}}</span>
+      <div style="flex:1;background:var(--surface1);height:28px;border-radius:4px;overflow:hidden;">
+        <div style="background:var(--green);height:100%;width:{{.Within7d.Pct}}%;display:flex;align-items:center;padding-left:6px;">
+          {{if gt .Within7d.Pct 8}}<span style="color:var(--bg);font-weight:bold;">{{.Within7d.Count}}</span>{{end}}
+        </div>
+      </div>
+      <span style="min-width:80px;text-align:right;">{{.Within7d.Count}} ({{.Within7d.Pct}}%)</span>
+    </div>
+
+    <div style="margin-bottom:0.5rem;display:flex;align-items:center;gap:1rem;">
+      <span style="min-width:100px;">{{.Within30d.Label}}</span>
+      <div style="flex:1;background:var(--surface1);height:28px;border-radius:4px;overflow:hidden;">
+        <div style="background:var(--cyan);height:100%;width:{{.Within30d.Pct}}%;display:flex;align-items:center;padding-left:6px;">
+          {{if gt .Within30d.Pct 8}}<span style="color:var(--bg);font-weight:bold;">{{.Within30d.Count}}</span>{{end}}
+        </div>
+      </div>
+      <span style="min-width:80px;text-align:right;">{{.Within30d.Count}} ({{.Within30d.Pct}}%)</span>
+    </div>
+
+    <div style="margin-bottom:0.5rem;display:flex;align-items:center;gap:1rem;">
+      <span style="min-width:100px;">{{.Within90d.Label}}</span>
+      <div style="flex:1;background:var(--surface1);height:28px;border-radius:4px;overflow:hidden;">
+        <div style="background:var(--orange);height:100%;width:{{.Within90d.Pct}}%;display:flex;align-items:center;padding-left:6px;">
+          {{if gt .Within90d.Pct 8}}<span style="color:var(--bg);font-weight:bold;">{{.Within90d.Count}}</span>{{end}}
+        </div>
+      </div>
+      <span style="min-width:80px;text-align:right;">{{.Within90d.Count}} ({{.Within90d.Pct}}%)</span>
+    </div>
+
+    <div style="margin-bottom:0.5rem;display:flex;align-items:center;gap:1rem;">
+      <span style="min-width:100px;">{{.Over90d.Label}}</span>
+      <div style="flex:1;background:var(--surface1);height:28px;border-radius:4px;overflow:hidden;">
+        <div style="background:var(--red);height:100%;width:{{.Over90d.Pct}}%;display:flex;align-items:center;padding-left:6px;">
+          {{if gt .Over90d.Pct 8}}<span style="color:var(--bg);font-weight:bold;">{{.Over90d.Count}}</span>{{end}}
+        </div>
+      </div>
+      <span style="min-width:80px;text-align:right;">{{.Over90d.Count}} ({{.Over90d.Pct}}%)</span>
+    </div>
+  </section>
+
+  {{if .FastestID}}
+  <section class="backlog-card">
+    <h2>Fastest Resolution</h2>
+    <p><a href="/bead/{{.FastestRig}}/{{.FastestID}}" hx-boost="true">{{.FastestID}}</a> — {{.FastestTitle}} ({{.FastestHours}}h)</p>
+  </section>
+  {{end}}
+  {{else}}
+  <p class="text-dim">No closed beads to analyze.</p>
+  {{end}}
+
+</div>
+{{end}}
