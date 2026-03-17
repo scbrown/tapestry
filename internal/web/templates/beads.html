@@ -82,6 +82,7 @@
     {{if .Issues}}
     <div class="batch-bar" id="batch-bar-beads" style="display:none">
       <span class="batch-count">0 selected</span>
+      <button class="btn btn-xs" onclick="beadsBatchAction('in_progress')">start selected</button>
       <button class="btn btn-xs" onclick="beadsBatchAction('closed')">close selected</button>
       <button class="btn btn-xs" onclick="beadsBatchAction('deferred')">defer selected</button>
     </div>

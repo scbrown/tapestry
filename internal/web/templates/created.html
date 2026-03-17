@@ -49,6 +49,7 @@
   {{if .ByDay}}
   <div class="batch-bar" id="batch-bar-created" style="display:none">
     <span class="batch-count">0 selected</span>
+    <button class="btn btn-xs" onclick="createdBatchAction('in_progress')">start selected</button>
     <button class="btn btn-xs" onclick="createdBatchAction('closed')">close selected</button>
     <button class="btn btn-xs" onclick="createdBatchAction('deferred')">defer selected</button>
   </div>
