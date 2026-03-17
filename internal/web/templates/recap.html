@@ -83,7 +83,14 @@
         <tr>
           <td>{{if eq .Issue.Status "open"}}<input type="checkbox" class="batch-cb" data-section="created" data-id="{{.Issue.ID}}" data-rig="{{lower .Rig}}" onchange="recapUpdateBar('created')">{{end}}</td>
           <td><a href="/bead/{{lower .Rig}}/{{.Issue.ID}}" hx-boost="true">{{.Issue.ID}}</a></td>
-          <td><span class="priority-badge p{{.Issue.Priority}}">P{{.Issue.Priority}}</span></td>
+          <td id="pri-{{.Issue.ID}}" class="bead-priority-inline"><span class="badge {{priorityClass .Issue.Priority}}">{{priorityLabel .Issue.Priority}}</span>
+            <span class="priority-edit triage-btn-group">
+              <button class="btn btn-xs priority-p0" hx-post="/bead/{{lower .Rig}}/{{.Issue.ID}}/priority" hx-vals='{"priority":"0"}' hx-target="#pri-{{.Issue.ID}}" hx-swap="innerHTML">P0</button>
+              <button class="btn btn-xs priority-p1" hx-post="/bead/{{lower .Rig}}/{{.Issue.ID}}/priority" hx-vals='{"priority":"1"}' hx-target="#pri-{{.Issue.ID}}" hx-swap="innerHTML">P1</button>
+              <button class="btn btn-xs priority-p2" hx-post="/bead/{{lower .Rig}}/{{.Issue.ID}}/priority" hx-vals='{"priority":"2"}' hx-target="#pri-{{.Issue.ID}}" hx-swap="innerHTML">P2</button>
+              <button class="btn btn-xs priority-p3" hx-post="/bead/{{lower .Rig}}/{{.Issue.ID}}/priority" hx-vals='{"priority":"3"}' hx-target="#pri-{{.Issue.ID}}" hx-swap="innerHTML">P3</button>
+            </span>
+          </td>
           <td>{{.Issue.Title}}</td>
           <td>{{statusBadge .Issue.Status}}</td>
           <td class="text-dim">{{shortActor .Issue.Owner}}</td>
