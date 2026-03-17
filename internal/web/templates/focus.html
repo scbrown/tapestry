@@ -75,7 +75,15 @@
         <td>{{$item.AgeDays}}d</td>
         <td><strong>{{printf "%.0f" $item.Score}}</strong></td>
         <td><span class="text-dim">{{$item.Reason}}</span></td>
-        <td>{{if $item.Assignee}}<a href="/agent/{{$item.Assignee}}">{{shortActor $item.Assignee}}</a>{{else}}<span class="text-dim">—</span>{{end}}</td>
+        <td>
+          <select class="triage-assign" hx-post="/bead/{{$item.DB}}/{{$item.ID}}/assign" hx-swap="outerHTML" hx-target="closest tr" name="assignee">
+            <option value="">—</option>
+            {{$cur := $item.Assignee}}
+            {{range $.Assignees}}
+            <option value="{{.}}" {{if eq . $cur}}selected{{end}}>{{shortActor .}}</option>
+            {{end}}
+          </select>
+        </td>
         <td class="actions-cell">
           {{if eq $item.Status "open"}}<button class="btn btn-xs" hx-post="/bead/{{$item.DB}}/{{$item.ID}}/status" hx-vals='{"status":"in_progress"}' hx-swap="outerHTML" hx-target="closest tr">start</button>{{end}}
           <button class="btn btn-xs" hx-post="/bead/{{$item.DB}}/{{$item.ID}}/status" hx-vals='{"status":"closed"}' hx-swap="outerHTML" hx-target="closest tr" hx-confirm="Close {{$item.ID}}?">close</button>

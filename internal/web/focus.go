@@ -39,6 +39,7 @@ type focusData struct {
 	// Rig filter
 	FilterRig string
 	Rigs      []string
+	Assignees []string
 
 	Err string
 }
@@ -71,6 +72,7 @@ func (s *Server) handleFocus(w http.ResponseWriter, r *http.Request) {
 	var allItems []focusBead
 	var mu sync.Mutex
 	var wg sync.WaitGroup
+	assigneeSet := map[string]bool{}
 
 	for _, db := range dbs {
 		if filterRig != "" && db.Name != filterRig {
@@ -85,6 +87,13 @@ func (s *Server) handleFocus(w http.ResponseWriter, r *http.Request) {
 				log.Printf("focus %s: %v", dbName, err)
 				return
 			}
+
+			assignees, _ := s.ds.DistinctAssignees(ctx, dbName)
+			mu.Lock()
+			for _, a := range assignees {
+				assigneeSet[a] = true
+			}
+			mu.Unlock()
 
 			for _, iss := range issues {
 				if isNoise(iss.ID, iss.Title) {
@@ -150,6 +159,11 @@ func (s *Server) handleFocus(w http.ResponseWriter, r *http.Request) {
 		}(db.Name)
 	}
 	wg.Wait()
+
+	for a := range assigneeSet {
+		data.Assignees = append(data.Assignees, a)
+	}
+	sort.Strings(data.Assignees)
 
 	sort.Slice(allItems, func(i, j int) bool {
 		return allItems[i].Score > allItems[j].Score
