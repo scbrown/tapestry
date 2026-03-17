@@ -33,10 +33,16 @@
 
   <section class="backlog-card">
     <h2>All Deferred ({{.Total}})</h2>
+    <div class="batch-bar" id="batch-bar-deferred" style="display:none">
+      <span class="batch-count">0 selected</span>
+      <button class="btn btn-xs" onclick="deferredBatchAction('open')">reopen selected</button>
+      <button class="btn btn-xs" onclick="deferredBatchAction('closed')">close selected</button>
+    </div>
     <div class="table-wrap">
     <table class="bead-table">
       <thead>
         <tr>
+          <th><input type="checkbox" onchange="deferredToggleAll(this)"></th>
           <th>ID</th>
           <th>Title</th>
           <th>Pri</th>
@@ -50,6 +56,7 @@
       <tbody>
         {{range .Items}}
         <tr>
+          <td><input type="checkbox" class="deferred-cb" data-id="{{.Issue.ID}}" data-rig="{{.Rig}}" onchange="deferredUpdateBar()"></td>
           <td><a href="/bead/{{.Rig}}/{{.Issue.ID}}" hx-boost="true">{{.Issue.ID}}</a></td>
           <td>{{.Issue.Title}}</td>
           <td>{{priorityLabel .Issue.Priority}}</td>
@@ -70,6 +77,36 @@
       </tbody>
     </table>
     </div>
+    <script>
+    function deferredToggleAll(master) {
+      document.querySelectorAll('.deferred-cb').forEach(function(cb) { cb.checked = master.checked; });
+      deferredUpdateBar();
+    }
+    function deferredUpdateBar() {
+      var checked = document.querySelectorAll('.deferred-cb:checked');
+      var bar = document.getElementById('batch-bar-deferred');
+      if (bar) {
+        bar.style.display = checked.length > 0 ? 'flex' : 'none';
+        bar.querySelector('.batch-count').textContent = checked.length + ' selected';
+      }
+    }
+    function deferredBatchAction(status) {
+      var checked = document.querySelectorAll('.deferred-cb:checked');
+      if (!checked.length) return;
+      var label = status === 'open' ? 'Reopen' : 'Close';
+      if (!confirm(label+' '+checked.length+' deferred beads?')) return;
+      var form = new FormData();
+      form.append('status', status);
+      checked.forEach(function(cb) {
+        form.append('ids[]', cb.getAttribute('data-rig')+'/'+cb.getAttribute('data-id'));
+      });
+      fetch('/batch/status', {method:'POST', body:form}).then(function() {
+        checked.forEach(function(cb) { cb.closest('tr').remove(); });
+        deferredUpdateBar();
+        document.body.dispatchEvent(new CustomEvent('showToast', {detail: checked.length+' deferred beads '+status}));
+      });
+    }
+    </script>
   </section>
   {{else}}
   <p class="text-dim">No deferred items. Everything is either active or closed.</p>
