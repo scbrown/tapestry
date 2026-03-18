@@ -24,6 +24,7 @@ type retentionData struct {
 	Buckets     []retentionBucket
 	Rigs        []string
 	FilterRig   string
+	SortBy      string
 }
 
 func (s *Server) handleRetention(w http.ResponseWriter, r *http.Request) {
@@ -147,9 +148,30 @@ func (s *Server) handleRetention(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
-	sort.Slice(data.Buckets, func(i, j int) bool {
-		return data.Buckets[i].MeanH > data.Buckets[j].MeanH
-	})
+	sortBy := r.URL.Query().Get("sort")
+	if sortBy == "" {
+		sortBy = "mean"
+	}
+	data.SortBy = sortBy
+
+	switch sortBy {
+	case "median":
+		sort.Slice(data.Buckets, func(i, j int) bool {
+			return data.Buckets[i].MedianH > data.Buckets[j].MedianH
+		})
+	case "count":
+		sort.Slice(data.Buckets, func(i, j int) bool {
+			return data.Buckets[i].Count > data.Buckets[j].Count
+		})
+	case "status":
+		sort.Slice(data.Buckets, func(i, j int) bool {
+			return data.Buckets[i].Status < data.Buckets[j].Status
+		})
+	default: // mean
+		sort.Slice(data.Buckets, func(i, j int) bool {
+			return data.Buckets[i].MeanH > data.Buckets[j].MeanH
+		})
+	}
 
 	s.render(w, r, "retention", data)
 }

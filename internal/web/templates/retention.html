@@ -13,6 +13,13 @@
   </div>
   {{end}}
 
+  <div class="filters">
+    <a href="/retention{{if .FilterRig}}?rig={{.FilterRig}}{{end}}" {{if eq .SortBy "mean"}}class="active"{{end}}>By mean</a>
+    <a href="/retention?sort=median{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" {{if eq .SortBy "median"}}class="active"{{end}}>By median</a>
+    <a href="/retention?sort=count{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" {{if eq .SortBy "count"}}class="active"{{end}}>By count</a>
+    <a href="/retention?sort=status{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" {{if eq .SortBy "status"}}class="active"{{end}}>By status</a>
+  </div>
+
   {{if .Buckets}}
   <section class="backlog-card">
     <div class="table-wrap">

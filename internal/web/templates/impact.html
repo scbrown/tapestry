@@ -14,6 +14,13 @@
 
 {{if .Err}}<p class="error">{{.Err}}</p>{{end}}
 
+<div class="filters">
+  <a href="/impact{{if .FilterRig}}?rig={{.FilterRig}}{{end}}" {{if eq .SortBy "score"}}class="active"{{end}}>By score</a>
+  <a href="/impact?sort=name{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" {{if eq .SortBy "name"}}class="active"{{end}}>By name</a>
+  <a href="/impact?sort=closed{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" {{if eq .SortBy "closed"}}class="active"{{end}}>By closed</a>
+  <a href="/impact?sort=created{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" {{if eq .SortBy "created"}}class="active"{{end}}>By created</a>
+</div>
+
 {{if .Agents}}
 <div class="table-wrap">
 <table class="bead-table">

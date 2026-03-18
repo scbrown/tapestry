@@ -22,6 +22,7 @@ type streaksData struct {
 	Agents      []agentStreak
 	FilterRig   string
 	Rigs        []string
+	SortBy      string
 	Err         string
 }
 
@@ -165,12 +166,39 @@ func (s *Server) handleStreaks(w http.ResponseWriter, r *http.Request) {
 		agents = append(agents, as)
 	}
 
-	sort.Slice(agents, func(i, j int) bool {
-		if agents[i].CurrentStreak != agents[j].CurrentStreak {
+	sortBy := r.URL.Query().Get("sort")
+	if sortBy == "" {
+		sortBy = "streak"
+	}
+	data.SortBy = sortBy
+
+	switch sortBy {
+	case "longest":
+		sort.Slice(agents, func(i, j int) bool {
+			if agents[i].LongestStreak != agents[j].LongestStreak {
+				return agents[i].LongestStreak > agents[j].LongestStreak
+			}
 			return agents[i].CurrentStreak > agents[j].CurrentStreak
-		}
-		return agents[i].ActiveDays30d > agents[j].ActiveDays30d
-	})
+		})
+	case "active":
+		sort.Slice(agents, func(i, j int) bool {
+			if agents[i].ActiveDays30d != agents[j].ActiveDays30d {
+				return agents[i].ActiveDays30d > agents[j].ActiveDays30d
+			}
+			return agents[i].CurrentStreak > agents[j].CurrentStreak
+		})
+	case "name":
+		sort.Slice(agents, func(i, j int) bool {
+			return agents[i].Name < agents[j].Name
+		})
+	default: // streak
+		sort.Slice(agents, func(i, j int) bool {
+			if agents[i].CurrentStreak != agents[j].CurrentStreak {
+				return agents[i].CurrentStreak > agents[j].CurrentStreak
+			}
+			return agents[i].ActiveDays30d > agents[j].ActiveDays30d
+		})
+	}
 
 	data.Agents = agents
 

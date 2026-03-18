@@ -22,6 +22,7 @@ type statusFlowData struct {
 	Rigs        []string
 	FilterRig   string
 	Window      string
+	SortBy      string
 	Err         string
 }
 
@@ -114,9 +115,36 @@ func (s *Server) handleStatusFlow(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
-	sort.Slice(transitions, func(i, j int) bool {
-		return transitions[i].Count > transitions[j].Count
-	})
+	sortBy := r.URL.Query().Get("sort")
+	if sortBy == "" {
+		sortBy = "count"
+	}
+	data.SortBy = sortBy
+
+	switch sortBy {
+	case "from":
+		sort.Slice(transitions, func(i, j int) bool {
+			if transitions[i].From != transitions[j].From {
+				return transitions[i].From < transitions[j].From
+			}
+			return transitions[i].Count > transitions[j].Count
+		})
+	case "to":
+		sort.Slice(transitions, func(i, j int) bool {
+			if transitions[i].To != transitions[j].To {
+				return transitions[i].To < transitions[j].To
+			}
+			return transitions[i].Count > transitions[j].Count
+		})
+	case "pct":
+		sort.Slice(transitions, func(i, j int) bool {
+			return transitions[i].Pct > transitions[j].Pct
+		})
+	default: // count
+		sort.Slice(transitions, func(i, j int) bool {
+			return transitions[i].Count > transitions[j].Count
+		})
+	}
 
 	data.Transitions = transitions
 	data.Total = totalCount

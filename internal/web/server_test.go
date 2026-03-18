@@ -14199,3 +14199,118 @@ func TestUnblockedPage_SortOptions(t *testing.T) {
 		})
 	}
 }
+
+func TestStatusFlowPage_SortOptions(t *testing.T) {
+	sorts := []string{"", "count", "from", "to", "pct"}
+	for _, s := range sorts {
+		t.Run("sort="+s, func(t *testing.T) {
+			srv := New(nil)
+			url := "/status-flow"
+			if s != "" {
+				url += "?sort=" + s
+			}
+			req := httptest.NewRequest("GET", url, nil)
+			w := httptest.NewRecorder()
+			srv.ServeHTTP(w, req)
+			if w.Code != http.StatusOK {
+				t.Fatalf("GET %s status = %d, want %d", url, w.Code, http.StatusOK)
+			}
+			body := w.Body.String()
+			if !strings.Contains(body, "By count") {
+				t.Error("expected sort options in page")
+			}
+		})
+	}
+}
+
+func TestRetentionPage_SortOptions(t *testing.T) {
+	sorts := []string{"", "mean", "median", "count", "status"}
+	for _, s := range sorts {
+		t.Run("sort="+s, func(t *testing.T) {
+			srv := New(nil)
+			url := "/retention"
+			if s != "" {
+				url += "?sort=" + s
+			}
+			req := httptest.NewRequest("GET", url, nil)
+			w := httptest.NewRecorder()
+			srv.ServeHTTP(w, req)
+			if w.Code != http.StatusOK {
+				t.Fatalf("GET %s status = %d, want %d", url, w.Code, http.StatusOK)
+			}
+			body := w.Body.String()
+			if !strings.Contains(body, "By mean") {
+				t.Error("expected sort options in page")
+			}
+		})
+	}
+}
+
+func TestStreaksPage_SortOptions(t *testing.T) {
+	sorts := []string{"", "streak", "longest", "active", "name"}
+	for _, s := range sorts {
+		t.Run("sort="+s, func(t *testing.T) {
+			srv := New(nil)
+			url := "/streaks"
+			if s != "" {
+				url += "?sort=" + s
+			}
+			req := httptest.NewRequest("GET", url, nil)
+			w := httptest.NewRecorder()
+			srv.ServeHTTP(w, req)
+			if w.Code != http.StatusOK {
+				t.Fatalf("GET %s status = %d, want %d", url, w.Code, http.StatusOK)
+			}
+			body := w.Body.String()
+			if !strings.Contains(body, "By streak") {
+				t.Error("expected sort options in page")
+			}
+		})
+	}
+}
+
+func TestPulsePage_SortOptions(t *testing.T) {
+	sorts := []string{"", "total", "name", "closed", "created"}
+	for _, s := range sorts {
+		t.Run("sort="+s, func(t *testing.T) {
+			srv := New(nil)
+			url := "/pulse"
+			if s != "" {
+				url += "?sort=" + s
+			}
+			req := httptest.NewRequest("GET", url, nil)
+			w := httptest.NewRecorder()
+			srv.ServeHTTP(w, req)
+			if w.Code != http.StatusOK {
+				t.Fatalf("GET %s status = %d, want %d", url, w.Code, http.StatusOK)
+			}
+			body := w.Body.String()
+			if !strings.Contains(body, "By total") {
+				t.Error("expected sort options in page")
+			}
+		})
+	}
+}
+
+func TestImpactPage_SortOptions(t *testing.T) {
+	sorts := []string{"", "score", "name", "closed", "created"}
+	for _, s := range sorts {
+		t.Run("sort="+s, func(t *testing.T) {
+			srv := New(nil)
+			url := "/impact"
+			if s != "" {
+				url += "?sort=" + s
+			}
+			req := httptest.NewRequest("GET", url, nil)
+			w := httptest.NewRecorder()
+			srv.ServeHTTP(w, req)
+			if w.Code != http.StatusOK {
+				t.Fatalf("GET %s status = %d, want %d", url, w.Code, http.StatusOK)
+			}
+			body := w.Body.String()
+			if !strings.Contains(body, "By score") {
+				t.Error("expected sort options in page")
+			}
+		})
+	}
+}

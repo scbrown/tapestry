@@ -38,6 +38,7 @@ type pulseData struct {
 	PeakCount    int
 	FilterRig    string
 	Rigs         []string
+	SortBy       string
 	Err          string
 }
 
@@ -184,9 +185,36 @@ func (s *Server) handlePulse(w http.ResponseWriter, r *http.Request) {
 	for _, a := range agentMap {
 		agents = append(agents, *a)
 	}
-	sort.Slice(agents, func(i, j int) bool {
-		return agents[i].Total > agents[j].Total
-	})
+	sortBy := r.URL.Query().Get("sort")
+	if sortBy == "" {
+		sortBy = "total"
+	}
+	data.SortBy = sortBy
+
+	switch sortBy {
+	case "name":
+		sort.Slice(agents, func(i, j int) bool {
+			return agents[i].Name < agents[j].Name
+		})
+	case "closed":
+		sort.Slice(agents, func(i, j int) bool {
+			if agents[i].Closed != agents[j].Closed {
+				return agents[i].Closed > agents[j].Closed
+			}
+			return agents[i].Total > agents[j].Total
+		})
+	case "created":
+		sort.Slice(agents, func(i, j int) bool {
+			if agents[i].Created != agents[j].Created {
+				return agents[i].Created > agents[j].Created
+			}
+			return agents[i].Total > agents[j].Total
+		})
+	default: // total
+		sort.Slice(agents, func(i, j int) bool {
+			return agents[i].Total > agents[j].Total
+		})
+	}
 	data.Agents = agents
 
 	s.render(w, r, "pulse", data)

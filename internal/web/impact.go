@@ -27,6 +27,7 @@ type impactData struct {
 	Agents      []impactAgent
 	FilterRig   string
 	Rigs        []string
+	SortBy      string
 	Err         string
 }
 
@@ -150,9 +151,36 @@ func (s *Server) handleImpact(w http.ResponseWriter, r *http.Request) {
 		agents = append(agents, *a)
 	}
 
-	sort.Slice(agents, func(i, j int) bool {
-		return agents[i].Score30d > agents[j].Score30d
-	})
+	sortBy := r.URL.Query().Get("sort")
+	if sortBy == "" {
+		sortBy = "score"
+	}
+	data.SortBy = sortBy
+
+	switch sortBy {
+	case "name":
+		sort.Slice(agents, func(i, j int) bool {
+			return agents[i].Name < agents[j].Name
+		})
+	case "closed":
+		sort.Slice(agents, func(i, j int) bool {
+			if agents[i].Closed30d != agents[j].Closed30d {
+				return agents[i].Closed30d > agents[j].Closed30d
+			}
+			return agents[i].Score30d > agents[j].Score30d
+		})
+	case "created":
+		sort.Slice(agents, func(i, j int) bool {
+			if agents[i].Created30d != agents[j].Created30d {
+				return agents[i].Created30d > agents[j].Created30d
+			}
+			return agents[i].Score30d > agents[j].Score30d
+		})
+	default: // score
+		sort.Slice(agents, func(i, j int) bool {
+			return agents[i].Score30d > agents[j].Score30d
+		})
+	}
 
 	data.Agents = agents
 
