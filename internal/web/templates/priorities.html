@@ -1,7 +1,7 @@
 {{define "title"}}Priorities{{end}}
 
 {{define "content"}}
-<div class="priorities-view" hx-get="/priorities{{if .FilterRig}}?rig={{.FilterRig}}{{end}}" hx-trigger="every 120s" hx-select=".priorities-view" hx-swap="outerHTML">
+<div class="priorities-view" hx-get="/priorities{{if .FilterRig}}?rig={{.FilterRig}}{{end}}{{if ne .SortBy "priority"}}{{if .FilterRig}}&{{else}}?{{end}}sort={{.SortBy}}{{end}}" hx-trigger="every 120s" hx-select=".priorities-view" hx-swap="outerHTML">
   <h1>Priority Distribution</h1>
 
   {{if .Err}}
@@ -18,6 +18,13 @@
   {{end}}
 
   <div class="results-meta">{{.GrandTot}} beads {{if .FilterRig}}in {{rigName .FilterRig}}{{else}}across all rigs{{end}}</div>
+
+  <div class="filters">
+    <a href="/priorities{{if .FilterRig}}?rig={{.FilterRig}}{{end}}" {{if eq .SortBy "priority"}}class="active"{{end}}>By priority</a>
+    <a href="/priorities?sort=total{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" {{if eq .SortBy "total"}}class="active"{{end}}>By total</a>
+    <a href="/priorities?sort=open{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" {{if eq .SortBy "open"}}class="active"{{end}}>By open</a>
+    <a href="/priorities?sort=blocked{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" {{if eq .SortBy "blocked"}}class="active"{{end}}>By blocked</a>
+  </div>
 
   {{if .Rows}}
   <div class="priority-bars">

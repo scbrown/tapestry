@@ -27,6 +27,7 @@ type prioritiesData struct {
 	GrandTot  int
 	Rigs      []string
 	FilterRig string
+	SortBy    string
 	Err       string
 }
 
@@ -111,19 +112,41 @@ func (s *Server) handlePriorities(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Build sorted rows P0-P4 (plus any extras)
 	var rows []priorityRow
 	grandTotal := 0
-	for p := 0; p <= 4; p++ {
-		if row, ok := byPri[p]; ok {
-			rows = append(rows, *row)
-			grandTotal += row.Total
-			delete(byPri, p)
-		}
-	}
 	for _, row := range byPri {
 		rows = append(rows, *row)
 		grandTotal += row.Total
+	}
+
+	sortBy := r.URL.Query().Get("sort")
+	if sortBy == "" {
+		sortBy = "priority"
+	}
+
+	switch sortBy {
+	case "total":
+		sort.Slice(rows, func(i, j int) bool {
+			return rows[i].Total > rows[j].Total
+		})
+	case "open":
+		sort.Slice(rows, func(i, j int) bool {
+			if rows[i].Open != rows[j].Open {
+				return rows[i].Open > rows[j].Open
+			}
+			return rows[i].Priority < rows[j].Priority
+		})
+	case "blocked":
+		sort.Slice(rows, func(i, j int) bool {
+			if rows[i].Blocked != rows[j].Blocked {
+				return rows[i].Blocked > rows[j].Blocked
+			}
+			return rows[i].Priority < rows[j].Priority
+		})
+	default: // "priority" — P0-P4 order
+		sort.Slice(rows, func(i, j int) bool {
+			return rows[i].Priority < rows[j].Priority
+		})
 	}
 
 	s.render(w, r, "priorities", prioritiesData{
@@ -131,5 +154,6 @@ func (s *Server) handlePriorities(w http.ResponseWriter, r *http.Request) {
 		GrandTot:  grandTotal,
 		Rigs:      rigs,
 		FilterRig: filterRig,
+		SortBy:    sortBy,
 	})
 }

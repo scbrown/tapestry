@@ -19,6 +19,11 @@
 
   <div class="results-meta">{{.Total}} distinct labels{{if .FilterRig}} in {{rigName .FilterRig}}{{else}} across all rigs{{end}}</div>
 
+  <div class="filters">
+    <a href="/labels{{if .FilterRig}}?rig={{.FilterRig}}{{end}}" {{if eq .SortBy "count"}}class="active"{{end}}>By count</a>
+    <a href="/labels?sort=name{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" {{if eq .SortBy "name"}}class="active"{{end}}>By name</a>
+  </div>
+
   {{if .Labels}}
   <div class="label-cloud">
     {{range .Labels}}

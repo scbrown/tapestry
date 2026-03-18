@@ -23,6 +23,7 @@ type labelsData struct {
 	Filter    string // selected label
 	Issues    []labelIssueEntry
 	Assignees []string
+	SortBy    string
 	Err       string
 }
 
@@ -125,12 +126,25 @@ func (s *Server) handleLabels(w http.ResponseWriter, r *http.Request) {
 	for label, count := range merged {
 		labels = append(labels, labelEntry{Label: label, Count: count})
 	}
-	sort.Slice(labels, func(i, j int) bool {
-		if labels[i].Count != labels[j].Count {
-			return labels[i].Count > labels[j].Count
-		}
-		return labels[i].Label < labels[j].Label
-	})
+
+	sortBy := r.URL.Query().Get("sort")
+	if sortBy == "" {
+		sortBy = "count"
+	}
+
+	switch sortBy {
+	case "name":
+		sort.Slice(labels, func(i, j int) bool {
+			return labels[i].Label < labels[j].Label
+		})
+	default: // "count"
+		sort.Slice(labels, func(i, j int) bool {
+			if labels[i].Count != labels[j].Count {
+				return labels[i].Count > labels[j].Count
+			}
+			return labels[i].Label < labels[j].Label
+		})
+	}
 
 	sort.Slice(allIssues, func(i, j int) bool {
 		if allIssues[i].Issue.Priority != allIssues[j].Issue.Priority {
@@ -147,5 +161,6 @@ func (s *Server) handleLabels(w http.ResponseWriter, r *http.Request) {
 		Filter:    filter,
 		Issues:    allIssues,
 		Assignees: assignees,
+		SortBy:    sortBy,
 	})
 }
