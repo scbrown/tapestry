@@ -5996,6 +5996,306 @@ func TestDesignApprove_InvalidName(t *testing.T) {
 	}
 }
 
+func TestParseBeadLink(t *testing.T) {
+	tests := []struct {
+		name   string
+		input  string
+		wantID string
+		wantDB string
+	}{
+		{"simple", "<!-- bead: aegis-abc123 -->", "aegis-abc123", "aegis"},
+		{"with db", "<!-- bead: gastown/gt-xyz -->", "gt-xyz", "gastown"},
+		{"extra spaces", "<!--  bead:  aegis-def  -->", "aegis-def", "aegis"},
+		{"in content", "some text\n<!-- bead: aegis-test -->\nmore text", "aegis-test", "aegis"},
+		{"no match", "no bead link here", "", ""},
+		{"empty", "", "", ""},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotID, gotDB := parseBeadLink(tt.input)
+			if gotID != tt.wantID {
+				t.Errorf("parseBeadLink(%q) ID = %q, want %q", tt.input, gotID, tt.wantID)
+			}
+			if gotDB != tt.wantDB {
+				t.Errorf("parseBeadLink(%q) DB = %q, want %q", tt.input, gotDB, tt.wantDB)
+			}
+		})
+	}
+}
+
+func TestParseMentions(t *testing.T) {
+	tests := []struct {
+		name  string
+		input string
+		want  []string
+	}{
+		{"single mention", "@arnold check this", []string{"arnold"}},
+		{"multiple mentions", "@arnold @hammond please review", []string{"arnold", "hammond"}},
+		{"duplicate mentions", "@arnold @arnold only once", []string{"arnold"}},
+		{"no mentions", "no mentions here", nil},
+		{"mention in sentence", "hey @stiwi what do you think?", []string{"stiwi"}},
+		{"hyphenated name", "@aegis-arnold ok", []string{"aegis-arnold"}},
+		{"underscore name", "@crew_lead ok", []string{"crew_lead"}},
+		{"empty input", "", nil},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := parseMentions(tt.input)
+			if len(got) != len(tt.want) {
+				t.Fatalf("parseMentions(%q) = %v (len %d), want %v (len %d)", tt.input, got, len(got), tt.want, len(tt.want))
+			}
+			for i, g := range got {
+				if g != tt.want[i] {
+					t.Errorf("parseMentions(%q)[%d] = %q, want %q", tt.input, i, g, tt.want[i])
+				}
+			}
+		})
+	}
+}
+
+func TestRenderMarkdown(t *testing.T) {
+	tests := []struct {
+		name    string
+		input   string
+		want    string // substring to check
+		wantErr bool
+	}{
+		{"heading", "# Hello", "<h1>Hello</h1>", false},
+		{"bold", "**bold**", "<strong>bold</strong>", false},
+		{"link", "[link](http://example.com)", `<a href="http://example.com">link</a>`, false},
+		{"code block", "```go\nfmt.Println()\n```", "<code", false},
+		{"empty", "", "", false},
+		{"gfm table", "| a | b |\n|---|---|\n| 1 | 2 |", "<table>", false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := renderMarkdown(tt.input)
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("renderMarkdown(%q) err = %v, wantErr %v", tt.input, err, tt.wantErr)
+			}
+			if tt.want != "" && !strings.Contains(string(got), tt.want) {
+				t.Errorf("renderMarkdown(%q) = %q, want substring %q", tt.input, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestDesignsPage_FilterLinks(t *testing.T) {
+	srv := New(nil)
+
+	filters := []string{"", "review", "progress", "done"}
+	for _, f := range filters {
+		t.Run("filter="+f, func(t *testing.T) {
+			url := "/designs"
+			if f != "" {
+				url += "?filter=" + f
+			}
+			req := httptest.NewRequest("GET", url, nil)
+			w := httptest.NewRecorder()
+			srv.ServeHTTP(w, req)
+			if w.Code != http.StatusOK {
+				t.Fatalf("GET %s status = %d, want %d", url, w.Code, http.StatusOK)
+			}
+		})
+	}
+}
+
+func TestDesignsPage_HXPartial(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/designs", nil)
+	req.Header.Set("HX-Request", "true")
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("HTMX GET /designs status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if strings.Contains(body, "<!DOCTYPE html>") {
+		t.Error("HTMX designs should return partial, not full page")
+	}
+}
+
+func TestDesignView_ValidNames(t *testing.T) {
+	srv := New(nil)
+	names := []string{"simple", "with-hyphens", "with_underscores", "Mixed123"}
+	for _, name := range names {
+		t.Run(name, func(t *testing.T) {
+			req := httptest.NewRequest("GET", "/designs/"+name, nil)
+			w := httptest.NewRecorder()
+			srv.ServeHTTP(w, req)
+			// Should not 404 due to name validation (may 200 or 404 from forgejo)
+			if w.Code == http.StatusBadRequest {
+				t.Errorf("GET /designs/%s should not return 400", name)
+			}
+		})
+	}
+}
+
+func TestDesignView_InvalidNames(t *testing.T) {
+	srv := New(nil)
+	tests := []struct {
+		name string
+		path string
+	}{
+		{"dots", "/designs/has.dots"},
+		{"slash", "/designs/has/slash"},
+		{"html", "/designs/has%3Chtml%3E"},
+		{"spaces", "/designs/has%20spaces"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req := httptest.NewRequest("GET", tt.path, nil)
+			w := httptest.NewRecorder()
+			srv.ServeHTTP(w, req)
+			if w.Code != http.StatusNotFound {
+				t.Errorf("GET %s status = %d, want 404", tt.path, w.Code)
+			}
+		})
+	}
+}
+
+func TestDesignComment_InvalidAuthor(t *testing.T) {
+	srv := New(nil)
+	body := strings.NewReader("bead_id=x&bead_db=y&author=bad<script>&body=test")
+	req := httptest.NewRequest("POST", "/designs/test-doc/comment", body)
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusSeeOther {
+		t.Fatalf("POST design comment (bad author) status = %d, want %d", w.Code, http.StatusSeeOther)
+	}
+	loc := w.Header().Get("Location")
+	if !strings.Contains(loc, "feedback=invalid") {
+		t.Errorf("expected redirect to feedback=invalid, got: %s", loc)
+	}
+}
+
+func TestDesignComment_WithMockDS(t *testing.T) {
+	mock := &mockDataSource{}
+	srv := New(mock)
+	body := strings.NewReader("bead_id=aegis-abc&bead_db=aegis&author=stiwi&body=looks+good")
+	req := httptest.NewRequest("POST", "/designs/test-doc/comment", body)
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusSeeOther {
+		t.Fatalf("POST design comment status = %d, want %d", w.Code, http.StatusSeeOther)
+	}
+	loc := w.Header().Get("Location")
+	if !strings.Contains(loc, "feedback=ok") {
+		t.Errorf("expected redirect to feedback=ok, got: %s", loc)
+	}
+}
+
+func TestDesignComment_NoDataSource(t *testing.T) {
+	srv := New(nil)
+	body := strings.NewReader("bead_id=aegis-abc&bead_db=aegis&author=stiwi&body=test")
+	req := httptest.NewRequest("POST", "/designs/test-doc/comment", body)
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusSeeOther {
+		t.Fatalf("POST design comment (nil ds) status = %d, want %d", w.Code, http.StatusSeeOther)
+	}
+	loc := w.Header().Get("Location")
+	if !strings.Contains(loc, "feedback=nodb") {
+		t.Errorf("expected redirect to feedback=nodb, got: %s", loc)
+	}
+}
+
+func TestDesignApprove_WithMockDS(t *testing.T) {
+	mock := &mockDataSource{}
+	srv := New(mock)
+	body := strings.NewReader("bead_id=aegis-abc&bead_db=aegis")
+	req := httptest.NewRequest("POST", "/designs/test-doc/approve", body)
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusSeeOther {
+		t.Fatalf("POST design approve status = %d, want %d", w.Code, http.StatusSeeOther)
+	}
+	loc := w.Header().Get("Location")
+	if !strings.Contains(loc, "feedback=approved") {
+		t.Errorf("expected redirect to feedback=approved, got: %s", loc)
+	}
+}
+
+func TestDesignView_FeedbackBanners(t *testing.T) {
+	srv := New(nil)
+	feedbacks := []struct {
+		param string
+		want  string
+	}{
+		{"ok", "Comment added"},
+		{"approved", "approved"},
+		{"missing", "required"},
+		{"error", "Failed"},
+	}
+	for _, fb := range feedbacks {
+		t.Run("feedback="+fb.param, func(t *testing.T) {
+			req := httptest.NewRequest("GET", "/designs/test-doc?feedback="+fb.param, nil)
+			w := httptest.NewRecorder()
+			srv.ServeHTTP(w, req)
+			// May be 200 (renders template with feedback) or 404 (no forgejo)
+			if w.Code == http.StatusOK {
+				body := w.Body.String()
+				if !strings.Contains(body, fb.want) {
+					t.Errorf("GET /designs/test-doc?feedback=%s missing %q in body", fb.param, fb.want)
+				}
+			}
+		})
+	}
+}
+
+func TestDesignComment_MethodNotAllowed(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/designs/test-doc/comment", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	// GET to /designs/test-doc/comment should 404 (only POST is routed)
+	if w.Code != http.StatusNotFound {
+		t.Fatalf("GET /designs/test-doc/comment status = %d, want 404", w.Code)
+	}
+}
+
+func TestDesignApprove_MethodNotAllowed(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/designs/test-doc/approve", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusNotFound {
+		t.Fatalf("GET /designs/test-doc/approve status = %d, want 404", w.Code)
+	}
+}
+
+func TestDesignUnknownAction_404(t *testing.T) {
+	srv := New(nil)
+	body := strings.NewReader("data=test")
+	req := httptest.NewRequest("POST", "/designs/test-doc/unknown", body)
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusNotFound {
+		t.Fatalf("POST /designs/test-doc/unknown status = %d, want 404", w.Code)
+	}
+}
+
 func TestRecapPage_AutoRefresh(t *testing.T) {
 	srv := New(nil)
 	req := httptest.NewRequest("GET", "/recap", nil)
