@@ -102,7 +102,9 @@
           <span class="exec-blocker-title">{{.Issue.Title}}</span>
           <span class="exec-blocker-by">
             blocked by <a href="/bead/{{lower .BlockerRig}}/{{.BlockerID}}" hx-boost="true">{{.BlockerID}}</a>
-            {{if .Owner}}<span class="text-dim">({{shortActor .Owner}})</span>{{end}}
+            <span class="priority-badge p{{.BlockerPriority}}">P{{.BlockerPriority}}</span>
+            <span class="badge status-{{.BlockerStatus}}">{{.BlockerStatus}}</span>
+            {{if .Owner}}<span class="text-dim">({{shortActor .Owner}}{{if not .BlockerUpdatedAt.IsZero}} · {{timeAgo .BlockerUpdatedAt}}{{end}})</span>{{end}}
           </span>
         </div>
         {{end}}
