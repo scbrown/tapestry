@@ -18,13 +18,14 @@ type staleEntry struct {
 }
 
 type staleData struct {
-	Entries   []staleEntry
-	Total     int
-	Days      int
-	Rigs      []string
-	FilterRig string
-	Assignees []string
-	Err       string
+	Entries        []staleEntry
+	Total          int
+	Days           int
+	Rigs           []string
+	FilterRig      string
+	FilterPriority string
+	Assignees      []string
+	Err            string
 }
 
 func (s *Server) handleStale(w http.ResponseWriter, r *http.Request) {
@@ -114,6 +115,19 @@ func (s *Server) handleStale(w http.ResponseWriter, r *http.Request) {
 		all = filtered
 	}
 
+	filterPriority := r.URL.Query().Get("priority")
+	if filterPriority != "" {
+		if pri, err := strconv.Atoi(filterPriority); err == nil {
+			filtered := all[:0]
+			for _, e := range all {
+				if e.Issue.Priority == pri {
+					filtered = append(filtered, e)
+				}
+			}
+			all = filtered
+		}
+	}
+
 	sort.Slice(all, func(i, j int) bool {
 		return all[i].DaysStale > all[j].DaysStale
 	})
@@ -134,11 +148,12 @@ func (s *Server) handleStale(w http.ResponseWriter, r *http.Request) {
 	sort.Strings(assignees)
 
 	s.render(w, r, "stale", staleData{
-		Entries:   all,
-		Total:     len(all),
-		Days:      days,
-		Rigs:      rigs,
-		FilterRig: filterRig,
-		Assignees: assignees,
+		Entries:        all,
+		Total:          len(all),
+		Days:           days,
+		Rigs:           rigs,
+		FilterRig:      filterRig,
+		FilterPriority: filterPriority,
+		Assignees:      assignees,
 	})
 }

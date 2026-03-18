@@ -6845,6 +6845,31 @@ func TestStalePage_InlinePriority(t *testing.T) {
 	}
 }
 
+func TestStalePage_PriorityFilter(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issues: []dolt.Issue{
+			{ID: "st1", Title: "P0 stale", Status: "in_progress", Priority: 0, UpdatedAt: time.Now().Add(-10 * 24 * time.Hour)},
+			{ID: "st2", Title: "P2 stale", Status: "in_progress", Priority: 2, UpdatedAt: time.Now().Add(-10 * 24 * time.Hour)},
+		},
+		assignees: []string{"aegis/crew/arnold"},
+	}
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/stale?priority=0", nil)
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "All priorities") {
+		t.Error("expected 'All priorities' badge")
+	}
+	if !strings.Contains(body, "P0 stale") {
+		t.Error("expected P0 stale item")
+	}
+}
+
 func TestBlockedPage_InlinePriority(t *testing.T) {
 	ds := &mockDataSource{
 		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},

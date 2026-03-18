@@ -1,7 +1,7 @@
 {{define "title"}}Stale Work{{end}}
 
 {{define "content"}}
-<div class="stale-view" hx-get="/stale?days={{.Days}}{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" hx-trigger="every 120s" hx-select=".stale-view" hx-swap="outerHTML">
+<div class="stale-view" hx-get="/stale?days={{.Days}}{{if .FilterRig}}&rig={{.FilterRig}}{{end}}{{if .FilterPriority}}&priority={{.FilterPriority}}{{end}}" hx-trigger="every 120s" hx-select=".stale-view" hx-swap="outerHTML">
   <h1>Stale Work</h1>
 
   {{if .Err}}
@@ -23,12 +23,21 @@
 
   {{if gt (len .Rigs) 1}}
   <div class="dep-filters" style="margin-top:0.5rem">
-    <a href="/stale?days={{.Days}}" class="badge {{if not .FilterRig}}filter-active{{end}}">All rigs</a>
+    <a href="/stale?days={{.Days}}{{if .FilterPriority}}&priority={{.FilterPriority}}{{end}}" class="badge {{if not .FilterRig}}filter-active{{end}}">All rigs</a>
     {{range .Rigs}}
-    <a href="/stale?days={{$.Days}}&rig={{.}}" class="badge {{if eq . $.FilterRig}}filter-active{{end}}">{{rigName .}}</a>
+    <a href="/stale?days={{$.Days}}&rig={{.}}{{if $.FilterPriority}}&priority={{$.FilterPriority}}{{end}}" class="badge {{if eq . $.FilterRig}}filter-active{{end}}">{{rigName .}}</a>
     {{end}}
   </div>
   {{end}}
+
+  <div class="dep-filters" style="margin-top:0.5rem">
+    <a href="/stale?days={{.Days}}{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" class="badge {{if not .FilterPriority}}filter-active{{end}}">All priorities</a>
+    <a href="/stale?days={{.Days}}{{if .FilterRig}}&rig={{.FilterRig}}{{end}}&priority=0" class="badge {{if eq .FilterPriority "0"}}filter-active{{end}}"><span class="priority-badge p0">P0</span></a>
+    <a href="/stale?days={{.Days}}{{if .FilterRig}}&rig={{.FilterRig}}{{end}}&priority=1" class="badge {{if eq .FilterPriority "1"}}filter-active{{end}}"><span class="priority-badge p1">P1</span></a>
+    <a href="/stale?days={{.Days}}{{if .FilterRig}}&rig={{.FilterRig}}{{end}}&priority=2" class="badge {{if eq .FilterPriority "2"}}filter-active{{end}}"><span class="priority-badge p2">P2</span></a>
+    <a href="/stale?days={{.Days}}{{if .FilterRig}}&rig={{.FilterRig}}{{end}}&priority=3" class="badge {{if eq .FilterPriority "3"}}filter-active{{end}}"><span class="priority-badge p3">P3</span></a>
+    <a href="/stale?days={{.Days}}{{if .FilterRig}}&rig={{.FilterRig}}{{end}}&priority=4" class="badge {{if eq .FilterPriority "4"}}filter-active{{end}}"><span class="priority-badge p4">P4</span></a>
+  </div>
 
   <div class="results-meta">{{.Total}} in-progress/hooked beads not updated in {{.Days}}+ days{{if .FilterRig}} in {{rigName .FilterRig}}{{end}}</div>
 
