@@ -9851,6 +9851,29 @@ func TestFreshnessPage_AutoRefresh(t *testing.T) {
 	}
 }
 
+func TestFreshnessPage_SortOptions(t *testing.T) {
+	sorts := []string{"", "updated", "name", "total", "stale"}
+	for _, s := range sorts {
+		t.Run("sort="+s, func(t *testing.T) {
+			srv := New(nil)
+			url := "/freshness"
+			if s != "" {
+				url += "?sort=" + s
+			}
+			req := httptest.NewRequest("GET", url, nil)
+			w := httptest.NewRecorder()
+			srv.ServeHTTP(w, req)
+			if w.Code != http.StatusOK {
+				t.Fatalf("GET %s status = %d, want %d", url, w.Code, http.StatusOK)
+			}
+			body := w.Body.String()
+			if !strings.Contains(body, "By updated") {
+				t.Error("expected sort options in page")
+			}
+		})
+	}
+}
+
 // ── /complexity ──
 
 func TestComplexityPage(t *testing.T) {
@@ -11366,6 +11389,29 @@ func TestOrphansPage_RigFilter(t *testing.T) {
 	}
 }
 
+func TestOrphansPage_SortOptions(t *testing.T) {
+	sorts := []string{"", "age", "priority", "reason", "rig"}
+	for _, s := range sorts {
+		t.Run("sort="+s, func(t *testing.T) {
+			srv := New(nil)
+			url := "/orphans"
+			if s != "" {
+				url += "?sort=" + s
+			}
+			req := httptest.NewRequest("GET", url, nil)
+			w := httptest.NewRecorder()
+			srv.ServeHTTP(w, req)
+			if w.Code != http.StatusOK {
+				t.Fatalf("GET %s status = %d, want %d", url, w.Code, http.StatusOK)
+			}
+			body := w.Body.String()
+			if !strings.Contains(body, "By age") {
+				t.Error("expected sort options in page")
+			}
+		})
+	}
+}
+
 // ── Dwell Page ──────────────────────────────────────────────
 
 func TestDwellPage_NilDataSource(t *testing.T) {
@@ -11468,6 +11514,29 @@ func TestDwellPage_ZoneFilter(t *testing.T) {
 	}
 	if strings.Contains(body, "Fresh one") {
 		t.Error("danger zone should not include 2-day old bead")
+	}
+}
+
+func TestDwellPage_SortOptions(t *testing.T) {
+	sorts := []string{"", "dwell", "priority", "status", "assignee"}
+	for _, s := range sorts {
+		t.Run("sort="+s, func(t *testing.T) {
+			srv := New(nil)
+			url := "/dwell"
+			if s != "" {
+				url += "?sort=" + s
+			}
+			req := httptest.NewRequest("GET", url, nil)
+			w := httptest.NewRecorder()
+			srv.ServeHTTP(w, req)
+			if w.Code != http.StatusOK {
+				t.Fatalf("GET %s status = %d, want %d", url, w.Code, http.StatusOK)
+			}
+			body := w.Body.String()
+			if !strings.Contains(body, "By dwell") {
+				t.Error("expected sort options in page")
+			}
+		})
 	}
 }
 
@@ -11576,6 +11645,29 @@ func TestTransfersPage_WindowFilter(t *testing.T) {
 		if w.Code != http.StatusOK {
 			t.Fatalf("window=%s status = %d, want %d", window, w.Code, http.StatusOK)
 		}
+	}
+}
+
+func TestTransfersPage_SortOptions(t *testing.T) {
+	sorts := []string{"", "date", "from", "to", "rig"}
+	for _, s := range sorts {
+		t.Run("sort="+s, func(t *testing.T) {
+			srv := New(nil)
+			url := "/transfers"
+			if s != "" {
+				url += "?sort=" + s
+			}
+			req := httptest.NewRequest("GET", url, nil)
+			w := httptest.NewRecorder()
+			srv.ServeHTTP(w, req)
+			if w.Code != http.StatusOK {
+				t.Fatalf("GET %s status = %d, want %d", url, w.Code, http.StatusOK)
+			}
+			body := w.Body.String()
+			if !strings.Contains(body, "By date") {
+				t.Error("expected sort options in page")
+			}
+		})
 	}
 }
 

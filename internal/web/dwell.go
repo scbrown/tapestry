@@ -26,6 +26,7 @@ type dwellData struct {
 	Rigs        []string
 	FilterRig   string
 	Zone        string // "all", "danger" (14d+), "warning" (7-14d), "ok" (<7d)
+	SortBy      string
 	Assignees   []string
 	Err         string
 }
@@ -51,8 +52,13 @@ func (s *Server) handleDwell(w http.ResponseWriter, r *http.Request) {
 	if zone == "" {
 		zone = "all"
 	}
+	sortBy := r.URL.Query().Get("sort")
+	if sortBy == "" {
+		sortBy = "dwell"
+	}
 	data.FilterRig = filterRig
 	data.Zone = zone
+	data.SortBy = sortBy
 
 	var rigs []string
 	for _, db := range dbs {
@@ -133,10 +139,34 @@ func (s *Server) handleDwell(w http.ResponseWriter, r *http.Request) {
 	}
 	sort.Strings(data.Assignees)
 
-	// Sort by dwell time descending (longest first)
-	sort.Slice(all, func(i, j int) bool {
-		return all[i].UpdatedAt.Before(all[j].UpdatedAt)
-	})
+	// Sort
+	switch sortBy {
+	case "priority":
+		sort.Slice(all, func(i, j int) bool {
+			if all[i].Priority != all[j].Priority {
+				return all[i].Priority < all[j].Priority
+			}
+			return all[i].UpdatedAt.Before(all[j].UpdatedAt)
+		})
+	case "status":
+		sort.Slice(all, func(i, j int) bool {
+			if all[i].Status != all[j].Status {
+				return all[i].Status < all[j].Status
+			}
+			return all[i].UpdatedAt.Before(all[j].UpdatedAt)
+		})
+	case "assignee":
+		sort.Slice(all, func(i, j int) bool {
+			if all[i].Assignee != all[j].Assignee {
+				return all[i].Assignee < all[j].Assignee
+			}
+			return all[i].UpdatedAt.Before(all[j].UpdatedAt)
+		})
+	default: // "dwell" — longest first
+		sort.Slice(all, func(i, j int) bool {
+			return all[i].UpdatedAt.Before(all[j].UpdatedAt)
+		})
+	}
 
 	// Compute bar widths relative to max dwell
 	if len(all) > 0 {

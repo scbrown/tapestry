@@ -20,6 +20,13 @@
     </div>
   </div>
 
+  <div class="filters">
+    <a href="/orphans{{if .FilterRig}}?rig={{.FilterRig}}{{end}}" {{if eq .SortBy "age"}}class="active"{{end}}>By age</a>
+    <a href="/orphans?sort=priority{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" {{if eq .SortBy "priority"}}class="active"{{end}}>By priority</a>
+    <a href="/orphans?sort=reason{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" {{if eq .SortBy "reason"}}class="active"{{end}}>By reason</a>
+    <a href="/orphans?sort=rig{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" {{if eq .SortBy "rig"}}class="active"{{end}}>By rig</a>
+  </div>
+
   {{if .Items}}
   <div class="batch-bar" id="batch-bar-orphans" style="display:none">
     <span class="batch-count">0 selected</span>

@@ -16,6 +16,13 @@
     <a href="/transfers?window=90d{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" class="badge {{if eq .Window "90d"}}status-open{{end}}">90 days</a>
   </div>
 
+  <div class="filters">
+    <a href="/transfers?window={{.Window}}{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" {{if eq .SortBy "date"}}class="active"{{end}}>By date</a>
+    <a href="/transfers?sort=from&window={{.Window}}{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" {{if eq .SortBy "from"}}class="active"{{end}}>By from</a>
+    <a href="/transfers?sort=to&window={{.Window}}{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" {{if eq .SortBy "to"}}class="active"{{end}}>By to</a>
+    <a href="/transfers?sort=rig&window={{.Window}}{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" {{if eq .SortBy "rig"}}class="active"{{end}}>By rig</a>
+  </div>
+
   {{if .Err}}
   <div class="error-banner">{{.Err}}</div>
   {{else if .Transfers}}

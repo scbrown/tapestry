@@ -24,6 +24,7 @@ type dbFreshness struct {
 type freshnessData struct {
 	GeneratedAt time.Time
 	FilterRig   string
+	SortBy      string
 	Rigs        []string
 
 	Databases []dbFreshness
@@ -40,7 +41,11 @@ type freshnessData struct {
 func (s *Server) handleFreshness(w http.ResponseWriter, r *http.Request) {
 	now := time.Now()
 	filterRig := r.URL.Query().Get("rig")
-	data := freshnessData{GeneratedAt: now, FilterRig: filterRig}
+	sortBy := r.URL.Query().Get("sort")
+	if sortBy == "" {
+		sortBy = "updated"
+	}
+	data := freshnessData{GeneratedAt: now, FilterRig: filterRig, SortBy: sortBy}
 
 	if s.ds == nil {
 		s.render(w, r, "freshness", data)
@@ -121,9 +126,24 @@ func (s *Server) handleFreshness(w http.ResponseWriter, r *http.Request) {
 
 	data.TotalDBs = len(data.Databases)
 
-	sort.Slice(data.Databases, func(i, j int) bool {
-		return data.Databases[i].LastUpdate.After(data.Databases[j].LastUpdate)
-	})
+	switch sortBy {
+	case "name":
+		sort.Slice(data.Databases, func(i, j int) bool {
+			return data.Databases[i].Name < data.Databases[j].Name
+		})
+	case "total":
+		sort.Slice(data.Databases, func(i, j int) bool {
+			return data.Databases[i].TotalBeads > data.Databases[j].TotalBeads
+		})
+	case "stale":
+		sort.Slice(data.Databases, func(i, j int) bool {
+			return data.Databases[i].StaleDays > data.Databases[j].StaleDays
+		})
+	default: // "updated"
+		sort.Slice(data.Databases, func(i, j int) bool {
+			return data.Databases[i].LastUpdate.After(data.Databases[j].LastUpdate)
+		})
+	}
 
 	s.render(w, r, "freshness", data)
 }

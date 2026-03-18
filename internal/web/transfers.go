@@ -23,6 +23,7 @@ type transferData struct {
 	Total       int
 	Rigs        []string
 	FilterRig   string
+	SortBy      string
 	Window      string // "7d", "30d", "90d"
 	Err         string
 }
@@ -48,8 +49,13 @@ func (s *Server) handleTransfers(w http.ResponseWriter, r *http.Request) {
 	if window == "" {
 		window = "30d"
 	}
+	sortBy := r.URL.Query().Get("sort")
+	if sortBy == "" {
+		sortBy = "date"
+	}
 	data.FilterRig = filterRig
 	data.Window = window
+	data.SortBy = sortBy
 
 	var rigs []string
 	for _, db := range dbs {
@@ -119,9 +125,33 @@ func (s *Server) handleTransfers(w http.ResponseWriter, r *http.Request) {
 		all = append(all, r.events...)
 	}
 
-	sort.Slice(all, func(i, j int) bool {
-		return all[i].Timestamp.After(all[j].Timestamp)
-	})
+	switch sortBy {
+	case "from":
+		sort.Slice(all, func(i, j int) bool {
+			if all[i].From != all[j].From {
+				return all[i].From < all[j].From
+			}
+			return all[i].Timestamp.After(all[j].Timestamp)
+		})
+	case "to":
+		sort.Slice(all, func(i, j int) bool {
+			if all[i].To != all[j].To {
+				return all[i].To < all[j].To
+			}
+			return all[i].Timestamp.After(all[j].Timestamp)
+		})
+	case "rig":
+		sort.Slice(all, func(i, j int) bool {
+			if all[i].Rig != all[j].Rig {
+				return all[i].Rig < all[j].Rig
+			}
+			return all[i].Timestamp.After(all[j].Timestamp)
+		})
+	default: // "date"
+		sort.Slice(all, func(i, j int) bool {
+			return all[i].Timestamp.After(all[j].Timestamp)
+		})
+	}
 
 	if len(all) > 200 {
 		all = all[:200]

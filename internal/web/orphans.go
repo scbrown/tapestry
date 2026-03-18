@@ -23,6 +23,7 @@ type orphansData struct {
 	Total       int
 	Rigs        []string
 	FilterRig   string
+	SortBy      string
 	Assignees   []string
 }
 
@@ -43,6 +44,12 @@ func (s *Server) handleOrphans(w http.ResponseWriter, r *http.Request) {
 	}
 
 	filterRig := r.URL.Query().Get("rig")
+	sortBy := r.URL.Query().Get("sort")
+	if sortBy == "" {
+		sortBy = "age"
+	}
+	data.SortBy = sortBy
+	data.FilterRig = filterRig
 	var rigs []string
 	for _, db := range dbs {
 		rigs = append(rigs, db.Name)
@@ -167,10 +174,34 @@ func (s *Server) handleOrphans(w http.ResponseWriter, r *http.Request) {
 	}
 	sort.Strings(data.Assignees)
 
-	// Sort by age descending (oldest orphans first)
-	sort.Slice(allItems, func(i, j int) bool {
-		return allItems[i].Age > allItems[j].Age
-	})
+	// Sort
+	switch sortBy {
+	case "priority":
+		sort.Slice(allItems, func(i, j int) bool {
+			if allItems[i].Issue.Priority != allItems[j].Issue.Priority {
+				return allItems[i].Issue.Priority < allItems[j].Issue.Priority
+			}
+			return allItems[i].Age > allItems[j].Age
+		})
+	case "reason":
+		sort.Slice(allItems, func(i, j int) bool {
+			if allItems[i].Reason != allItems[j].Reason {
+				return allItems[i].Reason < allItems[j].Reason
+			}
+			return allItems[i].Age > allItems[j].Age
+		})
+	case "rig":
+		sort.Slice(allItems, func(i, j int) bool {
+			if allItems[i].Rig != allItems[j].Rig {
+				return allItems[i].Rig < allItems[j].Rig
+			}
+			return allItems[i].Age > allItems[j].Age
+		})
+	default: // "age"
+		sort.Slice(allItems, func(i, j int) bool {
+			return allItems[i].Age > allItems[j].Age
+		})
+	}
 
 	if len(allItems) > 100 {
 		allItems = allItems[:100]
