@@ -1233,10 +1233,16 @@ type agentsData struct {
 	TotalClosed  int
 	TotalOpen    int
 	TotalBlocked int
+	SortBy       string
 }
 
 func (s *Server) handleAgents(w http.ResponseWriter, r *http.Request) {
-	data := agentsData{}
+	data := agentsData{
+		SortBy: r.URL.Query().Get("sort"),
+	}
+	if data.SortBy == "" {
+		data.SortBy = "active"
+	}
 
 	if s.ds == nil {
 		s.render(w, r, "agents", data)
@@ -1308,12 +1314,35 @@ func (s *Server) handleAgents(w http.ResponseWriter, r *http.Request) {
 	for _, a := range agentMap {
 		data.Agents = append(data.Agents, *a)
 	}
-	sort.Slice(data.Agents, func(i, j int) bool {
-		if data.Agents[i].InProgress != data.Agents[j].InProgress {
-			return data.Agents[i].InProgress > data.Agents[j].InProgress
-		}
-		return data.Agents[i].LastActive.After(data.Agents[j].LastActive)
-	})
+	switch data.SortBy {
+	case "name":
+		sort.Slice(data.Agents, func(i, j int) bool {
+			return data.Agents[i].Name < data.Agents[j].Name
+		})
+	case "owned":
+		sort.Slice(data.Agents, func(i, j int) bool {
+			return data.Agents[i].Owned > data.Agents[j].Owned
+		})
+	case "closed":
+		sort.Slice(data.Agents, func(i, j int) bool {
+			return data.Agents[i].Closed > data.Agents[j].Closed
+		})
+	case "handoffs":
+		sort.Slice(data.Agents, func(i, j int) bool {
+			return data.Agents[i].TotalHandoffs > data.Agents[j].TotalHandoffs
+		})
+	case "recent":
+		sort.Slice(data.Agents, func(i, j int) bool {
+			return data.Agents[i].LastActive.After(data.Agents[j].LastActive)
+		})
+	default: // "active"
+		sort.Slice(data.Agents, func(i, j int) bool {
+			if data.Agents[i].InProgress != data.Agents[j].InProgress {
+				return data.Agents[i].InProgress > data.Agents[j].InProgress
+			}
+			return data.Agents[i].LastActive.After(data.Agents[j].LastActive)
+		})
+	}
 
 	// Compute summary stats
 	data.TotalAgents = len(data.Agents)

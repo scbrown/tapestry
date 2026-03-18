@@ -1,7 +1,16 @@
 {{define "title"}}Agents{{end}}
 {{define "content"}}
-<div class="agents-page" hx-get="/agents" hx-trigger="every 60s" hx-select=".agents-page" hx-swap="outerHTML">
+<div class="agents-page" hx-get="/agents{{if ne .SortBy "active"}}?sort={{.SortBy}}{{end}}" hx-trigger="every 60s" hx-select=".agents-page" hx-swap="outerHTML">
   <h1>Agents <small style="color:var(--comment)">({{.TotalAgents}})</small></h1>
+
+  <div class="filters">
+    <a href="/agents" {{if eq .SortBy "active"}}class="active"{{end}}>By active</a>
+    <a href="/agents?sort=owned" {{if eq .SortBy "owned"}}class="active"{{end}}>By owned</a>
+    <a href="/agents?sort=closed" {{if eq .SortBy "closed"}}class="active"{{end}}>By closed</a>
+    <a href="/agents?sort=handoffs" {{if eq .SortBy "handoffs"}}class="active"{{end}}>By handoffs</a>
+    <a href="/agents?sort=recent" {{if eq .SortBy "recent"}}class="active"{{end}}>By recent</a>
+    <a href="/agents?sort=name" {{if eq .SortBy "name"}}class="active"{{end}}>By name</a>
+  </div>
 
   {{if .Agents}}
   <div class="stat-grid" style="margin-bottom:1rem">

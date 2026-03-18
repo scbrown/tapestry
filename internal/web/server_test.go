@@ -1155,6 +1155,58 @@ func TestAgentsPage_SummaryStats(t *testing.T) {
 	}
 }
 
+func TestAgentsPage_SortOptions(t *testing.T) {
+	sorts := []string{"", "active", "owned", "closed", "handoffs", "recent", "name"}
+	for _, s := range sorts {
+		t.Run("sort="+s, func(t *testing.T) {
+			srv := New(nil)
+			url := "/agents"
+			if s != "" {
+				url += "?sort=" + s
+			}
+			req := httptest.NewRequest("GET", url, nil)
+			w := httptest.NewRecorder()
+			srv.ServeHTTP(w, req)
+			if w.Code != http.StatusOK {
+				t.Fatalf("GET %s status = %d, want %d", url, w.Code, http.StatusOK)
+			}
+			body := w.Body.String()
+			if !strings.Contains(body, "By active") {
+				t.Error("expected sort options in page")
+			}
+		})
+	}
+}
+
+func TestAgentsPage_SortWithData(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		agents: []dolt.AgentStats{
+			{Name: "aegis/crew/alice", Owned: 10, Closed: 5, Open: 3, InProgress: 2},
+			{Name: "aegis/crew/bob", Owned: 20, Closed: 15, Open: 4, InProgress: 1},
+		},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/agents?sort=owned", nil)
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /agents?sort=owned status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	// Bob should appear first (20 owned > 10 owned)
+	bobIdx := strings.Index(body, "bob")
+	aliceIdx := strings.Index(body, "alice")
+	if bobIdx < 0 || aliceIdx < 0 {
+		t.Fatal("expected both agents in output")
+	}
+	if bobIdx > aliceIdx {
+		t.Error("expected bob before alice when sorted by owned")
+	}
+}
+
 func TestEpicsPage_NilDataSource(t *testing.T) {
 	srv := New(nil)
 	req := httptest.NewRequest("GET", "/epics", nil)
