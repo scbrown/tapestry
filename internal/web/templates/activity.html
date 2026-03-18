@@ -1,29 +1,60 @@
 {{define "title"}}Activity{{end}}
 
 {{define "content"}}
-<div class="activity-view" hx-get="/activity?hours={{.Hours}}{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" hx-trigger="every 60s" hx-select=".activity-view" hx-swap="outerHTML">
+<div class="activity-view" hx-get="/activity?hours={{.Hours}}{{if .FilterRig}}&rig={{.FilterRig}}{{end}}{{if .FilterStatus}}&status={{.FilterStatus}}{{end}}{{if .FilterAgent}}&agent={{.FilterAgent}}{{end}}" hx-trigger="every 60s" hx-select=".activity-view" hx-swap="outerHTML">
   <h1>Recent Activity</h1>
 
   {{if .Err}}
   <div class="error">{{.Err}}</div>
   {{else}}
 
-  <div class="results-meta">{{.Total}} beads updated in the last {{.Hours}}h{{if .FilterRig}} in {{rigName .FilterRig}}{{end}}</div>
+  <div class="results-meta">{{.Total}} beads updated in the last {{.Hours}}h{{if .FilterRig}} in {{rigName .FilterRig}}{{end}}{{if .FilterStatus}} ({{.FilterStatus}}){{end}}{{if .FilterAgent}} by {{shortActor .FilterAgent}}{{end}}</div>
 
+  {{- $qNoHours := "" -}}
+  {{- if .FilterRig}}{{$qNoHours = printf "&rig=%s" .FilterRig}}{{end -}}
+  {{- if .FilterStatus}}{{$qNoHours = printf "%s&status=%s" $qNoHours .FilterStatus}}{{end -}}
+  {{- if .FilterAgent}}{{$qNoHours = printf "%s&agent=%s" $qNoHours .FilterAgent}}{{end -}}
   <div class="dep-filters">
-    <a href="/activity?hours=1{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" class="badge {{if eq .Hours 1}}filter-active{{end}}">1h</a>
-    <a href="/activity?hours=4{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" class="badge {{if eq .Hours 4}}filter-active{{end}}">4h</a>
-    <a href="/activity?hours=12{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" class="badge {{if eq .Hours 12}}filter-active{{end}}">12h</a>
-    <a href="/activity?hours=24{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" class="badge {{if eq .Hours 24}}filter-active{{end}}">24h</a>
-    <a href="/activity?hours=48{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" class="badge {{if eq .Hours 48}}filter-active{{end}}">48h</a>
-    <a href="/activity?hours=168{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" class="badge {{if eq .Hours 168}}filter-active{{end}}">7d</a>
+    <a href="/activity?hours=1{{$qNoHours}}" class="badge {{if eq .Hours 1}}filter-active{{end}}">1h</a>
+    <a href="/activity?hours=4{{$qNoHours}}" class="badge {{if eq .Hours 4}}filter-active{{end}}">4h</a>
+    <a href="/activity?hours=12{{$qNoHours}}" class="badge {{if eq .Hours 12}}filter-active{{end}}">12h</a>
+    <a href="/activity?hours=24{{$qNoHours}}" class="badge {{if eq .Hours 24}}filter-active{{end}}">24h</a>
+    <a href="/activity?hours=48{{$qNoHours}}" class="badge {{if eq .Hours 48}}filter-active{{end}}">48h</a>
+    <a href="/activity?hours=168{{$qNoHours}}" class="badge {{if eq .Hours 168}}filter-active{{end}}">7d</a>
   </div>
 
+  {{- $qNoRig := printf "hours=%d" .Hours -}}
+  {{- if .FilterStatus}}{{$qNoRig = printf "%s&status=%s" $qNoRig .FilterStatus}}{{end -}}
+  {{- if .FilterAgent}}{{$qNoRig = printf "%s&agent=%s" $qNoRig .FilterAgent}}{{end -}}
   {{if gt (len .Rigs) 1}}
   <div class="dep-filters" style="margin-top:0.25rem">
-    <a href="/activity?hours={{.Hours}}" class="badge {{if not .FilterRig}}filter-active{{end}}">All rigs</a>
+    <a href="/activity?{{$qNoRig}}" class="badge {{if not .FilterRig}}filter-active{{end}}">All rigs</a>
     {{range .Rigs}}
-    <a href="/activity?hours={{$.Hours}}&rig={{.}}" class="badge {{if eq . $.FilterRig}}filter-active{{end}}">{{rigName .}}</a>
+    <a href="/activity?{{$qNoRig}}&rig={{.}}" class="badge {{if eq . $.FilterRig}}filter-active{{end}}">{{rigName .}}</a>
+    {{end}}
+  </div>
+  {{end}}
+
+  {{- $qNoStatus := printf "hours=%d" .Hours -}}
+  {{- if .FilterRig}}{{$qNoStatus = printf "%s&rig=%s" $qNoStatus .FilterRig}}{{end -}}
+  {{- if .FilterAgent}}{{$qNoStatus = printf "%s&agent=%s" $qNoStatus .FilterAgent}}{{end -}}
+  <div class="dep-filters" style="margin-top:0.25rem">
+    <a href="/activity?{{$qNoStatus}}" class="badge {{if not .FilterStatus}}filter-active{{end}}">All statuses</a>
+    <a href="/activity?{{$qNoStatus}}&status=open" class="badge {{if eq .FilterStatus "open"}}filter-active{{end}}">open</a>
+    <a href="/activity?{{$qNoStatus}}&status=in_progress" class="badge {{if eq .FilterStatus "in_progress"}}filter-active{{end}}">in progress</a>
+    <a href="/activity?{{$qNoStatus}}&status=closed" class="badge {{if eq .FilterStatus "closed"}}filter-active{{end}}">closed</a>
+    <a href="/activity?{{$qNoStatus}}&status=blocked" class="badge {{if eq .FilterStatus "blocked"}}filter-active{{end}}">blocked</a>
+    <a href="/activity?{{$qNoStatus}}&status=deferred" class="badge {{if eq .FilterStatus "deferred"}}filter-active{{end}}">deferred</a>
+  </div>
+
+  {{- $qNoAgent := printf "hours=%d" .Hours -}}
+  {{- if .FilterRig}}{{$qNoAgent = printf "%s&rig=%s" $qNoAgent .FilterRig}}{{end -}}
+  {{- if .FilterStatus}}{{$qNoAgent = printf "%s&status=%s" $qNoAgent .FilterStatus}}{{end -}}
+  {{if gt (len .Assignees) 0}}
+  <div class="dep-filters" style="margin-top:0.25rem">
+    <a href="/activity?{{$qNoAgent}}" class="badge {{if not .FilterAgent}}filter-active{{end}}">All agents</a>
+    {{range .Assignees}}
+    <a href="/activity?{{$qNoAgent}}&agent={{.}}" class="badge {{if eq . $.FilterAgent}}filter-active{{end}}">{{shortActor .}}</a>
     {{end}}
   </div>
   {{end}}

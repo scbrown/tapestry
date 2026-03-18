@@ -3294,6 +3294,68 @@ func TestActivityPage_RigFilter(t *testing.T) {
 	}
 }
 
+func TestActivityPage_StatusFilter(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issues: []dolt.Issue{
+			{ID: "asf1", Title: "Open work", Status: "open", Priority: 1, UpdatedAt: time.Now()},
+			{ID: "asf2", Title: "Closed work", Status: "closed", Priority: 2, UpdatedAt: time.Now()},
+		},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/activity?hours=24&status=open", nil)
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /activity?status=open status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Open work") {
+		t.Error("expected 'Open work' in filtered results")
+	}
+	if strings.Contains(body, "Closed work") {
+		t.Error("should not show 'Closed work' when filtering by open status")
+	}
+	if !strings.Contains(body, "(open)") {
+		t.Error("expected status filter label '(open)' in results meta")
+	}
+	if !strings.Contains(body, "All statuses") {
+		t.Error("expected 'All statuses' filter badge")
+	}
+}
+
+func TestActivityPage_AgentFilter(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issues: []dolt.Issue{
+			{ID: "aaf1", Title: "Arnold task", Status: "open", Priority: 1, Assignee: "aegis/crew/arnold", UpdatedAt: time.Now()},
+			{ID: "aaf2", Title: "Grant task", Status: "open", Priority: 2, Assignee: "aegis/crew/grant", UpdatedAt: time.Now()},
+		},
+		assignees: []string{"aegis/crew/arnold", "aegis/crew/grant"},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/activity?hours=24&agent=aegis/crew/arnold", nil)
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /activity?agent= status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Arnold task") {
+		t.Error("expected 'Arnold task' in agent-filtered results")
+	}
+	if strings.Contains(body, "Grant task") {
+		t.Error("should not show 'Grant task' when filtering by arnold")
+	}
+	if !strings.Contains(body, "All agents") {
+		t.Error("expected 'All agents' filter badge")
+	}
+}
+
 func TestOwnersPage_NilDataSource(t *testing.T) {
 	srv := New(nil)
 	req := httptest.NewRequest("GET", "/owners", nil)

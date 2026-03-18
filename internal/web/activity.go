@@ -17,13 +17,15 @@ type activityEntry struct {
 }
 
 type activityData struct {
-	Entries   []activityEntry
-	Total     int
-	Hours     int
-	Rigs      []string // available rigs for filter
-	FilterRig string   // current rig filter
-	Assignees []string
-	Err       string
+	Entries       []activityEntry
+	Total         int
+	Hours         int
+	Rigs          []string // available rigs for filter
+	FilterRig     string   // current rig filter
+	FilterStatus  string   // current status filter
+	FilterAgent   string   // current agent/assignee filter
+	Assignees     []string
+	Err           string
 }
 
 func (s *Server) handleActivity(w http.ResponseWriter, r *http.Request) {
@@ -110,6 +112,30 @@ func (s *Server) handleActivity(w http.ResponseWriter, r *http.Request) {
 		all = filtered
 	}
 
+	// Apply status filter
+	filterStatus := r.URL.Query().Get("status")
+	if filterStatus != "" {
+		filtered := all[:0]
+		for _, e := range all {
+			if e.Issue.Status == filterStatus {
+				filtered = append(filtered, e)
+			}
+		}
+		all = filtered
+	}
+
+	// Apply agent/assignee filter
+	filterAgent := r.URL.Query().Get("agent")
+	if filterAgent != "" {
+		filtered := all[:0]
+		for _, e := range all {
+			if e.Issue.Assignee == filterAgent || e.Issue.Owner == filterAgent {
+				filtered = append(filtered, e)
+			}
+		}
+		all = filtered
+	}
+
 	// Sort by most recently updated first
 	sort.Slice(all, func(i, j int) bool {
 		return all[i].Issue.UpdatedAt.After(all[j].Issue.UpdatedAt)
@@ -136,11 +162,13 @@ func (s *Server) handleActivity(w http.ResponseWriter, r *http.Request) {
 	sort.Strings(assignees)
 
 	s.render(w, r, "activity", activityData{
-		Entries:   all,
-		Total:     len(all),
-		Hours:     hours,
-		Rigs:      rigs,
-		FilterRig: filterRig,
-		Assignees: assignees,
+		Entries:      all,
+		Total:        len(all),
+		Hours:        hours,
+		Rigs:         rigs,
+		FilterRig:    filterRig,
+		FilterStatus: filterStatus,
+		FilterAgent:  filterAgent,
+		Assignees:    assignees,
 	})
 }
