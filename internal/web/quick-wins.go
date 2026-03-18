@@ -25,6 +25,7 @@ type quickWinsData struct {
 	Total       int
 	Rigs        []string
 	FilterRig   string
+	SortBy      string
 	Assignees   []string
 }
 
@@ -45,6 +46,12 @@ func (s *Server) handleQuickWins(w http.ResponseWriter, r *http.Request) {
 	}
 
 	filterRig := r.URL.Query().Get("rig")
+	sortBy := r.URL.Query().Get("sort")
+	if sortBy == "" {
+		sortBy = "priority"
+	}
+	data.SortBy = sortBy
+	data.FilterRig = filterRig
 	var rigs []string
 	for _, db := range dbs {
 		rigs = append(rigs, db.Name)
@@ -144,13 +151,30 @@ func (s *Server) handleQuickWins(w http.ResponseWriter, r *http.Request) {
 	}
 	sort.Strings(data.Assignees)
 
-	// Sort by priority (highest first) then by score (simplest first)
-	sort.Slice(allItems, func(i, j int) bool {
-		if allItems[i].Issue.Priority != allItems[j].Issue.Priority {
+	switch sortBy {
+	case "score":
+		sort.Slice(allItems, func(i, j int) bool {
+			return allItems[i].Score < allItems[j].Score
+		})
+	case "age":
+		sort.Slice(allItems, func(i, j int) bool {
+			return allItems[i].AgeDays > allItems[j].AgeDays
+		})
+	case "rig":
+		sort.Slice(allItems, func(i, j int) bool {
+			if allItems[i].Rig != allItems[j].Rig {
+				return allItems[i].Rig < allItems[j].Rig
+			}
 			return allItems[i].Issue.Priority < allItems[j].Issue.Priority
-		}
-		return allItems[i].Score < allItems[j].Score
-	})
+		})
+	default: // "priority"
+		sort.Slice(allItems, func(i, j int) bool {
+			if allItems[i].Issue.Priority != allItems[j].Issue.Priority {
+				return allItems[i].Issue.Priority < allItems[j].Issue.Priority
+			}
+			return allItems[i].Score < allItems[j].Score
+		})
+	}
 
 	if len(allItems) > 100 {
 		allItems = allItems[:100]

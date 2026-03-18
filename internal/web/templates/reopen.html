@@ -25,6 +25,13 @@
     </section>
   </div>
 
+  <div class="filters">
+    <a href="/reopen{{if .FilterRig}}?rig={{.FilterRig}}{{end}}" {{if eq .SortBy "reopens"}}class="active"{{end}}>By reopens</a>
+    <a href="/reopen?sort=priority{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" {{if eq .SortBy "priority"}}class="active"{{end}}>By priority</a>
+    <a href="/reopen?sort=date{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" {{if eq .SortBy "date"}}class="active"{{end}}>By date</a>
+    <a href="/reopen?sort=assignee{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" {{if eq .SortBy "assignee"}}class="active"{{end}}>By assignee</a>
+  </div>
+
   {{/* ── Reopened Beads Table ── */}}
   {{if .Beads}}
   <div class="batch-bar" id="batch-bar-reopen" style="display:none">

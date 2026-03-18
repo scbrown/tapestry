@@ -9484,6 +9484,29 @@ func TestIdlePage_AutoRefresh(t *testing.T) {
 	}
 }
 
+func TestIdlePage_SortOptions(t *testing.T) {
+	sorts := []string{"", "idle", "name", "open", "activity"}
+	for _, s := range sorts {
+		t.Run("sort="+s, func(t *testing.T) {
+			srv := New(nil)
+			url := "/idle"
+			if s != "" {
+				url += "?sort=" + s
+			}
+			req := httptest.NewRequest("GET", url, nil)
+			w := httptest.NewRecorder()
+			srv.ServeHTTP(w, req)
+			if w.Code != http.StatusOK {
+				t.Fatalf("GET %s status = %d, want %d", url, w.Code, http.StatusOK)
+			}
+			body := w.Body.String()
+			if !strings.Contains(body, "By idle days") {
+				t.Error("expected sort options in page")
+			}
+		})
+	}
+}
+
 // ── /reopen ──
 
 func TestReopenPage(t *testing.T) {
@@ -9583,6 +9606,29 @@ func TestReopenPage_AutoRefresh(t *testing.T) {
 	body := w.Body.String()
 	if !strings.Contains(body, `hx-trigger="every 120s"`) {
 		t.Error("expected 120s auto-refresh on reopen page")
+	}
+}
+
+func TestReopenPage_SortOptions(t *testing.T) {
+	sorts := []string{"", "reopens", "priority", "date", "assignee"}
+	for _, s := range sorts {
+		t.Run("sort="+s, func(t *testing.T) {
+			srv := New(nil)
+			url := "/reopen"
+			if s != "" {
+				url += "?sort=" + s
+			}
+			req := httptest.NewRequest("GET", url, nil)
+			w := httptest.NewRecorder()
+			srv.ServeHTTP(w, req)
+			if w.Code != http.StatusOK {
+				t.Fatalf("GET %s status = %d, want %d", url, w.Code, http.StatusOK)
+			}
+			body := w.Body.String()
+			if !strings.Contains(body, "By reopens") {
+				t.Error("expected sort options in page")
+			}
+		})
 	}
 }
 
@@ -11006,6 +11052,29 @@ func TestReschedulesPage_RigFilter(t *testing.T) {
 	}
 }
 
+func TestReschedulesPage_SortOptions(t *testing.T) {
+	sorts := []string{"", "defers", "priority", "date", "rig"}
+	for _, s := range sorts {
+		t.Run("sort="+s, func(t *testing.T) {
+			srv := New(nil)
+			url := "/reschedules"
+			if s != "" {
+				url += "?sort=" + s
+			}
+			req := httptest.NewRequest("GET", url, nil)
+			w := httptest.NewRecorder()
+			srv.ServeHTTP(w, req)
+			if w.Code != http.StatusOK {
+				t.Fatalf("GET %s status = %d, want %d", url, w.Code, http.StatusOK)
+			}
+			body := w.Body.String()
+			if !strings.Contains(body, "By defers") {
+				t.Error("expected sort options in page")
+			}
+		})
+	}
+}
+
 // ── /retention ──
 
 func TestRetentionPage_NilDataSource(t *testing.T) {
@@ -11233,6 +11302,29 @@ func TestDogPilePage_WindowFilter(t *testing.T) {
 	}
 }
 
+func TestDogPilePage_SortOptions(t *testing.T) {
+	sorts := []string{"", "heat", "status", "comments", "changes"}
+	for _, s := range sorts {
+		t.Run("sort="+s, func(t *testing.T) {
+			srv := New(nil)
+			url := "/dog-pile"
+			if s != "" {
+				url += "?sort=" + s
+			}
+			req := httptest.NewRequest("GET", url, nil)
+			w := httptest.NewRecorder()
+			srv.ServeHTTP(w, req)
+			if w.Code != http.StatusOK {
+				t.Fatalf("GET %s status = %d, want %d", url, w.Code, http.StatusOK)
+			}
+			body := w.Body.String()
+			if !strings.Contains(body, "By heat") {
+				t.Error("expected sort options in page")
+			}
+		})
+	}
+}
+
 // ── /quick-wins ──
 
 func TestQuickWinsPage_NilDataSource(t *testing.T) {
@@ -11309,6 +11401,29 @@ func TestQuickWinsPage_RigFilter(t *testing.T) {
 	body := w.Body.String()
 	if !strings.Contains(body, "filter-active") {
 		t.Error("expected filter-active badge for rig filter")
+	}
+}
+
+func TestQuickWinsPage_SortOptions(t *testing.T) {
+	sorts := []string{"", "priority", "score", "age", "rig"}
+	for _, s := range sorts {
+		t.Run("sort="+s, func(t *testing.T) {
+			srv := New(nil)
+			url := "/quick-wins"
+			if s != "" {
+				url += "?sort=" + s
+			}
+			req := httptest.NewRequest("GET", url, nil)
+			w := httptest.NewRecorder()
+			srv.ServeHTTP(w, req)
+			if w.Code != http.StatusOK {
+				t.Fatalf("GET %s status = %d, want %d", url, w.Code, http.StatusOK)
+			}
+			body := w.Body.String()
+			if !strings.Contains(body, "By priority") {
+				t.Error("expected sort options in page")
+			}
+		})
 	}
 }
 

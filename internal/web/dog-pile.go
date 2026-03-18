@@ -24,6 +24,7 @@ type dogPileData struct {
 	Total       int
 	Rigs        []string
 	FilterRig   string
+	SortBy      string
 	Window      string
 	Assignees   []string
 }
@@ -49,8 +50,13 @@ func (s *Server) handleDogPile(w http.ResponseWriter, r *http.Request) {
 	if window == "" {
 		window = "7d"
 	}
+	sortBy := r.URL.Query().Get("sort")
+	if sortBy == "" {
+		sortBy = "heat"
+	}
 	data.FilterRig = filterRig
 	data.Window = window
+	data.SortBy = sortBy
 
 	var rigs []string
 	for _, db := range dbs {
@@ -167,9 +173,27 @@ func (s *Server) handleDogPile(w http.ResponseWriter, r *http.Request) {
 		allItems = append(allItems, r.items...)
 	}
 
-	sort.Slice(allItems, func(i, j int) bool {
-		return allItems[i].HeatScore > allItems[j].HeatScore
-	})
+	switch sortBy {
+	case "status":
+		sort.Slice(allItems, func(i, j int) bool {
+			if allItems[i].Issue.Status != allItems[j].Issue.Status {
+				return allItems[i].Issue.Status < allItems[j].Issue.Status
+			}
+			return allItems[i].HeatScore > allItems[j].HeatScore
+		})
+	case "comments":
+		sort.Slice(allItems, func(i, j int) bool {
+			return allItems[i].CommentCount > allItems[j].CommentCount
+		})
+	case "changes":
+		sort.Slice(allItems, func(i, j int) bool {
+			return allItems[i].StatusChanges > allItems[j].StatusChanges
+		})
+	default: // "heat"
+		sort.Slice(allItems, func(i, j int) bool {
+			return allItems[i].HeatScore > allItems[j].HeatScore
+		})
+	}
 
 	if len(allItems) > 50 {
 		allItems = allItems[:50]

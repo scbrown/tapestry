@@ -23,6 +23,7 @@ type rescheduleData struct {
 	Total       int
 	Rigs        []string
 	FilterRig   string
+	SortBy      string
 	Assignees   []string
 }
 
@@ -43,6 +44,12 @@ func (s *Server) handleReschedules(w http.ResponseWriter, r *http.Request) {
 	}
 
 	filterRig := r.URL.Query().Get("rig")
+	sortBy := r.URL.Query().Get("sort")
+	if sortBy == "" {
+		sortBy = "defers"
+	}
+	data.SortBy = sortBy
+	data.FilterRig = filterRig
 	var rigs []string
 	for _, db := range dbs {
 		rigs = append(rigs, db.Name)
@@ -142,13 +149,33 @@ func (s *Server) handleReschedules(w http.ResponseWriter, r *http.Request) {
 	}
 	histWg.Wait()
 
-	// Sort by defer count descending, then by last defer time
-	sort.Slice(data.Items, func(i, j int) bool {
-		if data.Items[i].DeferCount != data.Items[j].DeferCount {
+	switch sortBy {
+	case "priority":
+		sort.Slice(data.Items, func(i, j int) bool {
+			if data.Items[i].Issue.Priority != data.Items[j].Issue.Priority {
+				return data.Items[i].Issue.Priority < data.Items[j].Issue.Priority
+			}
 			return data.Items[i].DeferCount > data.Items[j].DeferCount
-		}
-		return data.Items[i].LastDefer.After(data.Items[j].LastDefer)
-	})
+		})
+	case "date":
+		sort.Slice(data.Items, func(i, j int) bool {
+			return data.Items[i].LastDefer.After(data.Items[j].LastDefer)
+		})
+	case "rig":
+		sort.Slice(data.Items, func(i, j int) bool {
+			if data.Items[i].Rig != data.Items[j].Rig {
+				return data.Items[i].Rig < data.Items[j].Rig
+			}
+			return data.Items[i].DeferCount > data.Items[j].DeferCount
+		})
+	default: // "defers"
+		sort.Slice(data.Items, func(i, j int) bool {
+			if data.Items[i].DeferCount != data.Items[j].DeferCount {
+				return data.Items[i].DeferCount > data.Items[j].DeferCount
+			}
+			return data.Items[i].LastDefer.After(data.Items[j].LastDefer)
+		})
+	}
 
 	data.Total = len(data.Items)
 	s.render(w, r, "reschedules", data)

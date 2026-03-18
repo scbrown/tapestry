@@ -26,6 +26,13 @@
     </div>
   </div>
 
+  <div class="filters">
+    <a href="/dog-pile?window={{.Window}}{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" {{if eq .SortBy "heat"}}class="active"{{end}}>By heat</a>
+    <a href="/dog-pile?sort=status&window={{.Window}}{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" {{if eq .SortBy "status"}}class="active"{{end}}>By status</a>
+    <a href="/dog-pile?sort=comments&window={{.Window}}{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" {{if eq .SortBy "comments"}}class="active"{{end}}>By comments</a>
+    <a href="/dog-pile?sort=changes&window={{.Window}}{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" {{if eq .SortBy "changes"}}class="active"{{end}}>By changes</a>
+  </div>
+
   {{if .Items}}
   <div class="batch-bar" id="batch-bar-dogpile" style="display:none">
     <span class="batch-count">0 selected</span>

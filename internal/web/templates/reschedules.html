@@ -20,6 +20,13 @@
     </div>
   </div>
 
+  <div class="filters">
+    <a href="/reschedules{{if .FilterRig}}?rig={{.FilterRig}}{{end}}" {{if eq .SortBy "defers"}}class="active"{{end}}>By defers</a>
+    <a href="/reschedules?sort=priority{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" {{if eq .SortBy "priority"}}class="active"{{end}}>By priority</a>
+    <a href="/reschedules?sort=date{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" {{if eq .SortBy "date"}}class="active"{{end}}>By date</a>
+    <a href="/reschedules?sort=rig{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" {{if eq .SortBy "rig"}}class="active"{{end}}>By rig</a>
+  </div>
+
   {{if .Items}}
   <div class="batch-bar" id="batch-bar-resched" style="display:none">
     <span class="batch-count">0 selected</span>

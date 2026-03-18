@@ -25,6 +25,7 @@ type reopenedBead struct {
 type reopenData struct {
 	GeneratedAt time.Time
 	FilterRig   string
+	SortBy      string
 
 	Beads        []reopenedBead
 	TotalReopens int
@@ -37,7 +38,11 @@ type reopenData struct {
 func (s *Server) handleReopen(w http.ResponseWriter, r *http.Request) {
 	now := time.Now()
 	filterRig := r.URL.Query().Get("rig")
-	data := reopenData{GeneratedAt: now, FilterRig: filterRig}
+	sortBy := r.URL.Query().Get("sort")
+	if sortBy == "" {
+		sortBy = "reopens"
+	}
+	data := reopenData{GeneratedAt: now, FilterRig: filterRig, SortBy: sortBy}
 
 	if s.ds == nil {
 		s.render(w, r, "reopen", data)
@@ -127,12 +132,33 @@ func (s *Server) handleReopen(w http.ResponseWriter, r *http.Request) {
 	sort.Strings(data.Assignees)
 	data.UniqueBeads = len(data.Beads)
 
-	sort.Slice(data.Beads, func(i, j int) bool {
-		if data.Beads[i].Reopens != data.Beads[j].Reopens {
+	switch sortBy {
+	case "priority":
+		sort.Slice(data.Beads, func(i, j int) bool {
+			if data.Beads[i].Priority != data.Beads[j].Priority {
+				return data.Beads[i].Priority < data.Beads[j].Priority
+			}
 			return data.Beads[i].Reopens > data.Beads[j].Reopens
-		}
-		return data.Beads[i].LastReopen.After(data.Beads[j].LastReopen)
-	})
+		})
+	case "date":
+		sort.Slice(data.Beads, func(i, j int) bool {
+			return data.Beads[i].LastReopen.After(data.Beads[j].LastReopen)
+		})
+	case "assignee":
+		sort.Slice(data.Beads, func(i, j int) bool {
+			if data.Beads[i].Assignee != data.Beads[j].Assignee {
+				return data.Beads[i].Assignee < data.Beads[j].Assignee
+			}
+			return data.Beads[i].Reopens > data.Beads[j].Reopens
+		})
+	default: // "reopens"
+		sort.Slice(data.Beads, func(i, j int) bool {
+			if data.Beads[i].Reopens != data.Beads[j].Reopens {
+				return data.Beads[i].Reopens > data.Beads[j].Reopens
+			}
+			return data.Beads[i].LastReopen.After(data.Beads[j].LastReopen)
+		})
+	}
 
 	if len(data.Beads) > 50 {
 		data.Beads = data.Beads[:50]

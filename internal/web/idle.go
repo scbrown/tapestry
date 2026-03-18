@@ -22,6 +22,7 @@ type idleAgent struct {
 type idleData struct {
 	GeneratedAt time.Time
 	FilterRig   string
+	SortBy      string
 	Rigs        []string
 
 	// Agents idle for 3+ days
@@ -40,7 +41,11 @@ type idleData struct {
 func (s *Server) handleIdle(w http.ResponseWriter, r *http.Request) {
 	now := time.Now()
 	filterRig := r.URL.Query().Get("rig")
-	data := idleData{GeneratedAt: now, FilterRig: filterRig, ThresholdDays: 3}
+	sortBy := r.URL.Query().Get("sort")
+	if sortBy == "" {
+		sortBy = "idle"
+	}
+	data := idleData{GeneratedAt: now, FilterRig: filterRig, SortBy: sortBy, ThresholdDays: 3}
 
 	if s.ds == nil {
 		s.render(w, r, "idle", data)
@@ -133,9 +138,24 @@ func (s *Server) handleIdle(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	sort.Slice(data.IdleAgents, func(i, j int) bool {
-		return data.IdleAgents[i].IdleDays > data.IdleAgents[j].IdleDays
-	})
+	switch sortBy {
+	case "name":
+		sort.Slice(data.IdleAgents, func(i, j int) bool {
+			return data.IdleAgents[i].Name < data.IdleAgents[j].Name
+		})
+	case "open":
+		sort.Slice(data.IdleAgents, func(i, j int) bool {
+			return data.IdleAgents[i].OpenBeads > data.IdleAgents[j].OpenBeads
+		})
+	case "activity":
+		sort.Slice(data.IdleAgents, func(i, j int) bool {
+			return data.IdleAgents[i].LastUpdate.After(data.IdleAgents[j].LastUpdate)
+		})
+	default: // "idle"
+		sort.Slice(data.IdleAgents, func(i, j int) bool {
+			return data.IdleAgents[i].IdleDays > data.IdleAgents[j].IdleDays
+		})
+	}
 
 	s.render(w, r, "idle", data)
 }
