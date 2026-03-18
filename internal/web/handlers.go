@@ -141,7 +141,8 @@ func (s *Server) handleMonthly(w http.ResponseWriter, r *http.Request, yearStr, 
 		return
 	}
 
-	ctx := r.Context()
+	ctx, cancel := context.WithTimeout(r.Context(), 30*time.Second)
+	defer cancel()
 
 	dbs, err := s.databases(ctx)
 	if err != nil {
@@ -289,7 +290,8 @@ func (s *Server) handleBeadLookup(w http.ResponseWriter, r *http.Request, id str
 		return
 	}
 
-	ctx := r.Context()
+	ctx, cancel := context.WithTimeout(r.Context(), 15*time.Second)
+	defer cancel()
 
 	dbs, err := s.databases(ctx)
 	if err != nil {
@@ -360,7 +362,8 @@ func (s *Server) handleBeadList(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ctx := r.Context()
+	ctx, cancel := context.WithTimeout(r.Context(), 30*time.Second)
+	defer cancel()
 
 	dbs, err := s.databases(ctx)
 	if err != nil {
@@ -533,10 +536,13 @@ func (s *Server) handleSearch(w http.ResponseWriter, r *http.Request) {
 		SortBy:       sortBy,
 	}
 
+	ctx, cancel := context.WithTimeout(r.Context(), 30*time.Second)
+	defer cancel()
+
 	if s.ds == nil || q == "" {
 		if s.ds != nil {
 			// Populate rigs for filter even with no query
-			if dbs, err := s.databases(r.Context()); err == nil {
+			if dbs, err := s.databases(ctx); err == nil {
 				for _, db := range dbs {
 					data.Rigs = append(data.Rigs, db.Name)
 				}
@@ -545,8 +551,6 @@ func (s *Server) handleSearch(w http.ResponseWriter, r *http.Request) {
 		s.render(w, r, "search", data)
 		return
 	}
-
-	ctx := r.Context()
 
 	dbs, err := s.databases(ctx)
 	if err != nil {
