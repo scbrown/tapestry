@@ -4,14 +4,14 @@
   <h1>Priority Drift</h1>
   <p class="text-dim">Active work distribution by priority — stale count flags drifting priorities.</p>
 
-  <div class="dep-filters">
-    {{if .Rigs}}
-    <select onchange="location.href='/priority-drift?rig='+this.value">
-      <option value="">All rigs</option>
-      {{range .Rigs}}<option value="{{.}}" {{if eq . $.FilterRig}}selected{{end}}>{{.}}</option>{{end}}
-    </select>
+  {{if gt (len .Rigs) 1}}
+  <div class="dep-filters" style="margin-bottom:0.5rem">
+    <a href="/priority-drift" class="badge {{if not .FilterRig}}filter-active{{end}}">All rigs</a>
+    {{range .Rigs}}
+    <a href="/priority-drift?rig={{.}}" class="badge {{if eq . $.FilterRig}}filter-active{{end}}">{{rigName .}}</a>
     {{end}}
   </div>
+  {{end}}
 
   {{if .Err}}
   <div class="error-banner">{{.Err}}</div>
@@ -32,11 +32,11 @@
       {{range .Buckets}}
       <tr>
         <td><span class="priority-badge p{{.Priority}}">P{{.Priority}}</span></td>
-        <td>{{.Open}}</td>
-        <td>{{.Active}}</td>
-        <td>{{.Blocked}}</td>
-        <td>{{if gt .Stale 0}}<span class="text-warn">{{.Stale}}</span>{{else}}0{{end}}</td>
-        <td><strong>{{.Total}}</strong></td>
+        <td>{{if .Open}}<a href="/beads?priority={{.Priority}}&amp;status=open{{if $.FilterRig}}&amp;rig={{$.FilterRig}}{{end}}">{{.Open}}</a>{{else}}0{{end}}</td>
+        <td>{{if .Active}}<a href="/beads?priority={{.Priority}}&amp;status=in_progress{{if $.FilterRig}}&amp;rig={{$.FilterRig}}{{end}}">{{.Active}}</a>{{else}}0{{end}}</td>
+        <td>{{if .Blocked}}<a href="/beads?priority={{.Priority}}&amp;status=blocked{{if $.FilterRig}}&amp;rig={{$.FilterRig}}{{end}}">{{.Blocked}}</a>{{else}}0{{end}}</td>
+        <td>{{if gt .Stale 0}}<a href="/stale?priority={{.Priority}}{{if $.FilterRig}}&amp;rig={{$.FilterRig}}{{end}}" class="text-warn">{{.Stale}}</a>{{else}}0{{end}}</td>
+        <td><a href="/beads?priority={{.Priority}}{{if $.FilterRig}}&amp;rig={{$.FilterRig}}{{end}}"><strong>{{.Total}}</strong></a></td>
         <td>
           {{if and (le .Priority 1) (gt .Stale 0)}}<span class="badge load-overloaded">drift</span>
           {{else if and (le .Priority 2) (gt .Blocked 2)}}<span class="badge load-busy">blocked</span>

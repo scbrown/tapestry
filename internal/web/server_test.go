@@ -11533,6 +11533,36 @@ func TestPriorityDriftPage_RigFilter(t *testing.T) {
 	}
 }
 
+func TestPriorityDriftPage_DrilldownLinks(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}, {Name: "beads_gastown"}},
+		issues: []dolt.Issue{
+			{ID: "d1", Title: "Open P0", Status: "open", Priority: 0},
+			{ID: "d2", Title: "Active P0", Status: "in_progress", Priority: 0},
+			{ID: "d3", Title: "Blocked P1", Status: "blocked", Priority: 1},
+		},
+	}
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/priority-drift", nil)
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	// Should have drill-down links to /beads with priority+status filters
+	if !strings.Contains(body, "/beads?priority=0") {
+		t.Error("expected drill-down link to /beads?priority=0")
+	}
+	if !strings.Contains(body, "status=open") {
+		t.Error("expected drill-down link with status=open")
+	}
+	// Rig filter badge bar should use badge style
+	if !strings.Contains(body, "All rigs") {
+		t.Error("expected 'All rigs' badge")
+	}
+}
+
 // --- Sitemap page tests ---
 
 func TestSitemapPage_NilDataSource(t *testing.T) {
