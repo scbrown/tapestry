@@ -24,6 +24,7 @@ type churnData struct {
 	MaxChurn    int
 	Rigs        []string
 	FilterRig   string
+	SortBy      string
 	Assignees   []string
 }
 
@@ -129,6 +130,11 @@ func (s *Server) handleChurn(w http.ResponseWriter, r *http.Request) {
 	sort.Strings(data.Rigs)
 
 	data.FilterRig = r.URL.Query().Get("rig")
+	sortBy := r.URL.Query().Get("sort")
+	if sortBy == "" {
+		sortBy = "transitions"
+	}
+	data.SortBy = sortBy
 	if data.FilterRig != "" {
 		filtered := data.Items[:0]
 		for _, item := range data.Items {
@@ -145,10 +151,33 @@ func (s *Server) handleChurn(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Sort by transitions descending
-	sort.Slice(data.Items, func(i, j int) bool {
-		return data.Items[i].Transitions > data.Items[j].Transitions
-	})
+	switch sortBy {
+	case "priority":
+		sort.Slice(data.Items, func(i, j int) bool {
+			if data.Items[i].Issue.Priority != data.Items[j].Issue.Priority {
+				return data.Items[i].Issue.Priority < data.Items[j].Issue.Priority
+			}
+			return data.Items[i].Transitions > data.Items[j].Transitions
+		})
+	case "status":
+		sort.Slice(data.Items, func(i, j int) bool {
+			if data.Items[i].Issue.Status != data.Items[j].Issue.Status {
+				return data.Items[i].Issue.Status < data.Items[j].Issue.Status
+			}
+			return data.Items[i].Transitions > data.Items[j].Transitions
+		})
+	case "rig":
+		sort.Slice(data.Items, func(i, j int) bool {
+			if data.Items[i].Rig != data.Items[j].Rig {
+				return data.Items[i].Rig < data.Items[j].Rig
+			}
+			return data.Items[i].Transitions > data.Items[j].Transitions
+		})
+	default: // "transitions"
+		sort.Slice(data.Items, func(i, j int) bool {
+			return data.Items[i].Transitions > data.Items[j].Transitions
+		})
+	}
 
 	data.Total = len(data.Items)
 	if data.Total > 0 {

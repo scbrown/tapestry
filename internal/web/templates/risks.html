@@ -35,6 +35,13 @@
     </div>
   </div>
 
+  <div class="filters">
+    <a href="/risks{{if .FilterRig}}?rig={{.FilterRig}}{{end}}" {{if eq .SortBy "severity"}}class="active"{{end}}>By severity</a>
+    <a href="/risks?sort=priority{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" {{if eq .SortBy "priority"}}class="active"{{end}}>By priority</a>
+    <a href="/risks?sort=age{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" {{if eq .SortBy "age"}}class="active"{{end}}>By age</a>
+    <a href="/risks?sort=rig{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" {{if eq .SortBy "rig"}}class="active"{{end}}>By rig</a>
+  </div>
+
   {{if .Items}}
   <div class="batch-bar" id="batch-bar-risks" style="display:none;margin-top:1rem">
     <span class="batch-count">0 selected</span>

@@ -17,6 +17,13 @@
   <div class="error">{{.Err}}</div>
   {{else}}
 
+  <div class="filters">
+    <a href="/focus{{if .FilterRig}}?rig={{.FilterRig}}{{end}}" {{if eq .SortBy "score"}}class="active"{{end}}>By score</a>
+    <a href="/focus?sort=priority{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" {{if eq .SortBy "priority"}}class="active"{{end}}>By priority</a>
+    <a href="/focus?sort=age{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" {{if eq .SortBy "age"}}class="active"{{end}}>By age</a>
+    <a href="/focus?sort=assignee{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" {{if eq .SortBy "assignee"}}class="active"{{end}}>By assignee</a>
+  </div>
+
   {{/* ── Summary ── */}}
   <div class="briefing-grid">
     <section class="briefing-card">

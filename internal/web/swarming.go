@@ -26,6 +26,7 @@ type swarmBead struct {
 type swarmingData struct {
 	GeneratedAt time.Time
 	FilterRig   string
+	SortBy      string
 
 	// Beads with multiple agents assigned/commenting
 	SwarmBeads []swarmBead
@@ -42,7 +43,11 @@ type swarmingData struct {
 func (s *Server) handleSwarming(w http.ResponseWriter, r *http.Request) {
 	now := time.Now()
 	filterRig := r.URL.Query().Get("rig")
-	data := swarmingData{GeneratedAt: now, FilterRig: filterRig}
+	sortBy := r.URL.Query().Get("sort")
+	if sortBy == "" {
+		sortBy = "agents"
+	}
+	data := swarmingData{GeneratedAt: now, FilterRig: filterRig, SortBy: sortBy}
 
 	if s.ds == nil {
 		s.render(w, r, "swarming", data)
@@ -134,13 +139,33 @@ func (s *Server) handleSwarming(w http.ResponseWriter, r *http.Request) {
 	wg.Wait()
 
 	sort.Strings(data.Assignees)
-	// Sort by agent count descending
-	sort.Slice(data.SwarmBeads, func(i, j int) bool {
-		if data.SwarmBeads[i].AgentCount != data.SwarmBeads[j].AgentCount {
+	switch sortBy {
+	case "comments":
+		sort.Slice(data.SwarmBeads, func(i, j int) bool {
+			return data.SwarmBeads[i].Comments > data.SwarmBeads[j].Comments
+		})
+	case "priority":
+		sort.Slice(data.SwarmBeads, func(i, j int) bool {
+			if data.SwarmBeads[i].Priority != data.SwarmBeads[j].Priority {
+				return data.SwarmBeads[i].Priority < data.SwarmBeads[j].Priority
+			}
 			return data.SwarmBeads[i].AgentCount > data.SwarmBeads[j].AgentCount
-		}
-		return data.SwarmBeads[i].Comments > data.SwarmBeads[j].Comments
-	})
+		})
+	case "status":
+		sort.Slice(data.SwarmBeads, func(i, j int) bool {
+			if data.SwarmBeads[i].Status != data.SwarmBeads[j].Status {
+				return data.SwarmBeads[i].Status < data.SwarmBeads[j].Status
+			}
+			return data.SwarmBeads[i].AgentCount > data.SwarmBeads[j].AgentCount
+		})
+	default: // "agents"
+		sort.Slice(data.SwarmBeads, func(i, j int) bool {
+			if data.SwarmBeads[i].AgentCount != data.SwarmBeads[j].AgentCount {
+				return data.SwarmBeads[i].AgentCount > data.SwarmBeads[j].AgentCount
+			}
+			return data.SwarmBeads[i].Comments > data.SwarmBeads[j].Comments
+		})
+	}
 
 	data.TotalSwarmed = len(data.SwarmBeads)
 	if len(data.SwarmBeads) > 0 {

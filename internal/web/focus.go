@@ -38,6 +38,7 @@ type focusData struct {
 
 	// Rig filter
 	FilterRig string
+	SortBy    string
 	Rigs      []string
 	Assignees []string
 
@@ -47,7 +48,11 @@ type focusData struct {
 func (s *Server) handleFocus(w http.ResponseWriter, r *http.Request) {
 	now := time.Now()
 	filterRig := r.URL.Query().Get("rig")
-	data := focusData{GeneratedAt: now, FilterRig: filterRig}
+	sortBy := r.URL.Query().Get("sort")
+	if sortBy == "" {
+		sortBy = "score"
+	}
+	data := focusData{GeneratedAt: now, FilterRig: filterRig, SortBy: sortBy}
 
 	if s.ds == nil {
 		s.render(w, r, "focus", data)
@@ -165,9 +170,30 @@ func (s *Server) handleFocus(w http.ResponseWriter, r *http.Request) {
 	}
 	sort.Strings(data.Assignees)
 
-	sort.Slice(allItems, func(i, j int) bool {
-		return allItems[i].Score > allItems[j].Score
-	})
+	switch sortBy {
+	case "priority":
+		sort.Slice(allItems, func(i, j int) bool {
+			if allItems[i].Priority != allItems[j].Priority {
+				return allItems[i].Priority < allItems[j].Priority
+			}
+			return allItems[i].Score > allItems[j].Score
+		})
+	case "age":
+		sort.Slice(allItems, func(i, j int) bool {
+			return allItems[i].AgeDays > allItems[j].AgeDays
+		})
+	case "assignee":
+		sort.Slice(allItems, func(i, j int) bool {
+			if allItems[i].Assignee != allItems[j].Assignee {
+				return allItems[i].Assignee < allItems[j].Assignee
+			}
+			return allItems[i].Score > allItems[j].Score
+		})
+	default: // "score"
+		sort.Slice(allItems, func(i, j int) bool {
+			return allItems[i].Score > allItems[j].Score
+		})
+	}
 
 	data.TotalScored = len(allItems)
 	if len(allItems) > 0 {

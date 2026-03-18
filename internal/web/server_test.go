@@ -7013,6 +7013,29 @@ func TestChurnPage_RigFilter(t *testing.T) {
 	}
 }
 
+func TestChurnPage_SortOptions(t *testing.T) {
+	sorts := []string{"", "transitions", "priority", "status", "rig"}
+	for _, s := range sorts {
+		t.Run("sort="+s, func(t *testing.T) {
+			srv := New(nil)
+			url := "/churn"
+			if s != "" {
+				url += "?sort=" + s
+			}
+			req := httptest.NewRequest("GET", url, nil)
+			w := httptest.NewRecorder()
+			srv.ServeHTTP(w, req)
+			if w.Code != http.StatusOK {
+				t.Fatalf("GET %s status = %d, want %d", url, w.Code, http.StatusOK)
+			}
+			body := w.Body.String()
+			if !strings.Contains(body, "By transitions") {
+				t.Error("expected sort options in page")
+			}
+		})
+	}
+}
+
 func TestWorkloadPage_RigFilter(t *testing.T) {
 	ds := &mockDataSource{
 		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}, {Name: "beads_gastown"}},
@@ -8543,6 +8566,29 @@ func TestRisksPage_QuickActions(t *testing.T) {
 	}
 }
 
+func TestRisksPage_SortOptions(t *testing.T) {
+	sorts := []string{"", "severity", "priority", "age", "rig"}
+	for _, s := range sorts {
+		t.Run("sort="+s, func(t *testing.T) {
+			srv := New(nil)
+			url := "/risks"
+			if s != "" {
+				url += "?sort=" + s
+			}
+			req := httptest.NewRequest("GET", url, nil)
+			w := httptest.NewRecorder()
+			srv.ServeHTTP(w, req)
+			if w.Code != http.StatusOK {
+				t.Fatalf("GET %s status = %d, want %d", url, w.Code, http.StatusOK)
+			}
+			body := w.Body.String()
+			if !strings.Contains(body, "By severity") {
+				t.Error("expected sort options in page")
+			}
+		})
+	}
+}
+
 // ── Funnel Page Tests ──
 
 func TestFunnelPage_NilDataSource(t *testing.T) {
@@ -9349,6 +9395,29 @@ func TestSwarmingPage_RigFilter(t *testing.T) {
 	}
 }
 
+func TestSwarmingPage_SortOptions(t *testing.T) {
+	sorts := []string{"", "agents", "comments", "priority", "status"}
+	for _, s := range sorts {
+		t.Run("sort="+s, func(t *testing.T) {
+			srv := New(nil)
+			url := "/swarming"
+			if s != "" {
+				url += "?sort=" + s
+			}
+			req := httptest.NewRequest("GET", url, nil)
+			w := httptest.NewRecorder()
+			srv.ServeHTTP(w, req)
+			if w.Code != http.StatusOK {
+				t.Fatalf("GET %s status = %d, want %d", url, w.Code, http.StatusOK)
+			}
+			body := w.Body.String()
+			if !strings.Contains(body, "By agents") {
+				t.Error("expected sort options in page")
+			}
+		})
+	}
+}
+
 // ── /signals ──
 
 func TestSignalsPage(t *testing.T) {
@@ -9435,6 +9504,29 @@ func TestPairFreqPage_AutoRefresh(t *testing.T) {
 	body := w.Body.String()
 	if !strings.Contains(body, `hx-trigger="every 300s"`) {
 		t.Error("expected 300s auto-refresh on pair-freq page")
+	}
+}
+
+func TestPairFreqPage_SortOptions(t *testing.T) {
+	sorts := []string{"", "count", "label"}
+	for _, s := range sorts {
+		t.Run("sort="+s, func(t *testing.T) {
+			srv := New(nil)
+			url := "/pair-freq"
+			if s != "" {
+				url += "?sort=" + s
+			}
+			req := httptest.NewRequest("GET", url, nil)
+			w := httptest.NewRecorder()
+			srv.ServeHTTP(w, req)
+			if w.Code != http.StatusOK {
+				t.Fatalf("GET %s status = %d, want %d", url, w.Code, http.StatusOK)
+			}
+			body := w.Body.String()
+			if !strings.Contains(body, "By count") {
+				t.Error("expected sort options in page")
+			}
+		})
 	}
 }
 
@@ -9782,6 +9874,29 @@ func TestFocusPage_AutoRefresh(t *testing.T) {
 	body := w.Body.String()
 	if !strings.Contains(body, `hx-trigger="every 60s"`) {
 		t.Error("expected 60s auto-refresh on focus page")
+	}
+}
+
+func TestFocusPage_SortOptions(t *testing.T) {
+	sorts := []string{"", "score", "priority", "age", "assignee"}
+	for _, s := range sorts {
+		t.Run("sort="+s, func(t *testing.T) {
+			srv := New(nil)
+			url := "/focus"
+			if s != "" {
+				url += "?sort=" + s
+			}
+			req := httptest.NewRequest("GET", url, nil)
+			w := httptest.NewRecorder()
+			srv.ServeHTTP(w, req)
+			if w.Code != http.StatusOK {
+				t.Fatalf("GET %s status = %d, want %d", url, w.Code, http.StatusOK)
+			}
+			body := w.Body.String()
+			if !strings.Contains(body, "By score") {
+				t.Error("expected sort options in page")
+			}
+		})
 	}
 }
 

@@ -20,6 +20,7 @@ type labelPair struct {
 type pairFreqData struct {
 	GeneratedAt time.Time
 	FilterRig   string
+	SortBy      string
 	Rigs        []string
 
 	Pairs      []labelPair
@@ -32,7 +33,11 @@ type pairFreqData struct {
 func (s *Server) handlePairFreq(w http.ResponseWriter, r *http.Request) {
 	now := time.Now()
 	filterRig := r.URL.Query().Get("rig")
-	data := pairFreqData{GeneratedAt: now, FilterRig: filterRig}
+	sortBy := r.URL.Query().Get("sort")
+	if sortBy == "" {
+		sortBy = "count"
+	}
+	data := pairFreqData{GeneratedAt: now, FilterRig: filterRig, SortBy: sortBy}
 
 	if s.ds == nil {
 		s.render(w, r, "pair-freq", data)
@@ -133,9 +138,19 @@ func (s *Server) handlePairFreq(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	sort.Slice(data.Pairs, func(i, j int) bool {
-		return data.Pairs[i].Count > data.Pairs[j].Count
-	})
+	switch sortBy {
+	case "label":
+		sort.Slice(data.Pairs, func(i, j int) bool {
+			if data.Pairs[i].LabelA != data.Pairs[j].LabelA {
+				return data.Pairs[i].LabelA < data.Pairs[j].LabelA
+			}
+			return data.Pairs[i].LabelB < data.Pairs[j].LabelB
+		})
+	default: // "count"
+		sort.Slice(data.Pairs, func(i, j int) bool {
+			return data.Pairs[i].Count > data.Pairs[j].Count
+		})
+	}
 
 	data.TotalPairs = len(data.Pairs)
 

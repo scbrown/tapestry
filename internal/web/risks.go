@@ -26,6 +26,7 @@ type risksData struct {
 	Info        int
 	Rigs        []string
 	FilterRig   string
+	SortBy      string
 	Assignees   []string
 	Err         string
 }
@@ -162,7 +163,12 @@ func (s *Server) handleRisks(w http.ResponseWriter, r *http.Request) {
 
 	// Apply rig filter
 	filterRig := r.URL.Query().Get("rig")
+	sortBy := r.URL.Query().Get("sort")
+	if sortBy == "" {
+		sortBy = "severity"
+	}
 	data.FilterRig = filterRig
+	data.SortBy = sortBy
 	if filterRig != "" {
 		filtered := data.Items[:0]
 		for _, item := range data.Items {
@@ -173,17 +179,37 @@ func (s *Server) handleRisks(w http.ResponseWriter, r *http.Request) {
 		data.Items = filtered
 	}
 
-	// Sort: critical first, then by priority, then by age
-	sort.Slice(data.Items, func(i, j int) bool {
-		si, sj := severityRank(data.Items[i].Severity), severityRank(data.Items[j].Severity)
-		if si != sj {
-			return si > sj
-		}
-		if data.Items[i].Issue.Priority != data.Items[j].Issue.Priority {
-			return data.Items[i].Issue.Priority < data.Items[j].Issue.Priority
-		}
-		return data.Items[i].AgeDays > data.Items[j].AgeDays
-	})
+	switch sortBy {
+	case "priority":
+		sort.Slice(data.Items, func(i, j int) bool {
+			if data.Items[i].Issue.Priority != data.Items[j].Issue.Priority {
+				return data.Items[i].Issue.Priority < data.Items[j].Issue.Priority
+			}
+			return severityRank(data.Items[i].Severity) > severityRank(data.Items[j].Severity)
+		})
+	case "age":
+		sort.Slice(data.Items, func(i, j int) bool {
+			return data.Items[i].AgeDays > data.Items[j].AgeDays
+		})
+	case "rig":
+		sort.Slice(data.Items, func(i, j int) bool {
+			if data.Items[i].Rig != data.Items[j].Rig {
+				return data.Items[i].Rig < data.Items[j].Rig
+			}
+			return severityRank(data.Items[i].Severity) > severityRank(data.Items[j].Severity)
+		})
+	default: // "severity"
+		sort.Slice(data.Items, func(i, j int) bool {
+			si, sj := severityRank(data.Items[i].Severity), severityRank(data.Items[j].Severity)
+			if si != sj {
+				return si > sj
+			}
+			if data.Items[i].Issue.Priority != data.Items[j].Issue.Priority {
+				return data.Items[i].Issue.Priority < data.Items[j].Issue.Priority
+			}
+			return data.Items[i].AgeDays > data.Items[j].AgeDays
+		})
+	}
 
 	// Count severities
 	for _, item := range data.Items {

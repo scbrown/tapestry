@@ -28,6 +28,13 @@
     </div>
   </div>
 
+  <div class="filters">
+    <a href="/churn{{if .FilterRig}}?rig={{.FilterRig}}{{end}}" {{if eq .SortBy "transitions"}}class="active"{{end}}>By transitions</a>
+    <a href="/churn?sort=priority{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" {{if eq .SortBy "priority"}}class="active"{{end}}>By priority</a>
+    <a href="/churn?sort=status{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" {{if eq .SortBy "status"}}class="active"{{end}}>By status</a>
+    <a href="/churn?sort=rig{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" {{if eq .SortBy "rig"}}class="active"{{end}}>By rig</a>
+  </div>
+
   {{if .Items}}
   <div class="batch-bar" id="batch-bar-churn" style="display:none">
     <span class="batch-count">0 selected</span>
