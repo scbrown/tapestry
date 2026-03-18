@@ -1,7 +1,7 @@
 {{define "title"}}Owners{{end}}
 
 {{define "content"}}
-<div class="owners-view" hx-get="/owners{{if .FilterRig}}?rig={{.FilterRig}}{{end}}" hx-trigger="every 120s" hx-select=".owners-view" hx-swap="outerHTML">
+<div class="owners-view" hx-get="/owners{{if or .FilterRig (ne .SortBy "active")}}?{{if .FilterRig}}rig={{.FilterRig}}{{end}}{{if ne .SortBy "active"}}{{if .FilterRig}}&amp;{{end}}sort={{.SortBy}}{{end}}{{end}}" hx-trigger="every 120s" hx-select=".owners-view" hx-swap="outerHTML">
   <h1>Workload by Owner</h1>
 
   {{if .Err}}
@@ -16,6 +16,14 @@
     {{end}}
   </div>
   {{end}}
+
+  <div class="filters">
+    <a href="/owners{{if .FilterRig}}?rig={{.FilterRig}}{{end}}" {{if eq .SortBy "active"}}class="active"{{end}}>By active</a>
+    <a href="/owners?sort=total{{if .FilterRig}}&amp;rig={{.FilterRig}}{{end}}" {{if eq .SortBy "total"}}class="active"{{end}}>By total</a>
+    <a href="/owners?sort=open{{if .FilterRig}}&amp;rig={{.FilterRig}}{{end}}" {{if eq .SortBy "open"}}class="active"{{end}}>By open</a>
+    <a href="/owners?sort=blocked{{if .FilterRig}}&amp;rig={{.FilterRig}}{{end}}" {{if eq .SortBy "blocked"}}class="active"{{end}}>By blocked</a>
+    <a href="/owners?sort=name{{if .FilterRig}}&amp;rig={{.FilterRig}}{{end}}" {{if eq .SortBy "name"}}class="active"{{end}}>By name</a>
+  </div>
 
   {{if .Rows}}
   <div class="table-wrap">

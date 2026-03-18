@@ -25,6 +25,7 @@ type queueData struct {
 	Assignees   []string // known assignees for quick-assign dropdown
 	Rigs        []string
 	FilterRig   string
+	SortBy      string
 }
 
 func (s *Server) handleQueue(w http.ResponseWriter, r *http.Request) {
@@ -157,10 +158,36 @@ func (s *Server) handleQueue(w http.ResponseWriter, r *http.Request) {
 	}
 	sort.Strings(data.Assignees)
 
-	// Sort by score descending (most urgent first)
-	sort.Slice(data.Items, func(i, j int) bool {
-		return data.Items[i].Score > data.Items[j].Score
-	})
+	sortBy := r.URL.Query().Get("sort")
+	if sortBy == "" {
+		sortBy = "score"
+	}
+	data.SortBy = sortBy
+
+	switch sortBy {
+	case "priority":
+		sort.Slice(data.Items, func(i, j int) bool {
+			if data.Items[i].Issue.Priority != data.Items[j].Issue.Priority {
+				return data.Items[i].Issue.Priority < data.Items[j].Issue.Priority
+			}
+			return data.Items[i].AgeDays > data.Items[j].AgeDays
+		})
+	case "age":
+		sort.Slice(data.Items, func(i, j int) bool {
+			return data.Items[i].AgeDays > data.Items[j].AgeDays
+		})
+	case "rig":
+		sort.Slice(data.Items, func(i, j int) bool {
+			if data.Items[i].Rig != data.Items[j].Rig {
+				return data.Items[i].Rig < data.Items[j].Rig
+			}
+			return data.Items[i].Score > data.Items[j].Score
+		})
+	default: // "score"
+		sort.Slice(data.Items, func(i, j int) bool {
+			return data.Items[i].Score > data.Items[j].Score
+		})
+	}
 
 	// Limit to top 50
 	if len(data.Items) > 50 {

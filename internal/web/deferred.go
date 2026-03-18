@@ -27,6 +27,7 @@ type deferredData struct {
 	OldestAge   int
 	Rigs        []string
 	FilterRig   string
+	SortBy      string
 	Assignees   []string
 }
 
@@ -112,10 +113,36 @@ func (s *Server) handleDeferred(w http.ResponseWriter, r *http.Request) {
 		data.ByPriority = filteredPriority
 	}
 
-	// Sort by idle days descending (longest-parked first)
-	sort.Slice(data.Items, func(i, j int) bool {
-		return data.Items[i].IdleDays > data.Items[j].IdleDays
-	})
+	sortBy := r.URL.Query().Get("sort")
+	if sortBy == "" {
+		sortBy = "idle"
+	}
+	data.SortBy = sortBy
+
+	switch sortBy {
+	case "priority":
+		sort.Slice(data.Items, func(i, j int) bool {
+			if data.Items[i].Issue.Priority != data.Items[j].Issue.Priority {
+				return data.Items[i].Issue.Priority < data.Items[j].Issue.Priority
+			}
+			return data.Items[i].IdleDays > data.Items[j].IdleDays
+		})
+	case "age":
+		sort.Slice(data.Items, func(i, j int) bool {
+			return data.Items[i].AgeDays > data.Items[j].AgeDays
+		})
+	case "rig":
+		sort.Slice(data.Items, func(i, j int) bool {
+			if data.Items[i].Rig != data.Items[j].Rig {
+				return data.Items[i].Rig < data.Items[j].Rig
+			}
+			return data.Items[i].IdleDays > data.Items[j].IdleDays
+		})
+	default: // "idle"
+		sort.Slice(data.Items, func(i, j int) bool {
+			return data.Items[i].IdleDays > data.Items[j].IdleDays
+		})
+	}
 
 	data.Total = len(data.Items)
 	if data.Total > 0 {

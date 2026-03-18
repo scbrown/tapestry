@@ -13325,3 +13325,122 @@ func TestBacklogPage_SortWithData(t *testing.T) {
 		})
 	}
 }
+
+func TestDeferredPage_SortOptions(t *testing.T) {
+	sorts := []string{"", "idle", "priority", "age", "rig"}
+	for _, s := range sorts {
+		t.Run("sort="+s, func(t *testing.T) {
+			srv := New(nil)
+			url := "/deferred"
+			if s != "" {
+				url += "?sort=" + s
+			}
+			req := httptest.NewRequest("GET", url, nil)
+			w := httptest.NewRecorder()
+			srv.ServeHTTP(w, req)
+			if w.Code != http.StatusOK {
+				t.Fatalf("GET %s status = %d, want %d", url, w.Code, http.StatusOK)
+			}
+			body := w.Body.String()
+			if !strings.Contains(body, "By idle time") {
+				t.Error("expected sort options in page")
+			}
+		})
+	}
+}
+
+func TestDeferredPage_SortWithData(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issues: []dolt.Issue{
+			{ID: "aegis-d1", Title: "Deferred old", Status: "deferred", Priority: 2, CreatedAt: time.Now().Add(-60 * 24 * time.Hour), UpdatedAt: time.Now().Add(-30 * 24 * time.Hour)},
+			{ID: "aegis-d2", Title: "Deferred P0", Status: "deferred", Priority: 0, CreatedAt: time.Now().Add(-5 * 24 * time.Hour), UpdatedAt: time.Now().Add(-1 * 24 * time.Hour)},
+		},
+	}
+	for _, s := range []string{"idle", "priority", "age"} {
+		t.Run("sort="+s, func(t *testing.T) {
+			srv := New(ds)
+			req := httptest.NewRequest("GET", "/deferred?sort="+s, nil)
+			w := httptest.NewRecorder()
+			srv.ServeHTTP(w, req)
+			if w.Code != http.StatusOK {
+				t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
+			}
+			body := w.Body.String()
+			if !strings.Contains(body, "aegis-d1") || !strings.Contains(body, "aegis-d2") {
+				t.Error("expected both deferred issues")
+			}
+		})
+	}
+}
+
+func TestOwnersPage_SortOptions(t *testing.T) {
+	sorts := []string{"", "active", "total", "open", "blocked", "name"}
+	for _, s := range sorts {
+		t.Run("sort="+s, func(t *testing.T) {
+			srv := New(nil)
+			url := "/owners"
+			if s != "" {
+				url += "?sort=" + s
+			}
+			req := httptest.NewRequest("GET", url, nil)
+			w := httptest.NewRecorder()
+			srv.ServeHTTP(w, req)
+			if w.Code != http.StatusOK {
+				t.Fatalf("GET %s status = %d, want %d", url, w.Code, http.StatusOK)
+			}
+			body := w.Body.String()
+			if !strings.Contains(body, "By active") {
+				t.Error("expected sort options in page")
+			}
+		})
+	}
+}
+
+func TestQueuePage_SortOptions(t *testing.T) {
+	sorts := []string{"", "score", "priority", "age", "rig"}
+	for _, s := range sorts {
+		t.Run("sort="+s, func(t *testing.T) {
+			srv := New(nil)
+			url := "/queue"
+			if s != "" {
+				url += "?sort=" + s
+			}
+			req := httptest.NewRequest("GET", url, nil)
+			w := httptest.NewRecorder()
+			srv.ServeHTTP(w, req)
+			if w.Code != http.StatusOK {
+				t.Fatalf("GET %s status = %d, want %d", url, w.Code, http.StatusOK)
+			}
+			body := w.Body.String()
+			if !strings.Contains(body, "Work Queue") {
+				t.Error("expected Work Queue heading in page")
+			}
+		})
+	}
+}
+
+func TestQueuePage_SortWithData(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issues: []dolt.Issue{
+			{ID: "aegis-q1", Title: "Old task", Status: "open", Priority: 2, CreatedAt: time.Now().Add(-30 * 24 * time.Hour), UpdatedAt: time.Now()},
+			{ID: "aegis-q2", Title: "Urgent", Status: "open", Priority: 0, CreatedAt: time.Now().Add(-1 * 24 * time.Hour), UpdatedAt: time.Now()},
+		},
+	}
+	for _, s := range []string{"score", "priority", "age"} {
+		t.Run("sort="+s, func(t *testing.T) {
+			srv := New(ds)
+			req := httptest.NewRequest("GET", "/queue?sort="+s, nil)
+			w := httptest.NewRecorder()
+			srv.ServeHTTP(w, req)
+			if w.Code != http.StatusOK {
+				t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
+			}
+			body := w.Body.String()
+			if !strings.Contains(body, "By score") {
+				t.Error("expected sort options in page")
+			}
+		})
+	}
+}

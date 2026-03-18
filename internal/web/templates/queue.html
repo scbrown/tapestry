@@ -1,6 +1,6 @@
 {{define "title"}}Work Queue{{end}}
 {{define "content"}}
-<div class="backlog-page" hx-get="/queue{{if .FilterRig}}?rig={{.FilterRig}}{{end}}" hx-trigger="every 60s" hx-select=".backlog-page" hx-swap="outerHTML">
+<div class="backlog-page" hx-get="/queue{{if or .FilterRig (ne .SortBy "score")}}?{{if .FilterRig}}rig={{.FilterRig}}{{end}}{{if ne .SortBy "score"}}{{if .FilterRig}}&amp;{{end}}sort={{.SortBy}}{{end}}{{end}}" hx-trigger="every 60s" hx-select=".backlog-page" hx-swap="outerHTML">
   <h1>Work Queue <time class="text-dim">{{.GeneratedAt.Format "Jan 02, 2006 15:04"}}</time></h1>
 
   {{if eq .TotalReady 0}}
@@ -15,6 +15,13 @@
     {{end}}
   </div>
   {{end}}
+
+  <div class="filters">
+    <a href="/queue{{if .FilterRig}}?rig={{.FilterRig}}{{end}}" {{if eq .SortBy "score"}}class="active"{{end}}>By score</a>
+    <a href="/queue?sort=priority{{if .FilterRig}}&amp;rig={{.FilterRig}}{{end}}" {{if eq .SortBy "priority"}}class="active"{{end}}>By priority</a>
+    <a href="/queue?sort=age{{if .FilterRig}}&amp;rig={{.FilterRig}}{{end}}" {{if eq .SortBy "age"}}class="active"{{end}}>By age</a>
+    <a href="/queue?sort=rig{{if .FilterRig}}&amp;rig={{.FilterRig}}{{end}}" {{if eq .SortBy "rig"}}class="active"{{end}}>By rig</a>
+  </div>
 
   <div class="backlog-stats">
     <div class="stat">

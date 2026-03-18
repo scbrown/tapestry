@@ -26,6 +26,7 @@ type ownersData struct {
 	Rows      []ownerRow
 	Rigs      []string
 	FilterRig string
+	SortBy    string
 	Err       string
 }
 
@@ -123,15 +124,38 @@ func (s *Server) handleOwners(w http.ResponseWriter, r *http.Request) {
 	for _, row := range byOwner {
 		rows = append(rows, *row)
 	}
-	sort.Slice(rows, func(i, j int) bool {
-		// Sort by active work (open + in_progress) descending
-		ai := rows[i].Open + rows[i].Progress
-		aj := rows[j].Open + rows[j].Progress
-		if ai != aj {
-			return ai > aj
-		}
-		return rows[i].Total > rows[j].Total
-	})
+	sortBy := r.URL.Query().Get("sort")
+	if sortBy == "" {
+		sortBy = "active"
+	}
 
-	s.render(w, r, "owners", ownersData{Rows: rows, Rigs: rigs, FilterRig: filterRig})
+	switch sortBy {
+	case "total":
+		sort.Slice(rows, func(i, j int) bool {
+			return rows[i].Total > rows[j].Total
+		})
+	case "open":
+		sort.Slice(rows, func(i, j int) bool {
+			return rows[i].Open > rows[j].Open
+		})
+	case "blocked":
+		sort.Slice(rows, func(i, j int) bool {
+			return rows[i].Blocked > rows[j].Blocked
+		})
+	case "name":
+		sort.Slice(rows, func(i, j int) bool {
+			return rows[i].Name < rows[j].Name
+		})
+	default: // "active"
+		sort.Slice(rows, func(i, j int) bool {
+			ai := rows[i].Open + rows[i].Progress
+			aj := rows[j].Open + rows[j].Progress
+			if ai != aj {
+				return ai > aj
+			}
+			return rows[i].Total > rows[j].Total
+		})
+	}
+
+	s.render(w, r, "owners", ownersData{Rows: rows, Rigs: rigs, FilterRig: filterRig, SortBy: sortBy})
 }

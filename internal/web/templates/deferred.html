@@ -1,6 +1,6 @@
 {{define "title"}}Deferred{{end}}
 {{define "content"}}
-<div class="backlog-page" hx-get="/deferred{{if .FilterRig}}?rig={{.FilterRig}}{{end}}" hx-trigger="every 120s" hx-select=".backlog-page" hx-swap="outerHTML">
+<div class="backlog-page" hx-get="/deferred{{if or .FilterRig (ne .SortBy "idle")}}?{{if .FilterRig}}rig={{.FilterRig}}{{end}}{{if ne .SortBy "idle"}}{{if .FilterRig}}&amp;{{end}}sort={{.SortBy}}{{end}}{{end}}" hx-trigger="every 120s" hx-select=".backlog-page" hx-swap="outerHTML">
   <h1>Deferred Items <time class="text-dim">{{.GeneratedAt.Format "Jan 02, 2006 15:04"}}</time></h1>
 
   <div class="backlog-stats">
@@ -26,6 +26,13 @@
     {{end}}
   </div>
   {{end}}
+
+  <div class="filters">
+    <a href="/deferred{{if .FilterRig}}?rig={{.FilterRig}}{{end}}" {{if eq .SortBy "idle"}}class="active"{{end}}>By idle time</a>
+    <a href="/deferred?sort=priority{{if .FilterRig}}&amp;rig={{.FilterRig}}{{end}}" {{if eq .SortBy "priority"}}class="active"{{end}}>By priority</a>
+    <a href="/deferred?sort=age{{if .FilterRig}}&amp;rig={{.FilterRig}}{{end}}" {{if eq .SortBy "age"}}class="active"{{end}}>By age</a>
+    <a href="/deferred?sort=rig{{if .FilterRig}}&amp;rig={{.FilterRig}}{{end}}" {{if eq .SortBy "rig"}}class="active"{{end}}>By rig</a>
+  </div>
 
   {{if .Items}}
   <section class="backlog-card">
