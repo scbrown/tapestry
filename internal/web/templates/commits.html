@@ -1,7 +1,16 @@
 {{define "title"}}Commits{{end}}
 {{define "content"}}
-<div class="commits-page" hx-get="/commits" hx-trigger="every 120s" hx-select=".commits-page" hx-swap="outerHTML">
+<div class="commits-page" hx-get="/commits{{if .FilterRepo}}?repo={{.FilterRepo}}{{end}}" hx-trigger="every 120s" hx-select=".commits-page" hx-swap="outerHTML">
   <h1>Commits <span class="text-dim">({{.TotalCommits}} total, {{.LinkedCount}} linked to beads)</span></h1>
+
+  {{if gt (len .Repos) 1}}
+  <div class="dep-filters" style="margin-bottom:0.75rem">
+    <a href="/commits" class="badge {{if not .FilterRepo}}filter-active{{end}}">All repos</a>
+    {{range .Repos}}
+    <a href="/commits?repo={{.}}" class="badge {{if eq . $.FilterRepo}}filter-active{{end}}">{{.}}</a>
+    {{end}}
+  </div>
+  {{end}}
 
   {{if .RecentLinked}}
   <section>

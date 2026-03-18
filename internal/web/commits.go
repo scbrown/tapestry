@@ -17,6 +17,8 @@ type commitsData struct {
 	RecentLinked []commitRow
 	TotalCommits int
 	LinkedCount  int
+	FilterRepo   string
+	Repos        []string
 }
 
 type commitRow struct {
@@ -54,12 +56,25 @@ func (s *Server) handleCommits(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ctx := r.Context()
+	filterRepo := r.URL.Query().Get("repo")
+	data.FilterRepo = filterRepo
+
+	// Build repo names for filter bar
+	for _, repo := range searchRepos {
+		parts := strings.Split(repo, "/")
+		data.Repos = append(data.Repos, parts[len(parts)-1])
+	}
 
 	var allCommits []commitRow
 	var mu sync.Mutex
 	var wg sync.WaitGroup
 
 	for _, repo := range searchRepos {
+		parts := strings.Split(repo, "/")
+		repoName := parts[len(parts)-1]
+		if filterRepo != "" && repoName != filterRepo {
+			continue
+		}
 		wg.Add(1)
 		go func(repo string) {
 			defer wg.Done()
