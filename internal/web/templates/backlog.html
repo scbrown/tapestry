@@ -1,6 +1,6 @@
 {{define "title"}}Backlog{{end}}
 {{define "content"}}
-<div class="backlog-page" hx-get="/backlog{{if .FilterRig}}?rig={{.FilterRig}}{{end}}" hx-trigger="every 120s" hx-select=".backlog-page" hx-swap="outerHTML">
+<div class="backlog-page" hx-get="/backlog{{if or .FilterRig (ne .SortBy "age")}}?{{if .FilterRig}}rig={{.FilterRig}}{{end}}{{if ne .SortBy "age"}}{{if .FilterRig}}&amp;{{end}}sort={{.SortBy}}{{end}}{{end}}" hx-trigger="every 120s" hx-select=".backlog-page" hx-swap="outerHTML">
   <h1>Backlog Health <time class="text-dim">{{.GeneratedAt.Format "Jan 02, 2006 15:04"}}</time></h1>
 
   {{if gt (len .Rigs) 1}}
@@ -72,7 +72,12 @@
     </section>
 
     <section class="backlog-card backlog-oldest">
-      <h2>Oldest Open Beads</h2>
+      <h2>Open Beads</h2>
+      <div class="filters">
+        <a href="/backlog{{if .FilterRig}}?rig={{.FilterRig}}{{end}}" {{if eq .SortBy "age"}}class="active"{{end}}>By age</a>
+        <a href="/backlog?sort=priority{{if .FilterRig}}&amp;rig={{.FilterRig}}{{end}}" {{if eq .SortBy "priority"}}class="active"{{end}}>By priority</a>
+        <a href="/backlog?sort=rig{{if .FilterRig}}&amp;rig={{.FilterRig}}{{end}}" {{if eq .SortBy "rig"}}class="active"{{end}}>By rig</a>
+      </div>
       <div class="batch-bar" id="batch-bar-oldest" style="display:none">
         <span class="batch-count">0 selected</span>
         <button class="btn btn-xs" onclick="backlogBatchAction('in_progress')">start</button>

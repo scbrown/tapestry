@@ -34,6 +34,7 @@ type backlogData struct {
 	ByPriority  []priorityAge
 	Rigs        []string
 	FilterRig   string
+	SortBy      string
 	Assignees   []string
 }
 
@@ -122,10 +123,32 @@ func (s *Server) handleBacklog(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Sort by age descending for oldest items
-	sort.Slice(openIssues, func(i, j int) bool {
-		return openIssues[i].AgeDays > openIssues[j].AgeDays
-	})
+	sortBy := r.URL.Query().Get("sort")
+	if sortBy == "" {
+		sortBy = "age"
+	}
+	data.SortBy = sortBy
+
+	switch sortBy {
+	case "priority":
+		sort.Slice(openIssues, func(i, j int) bool {
+			if openIssues[i].Issue.Priority != openIssues[j].Issue.Priority {
+				return openIssues[i].Issue.Priority < openIssues[j].Issue.Priority
+			}
+			return openIssues[i].AgeDays > openIssues[j].AgeDays
+		})
+	case "rig":
+		sort.Slice(openIssues, func(i, j int) bool {
+			if openIssues[i].Issue.Rig != openIssues[j].Issue.Rig {
+				return openIssues[i].Issue.Rig < openIssues[j].Issue.Rig
+			}
+			return openIssues[i].AgeDays > openIssues[j].AgeDays
+		})
+	default: // "age"
+		sort.Slice(openIssues, func(i, j int) bool {
+			return openIssues[i].AgeDays > openIssues[j].AgeDays
+		})
+	}
 
 	// Age buckets
 	bucketDefs := []struct {

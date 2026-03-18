@@ -1,7 +1,7 @@
 {{define "title"}}Stale Work{{end}}
 
 {{define "content"}}
-<div class="stale-view" hx-get="/stale?days={{.Days}}{{if .FilterRig}}&rig={{.FilterRig}}{{end}}{{if .FilterPriority}}&priority={{.FilterPriority}}{{end}}" hx-trigger="every 120s" hx-select=".stale-view" hx-swap="outerHTML">
+<div class="stale-view" hx-get="/stale?days={{.Days}}{{if .FilterRig}}&rig={{.FilterRig}}{{end}}{{if .FilterPriority}}&priority={{.FilterPriority}}{{end}}{{if ne .SortBy "stale"}}&sort={{.SortBy}}{{end}}" hx-trigger="every 120s" hx-select=".stale-view" hx-swap="outerHTML">
   <h1>Stale Work</h1>
 
   {{if .Err}}
@@ -37,6 +37,13 @@
     <a href="/stale?days={{.Days}}{{if .FilterRig}}&rig={{.FilterRig}}{{end}}&priority=2" class="badge {{if eq .FilterPriority "2"}}filter-active{{end}}"><span class="priority-badge p2">P2</span></a>
     <a href="/stale?days={{.Days}}{{if .FilterRig}}&rig={{.FilterRig}}{{end}}&priority=3" class="badge {{if eq .FilterPriority "3"}}filter-active{{end}}"><span class="priority-badge p3">P3</span></a>
     <a href="/stale?days={{.Days}}{{if .FilterRig}}&rig={{.FilterRig}}{{end}}&priority=4" class="badge {{if eq .FilterPriority "4"}}filter-active{{end}}"><span class="priority-badge p4">P4</span></a>
+  </div>
+
+  <div class="filters">
+    <a href="/stale?days={{.Days}}{{if .FilterRig}}&rig={{.FilterRig}}{{end}}{{if .FilterPriority}}&priority={{.FilterPriority}}{{end}}" {{if eq .SortBy "stale"}}class="active"{{end}}>By staleness</a>
+    <a href="/stale?days={{.Days}}&sort=priority{{if .FilterRig}}&rig={{.FilterRig}}{{end}}{{if .FilterPriority}}&priority={{.FilterPriority}}{{end}}" {{if eq .SortBy "priority"}}class="active"{{end}}>By priority</a>
+    <a href="/stale?days={{.Days}}&sort=assignee{{if .FilterRig}}&rig={{.FilterRig}}{{end}}{{if .FilterPriority}}&priority={{.FilterPriority}}{{end}}" {{if eq .SortBy "assignee"}}class="active"{{end}}>By assignee</a>
+    <a href="/stale?days={{.Days}}&sort=rig{{if .FilterRig}}&rig={{.FilterRig}}{{end}}{{if .FilterPriority}}&priority={{.FilterPriority}}{{end}}" {{if eq .SortBy "rig"}}class="active"{{end}}>By rig</a>
   </div>
 
   <div class="results-meta">{{.Total}} in-progress/hooked beads not updated in {{.Days}}+ days{{if .FilterRig}} in {{rigName .FilterRig}}{{end}}</div>

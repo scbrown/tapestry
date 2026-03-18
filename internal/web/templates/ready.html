@@ -1,8 +1,15 @@
 {{define "title"}}Ready{{end}}
 {{define "content"}}
-<div class="ready-page" hx-get="/ready{{if .FilterRig}}?rig={{.FilterRig}}{{end}}" hx-trigger="every 60s" hx-select=".ready-page" hx-swap="outerHTML">
+<div class="ready-page" hx-get="/ready{{if or .FilterRig (ne .SortBy "priority")}}?{{if .FilterRig}}rig={{.FilterRig}}{{end}}{{if ne .SortBy "priority"}}{{if .FilterRig}}&amp;{{end}}sort={{.SortBy}}{{end}}{{end}}" hx-trigger="every 60s" hx-select=".ready-page" hx-swap="outerHTML">
   <h1>Ready to Work <time class="text-dim">{{formatDateTime .GeneratedAt}}</time></h1>
-  <p class="text-dim">Open beads with no active blockers, sorted by priority then age. Top 100.</p>
+  <p class="text-dim">Open beads with no active blockers. Top 100.</p>
+
+  <div class="filters">
+    <a href="/ready{{if .FilterRig}}?rig={{.FilterRig}}{{end}}" {{if eq .SortBy "priority"}}class="active"{{end}}>By priority</a>
+    <a href="/ready?sort=age{{if .FilterRig}}&amp;rig={{.FilterRig}}{{end}}" {{if eq .SortBy "age"}}class="active"{{end}}>By age</a>
+    <a href="/ready?sort=type{{if .FilterRig}}&amp;rig={{.FilterRig}}{{end}}" {{if eq .SortBy "type"}}class="active"{{end}}>By type</a>
+    <a href="/ready?sort=assignee{{if .FilterRig}}&amp;rig={{.FilterRig}}{{end}}" {{if eq .SortBy "assignee"}}class="active"{{end}}>By assignee</a>
+  </div>
 
   {{if .Rigs}}<div class="dep-filters" style="margin-top:0.5rem">
     <a href="/ready" class="badge {{if not .FilterRig}}filter-active{{end}}">All rigs</a>

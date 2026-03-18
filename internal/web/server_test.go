@@ -13181,3 +13181,147 @@ func TestFindProbesDir_NotFound(t *testing.T) {
 		t.Errorf("findProbesDir (empty) = %q, want empty", result)
 	}
 }
+
+func TestStalePage_SortOptions(t *testing.T) {
+	sorts := []string{"", "stale", "priority", "assignee", "rig"}
+	for _, s := range sorts {
+		t.Run("sort="+s, func(t *testing.T) {
+			srv := New(nil)
+			url := "/stale?days=3"
+			if s != "" {
+				url += "&sort=" + s
+			}
+			req := httptest.NewRequest("GET", url, nil)
+			w := httptest.NewRecorder()
+			srv.ServeHTTP(w, req)
+			if w.Code != http.StatusOK {
+				t.Fatalf("GET %s status = %d, want %d", url, w.Code, http.StatusOK)
+			}
+			body := w.Body.String()
+			if !strings.Contains(body, "By staleness") {
+				t.Error("expected sort options in page")
+			}
+		})
+	}
+}
+
+func TestStalePage_SortWithData(t *testing.T) {
+	staleTime := time.Now().Add(-10 * 24 * time.Hour)
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issues: []dolt.Issue{
+			{ID: "aegis-s1", Title: "Old task", Status: "in_progress", Priority: 2, Assignee: "crew/arnold", UpdatedAt: staleTime},
+			{ID: "aegis-s2", Title: "Older task", Status: "in_progress", Priority: 0, Assignee: "crew/stryder", UpdatedAt: staleTime.Add(-48 * time.Hour)},
+		},
+	}
+	sorts := []string{"stale", "priority", "assignee"}
+	for _, s := range sorts {
+		t.Run("sort="+s, func(t *testing.T) {
+			srv := New(ds)
+			req := httptest.NewRequest("GET", "/stale?days=3&sort="+s, nil)
+			w := httptest.NewRecorder()
+			srv.ServeHTTP(w, req)
+			if w.Code != http.StatusOK {
+				t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
+			}
+			body := w.Body.String()
+			if !strings.Contains(body, "aegis-s1") || !strings.Contains(body, "aegis-s2") {
+				t.Error("expected both stale issues in output")
+			}
+		})
+	}
+}
+
+func TestBlockedPage_SortOptions(t *testing.T) {
+	sorts := []string{"", "priority", "blocker", "assignee", "rig"}
+	for _, s := range sorts {
+		t.Run("sort="+s, func(t *testing.T) {
+			srv := New(nil)
+			url := "/blocked"
+			if s != "" {
+				url += "?sort=" + s
+			}
+			req := httptest.NewRequest("GET", url, nil)
+			w := httptest.NewRecorder()
+			srv.ServeHTTP(w, req)
+			if w.Code != http.StatusOK {
+				t.Fatalf("GET %s status = %d, want %d", url, w.Code, http.StatusOK)
+			}
+			body := w.Body.String()
+			if !strings.Contains(body, "By priority") {
+				t.Error("expected sort options in page")
+			}
+		})
+	}
+}
+
+func TestReadyPage_SortOptions(t *testing.T) {
+	sorts := []string{"", "priority", "age", "type", "assignee"}
+	for _, s := range sorts {
+		t.Run("sort="+s, func(t *testing.T) {
+			srv := New(nil)
+			url := "/ready"
+			if s != "" {
+				url += "?sort=" + s
+			}
+			req := httptest.NewRequest("GET", url, nil)
+			w := httptest.NewRecorder()
+			srv.ServeHTTP(w, req)
+			if w.Code != http.StatusOK {
+				t.Fatalf("GET %s status = %d, want %d", url, w.Code, http.StatusOK)
+			}
+			body := w.Body.String()
+			if !strings.Contains(body, "By priority") {
+				t.Error("expected sort options in page")
+			}
+		})
+	}
+}
+
+func TestBacklogPage_SortOptions(t *testing.T) {
+	sorts := []string{"", "age", "priority", "rig"}
+	for _, s := range sorts {
+		t.Run("sort="+s, func(t *testing.T) {
+			srv := New(nil)
+			url := "/backlog"
+			if s != "" {
+				url += "?sort=" + s
+			}
+			req := httptest.NewRequest("GET", url, nil)
+			w := httptest.NewRecorder()
+			srv.ServeHTTP(w, req)
+			if w.Code != http.StatusOK {
+				t.Fatalf("GET %s status = %d, want %d", url, w.Code, http.StatusOK)
+			}
+			body := w.Body.String()
+			if !strings.Contains(body, "Backlog") {
+				t.Error("expected Backlog heading in page")
+			}
+		})
+	}
+}
+
+func TestBacklogPage_SortWithData(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issues: []dolt.Issue{
+			{ID: "aegis-b1", Title: "Old bug", Status: "open", Priority: 2, CreatedAt: time.Now().Add(-30 * 24 * time.Hour), UpdatedAt: time.Now()},
+			{ID: "aegis-b2", Title: "New P0", Status: "open", Priority: 0, CreatedAt: time.Now().Add(-1 * 24 * time.Hour), UpdatedAt: time.Now()},
+		},
+	}
+	for _, s := range []string{"age", "priority"} {
+		t.Run("sort="+s, func(t *testing.T) {
+			srv := New(ds)
+			req := httptest.NewRequest("GET", "/backlog?sort="+s, nil)
+			w := httptest.NewRecorder()
+			srv.ServeHTTP(w, req)
+			if w.Code != http.StatusOK {
+				t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
+			}
+			body := w.Body.String()
+			if !strings.Contains(body, "aegis-b1") || !strings.Contains(body, "aegis-b2") {
+				t.Error("expected both backlog issues in output")
+			}
+		})
+	}
+}

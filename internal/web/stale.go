@@ -24,6 +24,7 @@ type staleData struct {
 	Rigs           []string
 	FilterRig      string
 	FilterPriority string
+	SortBy         string
 	Assignees      []string
 	Err            string
 }
@@ -128,9 +129,38 @@ func (s *Server) handleStale(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	sort.Slice(all, func(i, j int) bool {
-		return all[i].DaysStale > all[j].DaysStale
-	})
+	sortBy := r.URL.Query().Get("sort")
+	if sortBy == "" {
+		sortBy = "stale"
+	}
+
+	switch sortBy {
+	case "priority":
+		sort.Slice(all, func(i, j int) bool {
+			if all[i].Issue.Priority != all[j].Issue.Priority {
+				return all[i].Issue.Priority < all[j].Issue.Priority
+			}
+			return all[i].DaysStale > all[j].DaysStale
+		})
+	case "assignee":
+		sort.Slice(all, func(i, j int) bool {
+			if all[i].Issue.Assignee != all[j].Issue.Assignee {
+				return all[i].Issue.Assignee < all[j].Issue.Assignee
+			}
+			return all[i].DaysStale > all[j].DaysStale
+		})
+	case "rig":
+		sort.Slice(all, func(i, j int) bool {
+			if all[i].Rig != all[j].Rig {
+				return all[i].Rig < all[j].Rig
+			}
+			return all[i].DaysStale > all[j].DaysStale
+		})
+	default: // "stale"
+		sort.Slice(all, func(i, j int) bool {
+			return all[i].DaysStale > all[j].DaysStale
+		})
+	}
 
 	// Collect distinct assignees for reassign dropdown
 	assigneeSet := make(map[string]bool)
@@ -154,6 +184,7 @@ func (s *Server) handleStale(w http.ResponseWriter, r *http.Request) {
 		Rigs:           rigs,
 		FilterRig:      filterRig,
 		FilterPriority: filterPriority,
+		SortBy:         sortBy,
 		Assignees:      assignees,
 	})
 }

@@ -21,6 +21,7 @@ type blockedData struct {
 	ByBlocker    []blockerGroup
 	Rigs         []string
 	FilterRig    string
+	SortBy       string
 	Assignees    []string
 	Err          string
 }
@@ -101,12 +102,39 @@ func (s *Server) handleBlocked(w http.ResponseWriter, r *http.Request) {
 		all = filtered
 	}
 
-	sort.Slice(all, func(i, j int) bool {
-		if all[i].Issue.Priority != all[j].Issue.Priority {
+	sortBy := r.URL.Query().Get("sort")
+	if sortBy == "" {
+		sortBy = "priority"
+	}
+
+	switch sortBy {
+	case "blocker":
+		// Will be re-sorted after blocker counting; for now sort by priority
+		sort.Slice(all, func(i, j int) bool {
 			return all[i].Issue.Priority < all[j].Issue.Priority
-		}
-		return all[i].Issue.UpdatedAt.After(all[j].Issue.UpdatedAt)
-	})
+		})
+	case "rig":
+		sort.Slice(all, func(i, j int) bool {
+			if all[i].Rig != all[j].Rig {
+				return all[i].Rig < all[j].Rig
+			}
+			return all[i].Issue.Priority < all[j].Issue.Priority
+		})
+	case "assignee":
+		sort.Slice(all, func(i, j int) bool {
+			if all[i].Issue.Assignee != all[j].Issue.Assignee {
+				return all[i].Issue.Assignee < all[j].Issue.Assignee
+			}
+			return all[i].Issue.Priority < all[j].Issue.Priority
+		})
+	default: // "priority"
+		sort.Slice(all, func(i, j int) bool {
+			if all[i].Issue.Priority != all[j].Issue.Priority {
+				return all[i].Issue.Priority < all[j].Issue.Priority
+			}
+			return all[i].Issue.UpdatedAt.After(all[j].Issue.UpdatedAt)
+		})
+	}
 
 	// Count how many issues each blocker is blocking
 	blockerCounts := map[string]blockerGroup{}
@@ -147,6 +175,7 @@ func (s *Server) handleBlocked(w http.ResponseWriter, r *http.Request) {
 		ByBlocker: groups,
 		Rigs:      rigs,
 		FilterRig: filterRig,
+		SortBy:    sortBy,
 		Assignees: assignees,
 	})
 }

@@ -36,6 +36,7 @@ type readyData struct {
 
 	Rigs      []string
 	FilterRig string
+	SortBy    string
 	Assignees []string
 	Err       string
 }
@@ -141,13 +142,39 @@ func (s *Server) handleReady(w http.ResponseWriter, r *http.Request) {
 	}
 	sort.Strings(data.Assignees)
 
-	// Sort by priority then age (oldest first within same priority)
-	sort.Slice(data.Items, func(i, j int) bool {
-		if data.Items[i].Priority != data.Items[j].Priority {
+	sortBy := r.URL.Query().Get("sort")
+	if sortBy == "" {
+		sortBy = "priority"
+	}
+	data.SortBy = sortBy
+
+	switch sortBy {
+	case "age":
+		sort.Slice(data.Items, func(i, j int) bool {
+			return data.Items[i].AgeDays > data.Items[j].AgeDays
+		})
+	case "type":
+		sort.Slice(data.Items, func(i, j int) bool {
+			if data.Items[i].Type != data.Items[j].Type {
+				return data.Items[i].Type < data.Items[j].Type
+			}
 			return data.Items[i].Priority < data.Items[j].Priority
-		}
-		return data.Items[i].CreatedAt.Before(data.Items[j].CreatedAt)
-	})
+		})
+	case "assignee":
+		sort.Slice(data.Items, func(i, j int) bool {
+			if data.Items[i].Assignee != data.Items[j].Assignee {
+				return data.Items[i].Assignee < data.Items[j].Assignee
+			}
+			return data.Items[i].Priority < data.Items[j].Priority
+		})
+	default: // "priority"
+		sort.Slice(data.Items, func(i, j int) bool {
+			if data.Items[i].Priority != data.Items[j].Priority {
+				return data.Items[i].Priority < data.Items[j].Priority
+			}
+			return data.Items[i].CreatedAt.Before(data.Items[j].CreatedAt)
+		})
+	}
 
 	data.TotalReady = len(data.Items)
 	for _, item := range data.Items {
