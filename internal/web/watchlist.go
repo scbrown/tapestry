@@ -25,6 +25,7 @@ type watchlistData struct {
 	TotalP1     int
 	Rigs        []string
 	FilterRig   string
+	SortBy      string
 	Assignees   []string
 }
 
@@ -130,17 +131,40 @@ func (s *Server) handleWatchlist(w http.ResponseWriter, r *http.Request) {
 		data.P1 = filteredP1
 	}
 
-	// Sort: in_progress first, then by idle time descending (most stale first)
+	sortBy := r.URL.Query().Get("sort")
+	if sortBy == "" {
+		sortBy = "status"
+	}
+	data.SortBy = sortBy
+
 	sortItems := func(items []watchlistItem) {
-		sort.Slice(items, func(i, j int) bool {
-			statusOrder := map[string]int{"in_progress": 0, "hooked": 0, "open": 1, "blocked": 2}
-			si := statusOrder[items[i].Issue.Status]
-			sj := statusOrder[items[j].Issue.Status]
-			if si != sj {
-				return si < sj
-			}
-			return items[i].IdleH > items[j].IdleH
-		})
+		switch sortBy {
+		case "idle":
+			sort.Slice(items, func(i, j int) bool {
+				return items[i].IdleH > items[j].IdleH
+			})
+		case "age":
+			sort.Slice(items, func(i, j int) bool {
+				return items[i].AgeDays > items[j].AgeDays
+			})
+		case "rig":
+			sort.Slice(items, func(i, j int) bool {
+				if items[i].Rig != items[j].Rig {
+					return items[i].Rig < items[j].Rig
+				}
+				return items[i].IdleH > items[j].IdleH
+			})
+		default: // "status"
+			sort.Slice(items, func(i, j int) bool {
+				statusOrder := map[string]int{"in_progress": 0, "hooked": 0, "open": 1, "blocked": 2}
+				si := statusOrder[items[i].Issue.Status]
+				sj := statusOrder[items[j].Issue.Status]
+				if si != sj {
+					return si < sj
+				}
+				return items[i].IdleH > items[j].IdleH
+			})
+		}
 	}
 	sortItems(data.P0)
 	sortItems(data.P1)

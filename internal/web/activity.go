@@ -24,6 +24,7 @@ type activityData struct {
 	FilterRig     string   // current rig filter
 	FilterStatus  string   // current status filter
 	FilterAgent   string   // current agent/assignee filter
+	SortBy        string
 	Assignees     []string
 	Err           string
 }
@@ -136,10 +137,38 @@ func (s *Server) handleActivity(w http.ResponseWriter, r *http.Request) {
 		all = filtered
 	}
 
-	// Sort by most recently updated first
-	sort.Slice(all, func(i, j int) bool {
-		return all[i].Issue.UpdatedAt.After(all[j].Issue.UpdatedAt)
-	})
+	sortBy := r.URL.Query().Get("sort")
+	if sortBy == "" {
+		sortBy = "recent"
+	}
+
+	switch sortBy {
+	case "priority":
+		sort.Slice(all, func(i, j int) bool {
+			if all[i].Issue.Priority != all[j].Issue.Priority {
+				return all[i].Issue.Priority < all[j].Issue.Priority
+			}
+			return all[i].Issue.UpdatedAt.After(all[j].Issue.UpdatedAt)
+		})
+	case "status":
+		sort.Slice(all, func(i, j int) bool {
+			if all[i].Issue.Status != all[j].Issue.Status {
+				return all[i].Issue.Status < all[j].Issue.Status
+			}
+			return all[i].Issue.UpdatedAt.After(all[j].Issue.UpdatedAt)
+		})
+	case "rig":
+		sort.Slice(all, func(i, j int) bool {
+			if all[i].Rig != all[j].Rig {
+				return all[i].Rig < all[j].Rig
+			}
+			return all[i].Issue.UpdatedAt.After(all[j].Issue.UpdatedAt)
+		})
+	default: // "recent"
+		sort.Slice(all, func(i, j int) bool {
+			return all[i].Issue.UpdatedAt.After(all[j].Issue.UpdatedAt)
+		})
+	}
 
 	// Cap to 200
 	if len(all) > 200 {
@@ -169,6 +198,7 @@ func (s *Server) handleActivity(w http.ResponseWriter, r *http.Request) {
 		FilterRig:    filterRig,
 		FilterStatus: filterStatus,
 		FilterAgent:  filterAgent,
+		SortBy:       sortBy,
 		Assignees:    assignees,
 	})
 }

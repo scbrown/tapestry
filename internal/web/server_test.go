@@ -13420,6 +13420,52 @@ func TestQueuePage_SortOptions(t *testing.T) {
 	}
 }
 
+func TestActivityPage_SortOptions(t *testing.T) {
+	sorts := []string{"", "recent", "priority", "status", "rig"}
+	for _, s := range sorts {
+		t.Run("sort="+s, func(t *testing.T) {
+			srv := New(nil)
+			url := "/activity?hours=24"
+			if s != "" {
+				url += "&sort=" + s
+			}
+			req := httptest.NewRequest("GET", url, nil)
+			w := httptest.NewRecorder()
+			srv.ServeHTTP(w, req)
+			if w.Code != http.StatusOK {
+				t.Fatalf("GET %s status = %d, want %d", url, w.Code, http.StatusOK)
+			}
+			body := w.Body.String()
+			if !strings.Contains(body, "By recent") {
+				t.Error("expected sort options in page")
+			}
+		})
+	}
+}
+
+func TestWatchlistPage_SortOptions(t *testing.T) {
+	sorts := []string{"", "status", "idle", "age", "rig"}
+	for _, s := range sorts {
+		t.Run("sort="+s, func(t *testing.T) {
+			srv := New(nil)
+			url := "/watchlist"
+			if s != "" {
+				url += "?sort=" + s
+			}
+			req := httptest.NewRequest("GET", url, nil)
+			w := httptest.NewRecorder()
+			srv.ServeHTTP(w, req)
+			if w.Code != http.StatusOK {
+				t.Fatalf("GET %s status = %d, want %d", url, w.Code, http.StatusOK)
+			}
+			body := w.Body.String()
+			if !strings.Contains(body, "By status") {
+				t.Error("expected sort options in page")
+			}
+		})
+	}
+}
+
 func TestQueuePage_SortWithData(t *testing.T) {
 	ds := &mockDataSource{
 		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},

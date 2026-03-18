@@ -1,7 +1,7 @@
 {{define "title"}}Activity{{end}}
 
 {{define "content"}}
-<div class="activity-view" hx-get="/activity?hours={{.Hours}}{{if .FilterRig}}&rig={{.FilterRig}}{{end}}{{if .FilterStatus}}&status={{.FilterStatus}}{{end}}{{if .FilterAgent}}&agent={{.FilterAgent}}{{end}}" hx-trigger="every 60s" hx-select=".activity-view" hx-swap="outerHTML">
+<div class="activity-view" hx-get="/activity?hours={{.Hours}}{{if .FilterRig}}&rig={{.FilterRig}}{{end}}{{if .FilterStatus}}&status={{.FilterStatus}}{{end}}{{if .FilterAgent}}&agent={{.FilterAgent}}{{end}}{{if ne .SortBy "recent"}}&sort={{.SortBy}}{{end}}" hx-trigger="every 60s" hx-select=".activity-view" hx-swap="outerHTML">
   <h1>Recent Activity</h1>
 
   {{if .Err}}
@@ -58,6 +58,17 @@
     {{end}}
   </div>
   {{end}}
+
+  {{- $qSort := printf "hours=%d" .Hours -}}
+  {{- if .FilterRig}}{{$qSort = printf "%s&rig=%s" $qSort .FilterRig}}{{end -}}
+  {{- if .FilterStatus}}{{$qSort = printf "%s&status=%s" $qSort .FilterStatus}}{{end -}}
+  {{- if .FilterAgent}}{{$qSort = printf "%s&agent=%s" $qSort .FilterAgent}}{{end -}}
+  <div class="filters">
+    <a href="/activity?{{$qSort}}" {{if eq .SortBy "recent"}}class="active"{{end}}>By recent</a>
+    <a href="/activity?{{$qSort}}&sort=priority" {{if eq .SortBy "priority"}}class="active"{{end}}>By priority</a>
+    <a href="/activity?{{$qSort}}&sort=status" {{if eq .SortBy "status"}}class="active"{{end}}>By status</a>
+    <a href="/activity?{{$qSort}}&sort=rig" {{if eq .SortBy "rig"}}class="active"{{end}}>By rig</a>
+  </div>
 
   {{if .Entries}}
   <div class="batch-bar" id="batch-bar-activity" style="display:none">

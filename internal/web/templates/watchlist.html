@@ -1,6 +1,6 @@
 {{define "title"}}Watchlist{{end}}
 {{define "content"}}
-<div class="backlog-page" hx-get="/watchlist{{if .FilterRig}}?rig={{.FilterRig}}{{end}}" hx-trigger="every 30s" hx-select=".backlog-page" hx-swap="outerHTML">
+<div class="backlog-page" hx-get="/watchlist{{if or .FilterRig (ne .SortBy "status")}}?{{if .FilterRig}}rig={{.FilterRig}}{{end}}{{if ne .SortBy "status"}}{{if .FilterRig}}&amp;{{end}}sort={{.SortBy}}{{end}}{{end}}" hx-trigger="every 30s" hx-select=".backlog-page" hx-swap="outerHTML">
   <h1>Watchlist <time class="text-dim">{{.GeneratedAt.Format "Jan 02, 2006 15:04"}}</time></h1>
 
   <div class="backlog-stats">
@@ -22,6 +22,13 @@
     {{end}}
   </div>
   {{end}}
+
+  <div class="filters">
+    <a href="/watchlist{{if .FilterRig}}?rig={{.FilterRig}}{{end}}" {{if eq .SortBy "status"}}class="active"{{end}}>By status</a>
+    <a href="/watchlist?sort=idle{{if .FilterRig}}&amp;rig={{.FilterRig}}{{end}}" {{if eq .SortBy "idle"}}class="active"{{end}}>By idle time</a>
+    <a href="/watchlist?sort=age{{if .FilterRig}}&amp;rig={{.FilterRig}}{{end}}" {{if eq .SortBy "age"}}class="active"{{end}}>By age</a>
+    <a href="/watchlist?sort=rig{{if .FilterRig}}&amp;rig={{.FilterRig}}{{end}}" {{if eq .SortBy "rig"}}class="active"{{end}}>By rig</a>
+  </div>
 
   {{if and (eq .TotalP0 0) (eq .TotalP1 0)}}
   <p class="empty">No active P0 or P1 beads. All clear.</p>
