@@ -1,10 +1,19 @@
 {{define "title"}}Handoffs{{end}}
 {{define "content"}}
-<div class="handoffs-page" hx-get="/handoffs{{if .ActorFilter}}?actor={{.ActorFilter}}{{end}}" hx-trigger="every 120s" hx-select=".handoffs-page" hx-swap="outerHTML">
+<div class="handoffs-page" hx-get="/handoffs{{if .ActorFilter}}?actor={{.ActorFilter}}{{if .RigFilter}}&rig={{.RigFilter}}{{end}}{{else}}{{if .RigFilter}}?rig={{.RigFilter}}{{end}}{{end}}" hx-trigger="every 120s" hx-select=".handoffs-page" hx-swap="outerHTML">
   <h1>Handoff Chains <span class="text-dim">({{.TotalChains}} actors)</span></h1>
 
+  {{if .Rigs}}
+  <div class="dep-filters">
+    <a href="/handoffs{{if .ActorFilter}}?actor={{.ActorFilter}}{{end}}" {{if eq .RigFilter ""}}class="active"{{end}}>All rigs</a>
+    {{range .Rigs}}
+    <a href="/handoffs?rig={{.}}{{if $.ActorFilter}}&actor={{$.ActorFilter}}{{end}}" {{if eq . $.RigFilter}}class="active"{{end}}>{{.}}</a>
+    {{end}}
+  </div>
+  {{end}}
+
   {{if .ActorFilter}}
-  <p class="filter-note">Filtered by actor: <strong>{{.ActorFilter}}</strong> <a href="/handoffs">[clear]</a></p>
+  <p class="filter-note">Filtered by actor: <strong>{{.ActorFilter}}</strong> <a href="/handoffs{{if .RigFilter}}?rig={{.RigFilter}}{{end}}">[clear]</a></p>
   {{end}}
 
   {{if .Err}}

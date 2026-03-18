@@ -24,7 +24,9 @@ type handoffsPageData struct {
 	Stats       []events.ChainStats
 	Chains      []events.HandoffChain
 	TotalChains int
+	Rigs        []string
 	ActorFilter string
+	RigFilter   string
 	Err         string
 }
 
@@ -84,9 +86,11 @@ func (s *Server) handleEvents(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) handleHandoffs(w http.ResponseWriter, r *http.Request) {
 	actorFilter := r.URL.Query().Get("actor")
+	rigFilter := r.URL.Query().Get("rig")
 
 	data := handoffsPageData{
 		ActorFilter: actorFilter,
+		RigFilter:   rigFilter,
 	}
 
 	allEvents, err := s.loadEvents()
@@ -103,13 +107,19 @@ func (s *Server) handleHandoffs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	data.Rigs = events.Rigs(allEvents)
+
 	chains := events.BuildHandoffChains(allEvents)
 
-	// Filter by actor if requested
-	if actorFilter != "" {
+	// Filter by actor or rig
+	effectiveFilter := actorFilter
+	if rigFilter != "" && actorFilter == "" {
+		effectiveFilter = rigFilter + "/"
+	}
+	if effectiveFilter != "" {
 		var filtered []events.HandoffChain
 		for _, c := range chains {
-			if strings.Contains(c.Actor, actorFilter) {
+			if strings.Contains(c.Actor, effectiveFilter) {
 				filtered = append(filtered, c)
 			}
 		}

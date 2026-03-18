@@ -12944,6 +12944,18 @@ func TestFindProbesDir_Sibling(t *testing.T) {
 	}
 }
 
+func TestHandoffsPage_RigFilter(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/handoffs?rig=aegis", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /handoffs?rig=aegis status = %d, want %d", w.Code, http.StatusOK)
+	}
+}
+
 func TestEventsPage_RigFilter(t *testing.T) {
 	srv := New(nil)
 	req := httptest.NewRequest("GET", "/events?rig=aegis", nil)
