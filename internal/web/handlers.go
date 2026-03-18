@@ -67,9 +67,11 @@ type beadsListData struct {
 	Type      string
 	Priority  string
 	Assignee  string
+	Label     string
 	Sort      string
 	Rigs      []string
 	Assignees []string
+	Labels    []string
 	Page      int
 	Pages     int
 	PageLinks []pageLink
@@ -338,6 +340,7 @@ func (s *Server) handleBeadList(w http.ResponseWriter, r *http.Request) {
 		Type:     r.URL.Query().Get("type"),
 		Priority: r.URL.Query().Get("priority"),
 		Assignee: r.URL.Query().Get("assignee"),
+		Label:    r.URL.Query().Get("label"),
 		Sort:     r.URL.Query().Get("sort"),
 		Page:     1,
 	}
@@ -381,6 +384,9 @@ func (s *Server) handleBeadList(w http.ResponseWriter, r *http.Request) {
 	if data.Assignee != "" {
 		filter.Assignee = data.Assignee
 	}
+	if data.Label != "" {
+		filter.Label = data.Label
+	}
 
 	// Filter databases by rig if specified
 	var targetDBs []dolt.DatabaseInfo
@@ -395,6 +401,7 @@ func (s *Server) handleBeadList(w http.ResponseWriter, r *http.Request) {
 		issues    []dolt.Issue
 		rigName   string
 		assignees []string
+		labels    []dolt.LabelCount
 	}
 
 	beadResults := make([]beadListResult, len(targetDBs))
@@ -417,6 +424,7 @@ func (s *Server) handleBeadList(w http.ResponseWriter, r *http.Request) {
 			}
 			r.issues = issues
 			r.assignees, _ = s.ds.DistinctAssignees(ctx, dbName)
+			r.labels, _ = s.ds.DistinctLabels(ctx, dbName)
 			beadResults[i] = r
 		}(i, db.Name)
 	}
@@ -424,11 +432,15 @@ func (s *Server) handleBeadList(w http.ResponseWriter, r *http.Request) {
 
 	rigSet := make(map[string]bool)
 	assigneeSet := make(map[string]bool)
+	labelSet := make(map[string]bool)
 	for _, r := range beadResults {
 		data.Issues = append(data.Issues, r.issues...)
 		rigSet[r.rigName] = true
 		for _, a := range r.assignees {
 			assigneeSet[a] = true
+		}
+		for _, lc := range r.labels {
+			labelSet[lc.Label] = true
 		}
 	}
 
@@ -481,6 +493,10 @@ func (s *Server) handleBeadList(w http.ResponseWriter, r *http.Request) {
 	for a := range assigneeSet {
 		data.Assignees = append(data.Assignees, a)
 	}
+	for l := range labelSet {
+		data.Labels = append(data.Labels, l)
+	}
+	sort.Strings(data.Labels)
 
 	// Build page links
 	if data.Pages > 1 {

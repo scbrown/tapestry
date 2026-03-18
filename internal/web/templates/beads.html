@@ -63,6 +63,15 @@
         </select>
       </div>
       <div class="filter-group">
+        <label for="f-label">Label</label>
+        <select name="label" id="f-label">
+          <option value="">All</option>
+          {{range .Labels}}
+          <option value="{{.}}" {{if eq $.Label .}}selected{{end}}>{{.}}</option>
+          {{end}}
+        </select>
+      </div>
+      <div class="filter-group">
         <label for="f-sort">Sort</label>
         <select name="sort" id="f-sort">
           <option value="updated" {{if eq .Sort "updated"}}selected{{end}}>Newest</option>

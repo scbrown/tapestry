@@ -489,6 +489,39 @@ func TestBeadsList_WithData(t *testing.T) {
 	}
 }
 
+func TestBeadsList_LabelFilter(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issues: []dolt.Issue{
+			{ID: "aegis-lf1", Title: "Labeled bead", Status: "open", Priority: 1, Rig: "beads_aegis", UpdatedAt: time.Now()},
+		},
+		labelCounts: []dolt.LabelCount{
+			{Label: "infra", Count: 5},
+			{Label: "urgent", Count: 2},
+		},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/beads?label=infra", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /beads?label=infra status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "f-label") {
+		t.Error("body missing label filter select")
+	}
+	if !strings.Contains(body, "infra") {
+		t.Error("body missing infra label option")
+	}
+	if !strings.Contains(body, "urgent") {
+		t.Error("body missing urgent label option")
+	}
+}
+
 func TestBeadsList_BatchActions(t *testing.T) {
 	ds := &mockDataSource{
 		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},

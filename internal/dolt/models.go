@@ -82,6 +82,7 @@ type IssueFilter struct {
 	Type          string    // filter by type (empty = all)
 	Assignee      string    // filter by assignee (empty = all)
 	Owner         string    // filter by owner (empty = all)
+	Label         string    // filter by label (empty = all)
 	Limit         int       // max rows (0 = no limit)
 	UpdatedAfter  time.Time // only issues updated after this time (zero = no filter)
 	UpdatedBefore time.Time // only issues updated before this time (zero = no filter)

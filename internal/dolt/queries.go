@@ -816,6 +816,10 @@ func buildIssueQuery(f IssueFilter, asOf string) (string, []any) {
 	}
 
 	var conditions []string
+	if f.Label != "" {
+		conditions = append(conditions, "id IN (SELECT issue_id FROM labels WHERE label = ?)")
+		args = append(args, f.Label)
+	}
 	if f.Type != "" {
 		conditions = append(conditions, "issue_type = ?")
 		args = append(args, f.Type)
