@@ -16,20 +16,20 @@
     <section class="briefing-card">
       <h2>Totals</h2>
       <div class="stat-grid">
-        <div class="stat"><span class="stat-value">{{.TotalBeads}}</span><span class="stat-label">Total Beads</span></div>
-        <div class="stat"><span class="stat-value">{{.TotalOpen}}</span><span class="stat-label">Open</span></div>
-        <div class="stat"><span class="stat-value">{{.TotalActive}}</span><span class="stat-label">Active</span></div>
-        <div class="stat"><span class="stat-value">{{.TotalBlocked}}</span><span class="stat-label">Blocked</span></div>
-        <div class="stat"><span class="stat-value">{{.TotalClosed}}</span><span class="stat-label">Closed</span></div>
-        <div class="stat"><span class="stat-value">{{.TotalDeferred}}</span><span class="stat-label">Deferred</span></div>
+        <a href="/beads{{if .FilterRig}}?rig={{.FilterRig}}{{end}}" class="stat"><span class="stat-value">{{.TotalBeads}}</span><span class="stat-label">Total Beads</span></a>
+        <a href="/work{{if .FilterRig}}?rig={{.FilterRig}}{{end}}" class="stat"><span class="stat-value">{{.TotalOpen}}</span><span class="stat-label">Open</span></a>
+        <a href="/kanban{{if .FilterRig}}?rig={{.FilterRig}}{{end}}" class="stat"><span class="stat-value">{{.TotalActive}}</span><span class="stat-label">Active</span></a>
+        <a href="/blocked{{if .FilterRig}}?rig={{.FilterRig}}{{end}}" class="stat"><span class="stat-value">{{.TotalBlocked}}</span><span class="stat-label">Blocked</span></a>
+        <a href="/closed{{if .FilterRig}}?rig={{.FilterRig}}{{end}}" class="stat"><span class="stat-value">{{.TotalClosed}}</span><span class="stat-label">Closed</span></a>
+        <a href="/deferred{{if .FilterRig}}?rig={{.FilterRig}}{{end}}" class="stat"><span class="stat-value">{{.TotalDeferred}}</span><span class="stat-label">Deferred</span></a>
       </div>
     </section>
 
     <section class="briefing-card">
       <h2>7-Day Flow</h2>
       <div class="stat-grid">
-        <div class="stat"><span class="stat-value accent">{{.Created7d}}</span><span class="stat-label">Created</span></div>
-        <div class="stat"><span class="stat-value accent">{{.Closed7d}}</span><span class="stat-label">Closed</span></div>
+        <a href="/created{{if .FilterRig}}?rig={{.FilterRig}}{{end}}" class="stat"><span class="stat-value accent">{{.Created7d}}</span><span class="stat-label">Created</span></a>
+        <a href="/velocity{{if .FilterRig}}?rig={{.FilterRig}}{{end}}" class="stat"><span class="stat-value accent">{{.Closed7d}}</span><span class="stat-label">Closed</span></a>
         <div class="stat">
           <span class="stat-value {{if gt .NetFlow7d 0}}text-warn{{else if lt .NetFlow7d 0}}text-good{{end}}">
             {{if gt .NetFlow7d 0}}+{{end}}{{.NetFlow7d}}
@@ -42,8 +42,8 @@
     <section class="briefing-card">
       <h2>30-Day Flow</h2>
       <div class="stat-grid">
-        <div class="stat"><span class="stat-value accent">{{.Created30d}}</span><span class="stat-label">Created</span></div>
-        <div class="stat"><span class="stat-value accent">{{.Closed30d}}</span><span class="stat-label">Closed</span></div>
+        <a href="/created{{if .FilterRig}}?rig={{.FilterRig}}{{end}}" class="stat"><span class="stat-value accent">{{.Created30d}}</span><span class="stat-label">Created</span></a>
+        <a href="/velocity{{if .FilterRig}}?rig={{.FilterRig}}{{end}}" class="stat"><span class="stat-value accent">{{.Closed30d}}</span><span class="stat-label">Closed</span></a>
         <div class="stat">
           <span class="stat-value {{if gt .NetFlow30d 0}}text-warn{{else if lt .NetFlow30d 0}}text-good{{end}}">
             {{if gt .NetFlow30d 0}}+{{end}}{{.NetFlow30d}}
@@ -64,24 +64,26 @@
 
   {{if .Rigs}}
   <h2 style="margin-top:1.5rem">Per-Rig Breakdown</h2>
-  <table>
+  <div class="table-wrap">
+  <table class="bead-table">
     <thead>
       <tr><th>Rig</th><th>Open</th><th>Active</th><th>Blocked</th><th>Closed</th><th>Deferred</th><th>Total</th></tr>
     </thead>
     <tbody>
       {{range .Rigs}}
       <tr>
-        <td><a href="/rigs">{{.Name}}</a></td>
-        <td>{{.Open}}</td>
-        <td>{{.Active}}</td>
-        <td>{{.Blocked}}</td>
-        <td>{{.Closed}}</td>
-        <td>{{.Deferred}}</td>
-        <td><strong>{{.Total}}</strong></td>
+        <td><a href="/work?rig={{.Name}}">{{rigName .Name}}</a></td>
+        <td><a href="/beads?rig={{.Name}}&amp;status=open">{{.Open}}</a></td>
+        <td><a href="/kanban?rig={{.Name}}">{{.Active}}</a></td>
+        <td><a href="/blocked?rig={{.Name}}">{{.Blocked}}</a></td>
+        <td><a href="/closed?rig={{.Name}}">{{.Closed}}</a></td>
+        <td><a href="/deferred?rig={{.Name}}">{{.Deferred}}</a></td>
+        <td><strong><a href="/beads?rig={{.Name}}">{{.Total}}</a></strong></td>
       </tr>
       {{end}}
     </tbody>
   </table>
+  </div>
   {{end}}
 </div>
 
