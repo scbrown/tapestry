@@ -1,6 +1,6 @@
 {{define "title"}}Cross-Ref{{end}}
 {{define "content"}}
-<div class="crossref-page" hx-get="/crossref" hx-trigger="every 300s" hx-select=".crossref-page" hx-swap="outerHTML">
+<div class="crossref-page" hx-get="/crossref{{if ne .SortBy "count"}}?sort={{.SortBy}}{{end}}" hx-trigger="every 300s" hx-select=".crossref-page" hx-swap="outerHTML">
   <h1>Cross-Database References <time class="text-dim">{{formatDateTime .GeneratedAt}}</time></h1>
   <p class="text-dim">Beads that appear in multiple databases — cross-rig coordination points.</p>
 
@@ -25,6 +25,11 @@
   </div>
 
   {{if .Items}}
+  <div class="dep-filters" style="margin-bottom:0.5rem">
+    <span class="text-dim">Sort:</span>
+    <a href="/crossref?sort=count" class="badge {{if eq .SortBy "count"}}filter-active{{end}}">By count</a>
+    <a href="/crossref?sort=priority" class="badge {{if eq .SortBy "priority"}}filter-active{{end}}">By priority</a>
+  </div>
   <div class="table-wrap">
   <table class="bead-table">
     <thead>
@@ -42,7 +47,7 @@
         <td><a href="/bead/{{index .DBs 0}}/{{.ID}}">{{.ID}}</a></td>
         <td>{{.Title}}</td>
         <td>{{statusBadge .Status}}</td>
-        <td>{{priorityLabel .Priority}}</td>
+        <td><span class="priority-badge p{{.Priority}}">P{{.Priority}}</span></td>
         <td>
           {{range $i, $db := .DBs}}{{if $i}}, {{end}}<span class="badge">{{$db}}</span>{{end}}
           <span class="text-dim">({{.DBCount}})</span>

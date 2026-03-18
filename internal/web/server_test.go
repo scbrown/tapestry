@@ -9361,6 +9361,32 @@ func TestCrossRefPage_AutoRefresh(t *testing.T) {
 	}
 }
 
+func TestCrossRefPage_SortAndBadges(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}, {Name: "beads_gastown"}},
+		issues: []dolt.Issue{
+			{ID: "x1", Title: "Shared P0", Status: "open", Priority: 0},
+		},
+	}
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/crossref?sort=priority", nil)
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "By priority") {
+		t.Error("expected 'By priority' sort badge")
+	}
+	if !strings.Contains(body, "By count") {
+		t.Error("expected 'By count' sort badge")
+	}
+	if !strings.Contains(body, "priority-badge") {
+		t.Error("expected priority badge styling in table")
+	}
+}
+
 // ── /freshness ──
 
 func TestFreshnessPage(t *testing.T) {

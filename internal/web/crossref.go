@@ -27,6 +27,7 @@ type crossRefData struct {
 	Items       []crossRefItem
 	TotalCross  int // beads appearing in 2+ databases
 	TotalDBs    int
+	SortBy      string // "count" (default), "priority"
 
 	Err string
 }
@@ -99,13 +100,27 @@ func (s *Server) handleCrossRef(w http.ResponseWriter, r *http.Request) {
 	}
 
 	data.TotalCross = len(data.Items)
+	data.SortBy = r.URL.Query().Get("sort")
+	if data.SortBy == "" {
+		data.SortBy = "count"
+	}
 
-	sort.Slice(data.Items, func(i, j int) bool {
-		if data.Items[i].DBCount != data.Items[j].DBCount {
+	switch data.SortBy {
+	case "priority":
+		sort.Slice(data.Items, func(i, j int) bool {
+			if data.Items[i].Priority != data.Items[j].Priority {
+				return data.Items[i].Priority < data.Items[j].Priority
+			}
 			return data.Items[i].DBCount > data.Items[j].DBCount
-		}
-		return data.Items[i].ID < data.Items[j].ID
-	})
+		})
+	default:
+		sort.Slice(data.Items, func(i, j int) bool {
+			if data.Items[i].DBCount != data.Items[j].DBCount {
+				return data.Items[i].DBCount > data.Items[j].DBCount
+			}
+			return data.Items[i].ID < data.Items[j].ID
+		})
+	}
 
 	if len(data.Items) > 50 {
 		data.Items = data.Items[:50]
