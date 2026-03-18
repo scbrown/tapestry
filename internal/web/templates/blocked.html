@@ -27,6 +27,7 @@
       <tr>
         <th>Rig</th>
         <th>Blocker</th>
+        <th>Pri</th>
         <th>Title</th>
         <th>Status</th>
         <th>Owner</th>
@@ -39,6 +40,7 @@
       <tr>
         <td><span class="rig-label">{{rigName .Rig}}</span></td>
         <td><a href="/bead/{{lower .Rig}}/{{.Blocker.ID}}" hx-boost="true">{{.Blocker.ID}}</a></td>
+        <td><span class="priority-badge p{{.Blocker.Priority}}">P{{.Blocker.Priority}}</span></td>
         <td>{{.Blocker.Title}}</td>
         <td>{{statusBadge .Blocker.Status}}</td>
         <td title="{{.Blocker.Owner}}">{{shortActor .Blocker.Owner}}</td>
@@ -77,6 +79,7 @@
         <th>Pri</th>
         <th>Assignee</th>
         <th>Blocked By</th>
+        <th>Blocker Pri</th>
         <th>Blocker Title</th>
         <th>Blocker Status</th>
         <th>Actions</th>
@@ -108,6 +111,7 @@
           </select>
         </td>
         <td><a href="/bead/{{lower .Rig}}/{{.Blocker.ID}}" hx-boost="true">{{.Blocker.ID}}</a></td>
+        <td><span class="priority-badge p{{.Blocker.Priority}}">P{{.Blocker.Priority}}</span></td>
         <td>{{.Blocker.Title}}</td>
         <td>{{statusBadge .Blocker.Status}}</td>
         <td class="triage-actions">
