@@ -26,6 +26,7 @@ type labelAgeData struct {
 	Total       int
 	Rigs        []string
 	FilterRig   string
+	SortBy      string
 	Err         string
 }
 
@@ -142,10 +143,36 @@ func (s *Server) handleLabelAge(w http.ResponseWriter, r *http.Request) {
 		entries[i].BarPct = math.Min(100, (entries[i].MaxDays/globalMax)*100)
 	}
 
-	// Sort by median age descending
-	sort.Slice(entries, func(i, j int) bool {
-		return entries[i].MedianDays > entries[j].MedianDays
-	})
+	sortBy := r.URL.Query().Get("sort")
+	if sortBy == "" {
+		sortBy = "median"
+	}
+	data.SortBy = sortBy
+
+	switch sortBy {
+	case "label":
+		sort.Slice(entries, func(i, j int) bool {
+			return entries[i].Label < entries[j].Label
+		})
+	case "count":
+		sort.Slice(entries, func(i, j int) bool {
+			if entries[i].Count != entries[j].Count {
+				return entries[i].Count > entries[j].Count
+			}
+			return entries[i].MedianDays > entries[j].MedianDays
+		})
+	case "max":
+		sort.Slice(entries, func(i, j int) bool {
+			if entries[i].MaxDays != entries[j].MaxDays {
+				return entries[i].MaxDays > entries[j].MaxDays
+			}
+			return entries[i].MedianDays > entries[j].MedianDays
+		})
+	default: // median
+		sort.Slice(entries, func(i, j int) bool {
+			return entries[i].MedianDays > entries[j].MedianDays
+		})
+	}
 
 	data.Labels = entries
 	data.Total = len(entries)

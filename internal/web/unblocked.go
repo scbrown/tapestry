@@ -24,6 +24,7 @@ type unblockedData struct {
 	Total       int
 	Rigs        []string
 	FilterRig   string
+	SortBy      string
 	Assignees   []string
 }
 
@@ -150,10 +151,39 @@ func (s *Server) handleUnblocked(w http.ResponseWriter, r *http.Request) {
 	}
 	histWg.Wait()
 
-	// Sort by unblocked date descending (most recent first)
-	sort.Slice(data.Items, func(i, j int) bool {
-		return data.Items[i].UnblockedAt.After(data.Items[j].UnblockedAt)
-	})
+	sortBy := r.URL.Query().Get("sort")
+	if sortBy == "" {
+		sortBy = "date"
+	}
+	data.SortBy = sortBy
+
+	switch sortBy {
+	case "blocked":
+		sort.Slice(data.Items, func(i, j int) bool {
+			if data.Items[i].BlockedDays != data.Items[j].BlockedDays {
+				return data.Items[i].BlockedDays > data.Items[j].BlockedDays
+			}
+			return data.Items[i].UnblockedAt.After(data.Items[j].UnblockedAt)
+		})
+	case "priority":
+		sort.Slice(data.Items, func(i, j int) bool {
+			if data.Items[i].Issue.Priority != data.Items[j].Issue.Priority {
+				return data.Items[i].Issue.Priority < data.Items[j].Issue.Priority
+			}
+			return data.Items[i].UnblockedAt.After(data.Items[j].UnblockedAt)
+		})
+	case "status":
+		sort.Slice(data.Items, func(i, j int) bool {
+			if data.Items[i].CurrentStatus != data.Items[j].CurrentStatus {
+				return data.Items[i].CurrentStatus < data.Items[j].CurrentStatus
+			}
+			return data.Items[i].UnblockedAt.After(data.Items[j].UnblockedAt)
+		})
+	default: // date
+		sort.Slice(data.Items, func(i, j int) bool {
+			return data.Items[i].UnblockedAt.After(data.Items[j].UnblockedAt)
+		})
+	}
 
 	data.Total = len(data.Items)
 	s.render(w, r, "unblocked", data)

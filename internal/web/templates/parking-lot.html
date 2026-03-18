@@ -28,6 +28,13 @@
     </div>
   </div>
 
+  <div class="filters">
+    <a href="/parking-lot{{if .FilterRig}}?rig={{.FilterRig}}{{end}}" {{if eq .SortBy "idle"}}class="active"{{end}}>By idle</a>
+    <a href="/parking-lot?sort=priority{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" {{if eq .SortBy "priority"}}class="active"{{end}}>By priority</a>
+    <a href="/parking-lot?sort=age{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" {{if eq .SortBy "age"}}class="active"{{end}}>By age</a>
+    <a href="/parking-lot?sort=rig{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" {{if eq .SortBy "rig"}}class="active"{{end}}>By rig</a>
+  </div>
+
   {{if .ByAssignee}}
   <section class="backlog-card">
     <h2>Stalled by Assignee</h2>

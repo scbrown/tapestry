@@ -20,6 +20,13 @@
     </div>
   </div>
 
+  <div class="filters">
+    <a href="/unblocked{{if .FilterRig}}?rig={{.FilterRig}}{{end}}" {{if eq .SortBy "date"}}class="active"{{end}}>By date</a>
+    <a href="/unblocked?sort=blocked{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" {{if eq .SortBy "blocked"}}class="active"{{end}}>By blocked days</a>
+    <a href="/unblocked?sort=priority{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" {{if eq .SortBy "priority"}}class="active"{{end}}>By priority</a>
+    <a href="/unblocked?sort=status{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" {{if eq .SortBy "status"}}class="active"{{end}}>By status</a>
+  </div>
+
   {{if .Items}}
   <div class="batch-bar" id="batch-bar-unblocked" style="display:none">
     <span class="batch-count">0 selected</span>

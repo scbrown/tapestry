@@ -14107,3 +14107,95 @@ func TestPendingPage_SortOptions(t *testing.T) {
 		})
 	}
 }
+
+func TestLabelAgePage_SortOptions(t *testing.T) {
+	sorts := []string{"", "median", "label", "count", "max"}
+	for _, s := range sorts {
+		t.Run("sort="+s, func(t *testing.T) {
+			srv := New(nil)
+			url := "/label-age"
+			if s != "" {
+				url += "?sort=" + s
+			}
+			req := httptest.NewRequest("GET", url, nil)
+			w := httptest.NewRecorder()
+			srv.ServeHTTP(w, req)
+			if w.Code != http.StatusOK {
+				t.Fatalf("GET %s status = %d, want %d", url, w.Code, http.StatusOK)
+			}
+			body := w.Body.String()
+			if !strings.Contains(body, "By median") {
+				t.Error("expected sort options in page")
+			}
+		})
+	}
+}
+
+func TestParkingLotPage_SortOptions(t *testing.T) {
+	sorts := []string{"", "idle", "priority", "age", "rig"}
+	for _, s := range sorts {
+		t.Run("sort="+s, func(t *testing.T) {
+			srv := New(nil)
+			url := "/parking-lot"
+			if s != "" {
+				url += "?sort=" + s
+			}
+			req := httptest.NewRequest("GET", url, nil)
+			w := httptest.NewRecorder()
+			srv.ServeHTTP(w, req)
+			if w.Code != http.StatusOK {
+				t.Fatalf("GET %s status = %d, want %d", url, w.Code, http.StatusOK)
+			}
+			body := w.Body.String()
+			if !strings.Contains(body, "By idle") {
+				t.Error("expected sort options in page")
+			}
+		})
+	}
+}
+
+func TestStatsPage_SortOptions(t *testing.T) {
+	sorts := []string{"", "total", "name", "open", "active"}
+	for _, s := range sorts {
+		t.Run("sort="+s, func(t *testing.T) {
+			srv := New(nil)
+			url := "/stats"
+			if s != "" {
+				url += "?sort=" + s
+			}
+			req := httptest.NewRequest("GET", url, nil)
+			w := httptest.NewRecorder()
+			srv.ServeHTTP(w, req)
+			if w.Code != http.StatusOK {
+				t.Fatalf("GET %s status = %d, want %d", url, w.Code, http.StatusOK)
+			}
+			body := w.Body.String()
+			if !strings.Contains(body, "By total") {
+				t.Error("expected sort options in page")
+			}
+		})
+	}
+}
+
+func TestUnblockedPage_SortOptions(t *testing.T) {
+	sorts := []string{"", "date", "blocked", "priority", "status"}
+	for _, s := range sorts {
+		t.Run("sort="+s, func(t *testing.T) {
+			srv := New(nil)
+			url := "/unblocked"
+			if s != "" {
+				url += "?sort=" + s
+			}
+			req := httptest.NewRequest("GET", url, nil)
+			w := httptest.NewRecorder()
+			srv.ServeHTTP(w, req)
+			if w.Code != http.StatusOK {
+				t.Fatalf("GET %s status = %d, want %d", url, w.Code, http.StatusOK)
+			}
+			body := w.Body.String()
+			if !strings.Contains(body, "By date") {
+				t.Error("expected sort options in page")
+			}
+		})
+	}
+}

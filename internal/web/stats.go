@@ -38,6 +38,7 @@ type statsData struct {
 	NetFlow7d   int
 	NetFlow30d  int
 	AgentCount  int
+	SortBy      string
 	Err         string
 }
 
@@ -173,9 +174,36 @@ func (s *Server) handleStats(w http.ResponseWriter, r *http.Request) {
 	data.NetFlow30d = data.Created30d - data.Closed30d
 	data.AgentCount = len(allAgents)
 
-	sort.Slice(data.Rigs, func(i, j int) bool {
-		return data.Rigs[i].Total > data.Rigs[j].Total
-	})
+	sortBy := r.URL.Query().Get("sort")
+	if sortBy == "" {
+		sortBy = "total"
+	}
+	data.SortBy = sortBy
+
+	switch sortBy {
+	case "name":
+		sort.Slice(data.Rigs, func(i, j int) bool {
+			return data.Rigs[i].Name < data.Rigs[j].Name
+		})
+	case "open":
+		sort.Slice(data.Rigs, func(i, j int) bool {
+			if data.Rigs[i].Open != data.Rigs[j].Open {
+				return data.Rigs[i].Open > data.Rigs[j].Open
+			}
+			return data.Rigs[i].Total > data.Rigs[j].Total
+		})
+	case "active":
+		sort.Slice(data.Rigs, func(i, j int) bool {
+			if data.Rigs[i].Active != data.Rigs[j].Active {
+				return data.Rigs[i].Active > data.Rigs[j].Active
+			}
+			return data.Rigs[i].Total > data.Rigs[j].Total
+		})
+	default: // total
+		sort.Slice(data.Rigs, func(i, j int) bool {
+			return data.Rigs[i].Total > data.Rigs[j].Total
+		})
+	}
 
 	s.render(w, r, "stats", data)
 }

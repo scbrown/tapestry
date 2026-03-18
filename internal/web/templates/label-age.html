@@ -13,6 +13,13 @@
     {{end}}
   </div>
 
+  <div class="filters">
+    <a href="/label-age{{if .FilterRig}}?rig={{.FilterRig}}{{end}}" {{if eq .SortBy "median"}}class="active"{{end}}>By median</a>
+    <a href="/label-age?sort=label{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" {{if eq .SortBy "label"}}class="active"{{end}}>By label</a>
+    <a href="/label-age?sort=count{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" {{if eq .SortBy "count"}}class="active"{{end}}>By count</a>
+    <a href="/label-age?sort=max{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" {{if eq .SortBy "max"}}class="active"{{end}}>By max age</a>
+  </div>
+
   {{if .Err}}
   <div class="error-banner">{{.Err}}</div>
   {{else if .Labels}}
