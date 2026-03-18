@@ -29,6 +29,7 @@ type createdData struct {
 	Days      int
 	Rigs      []string
 	FilterRig string
+	SortBy    string
 	Assignees []string
 	ByFiler   map[string]int // count by owner/filer
 	TopFilers []filerCount
@@ -123,10 +124,38 @@ func (s *Server) handleCreated(w http.ResponseWriter, r *http.Request) {
 		all = filtered
 	}
 
-	// Sort newest first
-	sort.Slice(all, func(i, j int) bool {
-		return all[i].Issue.CreatedAt.After(all[j].Issue.CreatedAt)
-	})
+	sortBy := r.URL.Query().Get("sort")
+	if sortBy == "" {
+		sortBy = "created"
+	}
+
+	switch sortBy {
+	case "priority":
+		sort.Slice(all, func(i, j int) bool {
+			if all[i].Issue.Priority != all[j].Issue.Priority {
+				return all[i].Issue.Priority < all[j].Issue.Priority
+			}
+			return all[i].Issue.CreatedAt.After(all[j].Issue.CreatedAt)
+		})
+	case "type":
+		sort.Slice(all, func(i, j int) bool {
+			if all[i].Issue.Type != all[j].Issue.Type {
+				return all[i].Issue.Type < all[j].Issue.Type
+			}
+			return all[i].Issue.CreatedAt.After(all[j].Issue.CreatedAt)
+		})
+	case "rig":
+		sort.Slice(all, func(i, j int) bool {
+			if all[i].Rig != all[j].Rig {
+				return all[i].Rig < all[j].Rig
+			}
+			return all[i].Issue.CreatedAt.After(all[j].Issue.CreatedAt)
+		})
+	default: // "created"
+		sort.Slice(all, func(i, j int) bool {
+			return all[i].Issue.CreatedAt.After(all[j].Issue.CreatedAt)
+		})
+	}
 
 	// Group by day
 	dayMap := map[string][]createdEntry{}
@@ -188,6 +217,7 @@ func (s *Server) handleCreated(w http.ResponseWriter, r *http.Request) {
 		Days:      days,
 		Rigs:      rigs,
 		FilterRig: filterRig,
+		SortBy:    sortBy,
 		Assignees: assignees,
 		ByFiler:   byFiler,
 		TopFilers: topFilers,

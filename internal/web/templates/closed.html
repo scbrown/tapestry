@@ -32,6 +32,13 @@
 
   <div class="results-meta">{{.Total}} beads closed in the last {{.Days}} days{{if .FilterRig}} in {{rigName .FilterRig}}{{end}}</div>
 
+  <div class="filters">
+    <a href="/closed?days={{.Days}}{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" {{if eq .SortBy "closed"}}class="active"{{end}}>By closed</a>
+    <a href="/closed?days={{.Days}}&sort=priority{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" {{if eq .SortBy "priority"}}class="active"{{end}}>By priority</a>
+    <a href="/closed?days={{.Days}}&sort=assignee{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" {{if eq .SortBy "assignee"}}class="active"{{end}}>By assignee</a>
+    <a href="/closed?days={{.Days}}&sort=rig{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" {{if eq .SortBy "rig"}}class="active"{{end}}>By rig</a>
+  </div>
+
   {{if .ByDay}}
   <div class="batch-bar" id="batch-bar-closed" style="display:none">
     <span class="batch-count">0 selected</span>

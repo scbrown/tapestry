@@ -23,6 +23,7 @@ type pendingData struct {
 	Total       int
 	Rigs        []string
 	FilterRig   string
+	SortBy      string
 	Assignees   []string
 	Err         string
 }
@@ -123,13 +124,39 @@ func (s *Server) handlePending(w http.ResponseWriter, r *http.Request) {
 	}
 	sort.Strings(data.Assignees)
 
-	// Sort by priority then age
-	sort.Slice(all, func(i, j int) bool {
-		if all[i].Priority != all[j].Priority {
+	sortBy := r.URL.Query().Get("sort")
+	if sortBy == "" {
+		sortBy = "priority"
+	}
+	data.SortBy = sortBy
+
+	switch sortBy {
+	case "age":
+		sort.Slice(all, func(i, j int) bool {
+			return all[i].UpdatedAt.Before(all[j].UpdatedAt)
+		})
+	case "reason":
+		sort.Slice(all, func(i, j int) bool {
+			if all[i].Reason != all[j].Reason {
+				return all[i].Reason < all[j].Reason
+			}
 			return all[i].Priority < all[j].Priority
-		}
-		return all[i].UpdatedAt.Before(all[j].UpdatedAt)
-	})
+		})
+	case "assignee":
+		sort.Slice(all, func(i, j int) bool {
+			if all[i].Assignee != all[j].Assignee {
+				return all[i].Assignee < all[j].Assignee
+			}
+			return all[i].Priority < all[j].Priority
+		})
+	default: // "priority"
+		sort.Slice(all, func(i, j int) bool {
+			if all[i].Priority != all[j].Priority {
+				return all[i].Priority < all[j].Priority
+			}
+			return all[i].UpdatedAt.Before(all[j].UpdatedAt)
+		})
+	}
 
 	if len(all) > 100 {
 		all = all[:100]

@@ -13,6 +13,13 @@
     {{end}}
   </div>
 
+  <div class="filters">
+    <a href="/pending{{if .FilterRig}}?rig={{.FilterRig}}{{end}}" {{if eq .SortBy "priority"}}class="active"{{end}}>By priority</a>
+    <a href="/pending?sort=age{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" {{if eq .SortBy "age"}}class="active"{{end}}>By age</a>
+    <a href="/pending?sort=reason{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" {{if eq .SortBy "reason"}}class="active"{{end}}>By reason</a>
+    <a href="/pending?sort=assignee{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" {{if eq .SortBy "assignee"}}class="active"{{end}}>By assignee</a>
+  </div>
+
   {{if .Err}}
   <div class="error-banner">{{.Err}}</div>
   {{else if .Items}}

@@ -13716,3 +13716,72 @@ func TestLabelsPage_SortOptions(t *testing.T) {
 		})
 	}
 }
+
+func TestCreatedPage_SortOptions(t *testing.T) {
+	sorts := []string{"", "created", "priority", "type", "rig"}
+	for _, s := range sorts {
+		t.Run("sort="+s, func(t *testing.T) {
+			srv := New(nil)
+			url := "/created?days=7"
+			if s != "" {
+				url += "&sort=" + s
+			}
+			req := httptest.NewRequest("GET", url, nil)
+			w := httptest.NewRecorder()
+			srv.ServeHTTP(w, req)
+			if w.Code != http.StatusOK {
+				t.Fatalf("GET %s status = %d, want %d", url, w.Code, http.StatusOK)
+			}
+			body := w.Body.String()
+			if !strings.Contains(body, "By created") {
+				t.Error("expected sort options in page")
+			}
+		})
+	}
+}
+
+func TestClosedPage_SortOptions(t *testing.T) {
+	sorts := []string{"", "closed", "priority", "assignee", "rig"}
+	for _, s := range sorts {
+		t.Run("sort="+s, func(t *testing.T) {
+			srv := New(nil)
+			url := "/closed?days=7"
+			if s != "" {
+				url += "&sort=" + s
+			}
+			req := httptest.NewRequest("GET", url, nil)
+			w := httptest.NewRecorder()
+			srv.ServeHTTP(w, req)
+			if w.Code != http.StatusOK {
+				t.Fatalf("GET %s status = %d, want %d", url, w.Code, http.StatusOK)
+			}
+			body := w.Body.String()
+			if !strings.Contains(body, "By closed") {
+				t.Error("expected sort options in page")
+			}
+		})
+	}
+}
+
+func TestPendingPage_SortOptions(t *testing.T) {
+	sorts := []string{"", "priority", "age", "reason", "assignee"}
+	for _, s := range sorts {
+		t.Run("sort="+s, func(t *testing.T) {
+			srv := New(nil)
+			url := "/pending"
+			if s != "" {
+				url += "?sort=" + s
+			}
+			req := httptest.NewRequest("GET", url, nil)
+			w := httptest.NewRecorder()
+			srv.ServeHTTP(w, req)
+			if w.Code != http.StatusOK {
+				t.Fatalf("GET %s status = %d, want %d", url, w.Code, http.StatusOK)
+			}
+			body := w.Body.String()
+			if !strings.Contains(body, "By priority") {
+				t.Error("expected sort options in page")
+			}
+		})
+	}
+}

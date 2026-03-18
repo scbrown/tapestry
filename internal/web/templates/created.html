@@ -32,6 +32,13 @@
 
   <div class="results-meta">{{.Total}} beads created in the last {{.Days}} days{{if .FilterRig}} in {{rigName .FilterRig}}{{end}}</div>
 
+  <div class="filters">
+    <a href="/created?days={{.Days}}{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" {{if eq .SortBy "created"}}class="active"{{end}}>By created</a>
+    <a href="/created?days={{.Days}}&sort=priority{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" {{if eq .SortBy "priority"}}class="active"{{end}}>By priority</a>
+    <a href="/created?days={{.Days}}&sort=type{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" {{if eq .SortBy "type"}}class="active"{{end}}>By type</a>
+    <a href="/created?days={{.Days}}&sort=rig{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" {{if eq .SortBy "rig"}}class="active"{{end}}>By rig</a>
+  </div>
+
   {{if .TopFilers}}
   <details class="created-filers" style="margin:0.75rem 0">
     <summary class="text-dim">Filed by ({{len .TopFilers}} agents)</summary>
