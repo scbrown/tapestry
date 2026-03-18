@@ -26,6 +26,7 @@ type escalatedBead struct {
 type escalationsData struct {
 	GeneratedAt time.Time
 	FilterRig   string
+	SortBy      string
 
 	Escalations []escalatedBead
 	TotalEsc    int
@@ -41,7 +42,11 @@ type escalationsData struct {
 func (s *Server) handleEscalations(w http.ResponseWriter, r *http.Request) {
 	now := time.Now()
 	filterRig := r.URL.Query().Get("rig")
-	data := escalationsData{GeneratedAt: now, FilterRig: filterRig}
+	sortBy := r.URL.Query().Get("sort")
+	if sortBy == "" {
+		sortBy = "priority"
+	}
+	data := escalationsData{GeneratedAt: now, FilterRig: filterRig, SortBy: sortBy}
 
 	if s.ds == nil {
 		s.render(w, r, "escalations", data)
@@ -136,12 +141,33 @@ func (s *Server) handleEscalations(w http.ResponseWriter, r *http.Request) {
 	sort.Strings(data.Assignees)
 	data.TotalEsc = len(data.Escalations)
 
-	sort.Slice(data.Escalations, func(i, j int) bool {
-		if data.Escalations[i].Priority != data.Escalations[j].Priority {
+	switch sortBy {
+	case "date":
+		sort.Slice(data.Escalations, func(i, j int) bool {
+			return data.Escalations[i].EscalatedAt.After(data.Escalations[j].EscalatedAt)
+		})
+	case "assignee":
+		sort.Slice(data.Escalations, func(i, j int) bool {
+			if data.Escalations[i].Assignee != data.Escalations[j].Assignee {
+				return data.Escalations[i].Assignee < data.Escalations[j].Assignee
+			}
 			return data.Escalations[i].Priority < data.Escalations[j].Priority
-		}
-		return data.Escalations[i].EscalatedAt.After(data.Escalations[j].EscalatedAt)
-	})
+		})
+	case "status":
+		sort.Slice(data.Escalations, func(i, j int) bool {
+			if data.Escalations[i].Status != data.Escalations[j].Status {
+				return data.Escalations[i].Status < data.Escalations[j].Status
+			}
+			return data.Escalations[i].Priority < data.Escalations[j].Priority
+		})
+	default: // "priority"
+		sort.Slice(data.Escalations, func(i, j int) bool {
+			if data.Escalations[i].Priority != data.Escalations[j].Priority {
+				return data.Escalations[i].Priority < data.Escalations[j].Priority
+			}
+			return data.Escalations[i].EscalatedAt.After(data.Escalations[j].EscalatedAt)
+		})
+	}
 
 	if len(data.Escalations) > 50 {
 		data.Escalations = data.Escalations[:50]

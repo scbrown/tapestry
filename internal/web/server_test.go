@@ -13490,3 +13490,72 @@ func TestQueuePage_SortWithData(t *testing.T) {
 		})
 	}
 }
+
+func TestEscalationsPage_SortOptions(t *testing.T) {
+	sorts := []string{"", "priority", "date", "assignee", "status"}
+	for _, s := range sorts {
+		t.Run("sort="+s, func(t *testing.T) {
+			srv := New(nil)
+			url := "/escalations"
+			if s != "" {
+				url += "?sort=" + s
+			}
+			req := httptest.NewRequest("GET", url, nil)
+			w := httptest.NewRecorder()
+			srv.ServeHTTP(w, req)
+			if w.Code != http.StatusOK {
+				t.Fatalf("GET %s status = %d, want %d", url, w.Code, http.StatusOK)
+			}
+			body := w.Body.String()
+			if !strings.Contains(body, "By priority") {
+				t.Error("expected sort options in page")
+			}
+		})
+	}
+}
+
+func TestTriagePage_SortOptions(t *testing.T) {
+	sorts := []string{"", "age", "priority", "type", "rig"}
+	for _, s := range sorts {
+		t.Run("sort="+s, func(t *testing.T) {
+			srv := New(nil)
+			url := "/triage"
+			if s != "" {
+				url += "?sort=" + s
+			}
+			req := httptest.NewRequest("GET", url, nil)
+			w := httptest.NewRecorder()
+			srv.ServeHTTP(w, req)
+			if w.Code != http.StatusOK {
+				t.Fatalf("GET %s status = %d, want %d", url, w.Code, http.StatusOK)
+			}
+			body := w.Body.String()
+			if !strings.Contains(body, "By age") {
+				t.Error("expected sort options in page")
+			}
+		})
+	}
+}
+
+func TestSLAPage_SortOptions(t *testing.T) {
+	sorts := []string{"", "overdue", "priority", "assignee", "age"}
+	for _, s := range sorts {
+		t.Run("sort="+s, func(t *testing.T) {
+			srv := New(nil)
+			url := "/sla"
+			if s != "" {
+				url += "?sort=" + s
+			}
+			req := httptest.NewRequest("GET", url, nil)
+			w := httptest.NewRecorder()
+			srv.ServeHTTP(w, req)
+			if w.Code != http.StatusOK {
+				t.Fatalf("GET %s status = %d, want %d", url, w.Code, http.StatusOK)
+			}
+			body := w.Body.String()
+			if !strings.Contains(body, "By overdue") {
+				t.Error("expected sort options in page")
+			}
+		})
+	}
+}

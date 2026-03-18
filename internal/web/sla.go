@@ -35,6 +35,7 @@ type slaData struct {
 	Total     int
 	Rigs      []string
 	FilterRig string
+	SortBy    string
 	Err       string
 }
 
@@ -132,14 +133,39 @@ func (s *Server) handleSLA(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Sort breached by overdue hours descending (worst first)
-	sort.Slice(breached, func(i, j int) bool {
-		return breached[i].OverdueH > breached[j].OverdueH
-	})
-	// Sort at-risk by pct used descending
-	sort.Slice(atRisk, func(i, j int) bool {
-		return atRisk[i].PctUsed > atRisk[j].PctUsed
-	})
+	sortBy := r.URL.Query().Get("sort")
+	if sortBy == "" {
+		sortBy = "overdue"
+	}
+
+	slaSort := func(items []slaItem) {
+		switch sortBy {
+		case "priority":
+			sort.Slice(items, func(i, j int) bool {
+				if items[i].Issue.Priority != items[j].Issue.Priority {
+					return items[i].Issue.Priority < items[j].Issue.Priority
+				}
+				return items[i].PctUsed > items[j].PctUsed
+			})
+		case "assignee":
+			sort.Slice(items, func(i, j int) bool {
+				if items[i].Issue.Assignee != items[j].Issue.Assignee {
+					return items[i].Issue.Assignee < items[j].Issue.Assignee
+				}
+				return items[i].PctUsed > items[j].PctUsed
+			})
+		case "age":
+			sort.Slice(items, func(i, j int) bool {
+				return items[i].Age > items[j].Age
+			})
+		default: // "overdue"
+			sort.Slice(items, func(i, j int) bool {
+				return items[i].PctUsed > items[j].PctUsed
+			})
+		}
+	}
+	slaSort(breached)
+	slaSort(atRisk)
 
 	s.render(w, r, "sla", slaData{
 		Breached:  breached,
@@ -148,5 +174,6 @@ func (s *Server) handleSLA(w http.ResponseWriter, r *http.Request) {
 		Total:     total,
 		Rigs:      rigs,
 		FilterRig: filterRig,
+		SortBy:    sortBy,
 	})
 }

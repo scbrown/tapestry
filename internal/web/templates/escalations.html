@@ -1,6 +1,6 @@
 {{define "title"}}Escalations{{end}}
 {{define "content"}}
-<div class="escalations-page" hx-get="/escalations{{if .FilterRig}}?rig={{.FilterRig}}{{end}}" hx-trigger="every 120s" hx-select=".escalations-page" hx-swap="outerHTML">
+<div class="escalations-page" hx-get="/escalations{{if .FilterRig}}?rig={{.FilterRig}}{{end}}{{if ne .SortBy "priority"}}{{if .FilterRig}}&{{else}}?{{end}}sort={{.SortBy}}{{end}}" hx-trigger="every 120s" hx-select=".escalations-page" hx-swap="outerHTML">
   <h1>Escalations <time class="text-dim">{{formatDateTime .GeneratedAt}}</time></h1>
   <p class="text-dim">High-priority beads with significant activity — likely escalated items.</p>
 
@@ -27,6 +27,13 @@
         </div>
       </div>
     </section>
+  </div>
+
+  <div class="filters">
+    <a href="/escalations{{if .FilterRig}}?rig={{.FilterRig}}{{end}}" {{if eq .SortBy "priority"}}class="active"{{end}}>By priority</a>
+    <a href="/escalations?sort=date{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" {{if eq .SortBy "date"}}class="active"{{end}}>By date</a>
+    <a href="/escalations?sort=assignee{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" {{if eq .SortBy "assignee"}}class="active"{{end}}>By assignee</a>
+    <a href="/escalations?sort=status{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" {{if eq .SortBy "status"}}class="active"{{end}}>By status</a>
   </div>
 
   {{/* ── Escalated Beads ── */}}

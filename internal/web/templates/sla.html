@@ -1,7 +1,7 @@
 {{define "title"}}SLA{{end}}
 
 {{define "content"}}
-<div class="sla-view" hx-get="/sla{{if .FilterRig}}?rig={{.FilterRig}}{{end}}" hx-trigger="every 120s" hx-select=".sla-view" hx-swap="outerHTML">
+<div class="sla-view" hx-get="/sla{{if .FilterRig}}?rig={{.FilterRig}}{{end}}{{if ne .SortBy "overdue"}}{{if .FilterRig}}&{{else}}?{{end}}sort={{.SortBy}}{{end}}" hx-trigger="every 120s" hx-select=".sla-view" hx-swap="outerHTML">
   <h1>SLA Tracker</h1>
 
   {{if .Err}}
@@ -38,6 +38,13 @@
 
   <div class="sla-targets">
     <span class="text-dim">Targets: P0=24h | P1=3d | P2=7d | P3=14d | P4=30d</span>
+  </div>
+
+  <div class="filters">
+    <a href="/sla{{if .FilterRig}}?rig={{.FilterRig}}{{end}}" {{if eq .SortBy "overdue"}}class="active"{{end}}>By overdue</a>
+    <a href="/sla?sort=priority{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" {{if eq .SortBy "priority"}}class="active"{{end}}>By priority</a>
+    <a href="/sla?sort=assignee{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" {{if eq .SortBy "assignee"}}class="active"{{end}}>By assignee</a>
+    <a href="/sla?sort=age{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" {{if eq .SortBy "age"}}class="active"{{end}}>By age</a>
   </div>
 
   {{if .Breached}}

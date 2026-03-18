@@ -26,6 +26,7 @@ type triageData struct {
 	Assignees    []string // known assignees for quick-assign dropdown
 	Rigs         []string
 	FilterRig    string
+	SortBy       string
 }
 
 func (s *Server) handleTriage(w http.ResponseWriter, r *http.Request) {
@@ -130,13 +131,44 @@ func (s *Server) handleTriage(w http.ResponseWriter, r *http.Request) {
 		data.NoPriority = filteredNP
 	}
 
-	// Sort both lists by age descending (oldest first)
-	sort.Slice(data.Unassigned, func(i, j int) bool {
-		return data.Unassigned[i].Age > data.Unassigned[j].Age
-	})
-	sort.Slice(data.NoPriority, func(i, j int) bool {
-		return data.NoPriority[i].Age > data.NoPriority[j].Age
-	})
+	sortBy := r.URL.Query().Get("sort")
+	if sortBy == "" {
+		sortBy = "age"
+	}
+	data.SortBy = sortBy
+
+	// Sort both lists based on selected sort
+	triageSort := func(items []triageIssue) {
+		switch sortBy {
+		case "priority":
+			sort.Slice(items, func(i, j int) bool {
+				if items[i].Issue.Priority != items[j].Issue.Priority {
+					return items[i].Issue.Priority < items[j].Issue.Priority
+				}
+				return items[i].Age > items[j].Age
+			})
+		case "type":
+			sort.Slice(items, func(i, j int) bool {
+				if items[i].Issue.Type != items[j].Issue.Type {
+					return items[i].Issue.Type < items[j].Issue.Type
+				}
+				return items[i].Age > items[j].Age
+			})
+		case "rig":
+			sort.Slice(items, func(i, j int) bool {
+				if items[i].Rig != items[j].Rig {
+					return items[i].Rig < items[j].Rig
+				}
+				return items[i].Age > items[j].Age
+			})
+		default: // "age"
+			sort.Slice(items, func(i, j int) bool {
+				return items[i].Age > items[j].Age
+			})
+		}
+	}
+	triageSort(data.Unassigned)
+	triageSort(data.NoPriority)
 
 	data.UnassignedN = len(data.Unassigned)
 	data.NoPriorityN = len(data.NoPriority)

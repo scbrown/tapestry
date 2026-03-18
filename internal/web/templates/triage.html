@@ -1,6 +1,6 @@
 {{define "title"}}Triage{{end}}
 {{define "content"}}
-<div class="backlog-page" hx-get="/triage{{if .FilterRig}}?rig={{.FilterRig}}{{end}}" hx-trigger="every 120s" hx-select=".backlog-page" hx-swap="outerHTML">
+<div class="backlog-page" hx-get="/triage{{if .FilterRig}}?rig={{.FilterRig}}{{end}}{{if ne .SortBy "age"}}{{if .FilterRig}}&{{else}}?{{end}}sort={{.SortBy}}{{end}}" hx-trigger="every 120s" hx-select=".backlog-page" hx-swap="outerHTML">
   <h1>Triage Queue <time class="text-dim">{{.GeneratedAt.Format "Jan 02, 2006 15:04"}}</time></h1>
 
   <div class="backlog-stats">
@@ -26,6 +26,13 @@
     {{end}}
   </div>
   {{end}}
+
+  <div class="filters">
+    <a href="/triage{{if .FilterRig}}?rig={{.FilterRig}}{{end}}" {{if eq .SortBy "age"}}class="active"{{end}}>By age</a>
+    <a href="/triage?sort=priority{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" {{if eq .SortBy "priority"}}class="active"{{end}}>By priority</a>
+    <a href="/triage?sort=type{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" {{if eq .SortBy "type"}}class="active"{{end}}>By type</a>
+    <a href="/triage?sort=rig{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" {{if eq .SortBy "rig"}}class="active"{{end}}>By rig</a>
+  </div>
 
   {{if .Unassigned}}
   <section class="backlog-card">
