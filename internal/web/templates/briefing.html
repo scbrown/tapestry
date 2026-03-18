@@ -130,7 +130,13 @@
           <time class="text-dim freshness">{{timeAgo .Issue.UpdatedAt}}</time>
           <span class="blocked-reason">
             blocked by <a href="/bead/{{lower .BlockerRig}}/{{.BlockerID}}" hx-boost="true">{{.BlockerID}}</a>
-            <span class="text-dim">({{.BlockerDesc}}{{if .Owner}} — {{shortActor .Owner}}{{end}})</span>
+            <span class="priority-badge p{{.BlockerPriority}}">P{{.BlockerPriority}}</span>
+            <span class="badge status-{{.BlockerStatus}}">{{.BlockerStatus}}</span>
+            <span class="text-dim">({{.BlockerDesc}}{{if .Owner}} — {{shortActor .Owner}}{{end}}{{if not .BlockerUpdatedAt.IsZero}} · {{timeAgo .BlockerUpdatedAt}}{{end}})</span>
+          </span>
+          <span class="briefing-actions">
+            <button class="btn btn-xs" hx-post="/bead/{{lower .Issue.Rig}}/{{.Issue.ID}}/status" hx-vals='{"status":"deferred"}' hx-swap="outerHTML" hx-target="closest li" hx-confirm="Defer {{.Issue.ID}}?">defer</button>
+            <button class="btn btn-xs" hx-post="/bead/{{lower .Issue.Rig}}/{{.Issue.ID}}/status" hx-vals='{"status":"closed"}' hx-swap="outerHTML" hx-target="closest li" hx-confirm="Close {{.Issue.ID}}?">close</button>
           </span>
         </li>
         {{end}}

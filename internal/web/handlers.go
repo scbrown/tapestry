@@ -926,11 +926,14 @@ type hlaStatus struct {
 }
 
 type briefingBlockedItem struct {
-	Issue       dolt.Issue
-	BlockerID   string
-	BlockerDesc string
-	BlockerRig  string
-	Owner       string
+	Issue           dolt.Issue
+	BlockerID       string
+	BlockerDesc     string
+	BlockerRig      string
+	Owner           string
+	BlockerStatus   string
+	BlockerPriority int
+	BlockerUpdatedAt time.Time
 }
 
 type briefingData struct {
@@ -1089,6 +1092,9 @@ func (s *Server) handleBriefing(w http.ResponseWriter, r *http.Request) {
 						BlockerDesc: bi.Blocker.Title,
 						BlockerRig:  dbName,
 						Owner:       owner,
+						BlockerStatus:    bi.Blocker.Status,
+						BlockerPriority:  bi.Blocker.Priority,
+						BlockerUpdatedAt: bi.Blocker.UpdatedAt,
 					})
 				}
 			}
