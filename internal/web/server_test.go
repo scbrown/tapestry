@@ -12944,6 +12944,34 @@ func TestFindProbesDir_Sibling(t *testing.T) {
 	}
 }
 
+func TestEventsPage_RigFilter(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/events?rig=aegis", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /events?rig=aegis status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Events") {
+		t.Error("expected 'Events' heading")
+	}
+}
+
+func TestEventsPage_TypeAndRigFilter(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/events?type=handoff&rig=aegis", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /events?type=handoff&rig=aegis status = %d, want %d", w.Code, http.StatusOK)
+	}
+}
+
 func TestFindProbesDir_NotFound(t *testing.T) {
 	dir := t.TempDir()
 	result := findProbesDir(dir)

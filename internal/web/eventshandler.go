@@ -12,8 +12,10 @@ import (
 type eventsPageData struct {
 	Events      []events.Event
 	Types       []string
+	Rigs        []string
 	TypeFilter  string
 	ActorFilter string
+	RigFilter   string
 	Total       int
 	Err         string
 }
@@ -36,10 +38,12 @@ func (s *Server) loadEvents() ([]events.Event, error) {
 func (s *Server) handleEvents(w http.ResponseWriter, r *http.Request) {
 	typeFilter := r.URL.Query().Get("type")
 	actorFilter := r.URL.Query().Get("actor")
+	rigFilter := r.URL.Query().Get("rig")
 
 	data := eventsPageData{
 		TypeFilter:  typeFilter,
 		ActorFilter: actorFilter,
+		RigFilter:   rigFilter,
 	}
 
 	allEvents, err := s.loadEvents()
@@ -57,12 +61,19 @@ func (s *Server) handleEvents(w http.ResponseWriter, r *http.Request) {
 	}
 
 	data.Types = events.Types(allEvents)
+	data.Rigs = events.Rigs(allEvents)
 	data.Total = len(allEvents)
+
+	// Build actor filter: if rig filter is set, match actor prefix
+	effectiveActor := actorFilter
+	if rigFilter != "" && actorFilter == "" {
+		effectiveActor = rigFilter + "/"
+	}
 
 	// Apply filters
 	filtered := events.Apply(allEvents, events.Filter{
 		Type:  typeFilter,
-		Actor: actorFilter,
+		Actor: effectiveActor,
 		After: time.Now().Add(-7 * 24 * time.Hour), // last 7 days
 		Limit: 200,
 	})

@@ -1,17 +1,26 @@
 {{define "title"}}Events{{end}}
 {{define "content"}}
-<div class="events-page" hx-get="{{if or .TypeFilter .ActorFilter}}/events?{{if .TypeFilter}}type={{.TypeFilter}}{{end}}{{if and .TypeFilter .ActorFilter}}&{{end}}{{if .ActorFilter}}actor={{.ActorFilter}}{{end}}{{else}}/events{{end}}" hx-trigger="every 30s" hx-select=".events-page" hx-swap="outerHTML">
+<div class="events-page" hx-get="/events{{if .TypeFilter}}?type={{.TypeFilter}}{{if .RigFilter}}&rig={{.RigFilter}}{{end}}{{else}}{{if .RigFilter}}?rig={{.RigFilter}}{{end}}{{end}}" hx-trigger="every 30s" hx-select=".events-page" hx-swap="outerHTML">
   <h1>Events <span class="text-dim">({{.Total}} total)</span></h1>
 
   <div class="filters">
-    <a href="/events" {{if and (eq .TypeFilter "") (eq .ActorFilter "")}}class="active"{{end}}>All</a>
+    <a href="/events{{if .RigFilter}}?rig={{.RigFilter}}{{end}}" {{if and (eq .TypeFilter "") (eq .ActorFilter "")}}class="active"{{end}}>All</a>
     {{range .Types}}
-    <a href="/events?type={{.}}" {{if eq . $.TypeFilter}}class="active"{{end}}>{{.}}</a>
+    <a href="/events?type={{.}}{{if $.RigFilter}}&rig={{$.RigFilter}}{{end}}" {{if eq . $.TypeFilter}}class="active"{{end}}>{{.}}</a>
     {{end}}
   </div>
 
+  {{if .Rigs}}
+  <div class="dep-filters">
+    <a href="/events{{if .TypeFilter}}?type={{.TypeFilter}}{{end}}" {{if eq .RigFilter ""}}class="active"{{end}}>All rigs</a>
+    {{range .Rigs}}
+    <a href="/events?rig={{.}}{{if $.TypeFilter}}&type={{$.TypeFilter}}{{end}}" {{if eq . $.RigFilter}}class="active"{{end}}>{{.}}</a>
+    {{end}}
+  </div>
+  {{end}}
+
   {{if .ActorFilter}}
-  <p class="filter-note">Filtered by actor: <strong>{{.ActorFilter}}</strong> <a href="/events{{if .TypeFilter}}?type={{.TypeFilter}}{{end}}">[clear]</a></p>
+  <p class="filter-note">Filtered by actor: <strong>{{.ActorFilter}}</strong> <a href="/events{{if .TypeFilter}}?type={{.TypeFilter}}{{if .RigFilter}}&rig={{.RigFilter}}{{end}}{{else}}{{if .RigFilter}}?rig={{.RigFilter}}{{end}}{{end}}">[clear]</a></p>
   {{end}}
 
   {{if .Err}}

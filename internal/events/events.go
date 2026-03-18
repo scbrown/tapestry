@@ -106,6 +106,24 @@ func Types(events []Event) []string {
 	return types
 }
 
+// Rigs returns the distinct rig names (first path component of actor) from the list.
+func Rigs(events []Event) []string {
+	seen := make(map[string]bool)
+	var rigs []string
+	for _, e := range events {
+		rig := e.Actor
+		if idx := strings.IndexByte(rig, '/'); idx > 0 {
+			rig = rig[:idx]
+		}
+		if rig != "" && !seen[rig] {
+			seen[rig] = true
+			rigs = append(rigs, rig)
+		}
+	}
+	sort.Strings(rigs)
+	return rigs
+}
+
 // PayloadString extracts a string value from an event's payload.
 func PayloadString(e Event, key string) string {
 	if v, ok := e.Payload[key]; ok {

@@ -319,6 +319,35 @@ func TestChainSummary_Empty(t *testing.T) {
 	}
 }
 
+func TestRigs(t *testing.T) {
+	events := makeEvents()
+	rigs := Rigs(events)
+	if len(rigs) != 2 {
+		t.Fatalf("got %d rigs, want 2 (aegis, mayor)", len(rigs))
+	}
+	// Should be sorted
+	if rigs[0] != "aegis" || rigs[1] != "mayor" {
+		t.Errorf("rigs = %v, want [aegis mayor]", rigs)
+	}
+}
+
+func TestRigs_Empty(t *testing.T) {
+	rigs := Rigs(nil)
+	if len(rigs) != 0 {
+		t.Errorf("got %d rigs from nil, want 0", len(rigs))
+	}
+}
+
+func TestRigs_NoSlash(t *testing.T) {
+	events := []Event{
+		{Actor: "standalone"},
+	}
+	rigs := Rigs(events)
+	if len(rigs) != 1 || rigs[0] != "standalone" {
+		t.Errorf("rigs = %v, want [standalone]", rigs)
+	}
+}
+
 func TestHandoffEvent_Subject(t *testing.T) {
 	events := makeEvents()
 	chains := BuildHandoffChains(events)
