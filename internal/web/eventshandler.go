@@ -3,6 +3,7 @@ package web
 import (
 	"log"
 	"net/http"
+	"sort"
 	"strings"
 	"time"
 
@@ -27,6 +28,7 @@ type handoffsPageData struct {
 	Rigs        []string
 	ActorFilter string
 	RigFilter   string
+	SortBy      string
 	Err         string
 }
 
@@ -129,6 +131,31 @@ func (s *Server) handleHandoffs(w http.ResponseWriter, r *http.Request) {
 	data.TotalChains = len(chains)
 	data.Stats = events.ChainSummary(chains)
 	data.Chains = chains
+
+	sortBy := r.URL.Query().Get("sort")
+	if sortBy == "" {
+		sortBy = "handoffs"
+	}
+	data.SortBy = sortBy
+
+	switch sortBy {
+	case "agent":
+		sort.Slice(data.Stats, func(i, j int) bool {
+			return data.Stats[i].Actor < data.Stats[j].Actor
+		})
+	case "recent":
+		sort.Slice(data.Stats, func(i, j int) bool {
+			return data.Stats[i].LastHandoff.After(data.Stats[j].LastHandoff)
+		})
+	case "session":
+		sort.Slice(data.Stats, func(i, j int) bool {
+			return data.Stats[i].AvgSessionTime > data.Stats[j].AvgSessionTime
+		})
+	default: // "handoffs"
+		sort.Slice(data.Stats, func(i, j int) bool {
+			return data.Stats[i].TotalHandoffs > data.Stats[j].TotalHandoffs
+		})
+	}
 
 	s.render(w, r, "handoffs", data)
 }

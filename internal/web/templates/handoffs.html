@@ -20,6 +20,13 @@
   <div class="error-banner">{{.Err}}</div>
   {{end}}
 
+  <div class="filters">
+    <a href="/handoffs{{if .RigFilter}}?rig={{.RigFilter}}{{end}}" {{if eq .SortBy "handoffs"}}class="active"{{end}}>By handoffs</a>
+    <a href="/handoffs?sort=recent{{if .RigFilter}}&rig={{.RigFilter}}{{end}}" {{if eq .SortBy "recent"}}class="active"{{end}}>By recent</a>
+    <a href="/handoffs?sort=session{{if .RigFilter}}&rig={{.RigFilter}}{{end}}" {{if eq .SortBy "session"}}class="active"{{end}}>By session</a>
+    <a href="/handoffs?sort=agent{{if .RigFilter}}&rig={{.RigFilter}}{{end}}" {{if eq .SortBy "agent"}}class="active"{{end}}>By agent</a>
+  </div>
+
   {{if .Stats}}
   <div class="stats-table table-wrap">
     <table class="bead-table">

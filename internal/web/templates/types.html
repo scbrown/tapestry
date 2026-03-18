@@ -1,7 +1,7 @@
 {{define "title"}}Types{{end}}
 
 {{define "content"}}
-<div class="types-view" hx-get="/types{{if .FilterRig}}?rig={{.FilterRig}}{{end}}" hx-trigger="every 120s" hx-select=".types-view" hx-swap="outerHTML">
+<div class="types-view" hx-get="/types{{if .FilterRig}}?rig={{.FilterRig}}{{end}}{{if ne .SortBy "type"}}{{if .FilterRig}}&{{else}}?{{end}}sort={{.SortBy}}{{end}}" hx-trigger="every 120s" hx-select=".types-view" hx-swap="outerHTML">
   <h1>Beads by Type</h1>
 
   {{if .Err}}
@@ -18,6 +18,13 @@
   {{end}}
 
   <div class="results-meta">{{.GrandTot}} beads {{if .FilterRig}}in {{rigName .FilterRig}}{{else}}across all rigs{{end}}</div>
+
+  <div class="filters">
+    <a href="/types{{if .FilterRig}}?rig={{.FilterRig}}{{end}}" {{if eq .SortBy "type"}}class="active"{{end}}>By type</a>
+    <a href="/types?sort=total{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" {{if eq .SortBy "total"}}class="active"{{end}}>By total</a>
+    <a href="/types?sort=open{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" {{if eq .SortBy "open"}}class="active"{{end}}>By open</a>
+    <a href="/types?sort=name{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" {{if eq .SortBy "name"}}class="active"{{end}}>By name</a>
+  </div>
 
   {{if .Rows}}
   <div class="priority-bars">
