@@ -2287,6 +2287,81 @@ func TestBriefingPage_RigFilter(t *testing.T) {
 	}
 }
 
+func TestBriefingPage_BlockedEnrichment(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		counts:    map[string]int{"open": 5, "blocked": 2},
+		issues: []dolt.Issue{
+			{ID: "aegis-b1", Title: "Blocked task", Status: "blocked", Priority: 1, UpdatedAt: time.Now()},
+		},
+		blockedIssues: []dolt.BlockedIssue{
+			{
+				Issue:   dolt.Issue{ID: "aegis-b1", Title: "Blocked task", Status: "blocked", Priority: 1, UpdatedAt: time.Now()},
+				Blocker: dolt.Issue{ID: "aegis-dep1", Title: "Dependency work", Status: "in_progress", Priority: 0, Assignee: "aegis/crew/arnold", UpdatedAt: time.Now().Add(-2 * time.Hour)},
+			},
+		},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/briefing", nil)
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /briefing status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	// Blocker priority badge
+	if !strings.Contains(body, "P0") {
+		t.Error("expected blocker priority P0 badge in blocked section")
+	}
+	// Blocker status badge
+	if !strings.Contains(body, "in_progress") {
+		t.Error("expected blocker status 'in_progress' in blocked section")
+	}
+	// Blocker ID link
+	if !strings.Contains(body, "aegis-dep1") {
+		t.Error("expected blocker ID 'aegis-dep1' in blocked section")
+	}
+	// Defer button on blocked items
+	if !strings.Contains(body, "Defer aegis-b1") {
+		t.Error("expected defer action button on blocked item")
+	}
+}
+
+func TestCommitsPage_RepoFilter(t *testing.T) {
+	srv := New(nil)
+
+	// Without filter — should show repo filter badges
+	req := httptest.NewRequest("GET", "/commits", nil)
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /commits status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "All repos") {
+		t.Error("expected 'All repos' filter badge on commits page")
+	}
+	if !strings.Contains(body, "aegis") {
+		t.Error("expected 'aegis' repo badge on commits page")
+	}
+
+	// With filter — should preserve filter in auto-refresh URL
+	req = httptest.NewRequest("GET", "/commits?repo=tapestry", nil)
+	w = httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /commits?repo= status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body = w.Body.String()
+	if !strings.Contains(body, "repo=tapestry") {
+		t.Error("expected repo=tapestry in auto-refresh URL")
+	}
+}
+
 func TestExecutivePage_DrillDownLinks(t *testing.T) {
 	ds := &mockDataSource{
 		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
