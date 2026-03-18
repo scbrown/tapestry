@@ -29,6 +29,7 @@ type workloadData struct {
 	MinLoad     int
 	Rigs        []string
 	FilterRig   string
+	SortBy      string
 }
 
 func (s *Server) handleWorkload(w http.ResponseWriter, r *http.Request) {
@@ -131,10 +132,34 @@ func (s *Server) handleWorkload(w http.ResponseWriter, r *http.Request) {
 		data.TotalWork += al.Total
 	}
 
-	// Sort by total workload descending
-	sort.Slice(data.Agents, func(i, j int) bool {
-		return data.Agents[i].Total > data.Agents[j].Total
-	})
+	sortBy := r.URL.Query().Get("sort")
+	if sortBy == "" {
+		sortBy = "total"
+	}
+	data.SortBy = sortBy
+
+	switch sortBy {
+	case "active":
+		sort.Slice(data.Agents, func(i, j int) bool {
+			return data.Agents[i].InProgress > data.Agents[j].InProgress
+		})
+	case "blocked":
+		sort.Slice(data.Agents, func(i, j int) bool {
+			return data.Agents[i].Blocked > data.Agents[j].Blocked
+		})
+	case "highpri":
+		sort.Slice(data.Agents, func(i, j int) bool {
+			return data.Agents[i].HighPri > data.Agents[j].HighPri
+		})
+	case "name":
+		sort.Slice(data.Agents, func(i, j int) bool {
+			return data.Agents[i].Name < data.Agents[j].Name
+		})
+	default: // "total"
+		sort.Slice(data.Agents, func(i, j int) bool {
+			return data.Agents[i].Total > data.Agents[j].Total
+		})
+	}
 
 	if len(data.Agents) > 0 {
 		data.AvgLoad = float64(data.TotalWork) / float64(len(data.Agents))

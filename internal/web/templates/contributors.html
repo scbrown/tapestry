@@ -1,16 +1,25 @@
 {{define "title"}}Contributors{{end}}
 {{define "content"}}
-<div class="backlog-page" hx-get="/contributors{{if .FilterRig}}?rig={{.FilterRig}}{{end}}" hx-trigger="every 120s" hx-select=".backlog-page" hx-swap="outerHTML">
+<div class="backlog-page" hx-get="/contributors{{if or .FilterRig (ne .SortBy "total")}}?{{if .FilterRig}}rig={{.FilterRig}}{{end}}{{if ne .SortBy "total"}}{{if .FilterRig}}&amp;{{end}}sort={{.SortBy}}{{end}}{{end}}" hx-trigger="every 120s" hx-select=".backlog-page" hx-swap="outerHTML">
   <h1>Contributors <time class="text-dim">{{.GeneratedAt.Format "Jan 02, 2006 15:04"}}</time></h1>
 
   {{if gt (len .Rigs) 1}}
   <div class="dep-filters" style="margin-bottom:0.5rem">
-    <a href="/contributors" class="badge {{if not .FilterRig}}filter-active{{end}}">All rigs</a>
+    <a href="/contributors{{if ne .SortBy "total"}}?sort={{.SortBy}}{{end}}" class="badge {{if not .FilterRig}}filter-active{{end}}">All rigs</a>
     {{range .Rigs}}
-    <a href="/contributors?rig={{.}}" class="badge {{if eq . $.FilterRig}}filter-active{{end}}">{{rigName .}}</a>
+    <a href="/contributors?rig={{.}}{{if ne $.SortBy "total"}}&amp;sort={{$.SortBy}}{{end}}" class="badge {{if eq . $.FilterRig}}filter-active{{end}}">{{rigName .}}</a>
     {{end}}
   </div>
   {{end}}
+
+  <div class="filters">
+    <a href="/contributors{{if .FilterRig}}?rig={{.FilterRig}}{{end}}" {{if eq .SortBy "total"}}class="active"{{end}}>By total</a>
+    <a href="/contributors?sort=closed{{if .FilterRig}}&amp;rig={{.FilterRig}}{{end}}" {{if eq .SortBy "closed"}}class="active"{{end}}>By closed</a>
+    <a href="/contributors?sort=active{{if .FilterRig}}&amp;rig={{.FilterRig}}{{end}}" {{if eq .SortBy "active"}}class="active"{{end}}>By active</a>
+    <a href="/contributors?sort=rate{{if .FilterRig}}&amp;rig={{.FilterRig}}{{end}}" {{if eq .SortBy "rate"}}class="active"{{end}}>By close rate</a>
+    <a href="/contributors?sort=recent{{if .FilterRig}}&amp;rig={{.FilterRig}}{{end}}" {{if eq .SortBy "recent"}}class="active"{{end}}>By recent</a>
+    <a href="/contributors?sort=name{{if .FilterRig}}&amp;rig={{.FilterRig}}{{end}}" {{if eq .SortBy "name"}}class="active"{{end}}>By name</a>
+  </div>
 
   <div class="backlog-stats">
     <div class="stat">

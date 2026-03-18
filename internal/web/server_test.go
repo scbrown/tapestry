@@ -5285,6 +5285,52 @@ func TestContributorsPage_HTMX(t *testing.T) {
 	}
 }
 
+func TestContributorsPage_SortOptions(t *testing.T) {
+	sorts := []string{"", "total", "closed", "active", "rate", "recent", "name"}
+	for _, s := range sorts {
+		t.Run("sort="+s, func(t *testing.T) {
+			srv := New(nil)
+			url := "/contributors"
+			if s != "" {
+				url += "?sort=" + s
+			}
+			req := httptest.NewRequest("GET", url, nil)
+			w := httptest.NewRecorder()
+			srv.ServeHTTP(w, req)
+			if w.Code != http.StatusOK {
+				t.Fatalf("GET %s status = %d, want %d", url, w.Code, http.StatusOK)
+			}
+			body := w.Body.String()
+			if !strings.Contains(body, "By total") {
+				t.Error("expected sort options in page")
+			}
+		})
+	}
+}
+
+func TestWorkloadPage_SortOptions(t *testing.T) {
+	sorts := []string{"", "total", "active", "blocked", "highpri", "name"}
+	for _, s := range sorts {
+		t.Run("sort="+s, func(t *testing.T) {
+			srv := New(nil)
+			url := "/workload"
+			if s != "" {
+				url += "?sort=" + s
+			}
+			req := httptest.NewRequest("GET", url, nil)
+			w := httptest.NewRecorder()
+			srv.ServeHTTP(w, req)
+			if w.Code != http.StatusOK {
+				t.Fatalf("GET %s status = %d, want %d", url, w.Code, http.StatusOK)
+			}
+			body := w.Body.String()
+			if !strings.Contains(body, "By total") {
+				t.Error("expected sort options in page")
+			}
+		})
+	}
+}
+
 // --- Deferred page tests ---
 
 func TestDeferredPage_NilDataSource(t *testing.T) {

@@ -26,6 +26,7 @@ type contributorsData struct {
 	Total        int
 	Rigs         []string
 	FilterRig    string
+	SortBy       string
 }
 
 func (s *Server) handleContributors(w http.ResponseWriter, r *http.Request) {
@@ -139,10 +140,38 @@ func (s *Server) handleContributors(w http.ResponseWriter, r *http.Request) {
 		data.Contributors = append(data.Contributors, *c)
 	}
 
-	// Sort by total owned descending
-	sort.Slice(data.Contributors, func(i, j int) bool {
-		return data.Contributors[i].Owned > data.Contributors[j].Owned
-	})
+	sortBy := r.URL.Query().Get("sort")
+	if sortBy == "" {
+		sortBy = "total"
+	}
+	data.SortBy = sortBy
+
+	switch sortBy {
+	case "closed":
+		sort.Slice(data.Contributors, func(i, j int) bool {
+			return data.Contributors[i].Closed > data.Contributors[j].Closed
+		})
+	case "active":
+		sort.Slice(data.Contributors, func(i, j int) bool {
+			return data.Contributors[i].InProgress > data.Contributors[j].InProgress
+		})
+	case "rate":
+		sort.Slice(data.Contributors, func(i, j int) bool {
+			return data.Contributors[i].CloseRate > data.Contributors[j].CloseRate
+		})
+	case "recent":
+		sort.Slice(data.Contributors, func(i, j int) bool {
+			return data.Contributors[i].LastActive.After(data.Contributors[j].LastActive)
+		})
+	case "name":
+		sort.Slice(data.Contributors, func(i, j int) bool {
+			return data.Contributors[i].Name < data.Contributors[j].Name
+		})
+	default: // "total"
+		sort.Slice(data.Contributors, func(i, j int) bool {
+			return data.Contributors[i].Owned > data.Contributors[j].Owned
+		})
+	}
 
 	data.Total = len(data.Contributors)
 	s.render(w, r, "contributors", data)
