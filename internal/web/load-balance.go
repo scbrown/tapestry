@@ -31,6 +31,7 @@ type loadBalData struct {
 	AvgScore    float64
 	Rigs        []string
 	FilterRig   string
+	SortBy      string
 	Err         string
 }
 
@@ -132,9 +133,38 @@ func (s *Server) handleLoadBalance(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
-	sort.Slice(agents, func(i, j int) bool {
-		return agents[i].Score > agents[j].Score
-	})
+	sortBy := r.URL.Query().Get("sort")
+	if sortBy == "" {
+		sortBy = "score"
+	}
+	data.SortBy = sortBy
+
+	switch sortBy {
+	case "total":
+		sort.Slice(agents, func(i, j int) bool {
+			return agents[i].Total > agents[j].Total
+		})
+	case "active":
+		sort.Slice(agents, func(i, j int) bool {
+			return agents[i].InProgress > agents[j].InProgress
+		})
+	case "blocked":
+		sort.Slice(agents, func(i, j int) bool {
+			return agents[i].Blocked > agents[j].Blocked
+		})
+	case "highpri":
+		sort.Slice(agents, func(i, j int) bool {
+			return agents[i].HighPri > agents[j].HighPri
+		})
+	case "name":
+		sort.Slice(agents, func(i, j int) bool {
+			return agents[i].Name < agents[j].Name
+		})
+	default: // "score"
+		sort.Slice(agents, func(i, j int) bool {
+			return agents[i].Score > agents[j].Score
+		})
+	}
 
 	// Compute bar widths and statuses
 	if len(agents) > 0 {
