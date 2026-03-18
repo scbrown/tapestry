@@ -1,16 +1,23 @@
 {{define "title"}}Response Time{{end}}
 {{define "content"}}
-<div class="backlog-page" hx-get="/response-time{{if .FilterRig}}?rig={{.FilterRig}}{{end}}" hx-trigger="every 120s" hx-select=".backlog-page" hx-swap="outerHTML">
+<div class="backlog-page" hx-get="/response-time{{if or .FilterRig (ne .SortBy "fastest")}}?{{if .FilterRig}}rig={{.FilterRig}}{{end}}{{if ne .SortBy "fastest"}}{{if .FilterRig}}&amp;{{end}}sort={{.SortBy}}{{end}}{{end}}" hx-trigger="every 120s" hx-select=".backlog-page" hx-swap="outerHTML">
   <h1>Response Time (30 Days) <time class="text-dim">{{.GeneratedAt.Format "Jan 02, 2006 15:04"}}</time></h1>
 
   {{if gt (len .Rigs) 1}}
   <div class="dep-filters" style="margin-bottom:0.5rem">
-    <a href="/response-time" class="badge {{if not .FilterRig}}filter-active{{end}}">All rigs</a>
+    <a href="/response-time{{if ne .SortBy "fastest"}}?sort={{.SortBy}}{{end}}" class="badge {{if not .FilterRig}}filter-active{{end}}">All rigs</a>
     {{range .Rigs}}
-    <a href="/response-time?rig={{.}}" class="badge {{if eq . $.FilterRig}}filter-active{{end}}">{{rigName .}}</a>
+    <a href="/response-time?rig={{.}}{{if ne $.SortBy "fastest"}}&amp;sort={{$.SortBy}}{{end}}" class="badge {{if eq . $.FilterRig}}filter-active{{end}}">{{rigName .}}</a>
     {{end}}
   </div>
   {{end}}
+
+  <div class="filters">
+    <a href="/response-time{{if .FilterRig}}?rig={{.FilterRig}}{{end}}" {{if eq .SortBy "fastest"}}class="active"{{end}}>Fastest first</a>
+    <a href="/response-time?sort=slowest{{if .FilterRig}}&amp;rig={{.FilterRig}}{{end}}" {{if eq .SortBy "slowest"}}class="active"{{end}}>Slowest first</a>
+    <a href="/response-time?sort=priority{{if .FilterRig}}&amp;rig={{.FilterRig}}{{end}}" {{if eq .SortBy "priority"}}class="active"{{end}}>By priority</a>
+    <a href="/response-time?sort=recent{{if .FilterRig}}&amp;rig={{.FilterRig}}{{end}}" {{if eq .SortBy "recent"}}class="active"{{end}}>By recent</a>
+  </div>
 
   <div class="backlog-stats">
     <div class="stat">

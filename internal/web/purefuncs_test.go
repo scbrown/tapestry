@@ -433,3 +433,37 @@ func TestFmtScore(t *testing.T) {
 		})
 	}
 }
+
+// --- percentile ---
+
+func TestPercentile(t *testing.T) {
+	tests := []struct {
+		name   string
+		sorted []float64
+		pct    float64
+		want   float64
+	}{
+		{"empty", nil, 50, 0},
+		{"single", []float64{5}, 50, 5},
+		{"single p0", []float64{5}, 0, 5},
+		{"single p100", []float64{5}, 100, 5},
+		{"median odd", []float64{1, 3, 5}, 50, 3},
+		{"median even", []float64{1, 2, 3, 4}, 50, 2.5},
+		{"p90", []float64{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}, 90, 9.1},
+		{"p0", []float64{1, 2, 3}, 0, 1},
+		{"p100", []float64{1, 2, 3}, 100, 3},
+		{"p25", []float64{10, 20, 30, 40}, 25, 17.5},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := percentile(tt.sorted, tt.pct)
+			diff := got - tt.want
+			if diff < 0 {
+				diff = -diff
+			}
+			if diff > 0.01 {
+				t.Errorf("percentile(%v, %.0f) = %.2f, want %.2f", tt.sorted, tt.pct, got, tt.want)
+			}
+		})
+	}
+}

@@ -38,6 +38,7 @@ type responseTimeData struct {
 	NeverPickedUp  int
 	Rigs           []string
 	FilterRig      string
+	SortBy         string
 }
 
 func (s *Server) handleResponseTime(w http.ResponseWriter, r *http.Request) {
@@ -144,10 +145,33 @@ func (s *Server) handleResponseTime(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Sort entries by response time ascending (fastest first)
-	sort.Slice(data.Entries, func(i, j int) bool {
-		return data.Entries[i].ResponseTime < data.Entries[j].ResponseTime
-	})
+	sortBy := r.URL.Query().Get("sort")
+	if sortBy == "" {
+		sortBy = "fastest"
+	}
+	data.SortBy = sortBy
+
+	switch sortBy {
+	case "slowest":
+		sort.Slice(data.Entries, func(i, j int) bool {
+			return data.Entries[i].ResponseTime > data.Entries[j].ResponseTime
+		})
+	case "priority":
+		sort.Slice(data.Entries, func(i, j int) bool {
+			if data.Entries[i].Priority != data.Entries[j].Priority {
+				return data.Entries[i].Priority < data.Entries[j].Priority
+			}
+			return data.Entries[i].ResponseTime < data.Entries[j].ResponseTime
+		})
+	case "recent":
+		sort.Slice(data.Entries, func(i, j int) bool {
+			return data.Entries[i].CreatedAt.After(data.Entries[j].CreatedAt)
+		})
+	default: // "fastest"
+		sort.Slice(data.Entries, func(i, j int) bool {
+			return data.Entries[i].ResponseTime < data.Entries[j].ResponseTime
+		})
+	}
 
 	// Cap display at 50
 	if len(data.Entries) > 50 {
