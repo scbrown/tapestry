@@ -11694,6 +11694,52 @@ func TestStatsPage_WithData(t *testing.T) {
 	}
 }
 
+func TestStatsPage_DrillDownLinks(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		counts: map[string]int{
+			"open": 10, "in_progress": 5, "closed": 20, "blocked": 3, "deferred": 2,
+		},
+	}
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/stats", nil)
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200", w.Code)
+	}
+	body := w.Body.String()
+	// Summary cards should link to filtered views
+	for _, link := range []string{"/beads", "/work", "/kanban", "/blocked", "/closed", "/deferred"} {
+		if !strings.Contains(body, "href=\""+link) {
+			t.Errorf("missing drill-down link to %s", link)
+		}
+	}
+	// Per-rig table should have drill-down links
+	if !strings.Contains(body, "/work?rig=beads_aegis") {
+		t.Error("missing per-rig drill-down link")
+	}
+}
+
+func TestStatsPage_DrillDownWithRigFilter(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}, {Name: "beads_gastown"}},
+		counts:    map[string]int{"open": 5},
+	}
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/stats?rig=beads_aegis", nil)
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200", w.Code)
+	}
+	body := w.Body.String()
+	// Drill-down links should preserve rig filter
+	if !strings.Contains(body, "/work?rig=beads_aegis") {
+		t.Error("drill-down links should preserve rig filter")
+	}
+}
+
 func TestStatsPage_HTMXPartial(t *testing.T) {
 	srv := New(nil)
 	req := httptest.NewRequest("GET", "/stats", nil)
