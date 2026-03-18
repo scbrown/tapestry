@@ -386,3 +386,50 @@ func TestFirstNonEmpty(t *testing.T) {
 		})
 	}
 }
+
+// --- loadScore, fmtScore ---
+
+func TestLoadScore(t *testing.T) {
+	tests := []struct {
+		name                           string
+		open, inProgress, blocked, hp int
+		want                          float64
+	}{
+		{"zero", 0, 0, 0, 0, 0},
+		{"open only", 10, 0, 0, 0, 5},        // 10*0.5
+		{"in-progress only", 0, 5, 0, 0, 15},  // 5*3
+		{"blocked only", 0, 0, 3, 0, 6},       // 3*2
+		{"high-pri only", 0, 0, 0, 4, 8},      // 4*2
+		{"mixed", 10, 3, 2, 5, 28},            // 10*0.5 + 3*3 + 2*2 + 5*2 = 5+9+4+10
+		{"heavy load", 20, 10, 5, 8, 66},      // 20*0.5 + 10*3 + 5*2 + 8*2 = 10+30+10+16
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := loadScore(tt.open, tt.inProgress, tt.blocked, tt.hp)
+			if got != tt.want {
+				t.Errorf("loadScore(%d,%d,%d,%d) = %.1f, want %.1f", tt.open, tt.inProgress, tt.blocked, tt.hp, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestFmtScore(t *testing.T) {
+	tests := []struct {
+		score float64
+		want  string
+	}{
+		{0, "0"},
+		{5.5, "6"},
+		{10.0, "10"},
+		{99.4, "99"},
+		{99.5, "100"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.want, func(t *testing.T) {
+			got := fmtScore(tt.score)
+			if got != tt.want {
+				t.Errorf("fmtScore(%.1f) = %q, want %q", tt.score, got, tt.want)
+			}
+		})
+	}
+}

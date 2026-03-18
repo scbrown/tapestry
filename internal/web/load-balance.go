@@ -121,7 +121,7 @@ func (s *Server) handleLoadBalance(w http.ResponseWriter, r *http.Request) {
 	var agents []loadBalanceAgent
 	for name, a := range agentMap {
 		total := a.open + a.inProgress + a.blocked
-		score := float64(a.inProgress)*3 + float64(a.blocked)*2 + float64(a.highPri)*2 + float64(a.open)*0.5
+		score := loadScore(a.open, a.inProgress, a.blocked, a.highPri)
 		agents = append(agents, loadBalanceAgent{
 			Name:       name,
 			Open:       a.open,
@@ -193,6 +193,10 @@ func (s *Server) handleLoadBalance(w http.ResponseWriter, r *http.Request) {
 	data.Agents = agents
 	data.Total = len(agents)
 	s.render(w, r, "load-balance", data)
+}
+
+func loadScore(open, inProgress, blocked, highPri int) float64 {
+	return float64(inProgress)*3 + float64(blocked)*2 + float64(highPri)*2 + float64(open)*0.5
 }
 
 func fmtScore(s float64) string {
