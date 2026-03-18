@@ -7381,6 +7381,31 @@ func TestOwnersPage_RigFilter(t *testing.T) {
 	}
 }
 
+func TestOwnersPage_PriorityBreakdown(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issues: []dolt.Issue{
+			{ID: "o1", Title: "Critical", Status: "open", Owner: "alice", Priority: 0},
+			{ID: "o2", Title: "Important", Status: "in_progress", Owner: "alice", Priority: 1},
+			{ID: "o3", Title: "Normal", Status: "open", Owner: "alice", Priority: 3},
+		},
+	}
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/owners", nil)
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "priority-badge p0") {
+		t.Error("expected P0 column header")
+	}
+	if !strings.Contains(body, "priority-badge p1") {
+		t.Error("expected P1 column header")
+	}
+}
+
 func TestPrioritiesPage_RigFilter(t *testing.T) {
 	ds := &mockDataSource{
 		databases:          []dolt.DatabaseInfo{{Name: "beads_aegis"}, {Name: "beads_gastown"}},
@@ -11847,6 +11872,54 @@ func TestChangelogPage_RigFilter(t *testing.T) {
 	body := w.Body.String()
 	if !strings.Contains(body, "beads_aegis") {
 		t.Error("expected rig filter badge")
+	}
+}
+
+func TestChangelogPage_TypeFilter(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issues: []dolt.Issue{
+			{ID: "a1", Title: "Bug fix", Type: "bug", Status: "closed", Priority: 1, UpdatedAt: time.Now().Add(-24 * time.Hour)},
+			{ID: "a2", Title: "New feature", Type: "task", Status: "closed", Priority: 2, UpdatedAt: time.Now().Add(-48 * time.Hour)},
+		},
+	}
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/changelog?type=bug", nil)
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "All types") {
+		t.Error("expected 'All types' badge")
+	}
+	if !strings.Contains(body, "Bug fix") {
+		t.Error("expected bug issue to be shown")
+	}
+}
+
+func TestChangelogPage_PriorityFilter(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		issues: []dolt.Issue{
+			{ID: "a1", Title: "P0 urgent", Type: "bug", Status: "closed", Priority: 0, UpdatedAt: time.Now().Add(-24 * time.Hour)},
+			{ID: "a2", Title: "P3 routine", Type: "task", Status: "closed", Priority: 3, UpdatedAt: time.Now().Add(-48 * time.Hour)},
+		},
+	}
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/changelog?priority=0", nil)
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "All priorities") {
+		t.Error("expected 'All priorities' badge")
+	}
+	if !strings.Contains(body, "P0 urgent") {
+		t.Error("expected P0 issue to be shown")
 	}
 }
 

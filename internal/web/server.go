@@ -294,6 +294,9 @@ var funcMap = template.FuncMap{
 	"fmtMonthInt": func(m time.Month) int {
 		return int(m)
 	},
+	"changelogQ": func(rig, typ, priority string) template.HTML {
+		return template.HTML(changelogQuery(rig, typ, priority))
+	},
 }
 
 // Option configures the server.

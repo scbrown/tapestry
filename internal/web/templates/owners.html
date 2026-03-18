@@ -29,6 +29,9 @@
         <th>Blocked</th>
         <th>Closed</th>
         <th>Deferred</th>
+        <th><span class="priority-badge p0">P0</span></th>
+        <th><span class="priority-badge p1">P1</span></th>
+        <th><span class="priority-badge p2">P2</span></th>
         <th>Completion</th>
       </tr>
     </thead>
@@ -42,6 +45,9 @@
         <td>{{if .Blocked}}<a href="/beads?assignee={{.Name}}&amp;status=blocked">{{.Blocked}}</a>{{else}}—{{end}}</td>
         <td>{{if .Closed}}<a href="/beads?assignee={{.Name}}&amp;status=closed">{{.Closed}}</a>{{else}}—{{end}}</td>
         <td>{{if .Deferred}}<a href="/beads?assignee={{.Name}}&amp;status=deferred">{{.Deferred}}</a>{{else}}—{{end}}</td>
+        <td>{{if .P0}}<strong class="warn">{{.P0}}</strong>{{else}}—{{end}}</td>
+        <td>{{if .P1}}<strong>{{.P1}}</strong>{{else}}—{{end}}</td>
+        <td>{{if .P2}}{{.P2}}{{else}}—{{end}}</td>
         <td>
           <div class="completion-bar">
             <div class="completion-fill" style="width: {{if .Total}}{{mulf (divf (itof .Closed) (itof .Total)) 100.0}}%{{else}}0%{{end}}"></div>

@@ -3,7 +3,9 @@ package web
 import (
 	"log"
 	"net/http"
+	"net/url"
 	"sort"
+	"strconv"
 	"sync"
 	"time"
 
@@ -25,13 +27,20 @@ type changelogItem struct {
 }
 
 type changelogData struct {
-	GeneratedAt time.Time
-	Weeks       []changelogWeek
-	WeekCount   int
-	TotalClosed int
-	FilterRig   string
-	Rigs        []string
-	Err         string
+	GeneratedAt    time.Time
+	Weeks          []changelogWeek
+	WeekCount      int
+	TotalClosed    int
+	FilterRig      string
+	FilterType     string
+	FilterPriority string
+	Rigs           []string
+	Types          []string
+	QNoRig         string // query string without rig param
+	QNoType        string // query string without type param
+	QNoPriority    string // query string without priority param
+	QAll           string // query string with all params
+	Err            string
 }
 
 func (s *Server) handleChangelog(w http.ResponseWriter, r *http.Request) {
@@ -44,6 +53,8 @@ func (s *Server) handleChangelog(w http.ResponseWriter, r *http.Request) {
 
 	ctx := r.Context()
 	data.FilterRig = r.URL.Query().Get("rig")
+	data.FilterType = r.URL.Query().Get("type")
+	data.FilterPriority = r.URL.Query().Get("priority")
 
 	dbs, err := s.databases(ctx)
 	if err != nil {
@@ -103,6 +114,44 @@ func (s *Server) handleChangelog(w http.ResponseWriter, r *http.Request) {
 	sort.Strings(rigNames)
 	data.Rigs = rigNames
 
+	// Collect distinct types
+	typeSet := map[string]bool{}
+	for _, ir := range allIssues {
+		if ir.issue.Type != "" {
+			typeSet[ir.issue.Type] = true
+		}
+	}
+	var types []string
+	for t := range typeSet {
+		types = append(types, t)
+	}
+	sort.Strings(types)
+	data.Types = types
+
+	// Apply type filter
+	if data.FilterType != "" {
+		filtered := allIssues[:0]
+		for _, ir := range allIssues {
+			if ir.issue.Type == data.FilterType {
+				filtered = append(filtered, ir)
+			}
+		}
+		allIssues = filtered
+	}
+
+	// Apply priority filter
+	if data.FilterPriority != "" {
+		if pri, err := strconv.Atoi(data.FilterPriority); err == nil {
+			filtered := allIssues[:0]
+			for _, ir := range allIssues {
+				if ir.issue.Priority == pri {
+					filtered = append(filtered, ir)
+				}
+			}
+			allIssues = filtered
+		}
+	}
+
 	// Group by week (Monday start)
 	weekMap := map[string]*changelogWeek{}
 	for _, ir := range allIssues {
@@ -146,7 +195,30 @@ func (s *Server) handleChangelog(w http.ResponseWriter, r *http.Request) {
 
 	data.Weeks = weeks
 
+	// Build pre-computed query strings for filter links
+	data.QNoRig = changelogQuery("", data.FilterType, data.FilterPriority)
+	data.QNoType = changelogQuery(data.FilterRig, "", data.FilterPriority)
+	data.QNoPriority = changelogQuery(data.FilterRig, data.FilterType, "")
+	data.QAll = changelogQuery(data.FilterRig, data.FilterType, data.FilterPriority)
+
 	s.render(w, r, "changelog", data)
+}
+
+func changelogQuery(rig, typ, priority string) string {
+	v := url.Values{}
+	if rig != "" {
+		v.Set("rig", rig)
+	}
+	if typ != "" {
+		v.Set("type", typ)
+	}
+	if priority != "" {
+		v.Set("priority", priority)
+	}
+	if len(v) == 0 {
+		return ""
+	}
+	return "?" + v.Encode()
 }
 
 func weekStartDate(t time.Time) time.Time {

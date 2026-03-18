@@ -5,12 +5,30 @@
 
 {{if gt (len .Rigs) 1}}
 <div class="dep-filters" style="margin-bottom:0.75rem">
-    <a href="/changelog" class="badge {{if not .FilterRig}}filter-active{{end}}">All rigs</a>
+    <a href="/changelog{{.QNoRig}}" class="badge {{if not .FilterRig}}filter-active{{end}}">All rigs</a>
     {{range .Rigs}}
-    <a href="/changelog?rig={{.}}" class="badge {{if eq . $.FilterRig}}filter-active{{end}}">{{rigName .}}</a>
+    <a href="/changelog{{changelogQ . $.FilterType $.FilterPriority}}" class="badge {{if eq . $.FilterRig}}filter-active{{end}}">{{rigName .}}</a>
     {{end}}
 </div>
 {{end}}
+
+{{if gt (len .Types) 0}}
+<div class="dep-filters" style="margin-bottom:0.75rem">
+    <a href="/changelog{{.QNoType}}" class="badge {{if not .FilterType}}filter-active{{end}}">All types</a>
+    {{range .Types}}
+    <a href="/changelog{{changelogQ $.FilterRig . $.FilterPriority}}" class="badge {{if eq . $.FilterType}}filter-active{{end}}">{{.}}</a>
+    {{end}}
+</div>
+{{end}}
+
+<div class="dep-filters" style="margin-bottom:0.75rem">
+    <a href="/changelog{{.QNoPriority}}" class="badge {{if not .FilterPriority}}filter-active{{end}}">All priorities</a>
+    <a href="/changelog{{changelogQ .FilterRig .FilterType "0"}}" class="badge {{if eq .FilterPriority "0"}}filter-active{{end}}"><span class="priority-badge p0">P0</span></a>
+    <a href="/changelog{{changelogQ .FilterRig .FilterType "1"}}" class="badge {{if eq .FilterPriority "1"}}filter-active{{end}}"><span class="priority-badge p1">P1</span></a>
+    <a href="/changelog{{changelogQ .FilterRig .FilterType "2"}}" class="badge {{if eq .FilterPriority "2"}}filter-active{{end}}"><span class="priority-badge p2">P2</span></a>
+    <a href="/changelog{{changelogQ .FilterRig .FilterType "3"}}" class="badge {{if eq .FilterPriority "3"}}filter-active{{end}}"><span class="priority-badge p3">P3</span></a>
+    <a href="/changelog{{changelogQ .FilterRig .FilterType "4"}}" class="badge {{if eq .FilterPriority "4"}}filter-active{{end}}"><span class="priority-badge p4">P4</span></a>
+</div>
 
 {{if .Err}}<p class="error">{{.Err}}</p>{{end}}
 
@@ -55,5 +73,5 @@
 {{end}}
 
 <p style="color:var(--comment);font-size:0.85rem;margin-top:1rem">Generated {{.GeneratedAt.Format "2006-01-02 15:04"}} &middot; Auto-refresh 300s</p>
-<div hx-get="/changelog{{if .FilterRig}}?rig={{.FilterRig}}{{end}}" hx-trigger="every 300s" hx-target="#content" hx-swap="innerHTML"></div>
+<div hx-get="/changelog{{.QAll}}" hx-trigger="every 300s" hx-target="#content" hx-swap="innerHTML"></div>
 {{end}}

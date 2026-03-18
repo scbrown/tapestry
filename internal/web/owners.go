@@ -17,6 +17,9 @@ type ownerRow struct {
 	Blocked  int
 	Closed   int
 	Deferred int
+	P0       int
+	P1       int
+	P2       int
 }
 
 type ownersData struct {
@@ -101,6 +104,17 @@ func (s *Server) handleOwners(w http.ResponseWriter, r *http.Request) {
 				row.Closed++
 			case "deferred":
 				row.Deferred++
+			}
+			// Count high-priority open work only
+			if issue.Status != "closed" && issue.Status != "deferred" {
+				switch issue.Priority {
+				case 0:
+					row.P0++
+				case 1:
+					row.P1++
+				case 2:
+					row.P2++
+				}
 			}
 		}
 	}
