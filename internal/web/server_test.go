@@ -2249,6 +2249,46 @@ func TestExecutivePage_RigFilter(t *testing.T) {
 	}
 }
 
+func TestExecutivePage_BlockerEnrichment(t *testing.T) {
+	ds := &mockDataSource{
+		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}},
+		counts:    map[string]int{"open": 5, "blocked": 2, "closed": 10},
+		created:   3,
+		closed:    1,
+		issues: []dolt.Issue{
+			{ID: "aegis-e1", Title: "Some work", Status: "open", Priority: 1, UpdatedAt: time.Now()},
+		},
+		blockedIssues: []dolt.BlockedIssue{
+			{
+				Issue:   dolt.Issue{ID: "aegis-e2", Title: "Blocked P1", Status: "blocked", Priority: 1, UpdatedAt: time.Now()},
+				Blocker: dolt.Issue{ID: "aegis-dep1", Title: "Upstream fix", Status: "in_progress", Priority: 0, Assignee: "aegis/crew/arnold", UpdatedAt: time.Now().Add(-1 * time.Hour)},
+			},
+		},
+	}
+
+	srv := New(ds)
+	req := httptest.NewRequest("GET", "/executive", nil)
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /executive status = %d, want %d", w.Code, http.StatusOK)
+	}
+	body := w.Body.String()
+	// Blocker priority badge
+	if !strings.Contains(body, "P0") {
+		t.Error("expected blocker priority P0 in executive blockers")
+	}
+	// Blocker status badge
+	if !strings.Contains(body, "in_progress") {
+		t.Error("expected blocker status 'in_progress' in executive blockers")
+	}
+	// Blocker ID
+	if !strings.Contains(body, "aegis-dep1") {
+		t.Error("expected blocker ID in executive page")
+	}
+}
+
 func TestBriefingPage_RigFilter(t *testing.T) {
 	ds := &mockDataSource{
 		databases: []dolt.DatabaseInfo{{Name: "beads_aegis"}, {Name: "beads_gastown"}},
