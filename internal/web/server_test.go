@@ -12745,3 +12745,209 @@ func TestEpicDetail_NilDataSource(t *testing.T) {
 		t.Fatalf("GET /epic/aegis-epic1 nil ds status = %d, want %d", w.Code, http.StatusOK)
 	}
 }
+
+func TestParseDateFromFilename(t *testing.T) {
+	tests := []struct {
+		name string
+		want string // expected date string or "zero"
+	}{
+		{"scout-analysis-2026-03-17.md", "2026-03-17"},
+		{"report-2025-12-01-summary.md", "2025-12-01"},
+		{"2026-01-15.md", "2026-01-15"},
+		{"no-date-here.md", "zero"},
+		{"probe.md", "zero"},
+		{"", "zero"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := parseDateFromFilename(tt.name)
+			if tt.want == "zero" {
+				if !got.IsZero() {
+					t.Errorf("parseDateFromFilename(%q) = %v, want zero", tt.name, got)
+				}
+			} else {
+				want, _ := time.Parse("2006-01-02", tt.want)
+				if !got.Equal(want) {
+					t.Errorf("parseDateFromFilename(%q) = %v, want %v", tt.name, got, want)
+				}
+			}
+		})
+	}
+}
+
+func TestTryParseDate(t *testing.T) {
+	tests := []struct {
+		input string
+		want  string // "zero" or "2006-01-02"
+	}{
+		{"2026-03-17", "2026-03-17"},
+		{"2026-03-17 14:30", "2026-03-17"},
+		{"Mar 17, 2026", "2026-03-17"},
+		{"March 17, 2026", "2026-03-17"},
+		{"  2026-03-17  ", "2026-03-17"},
+		{"not a date", "zero"},
+		{"", "zero"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.input, func(t *testing.T) {
+			got := tryParseDate(tt.input)
+			if tt.want == "zero" {
+				if !got.IsZero() {
+					t.Errorf("tryParseDate(%q) = %v, want zero", tt.input, got)
+				}
+			} else {
+				want, _ := time.Parse("2006-01-02", tt.want)
+				if got.Year() != want.Year() || got.Month() != want.Month() || got.Day() != want.Day() {
+					t.Errorf("tryParseDate(%q) = %v, want date matching %v", tt.input, got, want)
+				}
+			}
+		})
+	}
+}
+
+func TestParseProbeFile(t *testing.T) {
+	dir := t.TempDir()
+
+	// Write a test probe file
+	content := `# Test Probe Title
+
+This is the summary paragraph that describes the probe.
+It can span multiple lines.
+
+## Details
+
+More content here.
+`
+	path := dir + "/probe-2026-03-17.md"
+	if err := os.WriteFile(path, []byte(content), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	entry := parseProbeFile(path, "test-cat")
+	if entry == nil {
+		t.Fatal("parseProbeFile returned nil")
+	}
+	if entry.Title != "Test Probe Title" {
+		t.Errorf("title = %q, want %q", entry.Title, "Test Probe Title")
+	}
+	if entry.Category != "test-cat" {
+		t.Errorf("category = %q, want %q", entry.Category, "test-cat")
+	}
+	if !strings.Contains(entry.Summary, "summary paragraph") {
+		t.Errorf("summary = %q, want contains 'summary paragraph'", entry.Summary)
+	}
+	if entry.Date.IsZero() {
+		t.Error("expected date parsed from filename")
+	}
+}
+
+func TestParseProbeFile_NoTitle(t *testing.T) {
+	dir := t.TempDir()
+	content := "Just some content without a heading.\n"
+	path := dir + "/untitled.md"
+	if err := os.WriteFile(path, []byte(content), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	entry := parseProbeFile(path, "general")
+	if entry == nil {
+		t.Fatal("parseProbeFile returned nil")
+	}
+	if entry.Title != "untitled" {
+		t.Errorf("title fallback = %q, want 'untitled'", entry.Title)
+	}
+}
+
+func TestParseProbeFile_DateFromContent(t *testing.T) {
+	dir := t.TempDir()
+	content := `# Probe With Date
+
+**Date**: 2026-03-15
+
+Some content.
+`
+	path := dir + "/no-date-in-name.md"
+	if err := os.WriteFile(path, []byte(content), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	entry := parseProbeFile(path, "general")
+	if entry == nil {
+		t.Fatal("parseProbeFile returned nil")
+	}
+	if entry.Date.IsZero() {
+		t.Error("expected date parsed from content")
+	}
+	if entry.Date.Day() != 15 {
+		t.Errorf("date day = %d, want 15", entry.Date.Day())
+	}
+}
+
+func TestParseProbeFile_LongSummary(t *testing.T) {
+	dir := t.TempDir()
+	content := "# Title\n\n" + strings.Repeat("word ", 100) + "\n"
+	path := dir + "/long.md"
+	if err := os.WriteFile(path, []byte(content), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	entry := parseProbeFile(path, "general")
+	if entry == nil {
+		t.Fatal("parseProbeFile returned nil")
+	}
+	if len(entry.Summary) > 210 { // 200 + "..."
+		t.Errorf("summary too long: %d chars", len(entry.Summary))
+	}
+	if !strings.HasSuffix(entry.Summary, "...") {
+		t.Error("expected truncated summary to end with ...")
+	}
+}
+
+func TestParseProbeFile_NotFound(t *testing.T) {
+	entry := parseProbeFile("/nonexistent/file.md", "general")
+	if entry != nil {
+		t.Error("expected nil for nonexistent file")
+	}
+}
+
+func TestFindProbesDir(t *testing.T) {
+	// Create a workspace with docs/probes
+	dir := t.TempDir()
+	probesPath := dir + "/docs/probes"
+	if err := os.MkdirAll(probesPath, 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	result := findProbesDir(dir)
+	if result != probesPath {
+		t.Errorf("findProbesDir = %q, want %q", result, probesPath)
+	}
+}
+
+func TestFindProbesDir_Sibling(t *testing.T) {
+	// Create parent with two repos, probes in sibling
+	parent := t.TempDir()
+	workspace := parent + "/repo-a"
+	sibling := parent + "/repo-b"
+	probesPath := sibling + "/docs/probes"
+
+	if err := os.MkdirAll(workspace, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(probesPath, 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	result := findProbesDir(workspace)
+	if result != probesPath {
+		t.Errorf("findProbesDir (sibling) = %q, want %q", result, probesPath)
+	}
+}
+
+func TestFindProbesDir_NotFound(t *testing.T) {
+	dir := t.TempDir()
+	result := findProbesDir(dir)
+	if result != "" {
+		t.Errorf("findProbesDir (empty) = %q, want empty", result)
+	}
+}
