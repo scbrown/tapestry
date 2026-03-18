@@ -36,6 +36,7 @@ type velocityData struct {
 	Agents      []velocityAgent
 	Rigs        []string
 	FilterRig   string
+	SortBy      string
 }
 
 func (s *Server) handleVelocity(w http.ResponseWriter, r *http.Request) {
@@ -208,9 +209,33 @@ func (s *Server) handleVelocity(w http.ResponseWriter, r *http.Request) {
 			Net:     counts[0] - counts[1],
 		})
 	}
-	sort.Slice(data.Agents, func(i, j int) bool {
-		return data.Agents[i].Closed > data.Agents[j].Closed
-	})
+	sortBy := r.URL.Query().Get("sort")
+	if sortBy == "" {
+		sortBy = "closed"
+	}
+	data.SortBy = sortBy
+
+	switch sortBy {
+	case "name":
+		sort.Slice(data.Agents, func(i, j int) bool {
+			return data.Agents[i].Name < data.Agents[j].Name
+		})
+	case "created":
+		sort.Slice(data.Agents, func(i, j int) bool {
+			if data.Agents[i].Created != data.Agents[j].Created {
+				return data.Agents[i].Created > data.Agents[j].Created
+			}
+			return data.Agents[i].Closed > data.Agents[j].Closed
+		})
+	case "net":
+		sort.Slice(data.Agents, func(i, j int) bool {
+			return data.Agents[i].Net < data.Agents[j].Net
+		})
+	default: // closed
+		sort.Slice(data.Agents, func(i, j int) bool {
+			return data.Agents[i].Closed > data.Agents[j].Closed
+		})
+	}
 
 	s.render(w, r, "velocity", data)
 }

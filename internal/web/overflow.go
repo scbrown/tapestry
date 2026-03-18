@@ -26,6 +26,7 @@ type overflowData struct {
 	Threshold   int // highlight agents above this
 	Rigs        []string
 	FilterRig   string
+	SortBy      string
 	Err         string
 }
 
@@ -122,9 +123,36 @@ func (s *Server) handleOverflow(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
-	sort.Slice(data.Agents, func(i, j int) bool {
-		return data.Agents[i].Score > data.Agents[j].Score
-	})
+	sortBy := r.URL.Query().Get("sort")
+	if sortBy == "" {
+		sortBy = "score"
+	}
+	data.SortBy = sortBy
+
+	switch sortBy {
+	case "name":
+		sort.Slice(data.Agents, func(i, j int) bool {
+			return data.Agents[i].Name < data.Agents[j].Name
+		})
+	case "open":
+		sort.Slice(data.Agents, func(i, j int) bool {
+			if data.Agents[i].OpenCount != data.Agents[j].OpenCount {
+				return data.Agents[i].OpenCount > data.Agents[j].OpenCount
+			}
+			return data.Agents[i].Score > data.Agents[j].Score
+		})
+	case "blocked":
+		sort.Slice(data.Agents, func(i, j int) bool {
+			if data.Agents[i].BlockedCnt != data.Agents[j].BlockedCnt {
+				return data.Agents[i].BlockedCnt > data.Agents[j].BlockedCnt
+			}
+			return data.Agents[i].Score > data.Agents[j].Score
+		})
+	default: // score
+		sort.Slice(data.Agents, func(i, j int) bool {
+			return data.Agents[i].Score > data.Agents[j].Score
+		})
+	}
 
 	for rig := range rigSet {
 		data.Rigs = append(data.Rigs, rig)

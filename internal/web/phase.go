@@ -33,6 +33,7 @@ type phaseData struct {
 	NotStarted  int // 0%
 	Rigs        []string
 	FilterRig   string
+	SortBy      string
 }
 
 func (s *Server) handlePhase(w http.ResponseWriter, r *http.Request) {
@@ -155,13 +156,36 @@ func (s *Server) handlePhase(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Sort by priority, then pct descending
-	sort.Slice(data.Epics, func(i, j int) bool {
-		if data.Epics[i].Priority != data.Epics[j].Priority {
-			return data.Epics[i].Priority < data.Epics[j].Priority
-		}
-		return data.Epics[i].Pct > data.Epics[j].Pct
-	})
+	sortBy := r.URL.Query().Get("sort")
+	if sortBy == "" {
+		sortBy = "priority"
+	}
+	data.SortBy = sortBy
+
+	switch sortBy {
+	case "completion":
+		sort.Slice(data.Epics, func(i, j int) bool {
+			return data.Epics[i].Pct > data.Epics[j].Pct
+		})
+	case "name":
+		sort.Slice(data.Epics, func(i, j int) bool {
+			return data.Epics[i].Title < data.Epics[j].Title
+		})
+	case "total":
+		sort.Slice(data.Epics, func(i, j int) bool {
+			if data.Epics[i].Total != data.Epics[j].Total {
+				return data.Epics[i].Total > data.Epics[j].Total
+			}
+			return data.Epics[i].Pct > data.Epics[j].Pct
+		})
+	default: // priority
+		sort.Slice(data.Epics, func(i, j int) bool {
+			if data.Epics[i].Priority != data.Epics[j].Priority {
+				return data.Epics[i].Priority < data.Epics[j].Priority
+			}
+			return data.Epics[i].Pct > data.Epics[j].Pct
+		})
+	}
 
 	data.TotalEpics = len(data.Epics)
 	for _, ep := range data.Epics {

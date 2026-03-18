@@ -14,6 +14,13 @@
   <div class="error">{{.Err}}</div>
   {{else}}
 
+  <div class="filters">
+    <a href="/label-matrix{{if .FilterRig}}?rig={{.FilterRig}}{{end}}" {{if eq .SortBy "total"}}class="active"{{end}}>By total</a>
+    <a href="/label-matrix?sort=name{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" {{if eq .SortBy "name"}}class="active"{{end}}>By name</a>
+    <a href="/label-matrix?sort=open{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" {{if eq .SortBy "open"}}class="active"{{end}}>By open</a>
+    <a href="/label-matrix?sort=closed{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" {{if eq .SortBy "closed"}}class="active"{{end}}>By closed</a>
+  </div>
+
   {{if .Rows}}
   <div class="table-wrap">
   <table class="bead-table">

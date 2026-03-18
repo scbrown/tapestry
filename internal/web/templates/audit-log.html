@@ -26,6 +26,12 @@
     </div>
   </div>
 
+  <div class="filters">
+    <a href="/audit-log?window={{.Window}}{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" {{if eq .SortBy "time"}}class="active"{{end}}>By time</a>
+    <a href="/audit-log?sort=kind&window={{.Window}}{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" {{if eq .SortBy "kind"}}class="active"{{end}}>By kind</a>
+    <a href="/audit-log?sort=rig&window={{.Window}}{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" {{if eq .SortBy "rig"}}class="active"{{end}}>By rig</a>
+  </div>
+
   {{if .Events}}
   <section class="backlog-card">
     <div class="table-wrap">

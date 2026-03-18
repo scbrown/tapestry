@@ -56,6 +56,13 @@
     </div>
   </section>
 
+  <div class="filters">
+    <a href="/velocity{{if .FilterRig}}?rig={{.FilterRig}}{{end}}" {{if eq .SortBy "closed"}}class="active"{{end}}>By closed</a>
+    <a href="/velocity?sort=name{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" {{if eq .SortBy "name"}}class="active"{{end}}>By name</a>
+    <a href="/velocity?sort=created{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" {{if eq .SortBy "created"}}class="active"{{end}}>By created</a>
+    <a href="/velocity?sort=net{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" {{if eq .SortBy "net"}}class="active"{{end}}>By net</a>
+  </div>
+
   {{if .Agents}}
   <section class="velocity-agents">
     <h2>Agent Throughput (14 days)</h2>

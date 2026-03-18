@@ -24,6 +24,7 @@ type auditLogData struct {
 	Rigs        []string
 	FilterRig   string
 	Window      string // "24h", "7d", "30d"
+	SortBy      string
 }
 
 func (s *Server) handleAuditLog(w http.ResponseWriter, r *http.Request) {
@@ -155,9 +156,32 @@ func (s *Server) handleAuditLog(w http.ResponseWriter, r *http.Request) {
 		allEvents = append(allEvents, r.events...)
 	}
 
-	sort.Slice(allEvents, func(i, j int) bool {
-		return allEvents[i].Timestamp.After(allEvents[j].Timestamp)
-	})
+	sortBy := r.URL.Query().Get("sort")
+	if sortBy == "" {
+		sortBy = "time"
+	}
+	data.SortBy = sortBy
+
+	switch sortBy {
+	case "kind":
+		sort.Slice(allEvents, func(i, j int) bool {
+			if allEvents[i].Kind != allEvents[j].Kind {
+				return allEvents[i].Kind < allEvents[j].Kind
+			}
+			return allEvents[i].Timestamp.After(allEvents[j].Timestamp)
+		})
+	case "rig":
+		sort.Slice(allEvents, func(i, j int) bool {
+			if allEvents[i].Rig != allEvents[j].Rig {
+				return allEvents[i].Rig < allEvents[j].Rig
+			}
+			return allEvents[i].Timestamp.After(allEvents[j].Timestamp)
+		})
+	default: // time
+		sort.Slice(allEvents, func(i, j int) bool {
+			return allEvents[i].Timestamp.After(allEvents[j].Timestamp)
+		})
+	}
 
 	if len(allEvents) > 500 {
 		allEvents = allEvents[:500]

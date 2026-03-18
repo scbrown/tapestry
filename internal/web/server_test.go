@@ -14429,3 +14429,118 @@ func TestWIPPage_SortOptions(t *testing.T) {
 		})
 	}
 }
+
+func TestOverflowPage_SortOptions(t *testing.T) {
+	sorts := []string{"", "score", "name", "open", "blocked"}
+	for _, s := range sorts {
+		t.Run("sort="+s, func(t *testing.T) {
+			srv := New(nil)
+			url := "/overflow"
+			if s != "" {
+				url += "?sort=" + s
+			}
+			req := httptest.NewRequest("GET", url, nil)
+			w := httptest.NewRecorder()
+			srv.ServeHTTP(w, req)
+			if w.Code != http.StatusOK {
+				t.Fatalf("GET %s status = %d, want %d", url, w.Code, http.StatusOK)
+			}
+			body := w.Body.String()
+			if !strings.Contains(body, "By score") {
+				t.Error("expected sort options in page")
+			}
+		})
+	}
+}
+
+func TestLabelMatrixPage_SortOptions(t *testing.T) {
+	sorts := []string{"", "total", "name", "open", "closed"}
+	for _, s := range sorts {
+		t.Run("sort="+s, func(t *testing.T) {
+			srv := New(nil)
+			url := "/label-matrix"
+			if s != "" {
+				url += "?sort=" + s
+			}
+			req := httptest.NewRequest("GET", url, nil)
+			w := httptest.NewRecorder()
+			srv.ServeHTTP(w, req)
+			if w.Code != http.StatusOK {
+				t.Fatalf("GET %s status = %d, want %d", url, w.Code, http.StatusOK)
+			}
+			body := w.Body.String()
+			if !strings.Contains(body, "By total") {
+				t.Error("expected sort options in page")
+			}
+		})
+	}
+}
+
+func TestVelocityPage_SortOptions(t *testing.T) {
+	sorts := []string{"", "closed", "name", "created", "net"}
+	for _, s := range sorts {
+		t.Run("sort="+s, func(t *testing.T) {
+			srv := New(nil)
+			url := "/velocity"
+			if s != "" {
+				url += "?sort=" + s
+			}
+			req := httptest.NewRequest("GET", url, nil)
+			w := httptest.NewRecorder()
+			srv.ServeHTTP(w, req)
+			if w.Code != http.StatusOK {
+				t.Fatalf("GET %s status = %d, want %d", url, w.Code, http.StatusOK)
+			}
+			body := w.Body.String()
+			if !strings.Contains(body, "By closed") {
+				t.Error("expected sort options in page")
+			}
+		})
+	}
+}
+
+func TestAuditLogPage_SortOptions(t *testing.T) {
+	sorts := []string{"", "time", "kind", "rig"}
+	for _, s := range sorts {
+		t.Run("sort="+s, func(t *testing.T) {
+			srv := New(nil)
+			url := "/audit-log"
+			if s != "" {
+				url += "?sort=" + s
+			}
+			req := httptest.NewRequest("GET", url, nil)
+			w := httptest.NewRecorder()
+			srv.ServeHTTP(w, req)
+			if w.Code != http.StatusOK {
+				t.Fatalf("GET %s status = %d, want %d", url, w.Code, http.StatusOK)
+			}
+			body := w.Body.String()
+			if !strings.Contains(body, "By time") {
+				t.Error("expected sort options in page")
+			}
+		})
+	}
+}
+
+func TestPhasePage_SortOptions(t *testing.T) {
+	sorts := []string{"", "priority", "completion", "name", "total"}
+	for _, s := range sorts {
+		t.Run("sort="+s, func(t *testing.T) {
+			srv := New(nil)
+			url := "/phase"
+			if s != "" {
+				url += "?sort=" + s
+			}
+			req := httptest.NewRequest("GET", url, nil)
+			w := httptest.NewRecorder()
+			srv.ServeHTTP(w, req)
+			if w.Code != http.StatusOK {
+				t.Fatalf("GET %s status = %d, want %d", url, w.Code, http.StatusOK)
+			}
+			body := w.Body.String()
+			if !strings.Contains(body, "By priority") {
+				t.Error("expected sort options in page")
+			}
+		})
+	}
+}

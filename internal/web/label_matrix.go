@@ -30,6 +30,7 @@ type labelMatrixData struct {
 
 	Rigs      []string
 	FilterRig string
+	SortBy    string
 	Err       string
 }
 
@@ -122,9 +123,36 @@ func (s *Server) handleLabelMatrix(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	sort.Slice(data.Rows, func(i, j int) bool {
-		return data.Rows[i].Total > data.Rows[j].Total
-	})
+	sortBy := r.URL.Query().Get("sort")
+	if sortBy == "" {
+		sortBy = "total"
+	}
+	data.SortBy = sortBy
+
+	switch sortBy {
+	case "name":
+		sort.Slice(data.Rows, func(i, j int) bool {
+			return data.Rows[i].Label < data.Rows[j].Label
+		})
+	case "open":
+		sort.Slice(data.Rows, func(i, j int) bool {
+			if data.Rows[i].Open != data.Rows[j].Open {
+				return data.Rows[i].Open > data.Rows[j].Open
+			}
+			return data.Rows[i].Total > data.Rows[j].Total
+		})
+	case "closed":
+		sort.Slice(data.Rows, func(i, j int) bool {
+			if data.Rows[i].Closed != data.Rows[j].Closed {
+				return data.Rows[i].Closed > data.Rows[j].Closed
+			}
+			return data.Rows[i].Total > data.Rows[j].Total
+		})
+	default: // total
+		sort.Slice(data.Rows, func(i, j int) bool {
+			return data.Rows[i].Total > data.Rows[j].Total
+		})
+	}
 
 	if len(data.Rows) > 50 {
 		data.Rows = data.Rows[:50]
