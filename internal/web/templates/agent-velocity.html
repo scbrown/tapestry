@@ -13,6 +13,13 @@
   </div>
   {{end}}
 
+  <div class="filters">
+    <a href="/agent-velocity{{if .FilterRig}}?rig={{.FilterRig}}{{end}}" {{if eq .SortBy "total"}}class="active"{{end}}>By total</a>
+    <a href="/agent-velocity?sort=name{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" {{if eq .SortBy "name"}}class="active"{{end}}>By name</a>
+    <a href="/agent-velocity?sort=trend{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" {{if eq .SortBy "trend"}}class="active"{{end}}>By trend</a>
+    <a href="/agent-velocity?sort=recent{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" {{if eq .SortBy "recent"}}class="active"{{end}}>By recent</a>
+  </div>
+
   {{if .Agents}}
   <section class="backlog-card">
     <div class="table-wrap">

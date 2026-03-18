@@ -29,6 +29,7 @@ type wipData struct {
 	OverCount int // agents over the limit
 	AvgWIP    float64
 	MaxWIP    int
+	SortBy    string
 
 	// Status distribution
 	TotalInProgress int
@@ -128,9 +129,36 @@ func (s *Server) handleWIP(w http.ResponseWriter, r *http.Request) {
 		data.Agents = append(data.Agents, *a)
 	}
 
-	sort.Slice(data.Agents, func(i, j int) bool {
-		return data.Agents[i].Total > data.Agents[j].Total
-	})
+	sortBy := r.URL.Query().Get("sort")
+	if sortBy == "" {
+		sortBy = "total"
+	}
+	data.SortBy = sortBy
+
+	switch sortBy {
+	case "name":
+		sort.Slice(data.Agents, func(i, j int) bool {
+			return data.Agents[i].Name < data.Agents[j].Name
+		})
+	case "blocked":
+		sort.Slice(data.Agents, func(i, j int) bool {
+			if data.Agents[i].Blocked != data.Agents[j].Blocked {
+				return data.Agents[i].Blocked > data.Agents[j].Blocked
+			}
+			return data.Agents[i].Total > data.Agents[j].Total
+		})
+	case "progress":
+		sort.Slice(data.Agents, func(i, j int) bool {
+			if data.Agents[i].InProgress != data.Agents[j].InProgress {
+				return data.Agents[i].InProgress > data.Agents[j].InProgress
+			}
+			return data.Agents[i].Total > data.Agents[j].Total
+		})
+	default: // total
+		sort.Slice(data.Agents, func(i, j int) bool {
+			return data.Agents[i].Total > data.Agents[j].Total
+		})
+	}
 
 	if len(data.Agents) > 0 {
 		total := 0

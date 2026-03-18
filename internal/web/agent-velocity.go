@@ -23,6 +23,7 @@ type agentVelocityData struct {
 	WeekLabels  [4]string
 	Rigs        []string
 	FilterRig   string
+	SortBy      string
 }
 
 func (s *Server) handleAgentVelocity(w http.ResponseWriter, r *http.Request) {
@@ -133,9 +134,39 @@ func (s *Server) handleAgentVelocity(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
-	sort.Slice(data.Agents, func(i, j int) bool {
-		return data.Agents[i].Total > data.Agents[j].Total
-	})
+	sortBy := r.URL.Query().Get("sort")
+	if sortBy == "" {
+		sortBy = "total"
+	}
+	data.SortBy = sortBy
+
+	switch sortBy {
+	case "name":
+		sort.Slice(data.Agents, func(i, j int) bool {
+			return data.Agents[i].Name < data.Agents[j].Name
+		})
+	case "trend":
+		sort.Slice(data.Agents, func(i, j int) bool {
+			rank := map[string]int{"up": 0, "flat": 1, "down": 2}
+			if rank[data.Agents[i].Trend] != rank[data.Agents[j].Trend] {
+				return rank[data.Agents[i].Trend] < rank[data.Agents[j].Trend]
+			}
+			return data.Agents[i].Total > data.Agents[j].Total
+		})
+	case "recent":
+		sort.Slice(data.Agents, func(i, j int) bool {
+			ri := data.Agents[i].Weeks[0] + data.Agents[i].Weeks[1]
+			rj := data.Agents[j].Weeks[0] + data.Agents[j].Weeks[1]
+			if ri != rj {
+				return ri > rj
+			}
+			return data.Agents[i].Total > data.Agents[j].Total
+		})
+	default: // total
+		sort.Slice(data.Agents, func(i, j int) bool {
+			return data.Agents[i].Total > data.Agents[j].Total
+		})
+	}
 
 	s.render(w, r, "agent-velocity", data)
 }

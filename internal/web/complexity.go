@@ -37,6 +37,7 @@ type complexityData struct {
 
 	Rigs      []string
 	FilterRig string
+	SortBy    string
 	Err       string
 }
 
@@ -149,9 +150,39 @@ func (s *Server) handleComplexity(w http.ResponseWriter, r *http.Request) {
 	}
 	wg.Wait()
 
-	sort.Slice(data.Items, func(i, j int) bool {
-		return data.Items[i].Score > data.Items[j].Score
-	})
+	sortBy := r.URL.Query().Get("sort")
+	if sortBy == "" {
+		sortBy = "score"
+	}
+	data.SortBy = sortBy
+
+	switch sortBy {
+	case "priority":
+		sort.Slice(data.Items, func(i, j int) bool {
+			if data.Items[i].Priority != data.Items[j].Priority {
+				return data.Items[i].Priority < data.Items[j].Priority
+			}
+			return data.Items[i].Score > data.Items[j].Score
+		})
+	case "comments":
+		sort.Slice(data.Items, func(i, j int) bool {
+			if data.Items[i].CommentCount != data.Items[j].CommentCount {
+				return data.Items[i].CommentCount > data.Items[j].CommentCount
+			}
+			return data.Items[i].Score > data.Items[j].Score
+		})
+	case "deps":
+		sort.Slice(data.Items, func(i, j int) bool {
+			if data.Items[i].DepCount != data.Items[j].DepCount {
+				return data.Items[i].DepCount > data.Items[j].DepCount
+			}
+			return data.Items[i].Score > data.Items[j].Score
+		})
+	default: // score
+		sort.Slice(data.Items, func(i, j int) bool {
+			return data.Items[i].Score > data.Items[j].Score
+		})
+	}
 
 	if len(data.Items) > 50 {
 		data.Items = data.Items[:50]

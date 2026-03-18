@@ -34,6 +34,13 @@
     </section>
   </div>
 
+  <div class="filters">
+    <a href="/complexity{{if .FilterRig}}?rig={{.FilterRig}}{{end}}" {{if eq .SortBy "score"}}class="active"{{end}}>By score</a>
+    <a href="/complexity?sort=priority{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" {{if eq .SortBy "priority"}}class="active"{{end}}>By priority</a>
+    <a href="/complexity?sort=comments{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" {{if eq .SortBy "comments"}}class="active"{{end}}>By comments</a>
+    <a href="/complexity?sort=deps{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" {{if eq .SortBy "deps"}}class="active"{{end}}>By deps</a>
+  </div>
+
   {{if .Items}}
   <div class="table-wrap">
   <table class="bead-table">

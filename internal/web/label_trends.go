@@ -32,6 +32,7 @@ type labelTrendsData struct {
 
 	FilterRig string
 	Rigs      []string
+	SortBy    string
 	Err       string
 }
 
@@ -159,10 +160,37 @@ func (s *Server) handleLabelTrends(w http.ResponseWriter, r *http.Request) {
 		data.Trends = append(data.Trends, trend)
 	}
 
-	// Sort by total descending
-	sort.Slice(data.Trends, func(i, j int) bool {
-		return data.Trends[i].Total > data.Trends[j].Total
-	})
+	sortBy := r.URL.Query().Get("sort")
+	if sortBy == "" {
+		sortBy = "total"
+	}
+	data.SortBy = sortBy
+
+	switch sortBy {
+	case "name":
+		sort.Slice(data.Trends, func(i, j int) bool {
+			return data.Trends[i].Label < data.Trends[j].Label
+		})
+	case "delta":
+		sort.Slice(data.Trends, func(i, j int) bool {
+			if data.Trends[i].Delta != data.Trends[j].Delta {
+				return data.Trends[i].Delta > data.Trends[j].Delta
+			}
+			return data.Trends[i].Total > data.Trends[j].Total
+		})
+	case "direction":
+		sort.Slice(data.Trends, func(i, j int) bool {
+			rank := map[string]int{"up": 0, "flat": 1, "down": 2}
+			if rank[data.Trends[i].Direction] != rank[data.Trends[j].Direction] {
+				return rank[data.Trends[i].Direction] < rank[data.Trends[j].Direction]
+			}
+			return data.Trends[i].Total > data.Trends[j].Total
+		})
+	default: // total
+		sort.Slice(data.Trends, func(i, j int) bool {
+			return data.Trends[i].Total > data.Trends[j].Total
+		})
+	}
 
 	if len(data.Trends) > 30 {
 		data.Trends = data.Trends[:30]

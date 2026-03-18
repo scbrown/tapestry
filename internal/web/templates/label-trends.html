@@ -14,6 +14,13 @@
   <div class="error">{{.Err}}</div>
   {{else}}
 
+  <div class="filters">
+    <a href="/label-trends{{if .FilterRig}}?rig={{.FilterRig}}{{end}}" {{if eq .SortBy "total"}}class="active"{{end}}>By total</a>
+    <a href="/label-trends?sort=name{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" {{if eq .SortBy "name"}}class="active"{{end}}>By name</a>
+    <a href="/label-trends?sort=delta{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" {{if eq .SortBy "delta"}}class="active"{{end}}>By delta</a>
+    <a href="/label-trends?sort=direction{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" {{if eq .SortBy "direction"}}class="active"{{end}}>By direction</a>
+  </div>
+
   {{if .Trends}}
   <div class="table-wrap">
   <table class="bead-table">

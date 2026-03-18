@@ -23,6 +23,7 @@ type tagVelocityData struct {
 	TotalOpen   int
 	FilterRig   string
 	Rigs        []string
+	SortBy      string
 }
 
 func (s *Server) handleTagVelocity(w http.ResponseWriter, r *http.Request) {
@@ -127,10 +128,36 @@ func (s *Server) handleTagVelocity(w http.ResponseWriter, r *http.Request) {
 		data.TotalOpen += stats.open
 	}
 
-	// Sort by net change ascending (most shrinking first)
-	sort.Slice(data.Labels, func(i, j int) bool {
-		return data.Labels[i].Net < data.Labels[j].Net
-	})
+	sortBy := r.URL.Query().Get("sort")
+	if sortBy == "" {
+		sortBy = "net"
+	}
+	data.SortBy = sortBy
+
+	switch sortBy {
+	case "name":
+		sort.Slice(data.Labels, func(i, j int) bool {
+			return data.Labels[i].Label < data.Labels[j].Label
+		})
+	case "open":
+		sort.Slice(data.Labels, func(i, j int) bool {
+			if data.Labels[i].Open != data.Labels[j].Open {
+				return data.Labels[i].Open > data.Labels[j].Open
+			}
+			return data.Labels[i].Net < data.Labels[j].Net
+		})
+	case "closed":
+		sort.Slice(data.Labels, func(i, j int) bool {
+			if data.Labels[i].Closed30 != data.Labels[j].Closed30 {
+				return data.Labels[i].Closed30 > data.Labels[j].Closed30
+			}
+			return data.Labels[i].Net < data.Labels[j].Net
+		})
+	default: // net
+		sort.Slice(data.Labels, func(i, j int) bool {
+			return data.Labels[i].Net < data.Labels[j].Net
+		})
+	}
 
 	s.render(w, r, "tag-velocity", data)
 }
