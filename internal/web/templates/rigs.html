@@ -1,7 +1,7 @@
 {{define "title"}}Rigs{{end}}
 
 {{define "content"}}
-<div class="rigs-view" hx-get="/rigs" hx-trigger="every 120s" hx-select=".rigs-view" hx-swap="outerHTML">
+<div class="rigs-view" hx-get="/rigs{{if ne .SortBy "active"}}?sort={{.SortBy}}{{end}}" hx-trigger="every 120s" hx-select=".rigs-view" hx-swap="outerHTML">
   <h1>Rigs <time class="text-dim">{{.GeneratedAt.Format "Jan 02, 2006 15:04"}}</time></h1>
 
   {{if .Err}}
@@ -9,6 +9,13 @@
   {{else}}
 
   <div class="results-meta">{{.GrandTotal}} beads across {{len .Rows}} rigs</div>
+
+  <div class="filters">
+    <a href="/rigs" {{if eq .SortBy "active"}}class="active"{{end}}>By active</a>
+    <a href="/rigs?sort=total" {{if eq .SortBy "total"}}class="active"{{end}}>By total</a>
+    <a href="/rigs?sort=blocked" {{if eq .SortBy "blocked"}}class="active"{{end}}>By blocked</a>
+    <a href="/rigs?sort=name" {{if eq .SortBy "name"}}class="active"{{end}}>By name</a>
+  </div>
 
   {{if .Rows}}
   <div class="priority-bars">

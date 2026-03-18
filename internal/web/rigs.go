@@ -22,6 +22,7 @@ type rigsData struct {
 	Rows        []rigRow
 	GrandTotal  int
 	GeneratedAt time.Time
+	SortBy      string
 	Err         string
 }
 
@@ -89,15 +90,38 @@ func (s *Server) handleRigs(w http.ResponseWriter, r *http.Request) {
 		grandTotal += row.Total
 	}
 
-	// Sort by active work (open + in_progress) descending
-	sort.Slice(rows, func(i, j int) bool {
-		ai := rows[i].Open + rows[i].Progress + rows[i].Blocked
-		aj := rows[j].Open + rows[j].Progress + rows[j].Blocked
-		if ai != aj {
-			return ai > aj
-		}
-		return rows[i].Total > rows[j].Total
-	})
+	sortBy := r.URL.Query().Get("sort")
+	if sortBy == "" {
+		sortBy = "active"
+	}
+	data.SortBy = sortBy
+
+	switch sortBy {
+	case "name":
+		sort.Slice(rows, func(i, j int) bool {
+			return rows[i].Name < rows[j].Name
+		})
+	case "total":
+		sort.Slice(rows, func(i, j int) bool {
+			return rows[i].Total > rows[j].Total
+		})
+	case "blocked":
+		sort.Slice(rows, func(i, j int) bool {
+			if rows[i].Blocked != rows[j].Blocked {
+				return rows[i].Blocked > rows[j].Blocked
+			}
+			return rows[i].Total > rows[j].Total
+		})
+	default: // "active"
+		sort.Slice(rows, func(i, j int) bool {
+			ai := rows[i].Open + rows[i].Progress + rows[i].Blocked
+			aj := rows[j].Open + rows[j].Progress + rows[j].Blocked
+			if ai != aj {
+				return ai > aj
+			}
+			return rows[i].Total > rows[j].Total
+		})
+	}
 
 	data.Rows = rows
 	data.GrandTotal = grandTotal

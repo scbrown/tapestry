@@ -13559,3 +13559,68 @@ func TestSLAPage_SortOptions(t *testing.T) {
 		})
 	}
 }
+
+func TestCommentsPage_SortOptions(t *testing.T) {
+	sorts := []string{"", "date", "author", "rig"}
+	for _, s := range sorts {
+		t.Run("sort="+s, func(t *testing.T) {
+			srv := New(nil)
+			url := "/comments"
+			if s != "" {
+				url += "?sort=" + s
+			}
+			req := httptest.NewRequest("GET", url, nil)
+			w := httptest.NewRecorder()
+			srv.ServeHTTP(w, req)
+			if w.Code != http.StatusOK {
+				t.Fatalf("GET %s status = %d, want %d", url, w.Code, http.StatusOK)
+			}
+			body := w.Body.String()
+			if !strings.Contains(body, "By date") {
+				t.Error("expected sort options in page")
+			}
+		})
+	}
+}
+
+func TestDuplicatesPage_SortOptions(t *testing.T) {
+	sorts := []string{"", "count", "name", "priority"}
+	for _, s := range sorts {
+		t.Run("sort="+s, func(t *testing.T) {
+			srv := New(nil)
+			url := "/duplicates"
+			if s != "" {
+				url += "?sort=" + s
+			}
+			req := httptest.NewRequest("GET", url, nil)
+			w := httptest.NewRecorder()
+			srv.ServeHTTP(w, req)
+			if w.Code != http.StatusOK {
+				t.Fatalf("GET %s status = %d, want %d", url, w.Code, http.StatusOK)
+			}
+		})
+	}
+}
+
+func TestRigsPage_SortOptions(t *testing.T) {
+	sorts := []string{"", "active", "total", "blocked", "name"}
+	for _, s := range sorts {
+		t.Run("sort="+s, func(t *testing.T) {
+			srv := New(nil)
+			url := "/rigs"
+			if s != "" {
+				url += "?sort=" + s
+			}
+			req := httptest.NewRequest("GET", url, nil)
+			w := httptest.NewRecorder()
+			srv.ServeHTTP(w, req)
+			if w.Code != http.StatusOK {
+				t.Fatalf("GET %s status = %d, want %d", url, w.Code, http.StatusOK)
+			}
+			body := w.Body.String()
+			if !strings.Contains(body, "By active") {
+				t.Error("expected sort options in page")
+			}
+		})
+	}
+}

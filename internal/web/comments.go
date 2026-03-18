@@ -26,6 +26,7 @@ type commentsData struct {
 	FilterAuthor string   // currently selected author filter
 	Rigs         []string
 	FilterRig    string
+	SortBy       string
 }
 
 func (s *Server) handleComments(w http.ResponseWriter, r *http.Request) {
@@ -98,9 +99,32 @@ func (s *Server) handleComments(w http.ResponseWriter, r *http.Request) {
 		data.Comments = filtered
 	}
 
-	sort.Slice(data.Comments, func(i, j int) bool {
-		return data.Comments[i].Created.After(data.Comments[j].Created)
-	})
+	sortBy := r.URL.Query().Get("sort")
+	if sortBy == "" {
+		sortBy = "date"
+	}
+	data.SortBy = sortBy
+
+	switch sortBy {
+	case "author":
+		sort.Slice(data.Comments, func(i, j int) bool {
+			if data.Comments[i].Author != data.Comments[j].Author {
+				return data.Comments[i].Author < data.Comments[j].Author
+			}
+			return data.Comments[i].Created.After(data.Comments[j].Created)
+		})
+	case "rig":
+		sort.Slice(data.Comments, func(i, j int) bool {
+			if data.Comments[i].Rig != data.Comments[j].Rig {
+				return data.Comments[i].Rig < data.Comments[j].Rig
+			}
+			return data.Comments[i].Created.After(data.Comments[j].Created)
+		})
+	default: // "date"
+		sort.Slice(data.Comments, func(i, j int) bool {
+			return data.Comments[i].Created.After(data.Comments[j].Created)
+		})
+	}
 
 	// Cap at 100
 	if len(data.Comments) > 100 {

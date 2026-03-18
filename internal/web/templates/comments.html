@@ -28,6 +28,12 @@
   </div>
   {{end}}
 
+  <div class="filters">
+    <a href="/comments?sort=date" {{if eq .SortBy "date"}}class="active"{{end}}>By date</a>
+    <a href="/comments?sort=author" {{if eq .SortBy "author"}}class="active"{{end}}>By author</a>
+    <a href="/comments?sort=rig" {{if eq .SortBy "rig"}}class="active"{{end}}>By rig</a>
+  </div>
+
   {{if .Comments}}
   <section class="backlog-card">
     <div class="table-wrap">

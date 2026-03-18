@@ -24,6 +24,7 @@ type duplicatesData struct {
 	TotalGroups int
 	Rigs        []string
 	FilterRig   string
+	SortBy      string
 	Assignees   []string
 }
 
@@ -129,10 +130,41 @@ func (s *Server) handleDuplicates(w http.ResponseWriter, r *http.Request) {
 		data.TotalDups += len(issues)
 	}
 
-	// Sort groups by count descending
-	sort.Slice(data.Groups, func(i, j int) bool {
-		return data.Groups[i].Count > data.Groups[j].Count
-	})
+	sortBy := r.URL.Query().Get("sort")
+	if sortBy == "" {
+		sortBy = "count"
+	}
+	data.SortBy = sortBy
+
+	switch sortBy {
+	case "name":
+		sort.Slice(data.Groups, func(i, j int) bool {
+			return data.Groups[i].Key < data.Groups[j].Key
+		})
+	case "priority":
+		sort.Slice(data.Groups, func(i, j int) bool {
+			// Sort by highest priority (lowest number) in group
+			pi, pj := 99, 99
+			for _, iss := range data.Groups[i].Issues {
+				if iss.Priority < pi {
+					pi = iss.Priority
+				}
+			}
+			for _, iss := range data.Groups[j].Issues {
+				if iss.Priority < pj {
+					pj = iss.Priority
+				}
+			}
+			if pi != pj {
+				return pi < pj
+			}
+			return data.Groups[i].Count > data.Groups[j].Count
+		})
+	default: // "count"
+		sort.Slice(data.Groups, func(i, j int) bool {
+			return data.Groups[i].Count > data.Groups[j].Count
+		})
+	}
 
 	data.TotalGroups = len(data.Groups)
 
