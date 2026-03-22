@@ -17,6 +17,13 @@
   </div>
   {{end}}
 
+  <div class="filters">
+    <a href="/assignments{{if .FilterRig}}?rig={{.FilterRig}}{{end}}" {{if eq .SortBy "count"}}class="active"{{end}}>By count</a>
+    <a href="/assignments?sort=name{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" {{if eq .SortBy "name"}}class="active"{{end}}>By name</a>
+    <a href="/assignments?sort=age{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" {{if eq .SortBy "age"}}class="active"{{end}}>By age</a>
+    <a href="/assignments?sort=status{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" {{if eq .SortBy "status"}}class="active"{{end}}>By status</a>
+  </div>
+
   {{/* ── Agent Sections ── */}}
   {{range .Agents}}
   <details class="assign-agent" open>

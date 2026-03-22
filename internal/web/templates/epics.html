@@ -12,6 +12,14 @@
   </div>
   {{end}}
 
+  <div class="filters">
+    <a href="/epics{{if .FilterRig}}?rig={{.FilterRig}}{{end}}" {{if eq .SortBy "priority"}}class="active"{{end}}>By priority</a>
+    <a href="/epics?sort=updated{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" {{if eq .SortBy "updated"}}class="active"{{end}}>By updated</a>
+    <a href="/epics?sort=created{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" {{if eq .SortBy "created"}}class="active"{{end}}>By created</a>
+    <a href="/epics?sort=status{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" {{if eq .SortBy "status"}}class="active"{{end}}>By status</a>
+    <a href="/epics?sort=progress{{if .FilterRig}}&rig={{.FilterRig}}{{end}}" {{if eq .SortBy "progress"}}class="active"{{end}}>By progress</a>
+  </div>
+
   {{if .Epics}}
   <div style="margin-bottom:0.5rem">
     <label><input type="checkbox" id="show-closed-epics" onchange="toggleClosedEpics()"> Show closed</label>

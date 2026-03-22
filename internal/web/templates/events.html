@@ -19,6 +19,13 @@
   </div>
   {{end}}
 
+  <div class="filters">
+    <a href="/events{{if .TypeFilter}}?type={{.TypeFilter}}{{if .RigFilter}}&rig={{.RigFilter}}{{end}}{{else}}{{if .RigFilter}}?rig={{.RigFilter}}{{end}}{{end}}" {{if eq .SortBy "newest"}}class="active"{{end}}>Newest</a>
+    <a href="/events?sort=oldest{{if .TypeFilter}}&type={{.TypeFilter}}{{end}}{{if .RigFilter}}&rig={{.RigFilter}}{{end}}" {{if eq .SortBy "oldest"}}class="active"{{end}}>Oldest</a>
+    <a href="/events?sort=type{{if .TypeFilter}}&type={{.TypeFilter}}{{end}}{{if .RigFilter}}&rig={{.RigFilter}}{{end}}" {{if eq .SortBy "type"}}class="active"{{end}}>By type</a>
+    <a href="/events?sort=actor{{if .TypeFilter}}&type={{.TypeFilter}}{{end}}{{if .RigFilter}}&rig={{.RigFilter}}{{end}}" {{if eq .SortBy "actor"}}class="active"{{end}}>By actor</a>
+  </div>
+
   {{if .ActorFilter}}
   <p class="filter-note">Filtered by actor: <strong>{{.ActorFilter}}</strong> <a href="/events{{if .TypeFilter}}?type={{.TypeFilter}}{{if .RigFilter}}&rig={{.RigFilter}}{{end}}{{else}}{{if .RigFilter}}?rig={{.RigFilter}}{{end}}{{end}}">[clear]</a></p>
   {{end}}

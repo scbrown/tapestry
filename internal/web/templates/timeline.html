@@ -28,6 +28,13 @@
     <a href="/timeline?window={{.Window}}{{if .FilterRig}}&rig={{.FilterRig}}{{end}}&type=status_change" style="padding:0.3rem 0.75rem;border-radius:4px;text-decoration:none;{{if eq .FilterType "status_change"}}background:var(--yellow);color:var(--background){{else}}background:var(--current-line);color:var(--yellow){{end}}">status {{with index .TypeCounts "status_change"}}<small>({{.}})</small>{{end}}</a>
 </div>
 
+<div class="filters">
+    <a href="/timeline?window={{.Window}}{{if .FilterRig}}&rig={{.FilterRig}}{{end}}{{if .FilterType}}&type={{.FilterType}}{{end}}" {{if eq .SortBy "newest"}}class="active"{{end}}>Newest</a>
+    <a href="/timeline?sort=oldest&window={{.Window}}{{if .FilterRig}}&rig={{.FilterRig}}{{end}}{{if .FilterType}}&type={{.FilterType}}{{end}}" {{if eq .SortBy "oldest"}}class="active"{{end}}>Oldest</a>
+    <a href="/timeline?sort=type&window={{.Window}}{{if .FilterRig}}&rig={{.FilterRig}}{{end}}{{if .FilterType}}&type={{.FilterType}}{{end}}" {{if eq .SortBy "type"}}class="active"{{end}}>By type</a>
+    <a href="/timeline?sort=priority&window={{.Window}}{{if .FilterRig}}&rig={{.FilterRig}}{{end}}{{if .FilterType}}&type={{.FilterType}}{{end}}" {{if eq .SortBy "priority"}}class="active"{{end}}>By priority</a>
+</div>
+
 {{if .Err}}<p class="error">{{.Err}}</p>{{end}}
 
 {{if .Events}}

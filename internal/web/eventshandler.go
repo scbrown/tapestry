@@ -18,6 +18,7 @@ type eventsPageData struct {
 	ActorFilter string
 	RigFilter   string
 	Total       int
+	SortBy      string
 	Err         string
 }
 
@@ -81,6 +82,38 @@ func (s *Server) handleEvents(w http.ResponseWriter, r *http.Request) {
 		After: time.Now().Add(-7 * 24 * time.Hour), // last 7 days
 		Limit: 200,
 	})
+
+	sortBy := r.URL.Query().Get("sort")
+	if sortBy == "" {
+		sortBy = "newest"
+	}
+	data.SortBy = sortBy
+
+	switch sortBy {
+	case "oldest":
+		sort.Slice(filtered, func(i, j int) bool {
+			return filtered[i].Timestamp.Before(filtered[j].Timestamp)
+		})
+	case "type":
+		sort.Slice(filtered, func(i, j int) bool {
+			if filtered[i].Type != filtered[j].Type {
+				return filtered[i].Type < filtered[j].Type
+			}
+			return filtered[i].Timestamp.After(filtered[j].Timestamp)
+		})
+	case "actor":
+		sort.Slice(filtered, func(i, j int) bool {
+			if filtered[i].Actor != filtered[j].Actor {
+				return filtered[i].Actor < filtered[j].Actor
+			}
+			return filtered[i].Timestamp.After(filtered[j].Timestamp)
+		})
+	default: // newest
+		sort.Slice(filtered, func(i, j int) bool {
+			return filtered[i].Timestamp.After(filtered[j].Timestamp)
+		})
+	}
+
 	data.Events = filtered
 
 	s.render(w, r, "events", data)

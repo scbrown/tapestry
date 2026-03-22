@@ -19,6 +19,7 @@ type commitsData struct {
 	LinkedCount  int
 	FilterRepo   string
 	Repos        []string
+	SortBy       string
 }
 
 type commitRow struct {
@@ -131,9 +132,36 @@ func (s *Server) handleCommits(w http.ResponseWriter, r *http.Request) {
 	}
 	wg.Wait()
 
-	sort.Slice(allCommits, func(i, j int) bool {
-		return allCommits[i].Timestamp.After(allCommits[j].Timestamp)
-	})
+	sortBy := r.URL.Query().Get("sort")
+	if sortBy == "" {
+		sortBy = "newest"
+	}
+	data.SortBy = sortBy
+
+	switch sortBy {
+	case "oldest":
+		sort.Slice(allCommits, func(i, j int) bool {
+			return allCommits[i].Timestamp.Before(allCommits[j].Timestamp)
+		})
+	case "author":
+		sort.Slice(allCommits, func(i, j int) bool {
+			if allCommits[i].Author != allCommits[j].Author {
+				return allCommits[i].Author < allCommits[j].Author
+			}
+			return allCommits[i].Timestamp.After(allCommits[j].Timestamp)
+		})
+	case "repo":
+		sort.Slice(allCommits, func(i, j int) bool {
+			if allCommits[i].RepoName != allCommits[j].RepoName {
+				return allCommits[i].RepoName < allCommits[j].RepoName
+			}
+			return allCommits[i].Timestamp.After(allCommits[j].Timestamp)
+		})
+	default: // newest
+		sort.Slice(allCommits, func(i, j int) bool {
+			return allCommits[i].Timestamp.After(allCommits[j].Timestamp)
+		})
+	}
 
 	data.TotalCommits = len(allCommits)
 	for _, c := range allCommits {

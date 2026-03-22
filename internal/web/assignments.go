@@ -34,6 +34,7 @@ type assignmentsData struct {
 	Rigs        []string
 	FilterRig   string
 	Assignees   []string
+	SortBy      string
 	Err         string
 }
 
@@ -128,14 +129,35 @@ func (s *Server) handleAssignments(w http.ResponseWriter, r *http.Request) {
 	wg.Wait()
 
 	sort.Strings(data.Assignees)
-	// Sort beads within each agent by priority then age
+
+	sortBy := r.URL.Query().Get("sort")
+	if sortBy == "" {
+		sortBy = "count"
+	}
+	data.SortBy = sortBy
+
+	// Sort beads within each agent
 	sortBeads := func(beads []assignmentBead) {
-		sort.Slice(beads, func(i, j int) bool {
-			if beads[i].Priority != beads[j].Priority {
+		switch sortBy {
+		case "age":
+			sort.Slice(beads, func(i, j int) bool {
+				return beads[i].AgeDays > beads[j].AgeDays
+			})
+		case "status":
+			sort.Slice(beads, func(i, j int) bool {
+				if beads[i].Status != beads[j].Status {
+					return beads[i].Status < beads[j].Status
+				}
 				return beads[i].Priority < beads[j].Priority
-			}
-			return beads[i].AgeDays > beads[j].AgeDays
-		})
+			})
+		default: // priority (used for count and name sort too)
+			sort.Slice(beads, func(i, j int) bool {
+				if beads[i].Priority != beads[j].Priority {
+					return beads[i].Priority < beads[j].Priority
+				}
+				return beads[i].AgeDays > beads[j].AgeDays
+			})
+		}
 	}
 
 	var agents []agentAssignment
@@ -150,9 +172,16 @@ func (s *Server) handleAssignments(w http.ResponseWriter, r *http.Request) {
 		total += len(beads)
 	}
 
-	sort.Slice(agents, func(i, j int) bool {
-		return agents[i].Count > agents[j].Count
-	})
+	switch sortBy {
+	case "name":
+		sort.Slice(agents, func(i, j int) bool {
+			return agents[i].Name < agents[j].Name
+		})
+	default: // count
+		sort.Slice(agents, func(i, j int) bool {
+			return agents[i].Count > agents[j].Count
+		})
+	}
 
 	sortBeads(unassigned)
 	total += len(unassigned)

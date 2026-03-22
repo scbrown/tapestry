@@ -40,6 +40,7 @@ type changelogData struct {
 	QNoType        string // query string without type param
 	QNoPriority    string // query string without priority param
 	QAll           string // query string with all params
+	SortBy         string
 	Err            string
 }
 
@@ -177,16 +178,45 @@ func (s *Server) handleChangelog(w http.ResponseWriter, r *http.Request) {
 		data.TotalClosed++
 	}
 
+	sortBy := r.URL.Query().Get("sort")
+	if sortBy == "" {
+		sortBy = "priority"
+	}
+	data.SortBy = sortBy
+
 	// Sort weeks by start date descending
 	weeks := make([]changelogWeek, 0, len(weekMap))
 	for _, w := range weekMap {
-		// Sort items within week by priority then title
-		sort.Slice(w.Items, func(i, j int) bool {
-			if w.Items[i].Issue.Priority != w.Items[j].Issue.Priority {
+		switch sortBy {
+		case "type":
+			sort.Slice(w.Items, func(i, j int) bool {
+				if w.Items[i].Issue.Type != w.Items[j].Issue.Type {
+					return w.Items[i].Issue.Type < w.Items[j].Issue.Type
+				}
 				return w.Items[i].Issue.Priority < w.Items[j].Issue.Priority
-			}
-			return w.Items[i].Issue.Title < w.Items[j].Issue.Title
-		})
+			})
+		case "assignee":
+			sort.Slice(w.Items, func(i, j int) bool {
+				if w.Items[i].Issue.Assignee != w.Items[j].Issue.Assignee {
+					return w.Items[i].Issue.Assignee < w.Items[j].Issue.Assignee
+				}
+				return w.Items[i].Issue.Priority < w.Items[j].Issue.Priority
+			})
+		case "rig":
+			sort.Slice(w.Items, func(i, j int) bool {
+				if w.Items[i].Rig != w.Items[j].Rig {
+					return w.Items[i].Rig < w.Items[j].Rig
+				}
+				return w.Items[i].Issue.Priority < w.Items[j].Issue.Priority
+			})
+		default: // priority
+			sort.Slice(w.Items, func(i, j int) bool {
+				if w.Items[i].Issue.Priority != w.Items[j].Issue.Priority {
+					return w.Items[i].Issue.Priority < w.Items[j].Issue.Priority
+				}
+				return w.Items[i].Issue.Title < w.Items[j].Issue.Title
+			})
+		}
 		weeks = append(weeks, *w)
 	}
 	sort.Slice(weeks, func(i, j int) bool {

@@ -30,6 +30,13 @@
     <a href="/changelog{{changelogQ .FilterRig .FilterType "4"}}" class="badge {{if eq .FilterPriority "4"}}filter-active{{end}}"><span class="priority-badge p4">P4</span></a>
 </div>
 
+<div class="filters">
+    <a href="/changelog{{.QAll}}" {{if eq .SortBy "priority"}}class="active"{{end}}>By priority</a>
+    <a href="/changelog{{.QAll}}{{if .QAll}}&{{else}}?{{end}}sort=type" {{if eq .SortBy "type"}}class="active"{{end}}>By type</a>
+    <a href="/changelog{{.QAll}}{{if .QAll}}&{{else}}?{{end}}sort=assignee" {{if eq .SortBy "assignee"}}class="active"{{end}}>By assignee</a>
+    <a href="/changelog{{.QAll}}{{if .QAll}}&{{else}}?{{end}}sort=rig" {{if eq .SortBy "rig"}}class="active"{{end}}>By rig</a>
+</div>
+
 {{if .Err}}<p class="error">{{.Err}}</p>{{end}}
 
 {{if .Weeks}}

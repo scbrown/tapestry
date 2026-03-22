@@ -12,6 +12,13 @@
   </div>
   {{end}}
 
+  <div class="filters">
+    <a href="/commits{{if .FilterRepo}}?repo={{.FilterRepo}}{{end}}" {{if eq .SortBy "newest"}}class="active"{{end}}>Newest</a>
+    <a href="/commits?sort=oldest{{if .FilterRepo}}&repo={{.FilterRepo}}{{end}}" {{if eq .SortBy "oldest"}}class="active"{{end}}>Oldest</a>
+    <a href="/commits?sort=author{{if .FilterRepo}}&repo={{.FilterRepo}}{{end}}" {{if eq .SortBy "author"}}class="active"{{end}}>By author</a>
+    <a href="/commits?sort=repo{{if .FilterRepo}}&repo={{.FilterRepo}}{{end}}" {{if eq .SortBy "repo"}}class="active"{{end}}>By repo</a>
+  </div>
+
   {{if .RecentLinked}}
   <section>
     <h2>Recent Bead-Linked Commits</h2>

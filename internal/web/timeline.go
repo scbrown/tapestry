@@ -31,6 +31,7 @@ type timelineData struct {
 	Total       int
 	Rigs        []string
 	TypeCounts  map[string]int // event type → count (before filtering)
+	SortBy      string
 	Err         string
 }
 
@@ -188,10 +189,36 @@ func (s *Server) handleTimeline(w http.ResponseWriter, r *http.Request) {
 	}
 	wg.Wait()
 
-	// Sort by time descending (most recent first)
-	sort.Slice(allEvents, func(i, j int) bool {
-		return allEvents[i].Time.After(allEvents[j].Time)
-	})
+	sortBy := r.URL.Query().Get("sort")
+	if sortBy == "" {
+		sortBy = "newest"
+	}
+	data.SortBy = sortBy
+
+	switch sortBy {
+	case "oldest":
+		sort.Slice(allEvents, func(i, j int) bool {
+			return allEvents[i].Time.Before(allEvents[j].Time)
+		})
+	case "type":
+		sort.Slice(allEvents, func(i, j int) bool {
+			if allEvents[i].Type != allEvents[j].Type {
+				return allEvents[i].Type < allEvents[j].Type
+			}
+			return allEvents[i].Time.After(allEvents[j].Time)
+		})
+	case "priority":
+		sort.Slice(allEvents, func(i, j int) bool {
+			if allEvents[i].Priority != allEvents[j].Priority {
+				return allEvents[i].Priority < allEvents[j].Priority
+			}
+			return allEvents[i].Time.After(allEvents[j].Time)
+		})
+	default: // newest
+		sort.Slice(allEvents, func(i, j int) bool {
+			return allEvents[i].Time.After(allEvents[j].Time)
+		})
+	}
 
 	// Build rig list from databases
 	var rigNames []string

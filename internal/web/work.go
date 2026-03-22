@@ -347,6 +347,7 @@ type epicsData struct {
 	Rigs      []string
 	FilterRig string
 	Assignees []string
+	SortBy    string
 }
 
 func (s *Server) handleEpics(w http.ResponseWriter, r *http.Request) {
@@ -457,12 +458,47 @@ func (s *Server) handleEpics(w http.ResponseWriter, r *http.Request) {
 		data.Epics = filtered
 	}
 
-	sort.Slice(data.Epics, func(i, j int) bool {
-		if data.Epics[i].Epic.Priority != data.Epics[j].Epic.Priority {
+	sortBy := r.URL.Query().Get("sort")
+	if sortBy == "" {
+		sortBy = "priority"
+	}
+	data.SortBy = sortBy
+
+	switch sortBy {
+	case "updated":
+		sort.Slice(data.Epics, func(i, j int) bool {
+			return data.Epics[i].Epic.UpdatedAt.After(data.Epics[j].Epic.UpdatedAt)
+		})
+	case "created":
+		sort.Slice(data.Epics, func(i, j int) bool {
+			return data.Epics[i].Epic.CreatedAt.After(data.Epics[j].Epic.CreatedAt)
+		})
+	case "status":
+		sort.Slice(data.Epics, func(i, j int) bool {
+			if data.Epics[i].Epic.Status != data.Epics[j].Epic.Status {
+				return data.Epics[i].Epic.Status < data.Epics[j].Epic.Status
+			}
 			return data.Epics[i].Epic.Priority < data.Epics[j].Epic.Priority
-		}
-		return data.Epics[i].Epic.UpdatedAt.After(data.Epics[j].Epic.UpdatedAt)
-	})
+		})
+	case "progress":
+		sort.Slice(data.Epics, func(i, j int) bool {
+			pi, pj := 0.0, 0.0
+			if data.Epics[i].Progress.Total > 0 {
+				pi = float64(data.Epics[i].Progress.Closed) / float64(data.Epics[i].Progress.Total)
+			}
+			if data.Epics[j].Progress.Total > 0 {
+				pj = float64(data.Epics[j].Progress.Closed) / float64(data.Epics[j].Progress.Total)
+			}
+			return pi > pj
+		})
+	default: // priority
+		sort.Slice(data.Epics, func(i, j int) bool {
+			if data.Epics[i].Epic.Priority != data.Epics[j].Epic.Priority {
+				return data.Epics[i].Epic.Priority < data.Epics[j].Epic.Priority
+			}
+			return data.Epics[i].Epic.UpdatedAt.After(data.Epics[j].Epic.UpdatedAt)
+		})
+	}
 
 	s.render(w, r, "epics", data)
 }
