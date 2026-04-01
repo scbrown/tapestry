@@ -1,0 +1,374 @@
+{{define "title"}}Ontology{{if .FilterType}} ({{.FilterType}}){{end}}{{end}}
+{{define "content"}}
+<div class="ontology-page" hx-get="/ontology?view={{.View}}{{if .FilterType}}&type={{.FilterType}}{{end}}{{if .ImpactSeed}}&impact={{.ImpactSeed}}{{end}}" hx-trigger="every 120s" hx-select=".ontology-page" hx-swap="outerHTML">
+
+  <h1>Ontology
+    {{if .FilterType}}<span class="text-dim">({{.FilterType}})</span>{{end}}
+  </h1>
+
+  {{/* View tabs */}}
+  <div class="filters" style="margin-bottom:1rem">
+    <a href="/ontology?view=table" {{if eq .View "table"}}class="active"{{end}}>Table</a>
+    <a href="/ontology?view=graph" {{if eq .View "graph"}}class="active"{{end}}>Graph</a>
+    <a href="/ontology?view=impact" {{if eq .View "impact"}}class="active"{{end}}>Impact</a>
+    <a href="/ontology?view=timeline" {{if eq .View "timeline"}}class="active"{{end}}>Timeline</a>
+    <a href="/ontology?view=directives" {{if eq .View "directives"}}class="active"{{end}}>Directives</a>
+  </div>
+
+  {{/* Type summary stats */}}
+  {{if .Types}}
+  <div class="stats-grid" style="grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); margin-bottom:1rem">
+    {{range .Types}}
+    <a href="/ontology?view=table&type={{.Type}}" class="stat-card" style="text-decoration:none;color:inherit">
+      <div class="stat-value">{{.Count}}</div>
+      <div class="stat-label">{{.Type}}</div>
+    </a>
+    {{end}}
+  </div>
+  {{end}}
+
+  {{if .Err}}
+  <div class="alert" style="color:var(--red);padding:0.5rem;border:1px solid var(--red);border-radius:4px;margin-bottom:1rem">{{.Err}}</div>
+  {{end}}
+
+  {{/* ===== TABLE VIEW ===== */}}
+  {{if eq .View "table"}}
+  <div class="table-container">
+    {{if .FilterType}}
+    <div style="margin-bottom:0.5rem">
+      <a href="/ontology?view=table" class="badge">Clear filter</a>
+    </div>
+    {{end}}
+    {{if .Entities}}
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Type</th>
+          <th>Name</th>
+          <th>Domain</th>
+          <th>Impact</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{range .Entities}}
+        <tr>
+          <td><code>{{.ID}}</code></td>
+          <td><a href="/ontology?view=table&type={{.Type}}">{{.Type}}</a></td>
+          <td><strong>{{.Name}}</strong></td>
+          <td>{{.Domain}}</td>
+          <td><a href="/ontology?view=impact&impact={{.ID}}" title="Show what depends on this">blast</a></td>
+        </tr>
+        {{end}}
+      </tbody>
+    </table>
+    <p class="text-dim" style="margin-top:0.5rem">{{.EntityCount}} entities</p>
+    {{else}}
+    <p class="empty">No entities found{{if .FilterType}} for type "{{.FilterType}}"{{end}}.</p>
+    {{end}}
+  </div>
+
+  {{/* ===== GRAPH VIEW ===== */}}
+  {{else if eq .View "graph"}}
+  <div style="margin-bottom:0.5rem">
+    <span class="text-dim">{{.EntityCount}} nodes, {{.RelationCount}} edges (showing key predicates: dependsOn, runningOn, runsService, managedBy, memberOf, reportsTo)</span>
+  </div>
+  <div id="ontology-graph" style="width:100%;height:600px;border:1px solid var(--border);border-radius:4px;background:var(--bg-secondary);position:relative;overflow:hidden">
+    <canvas id="graph-canvas" style="width:100%;height:100%"></canvas>
+  </div>
+  <script>
+  (function() {
+    const nodes = {{safeJS .GraphNodes}};
+    const edges = {{safeJS .GraphEdges}};
+    const canvas = document.getElementById('graph-canvas');
+    const ctx = canvas.getContext('2d');
+    const container = document.getElementById('ontology-graph');
+
+    // High-DPI support
+    function resize() {
+      const rect = container.getBoundingClientRect();
+      canvas.width = rect.width * 2;
+      canvas.height = rect.height * 2;
+      canvas.style.width = rect.width + 'px';
+      canvas.style.height = rect.height + 'px';
+      ctx.scale(2, 2);
+    }
+    resize();
+
+    // Color by type
+    const typeColors = {
+      'LXCContainer': '#4ecdc4',
+      'SystemdService': '#45b7d1',
+      'WebApplication': '#96ceb4',
+      'DatabaseService': '#ffeaa7',
+      'CrewMember': '#dda0dd',
+      'BareMetalHost': '#ff6b6b',
+      'ProxmoxNode': '#ff9f43',
+      'CLI': '#a29bfe',
+      'MCPServer': '#fd79a8',
+      'Rig': '#00cec9',
+      'Person': '#fab1a0',
+      'NetworkSegment': '#81ecec',
+      'MediaLibrary': '#fdcb6e',
+    };
+
+    // Layout: force-directed (simple spring model)
+    const W = canvas.width / 2, H = canvas.height / 2;
+    const nodeMap = {};
+    nodes.forEach((n, i) => {
+      // Cluster by type
+      const angle = (i / nodes.length) * Math.PI * 2;
+      const radius = 150 + Math.random() * 100;
+      nodeMap[n.id] = {
+        x: W/2 + Math.cos(angle) * radius + (Math.random()-0.5)*60,
+        y: H/2 + Math.sin(angle) * radius + (Math.random()-0.5)*60,
+        vx: 0, vy: 0,
+        ...n
+      };
+    });
+
+    // Build adjacency for edge lookup
+    const edgeSet = new Set();
+    edges.forEach(e => edgeSet.add(e.from + '|' + e.to));
+
+    // Simple force simulation
+    function simulate(iterations) {
+      const nodeArr = Object.values(nodeMap);
+      for (let iter = 0; iter < iterations; iter++) {
+        // Repulsion between all nodes
+        for (let i = 0; i < nodeArr.length; i++) {
+          for (let j = i+1; j < nodeArr.length; j++) {
+            const a = nodeArr[i], b = nodeArr[j];
+            let dx = a.x - b.x, dy = a.y - b.y;
+            let d = Math.sqrt(dx*dx + dy*dy) || 1;
+            let force = 800 / (d * d);
+            a.vx += dx/d * force; a.vy += dy/d * force;
+            b.vx -= dx/d * force; b.vy -= dy/d * force;
+          }
+        }
+        // Attraction along edges
+        edges.forEach(e => {
+          const a = nodeMap[e.from], b = nodeMap[e.to];
+          if (!a || !b) return;
+          let dx = b.x - a.x, dy = b.y - a.y;
+          let d = Math.sqrt(dx*dx + dy*dy) || 1;
+          let force = (d - 80) * 0.01;
+          a.vx += dx/d * force; a.vy += dy/d * force;
+          b.vx -= dx/d * force; b.vy -= dy/d * force;
+        });
+        // Center gravity
+        nodeArr.forEach(n => {
+          n.vx += (W/2 - n.x) * 0.001;
+          n.vy += (H/2 - n.y) * 0.001;
+          n.x += n.vx * 0.5;
+          n.y += n.vy * 0.5;
+          n.vx *= 0.9;
+          n.vy *= 0.9;
+          // Bounds
+          n.x = Math.max(30, Math.min(W-30, n.x));
+          n.y = Math.max(30, Math.min(H-30, n.y));
+        });
+      }
+    }
+    simulate(100);
+
+    // Draw
+    function draw() {
+      ctx.clearRect(0, 0, W, H);
+
+      // Edges
+      ctx.lineWidth = 0.5;
+      ctx.strokeStyle = 'rgba(150,150,150,0.3)';
+      edges.forEach(e => {
+        const a = nodeMap[e.from], b = nodeMap[e.to];
+        if (!a || !b) return;
+        ctx.beginPath();
+        ctx.moveTo(a.x, a.y);
+        ctx.lineTo(b.x, b.y);
+        ctx.stroke();
+      });
+
+      // Nodes
+      Object.values(nodeMap).forEach(n => {
+        ctx.beginPath();
+        ctx.arc(n.x, n.y, 6, 0, Math.PI * 2);
+        ctx.fillStyle = typeColors[n.type] || '#888';
+        ctx.fill();
+        ctx.strokeStyle = '#333';
+        ctx.lineWidth = 0.5;
+        ctx.stroke();
+
+        ctx.fillStyle = 'var(--fg, #ccc)';
+        ctx.font = '9px monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText(n.label, n.x, n.y - 10);
+      });
+
+      // Legend
+      const types = [...new Set(Object.values(nodeMap).map(n => n.type))];
+      ctx.font = '10px monospace';
+      ctx.textAlign = 'left';
+      types.forEach((t, i) => {
+        const x = 10, y = 16 + i * 16;
+        ctx.fillStyle = typeColors[t] || '#888';
+        ctx.fillRect(x, y-8, 10, 10);
+        ctx.fillStyle = 'var(--fg, #ccc)';
+        ctx.fillText(t, x + 14, y);
+      });
+    }
+    draw();
+
+    // Hover tooltip
+    canvas.addEventListener('mousemove', function(evt) {
+      const rect = canvas.getBoundingClientRect();
+      const mx = evt.clientX - rect.left;
+      const my = evt.clientY - rect.top;
+      let hit = null;
+      Object.values(nodeMap).forEach(n => {
+        const dx = n.x - mx, dy = n.y - my;
+        if (dx*dx + dy*dy < 100) hit = n;
+      });
+      canvas.style.cursor = hit ? 'pointer' : 'default';
+      canvas.title = hit ? hit.id + ' (' + hit.type + ')' + (hit.domain ? ' [' + hit.domain + ']' : '') : '';
+    });
+
+    // Click to impact view
+    canvas.addEventListener('click', function(evt) {
+      const rect = canvas.getBoundingClientRect();
+      const mx = evt.clientX - rect.left;
+      const my = evt.clientY - rect.top;
+      Object.values(nodeMap).forEach(n => {
+        const dx = n.x - mx, dy = n.y - my;
+        if (dx*dx + dy*dy < 100) {
+          window.location.href = '/ontology?view=impact&impact=' + encodeURIComponent(n.id);
+        }
+      });
+    });
+  })();
+  </script>
+
+  {{/* ===== IMPACT VIEW ===== */}}
+  {{else if eq .View "impact"}}
+  <div style="margin-bottom:1rem">
+    <form method="get" action="/ontology" style="display:flex;gap:0.5rem;align-items:center">
+      <input type="hidden" name="view" value="impact">
+      <label>What breaks if this goes down?</label>
+      <select name="impact" onchange="this.form.submit()" style="padding:0.3rem;background:var(--bg-secondary);color:var(--fg);border:1px solid var(--border);border-radius:4px">
+        <option value="">Select entity...</option>
+        {{range .Entities}}
+        <option value="{{.ID}}" {{if eq .ID $.ImpactSeed}}selected{{end}}>{{.ID}} ({{.Type}})</option>
+        {{end}}
+      </select>
+    </form>
+  </div>
+
+  {{if .ImpactSeed}}
+  <h2 style="margin-bottom:0.5rem">Impact of <code>{{.ImpactSeed}}</code> going down</h2>
+    {{if .Impact}}
+    <p style="margin-bottom:0.5rem"><strong>{{len .Impact}}</strong> entities affected (transitive via dependsOn, runningOn, runsService):</p>
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Type</th>
+          <th>Name</th>
+          <th>Domain</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{range .Impact}}
+        <tr>
+          <td><code>{{.ID}}</code></td>
+          <td>{{.Type}}</td>
+          <td><strong>{{.Name}}</strong></td>
+          <td>{{.Domain}}</td>
+        </tr>
+        {{end}}
+      </tbody>
+    </table>
+    {{else}}
+    <p class="text-dim">No entities are transitively dependent on <code>{{.ImpactSeed}}</code>.</p>
+    {{end}}
+  {{else}}
+  <p class="text-dim">Select an entity above to see its blast radius.</p>
+  {{end}}
+
+  {{/* ===== TIMELINE VIEW ===== */}}
+  {{else if eq .View "timeline"}}
+  <div style="margin-bottom:1rem">
+    <span class="text-dim">{{.DirectiveCount}} directives, {{.DecisionCount}} decisions</span>
+  </div>
+
+  {{if .Decisions}}
+  <h2 style="margin-bottom:0.5rem">Decisions</h2>
+  <div class="decision-list" style="margin-bottom:1.5rem">
+    {{range .Decisions}}
+    <div class="decision-card" style="margin-bottom:0.75rem;padding:0.75rem;border:1px solid var(--border);border-radius:4px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.25rem">
+        <strong>{{.Decision}}</strong>
+        <span class="text-dim">{{if .Date}}{{formatDate .Date}}{{end}}</span>
+      </div>
+      {{if .Rationale}}<p style="color:var(--fg-dim);margin:0.25rem 0">{{.Rationale}}</p>{{end}}
+      <div class="text-dim" style="font-size:0.85em">
+        {{if .MadeBy}}by {{.MadeBy}}{{end}}
+        {{if .BeadID}} | bead: <a href="/bead/aegis/{{.BeadID}}">{{.BeadID}}</a>{{end}}
+      </div>
+    </div>
+    {{end}}
+  </div>
+  {{end}}
+
+  {{if .Directives}}
+  <h2 style="margin-bottom:0.5rem">Directives (recent)</h2>
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Rule</th>
+        <th>Priority</th>
+        <th>Issued By</th>
+        <th>Date</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{range .Directives}}
+      <tr>
+        <td><code style="font-size:0.8em">{{.ID}}</code></td>
+        <td style="max-width:400px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="{{.Rule}}">{{.Rule}}</td>
+        <td>{{if .Priority}}<span class="badge">{{.Priority}}</span>{{end}}</td>
+        <td>{{.IssuedBy}}</td>
+        <td class="text-dim">{{if .IssuedDate}}{{formatDate .IssuedDate}}{{end}}</td>
+      </tr>
+      {{end}}
+    </tbody>
+  </table>
+  {{end}}
+
+  {{/* ===== DIRECTIVES VIEW ===== */}}
+  {{else if eq .View "directives"}}
+  <div style="margin-bottom:0.5rem">
+    <span class="text-dim">{{.DirectiveCount}} directives from HLA</span>
+  </div>
+  {{if .Directives}}
+  <div>
+    {{range .Directives}}
+    <div style="margin-bottom:0.75rem;padding:0.75rem;border:1px solid var(--border);border-radius:4px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.25rem">
+        <code style="font-size:0.85em">{{.ID}}</code>
+        {{if .Priority}}<span class="badge {{if eq .Priority "P1"}}priority-p1{{else if eq .Priority "P2"}}priority-p2{{end}}">{{.Priority}}</span>{{end}}
+      </div>
+      <p style="margin:0.25rem 0">{{.Rule}}</p>
+      <div class="text-dim" style="font-size:0.85em">
+        {{if .IssuedBy}}by {{.IssuedBy}}{{end}}
+        {{if .IssuedDate}} | {{formatDate .IssuedDate}}{{end}}
+      </div>
+    </div>
+    {{end}}
+  </div>
+  {{else}}
+  <p class="empty">No directives loaded.</p>
+  {{end}}
+  {{end}}
+
+</div>
+{{end}}

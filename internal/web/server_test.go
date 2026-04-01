@@ -214,6 +214,34 @@ func (m *mockDataSource) CommentDiffSince(_ context.Context, _ string, _ time.Ti
 	return m.commentDiffs, m.err
 }
 
+func (m *mockDataSource) FindOntologyDatabase(_ context.Context) (string, error) {
+	return "aegis", m.err
+}
+
+func (m *mockDataSource) OntologyEntities(_ context.Context, _, _ string) ([]dolt.OntologyEntity, error) {
+	return nil, m.err
+}
+
+func (m *mockDataSource) OntologyRelations(_ context.Context, _ string) ([]dolt.OntologyRelation, error) {
+	return nil, m.err
+}
+
+func (m *mockDataSource) OntologyDirectives(_ context.Context, _ string) ([]dolt.OntologyDirective, error) {
+	return nil, m.err
+}
+
+func (m *mockDataSource) OntologyDecisions(_ context.Context, _ string) ([]dolt.OntologyDecision, error) {
+	return nil, m.err
+}
+
+func (m *mockDataSource) OntologyTypeSummaries(_ context.Context, _ string) ([]dolt.OntologyTypeSummary, error) {
+	return nil, m.err
+}
+
+func (m *mockDataSource) OntologyImpact(_ context.Context, _, _ string) ([]dolt.OntologyEntity, error) {
+	return nil, m.err
+}
+
 func TestIndexRendersMonthly(t *testing.T) {
 	srv := New(nil)
 	req := httptest.NewRequest("GET", "/", nil)

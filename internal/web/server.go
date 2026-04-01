@@ -67,6 +67,15 @@ type DataSource interface {
 	RecentComments(ctx context.Context, database string, limit int) ([]dolt.Comment, error)
 	IssueDiffSince(ctx context.Context, database string, since time.Time) ([]dolt.IssueDiffRow, error)
 	CommentDiffSince(ctx context.Context, database string, since time.Time) ([]dolt.CommentDiffRow, error)
+
+	// Ontology
+	FindOntologyDatabase(ctx context.Context) (string, error)
+	OntologyEntities(ctx context.Context, database, filterType string) ([]dolt.OntologyEntity, error)
+	OntologyRelations(ctx context.Context, database string) ([]dolt.OntologyRelation, error)
+	OntologyDirectives(ctx context.Context, database string) ([]dolt.OntologyDirective, error)
+	OntologyDecisions(ctx context.Context, database string) ([]dolt.OntologyDecision, error)
+	OntologyTypeSummaries(ctx context.Context, database string) ([]dolt.OntologyTypeSummary, error)
+	OntologyImpact(ctx context.Context, database, entityID string) ([]dolt.OntologyEntity, error)
 }
 
 // Server serves the Tapestry web dashboard.
@@ -110,6 +119,9 @@ func (s *Server) databases(ctx context.Context) ([]dolt.DatabaseInfo, error) {
 }
 
 var funcMap = template.FuncMap{
+	"safeJS": func(s string) template.JS {
+		return template.JS(s)
+	},
 	"formatDate": func(t time.Time) string {
 		if t.IsZero() {
 			return "—"
@@ -355,6 +367,10 @@ func (s *Server) parseTemplates() {
 		"decisions": template.Must(
 			template.New("").Funcs(funcMap).ParseFS(templateFS,
 				"templates/layout.html", "templates/decisions.html"),
+		),
+		"ontology": template.Must(
+			template.New("").Funcs(funcMap).ParseFS(templateFS,
+				"templates/layout.html", "templates/ontology.html"),
 		),
 		"achievements": template.Must(
 			template.New("").Funcs(funcMap).ParseFS(templateFS,
@@ -945,6 +961,8 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		s.handleAgents(w, r)
 	case len(segments) == 1 && segments[0] == "decisions":
 		s.handleDecisions(w, r)
+	case len(segments) >= 1 && segments[0] == "ontology":
+		s.handleOntology(w, r)
 	case len(segments) == 1 && segments[0] == "achievements":
 		s.handleAchievements(w, r)
 	case len(segments) == 1 && segments[0] == "theme-parks":
