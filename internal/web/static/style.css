@@ -1368,6 +1368,86 @@ tr.silenced { opacity: 0.5; }
 .nav-active { color: var(--purple) !important; border-bottom: 2px solid var(--purple); padding-bottom: 2px; }
 .nav-sep { color: var(--border); font-size: 0.75rem; opacity: 0.5; user-select: none; }
 
+/* ── Nav Dropdowns ─────────────────────────────────────── */
+.nav-dropdown {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+}
+.nav-dropdown-trigger {
+    color: var(--link);
+    cursor: pointer;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: inherit;
+    user-select: none;
+    white-space: nowrap;
+}
+.nav-dropdown-trigger:hover {
+    background: var(--bg);
+}
+.nav-dropdown-trigger small {
+    font-size: 0.65em;
+    opacity: 0.7;
+}
+.nav-dropdown-menu {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    z-index: 1000;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 0.5rem 0;
+    min-width: 160px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    flex-direction: column;
+}
+.nav-dropdown:hover .nav-dropdown-menu,
+.nav-dropdown.nav-dropdown-open .nav-dropdown-menu {
+    display: flex;
+}
+.nav-dropdown-menu a {
+    display: block;
+    padding: 0.35rem 1rem;
+    color: var(--text);
+    white-space: nowrap;
+    font-size: 0.85rem;
+    border-radius: 0;
+}
+.nav-dropdown-menu a:hover {
+    background: var(--bg);
+    color: var(--link);
+    text-decoration: none;
+}
+.nav-dropdown-wide {
+    flex-direction: row;
+    padding: 0.5rem;
+    gap: 0;
+}
+.nav-dropdown-col {
+    display: flex;
+    flex-direction: column;
+    min-width: 150px;
+    padding: 0 0.25rem;
+}
+.nav-dropdown-col + .nav-dropdown-col {
+    border-left: 1px solid var(--border);
+}
+.nav-dropdown-heading {
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 0.25rem 0.75rem 0.35rem;
+    user-select: none;
+}
+.nav-dropdown-col a {
+    padding: 0.3rem 0.75rem;
+}
+
 /* ── Quick-Nav Command Palette (Cmd+K) ──────────────── */
 .quicknav-overlay {
     position: fixed; inset: 0; z-index: 9999;
@@ -1483,32 +1563,53 @@ h1:hover .bead-title-edit { opacity: 1; }
   .nav-toggle { display: block; }
   .tagline { display: none; }
 
-  /* Hide all nav links except logo and toggle by default */
-  header nav a:not(.logo),
-  header nav .nav-sep,
-  header nav .nav-search {
+  /* Hide all nav items except logo and toggle by default */
+  header nav > a:not(.logo),
+  header nav > .nav-sep,
+  header nav > .nav-search,
+  header nav > .nav-dropdown {
     display: none;
   }
 
   /* When nav-open, show everything in a column */
-  header nav.nav-open a:not(.logo),
-  header nav.nav-open .nav-sep,
-  header nav.nav-open .nav-search {
+  header nav.nav-open > a:not(.logo),
+  header nav.nav-open > .nav-sep,
+  header nav.nav-open > .nav-search,
+  header nav.nav-open > .nav-dropdown {
     display: block;
+    width: 100%;
   }
   header nav.nav-open {
     gap: 0;
   }
-  header nav.nav-open a:not(.logo) {
+  header nav.nav-open > a:not(.logo) {
     padding: 0.5rem 0.75rem;
     border-bottom: 1px solid rgba(98, 114, 164, 0.2);
+  }
+  header nav.nav-open .nav-dropdown {
+    border-bottom: 1px solid rgba(98, 114, 164, 0.2);
+  }
+  header nav.nav-open .nav-dropdown-trigger {
+    display: block;
+    padding: 0.5rem 0.75rem;
     width: 100%;
   }
-  header nav.nav-open .nav-sep {
-    border-bottom: 2px solid var(--border);
-    width: 100%;
-    padding: 0;
-    margin: 0.25rem 0;
+  header nav.nav-open .nav-dropdown-menu {
+    position: static;
+    box-shadow: none;
+    border: none;
+    border-radius: 0;
+    background: var(--bg);
+    padding-left: 1rem;
+  }
+  header nav.nav-open .nav-dropdown-wide {
+    flex-direction: column;
+  }
+  header nav.nav-open .nav-dropdown-col + .nav-dropdown-col {
+    border-left: none;
+    border-top: 1px solid rgba(98, 114, 164, 0.2);
+    margin-top: 0.25rem;
+    padding-top: 0.25rem;
   }
   header nav.nav-open .nav-search {
     width: 100%;

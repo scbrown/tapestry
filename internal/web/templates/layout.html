@@ -14,125 +14,174 @@
             <a href="/" class="logo">Tapestry</a>
             <span class="tagline">archivist dashboard</span>
             <button class="nav-toggle" onclick="document.querySelector('nav').classList.toggle('nav-open')" aria-label="Toggle navigation">&#9776;</button>
-            <a href="/executive">exec</a>
-            <a href="/command-center">cmd</a>
             <a href="/briefing">briefing</a>
-            <a href="/standup">standup</a>
-            <a href="/momentum">momentum</a>
-            <a href="/risks">risks</a>
-            <a href="/watchlist">watchlist</a>
-            <span class="nav-sep">|</span>
             <a href="/work">work</a>
             <a href="/kanban">kanban</a>
-            <a href="/beads">beads</a>
-            <a href="/epics">epics</a>
-            <a href="/blocked">blocked</a>
-            <a href="/queue">queue</a>
-            <a href="/deps">deps</a>
-            <a href="/labels">labels</a>
-            <span class="nav-sep">|</span>
-            <a href="/recap">recap</a>
-            <a href="/activity">activity</a>
-            <a href="/agents">agents</a>
-            <a href="/owners">owners</a>
-            <a href="/handoffs">handoffs</a>
-            <a href="/velocity">velocity</a>
-            <a href="/forecast">forecast</a>
-            <a href="/scope">scope</a>
-            <a href="/rigs">rigs</a>
-            <a href="/burndown">burndown</a>
-            <a href="/burnup">burnup</a>
-            <a href="/flow-rate">flow-rate</a>
-            <a href="/trends">trends</a>
-            <a href="/heatmap">heatmap</a>
-            <a href="/commits">commits</a>
-            <span class="nav-sep">|</span>
-            <a href="/priorities">priorities</a>
-            <a href="/types">types</a>
-            <a href="/matrix">matrix</a>
-            <a href="/status">status</a>
-            <a href="/sla">sla</a>
-            <a href="/stale">stale</a>
-            <a href="/backlog">backlog</a>
-            <a href="/cycle-time">cycle-time</a>
-            <a href="/throughput">throughput</a>
-            <a href="/net-flow">net-flow</a>
-            <a href="/resolution-rate">resolution-rate</a>
-            <a href="/age-breakdown">age-breakdown</a>
-            <a href="/cohort">cohort</a>
-            <a href="/funnel">funnel</a>
-            <a href="/workload">workload</a>
-            <a href="/duplicates">duplicates</a>
-            <a href="/churn">churn</a>
-            <a href="/deferred">deferred</a>
-            <a href="/parking-lot">parking-lot</a>
-            <a href="/sprint">sprint</a>
-            <a href="/created">created</a>
-            <a href="/closed">closed</a>
             <a href="/triage">triage</a>
-            <a href="/comments">comments</a>
-            <a href="/inventory">inventory</a>
-            <a href="/response-time">response-time</a>
-            <a href="/contributors">contributors</a>
-            <a href="/snapshot">snapshot</a>
-            <a href="/overflow">overflow</a>
-            <a href="/calendar">calendar</a>
-            <a href="/debt">debt</a>
-            <a href="/assignments">assignments</a>
-            <a href="/gaps">gaps</a>
-            <a href="/compare">compare</a>
-            <a href="/chains">chains</a>
-            <a href="/wip">wip</a>
-            <a href="/swarming">swarming</a>
-            <a href="/signals">signals</a>
-            <a href="/pair-freq">label-pairs</a>
-            <a href="/idle">idle</a>
-            <a href="/reopen">reopen</a>
-            <a href="/escalations">escalations</a>
-            <a href="/focus">focus</a>
-            <a href="/crossref">crossref</a>
-            <a href="/freshness">freshness</a>
-            <a href="/complexity">complexity</a>
-            <a href="/label-matrix">label-matrix</a>
-            <a href="/label-trends">label-trends</a>
-            <a href="/ready">ready</a>
-            <a href="/disposition">disposition</a>
-            <a href="/phase">phases</a>
-            <a href="/tag-velocity">tag-velocity</a>
-            <a href="/pacing">pacing</a>
-            <a href="/agent-velocity">agent-velocity</a>
-            <a href="/unblocked">unblocked</a>
-            <a href="/audit-log">audit-log</a>
-            <a href="/reschedules">reschedules</a>
-            <a href="/retention">retention</a>
-            <a href="/dog-pile">hot-beads</a>
-            <a href="/quick-wins">quick-wins</a>
-            <a href="/orphans">orphans</a>
-            <a href="/dwell">dwell</a>
-            <a href="/transfers">transfers</a>
-            <a href="/load-balance">load</a>
-            <a href="/stats">stats</a>
-            <a href="/pending">pending</a>
-            <a href="/label-age">label-age</a>
-            <a href="/status-flow">flow</a>
-            <a href="/priority-drift">drift</a>
-            <a href="/pulse">pulse</a>
-            <a href="/timeline">timeline</a>
-            <a href="/changelog">changelog</a>
-            <a href="/impact">impact</a>
-            <a href="/streaks">streaks</a>
-            <a href="/ratios">ratios</a>
-            <a href="/outgoing">old/new</a>
-            <a href="/favorites">favs</a>
-            <a href="/sitemap">sitemap</a>
-            <span class="nav-sep">|</span>
-            <a href="/homelab">homelab</a>
-            <a href="/probes">probes</a>
-            <a href="/designs">designs</a>
-            <a href="/decisions">decisions</a>
-            <a href="/ontology">ontology</a>
-            <a href="/achievements">achievements</a>
-            <a href="/theme-parks">parks</a>
+            <a href="/agents">agents</a>
+            <a href="/queue">queue</a>
+            <div class="nav-dropdown">
+                <span class="nav-dropdown-trigger">dashboards <small>▾</small></span>
+                <div class="nav-dropdown-menu">
+                    <a href="/executive">executive</a>
+                    <a href="/command-center">command center</a>
+                    <a href="/standup">standup</a>
+                    <a href="/momentum">momentum</a>
+                    <a href="/risks">risks</a>
+                    <a href="/watchlist">watchlist</a>
+                    <a href="/pulse">pulse</a>
+                    <a href="/snapshot">snapshot</a>
+                    <a href="/signals">signals</a>
+                    <a href="/rigs">rigs</a>
+                    <a href="/status">status</a>
+                </div>
+            </div>
+            <div class="nav-dropdown">
+                <span class="nav-dropdown-trigger">tracking <small>▾</small></span>
+                <div class="nav-dropdown-menu">
+                    <a href="/beads">beads</a>
+                    <a href="/epics">epics</a>
+                    <a href="/blocked">blocked</a>
+                    <a href="/deps">dependencies</a>
+                    <a href="/labels">labels</a>
+                    <a href="/ready">ready</a>
+                    <a href="/focus">focus</a>
+                    <a href="/pending">pending</a>
+                    <a href="/assignments">assignments</a>
+                    <a href="/deferred">deferred</a>
+                    <a href="/parking-lot">parking lot</a>
+                    <a href="/wip">wip</a>
+                    <a href="/dog-pile">hot beads</a>
+                    <a href="/unblocked">unblocked</a>
+                    <a href="/quick-wins">quick wins</a>
+                </div>
+            </div>
+            <div class="nav-dropdown">
+                <span class="nav-dropdown-trigger">analytics <small>▾</small></span>
+                <div class="nav-dropdown-menu nav-dropdown-wide">
+                    <div class="nav-dropdown-col">
+                        <span class="nav-dropdown-heading">Velocity</span>
+                        <a href="/velocity">velocity</a>
+                        <a href="/forecast">forecast</a>
+                        <a href="/burndown">burndown</a>
+                        <a href="/burnup">burn up</a>
+                        <a href="/flow-rate">flow rate</a>
+                        <a href="/throughput">throughput</a>
+                        <a href="/sprint">sprint</a>
+                        <a href="/pacing">pacing</a>
+                        <a href="/agent-velocity">agent velocity</a>
+                        <a href="/tag-velocity">tag velocity</a>
+                    </div>
+                    <div class="nav-dropdown-col">
+                        <span class="nav-dropdown-heading">Trends</span>
+                        <a href="/trends">trends</a>
+                        <a href="/heatmap">heatmap</a>
+                        <a href="/scope">scope</a>
+                        <a href="/net-flow">net flow</a>
+                        <a href="/cycle-time">cycle time</a>
+                        <a href="/resolution-rate">resolution rate</a>
+                        <a href="/ratios">ratios</a>
+                        <a href="/disposition">disposition</a>
+                        <a href="/compare">compare</a>
+                    </div>
+                </div>
+            </div>
+            <div class="nav-dropdown">
+                <span class="nav-dropdown-trigger">breakdown <small>▾</small></span>
+                <div class="nav-dropdown-menu nav-dropdown-wide">
+                    <div class="nav-dropdown-col">
+                        <span class="nav-dropdown-heading">Distribution</span>
+                        <a href="/priorities">priorities</a>
+                        <a href="/types">types</a>
+                        <a href="/matrix">matrix</a>
+                        <a href="/sla">sla</a>
+                        <a href="/backlog">backlog</a>
+                        <a href="/age-breakdown">age breakdown</a>
+                        <a href="/cohort">cohort</a>
+                        <a href="/funnel">funnel</a>
+                        <a href="/inventory">inventory</a>
+                        <a href="/workload">workload</a>
+                    </div>
+                    <div class="nav-dropdown-col">
+                        <span class="nav-dropdown-heading">Labels & Status</span>
+                        <a href="/label-matrix">label matrix</a>
+                        <a href="/label-trends">label trends</a>
+                        <a href="/label-age">label age</a>
+                        <a href="/pair-freq">label pairs</a>
+                        <a href="/status-flow">status flow</a>
+                        <a href="/priority-drift">priority drift</a>
+                        <a href="/phase">phases</a>
+                        <a href="/churn">churn</a>
+                    </div>
+                </div>
+            </div>
+            <div class="nav-dropdown">
+                <span class="nav-dropdown-trigger">activity <small>▾</small></span>
+                <div class="nav-dropdown-menu">
+                    <a href="/recap">recap</a>
+                    <a href="/activity">activity</a>
+                    <a href="/timeline">timeline</a>
+                    <a href="/changelog">changelog</a>
+                    <a href="/commits">commits</a>
+                    <a href="/calendar">calendar</a>
+                    <a href="/audit-log">audit log</a>
+                    <a href="/created">created</a>
+                    <a href="/closed">closed</a>
+                    <a href="/comments">comments</a>
+                    <a href="/handoffs">handoffs</a>
+                    <a href="/transfers">transfers</a>
+                </div>
+            </div>
+            <div class="nav-dropdown">
+                <span class="nav-dropdown-trigger">health <small>▾</small></span>
+                <div class="nav-dropdown-menu nav-dropdown-wide">
+                    <div class="nav-dropdown-col">
+                        <span class="nav-dropdown-heading">Quality</span>
+                        <a href="/stale">stale</a>
+                        <a href="/gaps">gaps</a>
+                        <a href="/duplicates">duplicates</a>
+                        <a href="/orphans">orphans</a>
+                        <a href="/debt">debt</a>
+                        <a href="/freshness">freshness</a>
+                        <a href="/complexity">complexity</a>
+                    </div>
+                    <div class="nav-dropdown-col">
+                        <span class="nav-dropdown-heading">Ops</span>
+                        <a href="/reopen">reopen</a>
+                        <a href="/escalations">escalations</a>
+                        <a href="/reschedules">reschedules</a>
+                        <a href="/retention">retention</a>
+                        <a href="/dwell">dwell</a>
+                        <a href="/response-time">response time</a>
+                        <a href="/idle">idle</a>
+                        <a href="/swarming">swarming</a>
+                        <a href="/overflow">overflow</a>
+                        <a href="/chains">chains</a>
+                    </div>
+                </div>
+            </div>
+            <div class="nav-dropdown">
+                <span class="nav-dropdown-trigger">explore <small>▾</small></span>
+                <div class="nav-dropdown-menu">
+                    <a href="/owners">owners</a>
+                    <a href="/contributors">contributors</a>
+                    <a href="/load-balance">load balance</a>
+                    <a href="/impact">impact</a>
+                    <a href="/streaks">streaks</a>
+                    <a href="/crossref">crossref</a>
+                    <a href="/ontology">ontology</a>
+                    <a href="/homelab">homelab</a>
+                    <a href="/probes">probes</a>
+                    <a href="/designs">designs</a>
+                    <a href="/decisions">decisions</a>
+                    <a href="/achievements">achievements</a>
+                    <a href="/theme-parks">parks</a>
+                    <a href="/outgoing">old/new</a>
+                    <a href="/favorites">favorites</a>
+                    <a href="/stats">stats</a>
+                    <a href="/sitemap">sitemap</a>
+                </div>
+            </div>
             <form action="/search" method="get" class="nav-search"><input type="text" name="q" placeholder="search beads..." class="nav-search-input" hx-get="/search" hx-trigger="keyup changed delay:300ms, search" hx-target="#content" hx-push-url="true" hx-indicator=".nav-search-indicator"><span class="nav-search-indicator htmx-indicator">...</span></form>
         </nav>
     </header>
@@ -276,9 +325,39 @@
                 a.classList.remove('nav-active');
             }
         });
+        // Highlight dropdown trigger if any child link is active
+        document.querySelectorAll('.nav-dropdown').forEach(function(dd) {
+            var trigger = dd.querySelector('.nav-dropdown-trigger');
+            var hasActive = dd.querySelector('.nav-active');
+            if (hasActive) {
+                trigger.classList.add('nav-active');
+            } else {
+                trigger.classList.remove('nav-active');
+            }
+        });
     }
     highlightNav();
     document.body.addEventListener('htmx:pushedIntoHistory', highlightNav);
+
+    // Dropdown click-to-toggle (for touch devices)
+    document.querySelectorAll('.nav-dropdown-trigger').forEach(function(trigger) {
+        trigger.addEventListener('click', function(e) {
+            e.stopPropagation();
+            var dd = this.closest('.nav-dropdown');
+            var wasOpen = dd.classList.contains('nav-dropdown-open');
+            // Close all other dropdowns
+            document.querySelectorAll('.nav-dropdown').forEach(function(d) {
+                d.classList.remove('nav-dropdown-open');
+            });
+            if (!wasOpen) dd.classList.add('nav-dropdown-open');
+        });
+    });
+    // Close dropdowns when clicking outside
+    document.addEventListener('click', function() {
+        document.querySelectorAll('.nav-dropdown').forEach(function(d) {
+            d.classList.remove('nav-dropdown-open');
+        });
+    });
 
     // Toast notification system — listens for showToast events from HX-Trigger headers
     document.body.addEventListener('showToast', function(e) {
@@ -427,6 +506,7 @@
       {name:'Favorites', path:'/favorites', desc:'Pinned beads for quick access (browser localStorage)'},
       {name:'Sitemap', path:'/sitemap', desc:'All pages organized by category'},
       {name:'Pulse', path:'/pulse', desc:'24-hour system pulse — hourly activity breakdown'},
+      {name:'Ontology', path:'/ontology', desc:'Entity knowledge graph — tables, graph, impact, timeline'},
     ];
     var qnSelected = 0;
 
