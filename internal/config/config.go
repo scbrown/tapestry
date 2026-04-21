@@ -9,6 +9,9 @@ import (
 	"github.com/BurntSushi/toml"
 )
 
+// Version is set at build time via -ldflags "-X .../config.Version=<sha>".
+var Version = "dev"
+
 // Config is the top-level tapestry configuration.
 type Config struct {
 	Server    ServerConfig      `toml:"server"`

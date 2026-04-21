@@ -1266,6 +1266,24 @@ func TestHealthz(t *testing.T) {
 	}
 }
 
+func TestVersion(t *testing.T) {
+	srv := New(nil)
+	req := httptest.NewRequest("GET", "/version", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /version status = %d, want %d", w.Code, http.StatusOK)
+	}
+	if w.Body.String() == "" {
+		t.Error("expected non-empty version body")
+	}
+	if ct := w.Header().Get("Content-Type"); !strings.HasPrefix(ct, "text/plain") {
+		t.Errorf("expected text/plain Content-Type, got %q", ct)
+	}
+}
+
 func TestMethodNotAllowed(t *testing.T) {
 	srv := New(nil)
 	req := httptest.NewRequest("DELETE", "/status", nil)

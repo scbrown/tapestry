@@ -12,6 +12,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/scbrown/tapestry/internal/config"
 	"github.com/scbrown/tapestry/internal/dolt"
 	"github.com/scbrown/tapestry/internal/events"
 )
@@ -940,6 +941,13 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if path == "/healthz" {
 		w.WriteHeader(http.StatusOK)
 		fmt.Fprint(w, "ok")
+		return
+	}
+
+	if path == "/version" {
+		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprint(w, config.Version)
 		return
 	}
 
